@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Building2, Plus, Check } from "lucide-react";
+import { Building2, Plus, Check, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { useToast } from "@/hooks/use-toast";
+import { useUpdateWorkspace } from "@/lib/api/hooks/useWorkspaces";
 
 interface WorkspaceSwitcherProps {
   onWorkspaceChange?: (workspaceId: string) => void;
@@ -32,8 +33,13 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
   } = useWorkspaces();
   
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [newWorkspaceDescription, setNewWorkspaceDescription] = useState("");
+  const [editWorkspaceName, setEditWorkspaceName] = useState("");
+  const [editWorkspaceDescription, setEditWorkspaceDescription] = useState("");
+  
+  const updateWorkspaceMutation = useUpdateWorkspace();
 
   const handleWorkspaceChange = (newWorkspaceId: string) => {
     switchWorkspace(newWorkspaceId);
@@ -68,6 +74,35 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
     }
   };
 
+  const handleOpenSettings = () => {
+    if (currentWorkspace) {
+      setEditWorkspaceName(currentWorkspace.name);
+      setEditWorkspaceDescription(currentWorkspace.description || "");
+      setSettingsDialogOpen(true);
+    }
+  };
+
+  const handleUpdateWorkspace = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editWorkspaceName.trim() || !currentWorkspaceId) return;
+
+    updateWorkspaceMutation.mutate(
+      {
+        id: currentWorkspaceId,
+        input: {
+          name: editWorkspaceName.trim(),
+          description: editWorkspaceDescription.trim(),
+        },
+      },
+      {
+        onSuccess: () => {
+          setSettingsDialogOpen(false);
+        },
+      }
+    );
+  };
+
   return (
     <>
       <DropdownMenu>
@@ -80,7 +115,7 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
             <span className="truncate text-sm">{currentWorkspace?.name || 'Select Workspace'}</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56 bg-popover">
+        <DropdownMenuContent align="end" className="w-56 bg-popover z-50">
           <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
             Workspaces
           </div>
@@ -104,6 +139,13 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
           ))}
           <DropdownMenuSeparator />
           <DropdownMenuItem
+            onClick={handleOpenSettings}
+            className="cursor-pointer"
+          >
+            <Settings className="mr-2 h-4 w-4" />
+            <span className="text-sm">Workspace settings</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem
             onClick={() => setCreateDialogOpen(true)}
             className="cursor-pointer"
           >
@@ -113,6 +155,7 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
         </DropdownMenuContent>
       </DropdownMenu>
 
+      {/* Create Workspace Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -147,6 +190,48 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
                 Cancel
               </Button>
               <Button type="submit">Create Workspace</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Workspace Settings Dialog */}
+      <Dialog open={settingsDialogOpen} onOpenChange={setSettingsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Workspace Settings</DialogTitle>
+            <DialogDescription>
+              Update your workspace name and description
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdateWorkspace} className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-workspace-name">Workspace Name</Label>
+              <Input
+                id="edit-workspace-name"
+                placeholder="e.g., Commercial Projects"
+                value={editWorkspaceName}
+                onChange={(e) => setEditWorkspaceName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-workspace-description">Description (optional)</Label>
+              <Textarea
+                id="edit-workspace-description"
+                placeholder="Describe this workspace..."
+                value={editWorkspaceDescription}
+                onChange={(e) => setEditWorkspaceDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setSettingsDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateWorkspaceMutation.isPending}>
+                {updateWorkspaceMutation.isPending ? 'Saving...' : 'Save Changes'}
+              </Button>
             </div>
           </form>
         </DialogContent>
