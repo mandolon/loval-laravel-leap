@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus } from "lucide-react";
+import { api } from "@/lib/api/client";
 import type { CreateProjectInput } from "@/lib/api/types";
 
 interface CreateProjectDialogProps {
@@ -15,20 +17,32 @@ export const CreateProjectDialog = ({ onCreateProject }: CreateProjectDialogProp
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [address, setAddress] = useState("");
+  const [clientId, setClientId] = useState("");
+  const [clients, setClients] = useState<any[]>([]);
+
+  useEffect(() => {
+    setClients(api.clients.list());
+  }, [open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name.trim()) return;
+    if (!name.trim() || !address.trim() || !clientId) return;
 
     onCreateProject({
       name: name.trim(),
       description: description.trim(),
+      address: address.trim(),
+      clientId,
       status: 'active',
+      phase: 'design',
     });
 
     setName("");
     setDescription("");
+    setAddress("");
+    setClientId("");
     setOpen(false);
   };
 
@@ -65,8 +79,33 @@ export const CreateProjectDialog = ({ onCreateProject }: CreateProjectDialogProp
               placeholder="Enter project description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              rows={4}
+              rows={3}
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="address">Address</Label>
+            <Input
+              id="address"
+              placeholder="Enter project address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="client">Client</Label>
+            <Select value={clientId} onValueChange={setClientId} required>
+              <SelectTrigger id="client">
+                <SelectValue placeholder="Select a client" />
+              </SelectTrigger>
+              <SelectContent>
+                {clients.map(client => (
+                  <SelectItem key={client.id} value={client.id}>
+                    {client.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>

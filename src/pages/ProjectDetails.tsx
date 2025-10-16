@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft } from "lucide-react";
 import { TaskItem } from "@/components/TaskItem";
 import { CreateTaskDialog } from "@/components/CreateTaskDialog";
+import { UserAvatar } from "@/components/UserAvatar";
 import { useToast } from "@/hooks/use-toast";
 
 const ProjectDetails = () => {
@@ -59,100 +60,136 @@ const ProjectDetails = () => {
 
   if (!project) return null;
 
+  const client = api.clients.get(project.clientId);
+  const team = project.teamIds.map(id => api.users.get(id)).filter(Boolean) as any[];
+  
   const todoTasks = tasks.filter(t => t.status === 'todo');
   const inProgressTasks = tasks.filter(t => t.status === 'in_progress');
   const doneTasks = tasks.filter(t => t.status === 'done');
 
+  const getTaskAssignees = (assigneeIds: string[]) => {
+    return assigneeIds.map(id => api.users.get(id)).filter(Boolean) as any[];
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <div className="mb-8">
+    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+        <div className="space-y-4">
           <Button 
             variant="ghost" 
-            onClick={() => navigate("/")}
-            className="mb-4"
+            onClick={() => navigate("/projects")}
+            size="sm"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Projects
           </Button>
           
           <div className="flex items-start justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-4xl font-bold">{project.name}</h1>
-                <Badge variant={project.status === 'active' ? 'default' : 'secondary'}>
-                  {project.status}
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <h1 className="text-3xl font-bold">{project.name}</h1>
+                <Badge variant="default" className="capitalize">
+                  {project.phase}
+                </Badge>
+                <Badge variant="secondary" className="capitalize">
+                  {project.status.replace('_', ' ')}
                 </Badge>
               </div>
-              <p className="text-muted-foreground text-lg">{project.description}</p>
+              <p className="text-muted-foreground mb-4">{project.description}</p>
+              
+              {/* Project Details */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Client</p>
+                  <p className="font-medium">{client?.name}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Progress</p>
+                  <p className="font-medium">{project.progress}%</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Team</p>
+                  <div className="flex items-center -space-x-2 mt-1">
+                    {team.slice(0, 3).map(user => (
+                      <UserAvatar key={user.id} user={user} size="sm" />
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
             <CreateTaskDialog projectId={project.id} onCreateTask={handleCreateTask} />
           </div>
         </div>
 
-        {tasks.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-muted-foreground text-lg mb-4">No tasks yet</p>
-            <CreateTaskDialog projectId={project.id} onCreateTask={handleCreateTask} />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Todo Column */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-lg">To Do</h3>
-                <Badge variant="secondary">{todoTasks.length}</Badge>
-              </div>
-              <div className="space-y-3">
-                {todoTasks.map(task => (
-                  <TaskItem
-                    key={task.id}
-                    task={task}
-                    onStatusChange={handleStatusChange}
-                    onDelete={handleDeleteTask}
-                  />
-                ))}
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Todo Column */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-lg">To Do</h3>
+              <Badge variant="secondary">{todoTasks.length}</Badge>
             </div>
-
-            {/* In Progress Column */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-lg">In Progress</h3>
-                <Badge variant="default">{inProgressTasks.length}</Badge>
-              </div>
-              <div className="space-y-3">
-                {inProgressTasks.map(task => (
+            <div className="space-y-3">
+              {todoTasks.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">No tasks</p>
+              ) : (
+                todoTasks.map(task => (
                   <TaskItem
                     key={task.id}
                     task={task}
+                    assignees={getTaskAssignees(task.assigneeIds)}
                     onStatusChange={handleStatusChange}
                     onDelete={handleDeleteTask}
                   />
-                ))}
-              </div>
-            </div>
-
-            {/* Done Column */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-lg">Done</h3>
-                <Badge variant="outline">{doneTasks.length}</Badge>
-              </div>
-              <div className="space-y-3">
-                {doneTasks.map(task => (
-                  <TaskItem
-                    key={task.id}
-                    task={task}
-                    onStatusChange={handleStatusChange}
-                    onDelete={handleDeleteTask}
-                  />
-                ))}
-              </div>
+                ))
+              )}
             </div>
           </div>
-        )}
-      </div>
+
+          {/* In Progress Column */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-lg">In Progress</h3>
+              <Badge variant="default">{inProgressTasks.length}</Badge>
+            </div>
+            <div className="space-y-3">
+              {inProgressTasks.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">No tasks</p>
+              ) : (
+                inProgressTasks.map(task => (
+                  <TaskItem
+                    key={task.id}
+                    task={task}
+                    assignees={getTaskAssignees(task.assigneeIds)}
+                    onStatusChange={handleStatusChange}
+                    onDelete={handleDeleteTask}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Done Column */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-lg">Done</h3>
+              <Badge variant="outline">{doneTasks.length}</Badge>
+            </div>
+            <div className="space-y-3">
+              {doneTasks.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">No tasks</p>
+              ) : (
+                doneTasks.map(task => (
+                  <TaskItem
+                    key={task.id}
+                    task={task}
+                    assignees={getTaskAssignees(task.assigneeIds)}
+                    onStatusChange={handleStatusChange}
+                    onDelete={handleDeleteTask}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        </div>
     </div>
   );
 };

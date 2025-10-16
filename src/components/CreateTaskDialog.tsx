@@ -27,7 +27,7 @@ export const CreateTaskDialog = ({ projectId, onCreateTask }: CreateTaskDialogPr
     onCreateTask({
       title: title.trim(),
       description: description.trim(),
-      project_id: projectId,
+      projectId: projectId,
       priority,
       status: 'todo',
     });
