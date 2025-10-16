@@ -66,6 +66,11 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
         ))}
       </div>
 
+      {/* Workspace Switcher */}
+      <div className="p-3 border-b border-border flex-shrink-0">
+        <WorkspaceSwitcher onWorkspaceChange={handleWorkspaceChange} />
+      </div>
+
       {/* Projects Section */}
       <div className="flex-1 overflow-y-auto min-h-0">
         <div className="p-3">
@@ -110,11 +115,6 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
             </button>
           ))}
         </div>
-      </div>
-
-      {/* Workspace Footer */}
-      <div className="p-3 border-t border-border flex-shrink-0 bg-card">
-        <WorkspaceSwitcher onWorkspaceChange={handleWorkspaceChange} />
       </div>
     </aside>
   );
