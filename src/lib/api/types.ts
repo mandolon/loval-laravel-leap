@@ -1,28 +1,27 @@
-// TypeScript interfaces - these become your Laravel API contract!
+// TypeScript interfaces for Phase 1 MVP - 11 Core Tables
 
+// ============= Core Entities =============
+
+// User entity (replaces profiles)
 export interface User {
   id: string;
+  shortId: string;
+  authId?: string;
   name: string;
   email: string;
-  role: 'admin' | 'team' | 'consultant' | 'client';
-  initials: string;
-  avatar?: string;
-  isActive: boolean;
-  createdAt: string;
-}
-
-export interface Client {
-  id: string;
-  name: string;
-  email: string;
-  company?: string;
   phone?: string;
-  address?: string;
+  avatarUrl?: string;
+  lastActiveAt?: string;
   createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+  deletedBy?: string;
 }
 
+// Workspace entity
 export interface Workspace {
   id: string;
+  shortId: string;
   name: string;
   description?: string;
   icon?: string;
@@ -30,113 +29,328 @@ export interface Workspace {
   updatedAt: string;
 }
 
-export interface Project {
+// Workspace member entity
+export interface WorkspaceMember {
   id: string;
+  shortId: string;
   workspaceId: string;
-  name: string;
-  description: string;
-  status: 'active' | 'archived' | 'on_hold';
-  phase: 'design' | 'permit' | 'build' | 'completed';
-  address: string;
-  clientId: string;
-  teamIds: string[];
+  userId: string;
+  role: string;
   createdAt: string;
-  updatedAt: string;
-  dueDate?: string;
-  budget?: number;
-  progress: number;
+  deletedAt?: string;
+  deletedBy?: string;
 }
 
-export interface Task {
+// Project entity (NO MORE CLIENT TABLE - clients embedded)
+export interface Project {
   id: string;
-  title: string;
-  description: string;
-  projectId: string;
-  status: 'task_redline' | 'progress_update' | 'complete';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  assigneeIds: string[];
-  createdById: string;
+  shortId: string;
+  workspaceId: string;
+  name: string;
+  description?: string;
+  status: 'pending' | 'active' | 'completed' | 'archived';
+  phase: 'Pre-Design' | 'Design' | 'Permit' | 'Build';
+  address: {
+    streetNumber?: string;
+    streetName?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+  };
+  primaryClient: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+    address?: any;
+  };
+  secondaryClient?: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+    address?: any;
+  };
+  estimatedAmount?: number; // Design fee
+  dueDate?: string;
+  progress: number;
+  totalTasks: number;
+  completedTasks: number;
+  teamMemberCount: number;
+  createdBy: string;
   createdAt: string;
   updatedAt: string;
+  updatedBy?: string;
+  deletedAt?: string;
+  deletedBy?: string;
+}
+
+// Project member entity
+export interface ProjectMember {
+  id: string;
+  shortId: string;
+  projectId: string;
+  userId: string;
+  title?: string;
+  createdAt: string;
+  deletedAt?: string;
+  deletedBy?: string;
+}
+
+// Task entity
+export interface Task {
+  id: string;
+  shortId: string;
+  projectId: string;
+  title: string;
+  description?: string;
+  status: 'task_redline' | 'progress_update' | 'done_completed';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  assignees: string[]; // user IDs
+  attachedFiles: string[]; // file IDs
   dueDate?: string;
   estimatedTime?: number;
   actualTime?: number;
-  trackedTime?: number;
-  attachments?: TaskAttachment[];
+  sortOrder: number;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  updatedBy?: string;
+  deletedAt?: string;
+  deletedBy?: string;
 }
 
-export interface TaskAttachment {
+// Folder entity
+export interface Folder {
   id: string;
+  shortId: string;
+  projectId: string;
+  parentFolderId?: string;
   name: string;
-  size: number;
-  category?: string;
-  url: string;
-  uploadedAt: string;
-  uploadedBy: string;
+  isSystemFolder: boolean;
+  path?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+  deletedBy?: string;
 }
+
+// File entity with versioning + public sharing
+export interface File {
+  id: string;
+  shortId: string;
+  projectId: string;
+  folderId: string;
+  taskId?: string;
+  parentFileId?: string;
+  filename: string;
+  versionNumber: number;
+  filesize?: number;
+  mimetype?: string;
+  storagePath: string;
+  downloadCount: number;
+  shareToken?: string;
+  isShareable: boolean;
+  uploadedBy: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+  deletedBy?: string;
+}
+
+// Note entity
+export interface Note {
+  id: string;
+  shortId: string;
+  projectId: string;
+  content: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  updatedBy?: string;
+  deletedAt?: string;
+  deletedBy?: string;
+}
+
+// Invoice entity with payment tracking
+export interface Invoice {
+  id: string;
+  shortId: string;
+  invoiceNumber: string;
+  projectId: string;
+  submittedToNames: string[];
+  invoiceDate: string;
+  dueDate: string;
+  paidDate?: string;
+  paymentMethod?: string;
+  paymentReference?: string;
+  paidAmount?: number;
+  subtotal: number;
+  processingFeePercent: number;
+  processingFeeAmount?: number;
+  total: number;
+  status: 'draft' | 'pending' | 'paid' | 'overdue' | 'cancelled';
+  notes?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  updatedBy?: string;
+  deletedAt?: string;
+  deletedBy?: string;
+}
+
+// Invoice line item entity
+export interface InvoiceLineItem {
+  id: string;
+  shortId: string;
+  invoiceId: string;
+  phase?: 'Pre-Design' | 'Design' | 'Permit' | 'Build';
+  description: string;
+  amount: number;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============= Input Types =============
 
 export interface CreateProjectInput {
   workspaceId: string;
   name: string;
-  description: string;
-  address: string;
-  clientId: string;
-  teamIds?: string[];
-  status?: 'active' | 'archived' | 'on_hold';
-  phase?: 'design' | 'permit' | 'build' | 'completed';
+  description?: string;
+  status?: 'pending' | 'active' | 'completed' | 'archived';
+  phase?: 'Pre-Design' | 'Design' | 'Permit' | 'Build';
+  address: {
+    streetNumber: string;
+    streetName: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  };
+  primaryClient: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string;
+  };
+  secondaryClient?: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+  };
+  estimatedAmount?: number;
   dueDate?: string;
-  budget?: number;
-}
-
-export interface CreateTaskInput {
-  title: string;
-  description: string;
-  projectId: string;
-  assigneeIds?: string[];
-  status?: 'task_redline' | 'progress_update' | 'complete';
-  priority?: 'low' | 'medium' | 'high' | 'urgent';
-  dueDate?: string;
-  estimatedTime?: number;
 }
 
 export interface UpdateProjectInput {
-  workspaceId?: string;
   name?: string;
   description?: string;
-  address?: string;
-  clientId?: string;
-  teamIds?: string[];
-  status?: 'active' | 'archived' | 'on_hold';
-  phase?: 'design' | 'permit' | 'build' | 'completed';
+  status?: 'pending' | 'active' | 'completed' | 'archived';
+  phase?: 'Pre-Design' | 'Design' | 'Permit' | 'Build';
+  address?: {
+    streetNumber?: string;
+    streetName?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+  };
+  primaryClient?: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+  };
+  secondaryClient?: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+  };
+  estimatedAmount?: number;
   dueDate?: string;
-  budget?: number;
   progress?: number;
+}
+
+export interface CreateTaskInput {
+  projectId: string;
+  title: string;
+  description?: string;
+  status?: 'task_redline' | 'progress_update' | 'done_completed';
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  assignees?: string[];
+  attachedFiles?: string[];
+  dueDate?: string;
+  estimatedTime?: number;
+  sortOrder?: number;
 }
 
 export interface UpdateTaskInput {
   title?: string;
   description?: string;
-  assigneeIds?: string[];
-  status?: 'task_redline' | 'progress_update' | 'complete';
+  status?: 'task_redline' | 'progress_update' | 'done_completed';
   priority?: 'low' | 'medium' | 'high' | 'urgent';
+  assignees?: string[];
+  attachedFiles?: string[];
   dueDate?: string;
   estimatedTime?: number;
   actualTime?: number;
-  trackedTime?: number;
+  sortOrder?: number;
 }
 
 export interface CreateUserInput {
   name: string;
   email: string;
-  role: 'admin' | 'team' | 'consultant' | 'client';
+  password?: string;
 }
 
-export interface CreateClientInput {
-  name: string;
-  email: string;
-  company?: string;
-  phone?: string;
-  address?: string;
+export interface CreateNoteInput {
+  projectId: string;
+  content: string;
+}
+
+export interface UpdateNoteInput {
+  content?: string;
+}
+
+export interface CreateInvoiceInput {
+  projectId: string;
+  invoiceNumber: string;
+  submittedToNames: string[];
+  invoiceDate: string;
+  dueDate: string;
+  subtotal: number;
+  processingFeePercent?: number;
+  processingFeeAmount?: number;
+  total: number;
+  status?: 'draft' | 'pending' | 'paid' | 'overdue' | 'cancelled';
+  notes?: string;
+}
+
+export interface UpdateInvoiceInput {
+  invoiceNumber?: string;
+  submittedToNames?: string[];
+  invoiceDate?: string;
+  dueDate?: string;
+  paidDate?: string;
+  paymentMethod?: string;
+  paymentReference?: string;
+  paidAmount?: number;
+  subtotal?: number;
+  processingFeePercent?: number;
+  processingFeeAmount?: number;
+  total?: number;
+  status?: 'draft' | 'pending' | 'paid' | 'overdue' | 'cancelled';
+  notes?: string;
+}
+
+export interface CreateInvoiceLineItemInput {
+  invoiceId: string;
+  phase?: 'Pre-Design' | 'Design' | 'Permit' | 'Build';
+  description: string;
+  amount: number;
+  sortOrder?: number;
 }
 
 export interface CreateWorkspaceInput {
