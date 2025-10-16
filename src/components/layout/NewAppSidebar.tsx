@@ -173,26 +173,6 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
                 )}
               </div>
             </div>
-
-            <Separator />
-
-            {/* Status Filters */}
-            <div className="p-3 space-y-1">
-              {statusFilters.map((filter) => (
-                <button
-                  key={filter.label}
-                  onClick={() => handleStatusFilterClick(filter)}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                    statusFilter === filter.value
-                      ? 'bg-accent/50 text-foreground'
-                      : 'text-muted-foreground hover:bg-accent/30'
-                  }`}
-                >
-                  <ChevronRight className="h-3 w-3" />
-                  {filter.label}
-                </button>
-              ))}
-            </div>
           </>
         );
 
@@ -284,9 +264,31 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
         </div>
       )}
 
-      {/* 4. Footer with Workspace Selector */}
+      {/* 4. Status Filters (Bottom Section) */}
       {!isCollapsed && (
-        <div className="p-3 border-t border-border flex-shrink-0 mt-auto">
+        <div className="border-t border-border flex-shrink-0">
+          <div className="p-3 space-y-1">
+            {statusFilters.map((filter) => (
+              <button
+                key={filter.label}
+                onClick={() => handleStatusFilterClick(filter)}
+                className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                  statusFilter === filter.value
+                    ? 'bg-accent/50 text-foreground'
+                    : 'text-muted-foreground hover:bg-accent/30'
+                }`}
+              >
+                <ChevronRight className="h-3 w-3" />
+                {filter.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 5. Footer with Workspace Selector */}
+      {!isCollapsed && (
+        <div className="p-3 border-t border-border flex-shrink-0">
           <WorkspaceSwitcher onWorkspaceChange={handleWorkspaceChange} />
         </div>
       )}
