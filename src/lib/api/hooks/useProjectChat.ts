@@ -12,8 +12,17 @@ const messageKeys = {
   detail: (id: string) => [...messageKeys.all, 'detail', id] as const,
 }
 
-// Transform database row to ProjectChatMessage type
-const transformDbToMessage = (data: any): ProjectChatMessage => ({
+// Extended message type with user data for UI
+export interface ProjectChatMessageWithUser extends ProjectChatMessage {
+  user?: {
+    id: string;
+    name: string;
+    avatarUrl?: string;
+  };
+}
+
+// Transform database row to message with user data
+const transformDbToMessage = (data: any): ProjectChatMessageWithUser => ({
   id: data.id,
   shortId: data.short_id,
   projectId: data.project_id,
@@ -26,6 +35,11 @@ const transformDbToMessage = (data: any): ProjectChatMessage => ({
   updatedAt: data.updated_at,
   deletedAt: data.deleted_at,
   deletedBy: data.deleted_by,
+  user: data.users ? {
+    id: data.users.id,
+    name: data.users.name,
+    avatarUrl: data.users.avatar_url,
+  } : undefined,
 })
 
 // Get all messages for a project with real-time updates
@@ -37,7 +51,7 @@ export const useProjectMessages = (projectId: string) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('project_chat_messages')
-        .select('*')
+        .select('*, users(id, name, avatar_url)')
         .eq('project_id', projectId)
         .is('deleted_at', null)
         .order('created_at', { ascending: true })

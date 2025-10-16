@@ -15,10 +15,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useProject } from "@/lib/api/hooks/useProjects";
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from "@/lib/api/hooks/useTasks";
 import { useNotes, useCreateNote, useUpdateNote, useDeleteNote } from "@/lib/api/hooks/useNotes";
-import { useProjectMessages, useCreateMessage, useDeleteMessage } from "@/lib/api/hooks/useProjectChat";
+import { useProjectMessages, useCreateMessage, useDeleteMessage, ProjectChatMessageWithUser } from "@/lib/api/hooks/useProjectChat";
 import { NoteCard } from "@/components/notes/NoteCard";
 import { CreateNoteDialog } from "@/components/notes/CreateNoteDialog";
-import { ChatMessage, ChatMessageData } from "@/components/chat/ChatMessage";
+import { ChatMessage } from "@/components/chat/ChatMessage";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -28,7 +28,7 @@ const ProjectDetails = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("project");
   const [chatOpen, setChatOpen] = useState(true);
-  const [replyingTo, setReplyingTo] = useState<ChatMessageData | null>(null);
+  const [replyingTo, setReplyingTo] = useState<ProjectChatMessageWithUser | null>(null);
   
   const { data: project, isLoading: projectLoading } = useProject(id || "");
   const { data: tasks = [], isLoading: tasksLoading } = useTasks(id || "");
@@ -44,6 +44,20 @@ const ProjectDetails = () => {
   const { data: messages = [], isLoading: chatLoading } = useProjectMessages(id || "");
   const sendChatMutation = useCreateMessage();
   const deleteMessageMutation = useDeleteMessage();
+
+  const handleSendMessage = (content: string, replyToId?: string) => {
+    if (!id) return;
+    sendChatMutation.mutate({
+      projectId: id,
+      content,
+      replyToMessageId: replyToId,
+    });
+  };
+
+  const handleDeleteMessage = (messageId: string) => {
+    if (!id) return;
+    deleteMessageMutation.mutate({ id: messageId, projectId: id });
+  };
 
   const handleCreateTask = async (input: { title: string; description?: string; projectId: string }) => {
     createTaskMutation.mutate(input);
@@ -427,10 +441,37 @@ const ProjectDetails = () => {
             </Button>
           </CollapsibleTrigger>
           
-          <CollapsibleContent className="w-80 border-l bg-background p-6 overflow-auto data-[state=closed]:w-0 data-[state=closed]:p-0 transition-all">
-            <h3 className="font-semibold text-lg mb-4">Project Chat</h3>
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground text-center py-8">No messages yet</p>
+          <CollapsibleContent className="w-80 border-l bg-background overflow-hidden data-[state=closed]:w-0 transition-all flex flex-col h-full">
+            <div className="p-6 border-b">
+              <h3 className="font-semibold text-lg">Project Chat</h3>
+            </div>
+            
+            <ScrollArea className="flex-1 p-6">
+              <div className="space-y-4">
+                {chatLoading ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">Loading messages...</p>
+                ) : messages.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">No messages yet. Start a conversation!</p>
+                ) : (
+                  messages.map((message) => (
+                    <ChatMessage
+                      key={message.id}
+                      message={message}
+                      onDelete={handleDeleteMessage}
+                      onReply={setReplyingTo}
+                    />
+                  ))
+                )}
+              </div>
+            </ScrollArea>
+
+            <div className="p-6 border-t">
+              <ChatInput
+                onSendMessage={handleSendMessage}
+                replyingTo={replyingTo}
+                onCancelReply={() => setReplyingTo(null)}
+                disabled={sendChatMutation.isPending}
+              />
             </div>
           </CollapsibleContent>
         </div>
