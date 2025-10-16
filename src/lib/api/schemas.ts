@@ -359,3 +359,187 @@ export type UpdateNoteInput = z.infer<typeof UpdateNoteInputSchema>
 export type CreateInvoiceInput = z.infer<typeof CreateInvoiceInputSchema>
 export type UpdateInvoiceInput = z.infer<typeof UpdateInvoiceInputSchema>
 export type CreateInvoiceLineItemInput = z.infer<typeof CreateInvoiceLineItemInputSchema>
+
+// ============= TIME ENTRIES =============
+
+export const TimeEntrySchema = z.object({
+  id: z.string().uuid(),
+  shortId: z.string().regex(/^TE-[a-z0-9]{4}$/),
+  projectId: z.string().uuid(),
+  taskId: z.string().uuid().optional(),
+  userId: z.string().uuid(),
+  durationHours: z.number().positive(),
+  description: z.string().max(500).optional(),
+  entryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  deletedAt: z.string().optional(),
+})
+
+export const CreateTimeEntryInputSchema = z.object({
+  projectId: z.string().uuid(),
+  taskId: z.string().uuid().optional(),
+  userId: z.string().uuid(),
+  durationHours: z.number().positive().max(24),
+  description: z.string().max(500).optional(),
+  entryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+})
+
+export const UpdateTimeEntryInputSchema = z.object({
+  durationHours: z.number().positive().max(24).optional(),
+  description: z.string().max(500).optional(),
+  entryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  taskId: z.string().uuid().optional(),
+})
+
+export type TimeEntry = z.infer<typeof TimeEntrySchema>
+export type CreateTimeEntryInput = z.infer<typeof CreateTimeEntryInputSchema>
+export type UpdateTimeEntryInput = z.infer<typeof UpdateTimeEntryInputSchema>
+
+// ============= LINKS =============
+
+export const LinkSchema = z.object({
+  id: z.string().uuid(),
+  shortId: z.string().regex(/^L-[a-z0-9]{4}$/),
+  projectId: z.string().uuid(),
+  title: z.string().min(1).max(255),
+  description: z.string().max(500).optional(),
+  url: z.string().url().max(2048),
+  createdBy: z.string().uuid(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  deletedAt: z.string().optional(),
+  deletedBy: z.string().uuid().optional(),
+})
+
+export const CreateLinkInputSchema = z.object({
+  projectId: z.string().uuid(),
+  title: z.string().min(1).max(255),
+  description: z.string().max(500).optional(),
+  url: z.string().url().max(2048),
+})
+
+export const UpdateLinkInputSchema = z.object({
+  title: z.string().min(1).max(255).optional(),
+  description: z.string().max(500).optional(),
+  url: z.string().url().max(2048).optional(),
+})
+
+export type Link = z.infer<typeof LinkSchema>
+export type CreateLinkInput = z.infer<typeof CreateLinkInputSchema>
+export type UpdateLinkInput = z.infer<typeof UpdateLinkInputSchema>
+
+// ============= PROJECT CHAT =============
+
+export const ProjectChatMessageSchema = z.object({
+  id: z.string().uuid(),
+  shortId: z.string().regex(/^PCM-[a-z0-9]{4}$/),
+  projectId: z.string().uuid(),
+  userId: z.string().uuid(),
+  content: z.string().min(1).max(2000),
+  referencedFiles: z.array(z.string().uuid()).default([]),
+  referencedTasks: z.array(z.string().uuid()).default([]),
+  replyToMessageId: z.string().uuid().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  deletedAt: z.string().optional(),
+  deletedBy: z.string().uuid().optional(),
+})
+
+export const CreateMessageInputSchema = z.object({
+  projectId: z.string().uuid(),
+  content: z.string().min(1).max(2000),
+  referencedFiles: z.array(z.string().uuid()).optional(),
+  referencedTasks: z.array(z.string().uuid()).optional(),
+  replyToMessageId: z.string().uuid().optional(),
+})
+
+export const UpdateMessageInputSchema = z.object({
+  content: z.string().min(1).max(2000),
+})
+
+export type ProjectChatMessage = z.infer<typeof ProjectChatMessageSchema>
+export type CreateMessageInput = z.infer<typeof CreateMessageInputSchema>
+export type UpdateMessageInput = z.infer<typeof UpdateMessageInputSchema>
+
+// ============= NOTIFICATIONS =============
+
+export const NotificationSchema = z.object({
+  id: z.string().uuid(),
+  shortId: z.string().regex(/^N-[a-z0-9]{4}$/),
+  userId: z.string().uuid(),
+  workspaceId: z.string().uuid().optional(),
+  projectId: z.string().uuid().optional(),
+  type: z.string().min(1),
+  title: z.string().min(1).max(255),
+  content: z.string().max(1000).optional(),
+  isRead: z.boolean().default(false),
+  readAt: z.string().optional(),
+  actionUrl: z.string().max(500).optional(),
+  metadata: z.record(z.unknown()).optional(),
+  createdAt: z.string(),
+})
+
+export type Notification = z.infer<typeof NotificationSchema>
+
+// ============= USER PREFERENCES =============
+
+export const UserPreferencesSchema = z.object({
+  id: z.string().uuid(),
+  userId: z.string().uuid(),
+  theme: z.enum(['light', 'dark', 'system']).default('light'),
+  notificationsEnabled: z.boolean().default(true),
+  emailDigest: z.boolean().default(false),
+  sidebarCollapsed: z.boolean().default(false),
+  metadata: z.record(z.unknown()).optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+})
+
+export const UpdateUserPreferencesInputSchema = z.object({
+  theme: z.enum(['light', 'dark', 'system']).optional(),
+  notificationsEnabled: z.boolean().optional(),
+  emailDigest: z.boolean().optional(),
+  sidebarCollapsed: z.boolean().optional(),
+  metadata: z.record(z.unknown()).optional(),
+})
+
+export type UserPreferences = z.infer<typeof UserPreferencesSchema>
+export type UpdateUserPreferencesInput = z.infer<typeof UpdateUserPreferencesInputSchema>
+
+// ============= WORKSPACE SETTINGS =============
+
+export const WorkspaceSettingsSchema = z.object({
+  id: z.string().uuid(),
+  workspaceId: z.string().uuid(),
+  defaultInvoiceTerms: z.number().int().min(0).max(365).default(30),
+  companyName: z.string().max(255).optional(),
+  companyLogoUrl: z.string().url().max(500).optional(),
+  taxId: z.string().max(50).optional(),
+  metadata: z.record(z.unknown()).optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+})
+
+export const UpdateWorkspaceSettingsInputSchema = z.object({
+  defaultInvoiceTerms: z.number().int().min(0).max(365).optional(),
+  companyName: z.string().max(255).optional(),
+  companyLogoUrl: z.string().url().max(500).optional(),
+  taxId: z.string().max(50).optional(),
+  metadata: z.record(z.unknown()).optional(),
+})
+
+export const WorkspaceMemberSchema = z.object({
+  id: z.string().uuid(),
+  shortId: z.string().regex(/^WM-[a-z0-9]{4}$/),
+  workspaceId: z.string().uuid(),
+  userId: z.string().uuid(),
+  role: z.enum(['admin', 'team', 'consultant', 'client']),
+  createdAt: z.string(),
+  deletedAt: z.string().optional(),
+  deletedBy: z.string().uuid().optional(),
+})
+
+export type WorkspaceSettings = z.infer<typeof WorkspaceSettingsSchema>
+export type UpdateWorkspaceSettingsInput = z.infer<typeof UpdateWorkspaceSettingsInputSchema>
+export type WorkspaceMember = z.infer<typeof WorkspaceMemberSchema>

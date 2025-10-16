@@ -35,7 +35,7 @@ export interface WorkspaceMember {
   shortId: string;
   workspaceId: string;
   userId: string;
-  role: string;
+  role: 'admin' | 'team' | 'consultant' | 'client';
   createdAt: string;
   deletedAt?: string;
   deletedBy?: string;
@@ -378,4 +378,156 @@ export interface UpdateWorkspaceInput {
   name?: string;
   description?: string;
   icon?: string;
+}
+
+// ============= TIME ENTRIES =============
+
+export interface TimeEntry {
+  id: string;
+  shortId: string;
+  projectId: string;
+  taskId?: string;
+  userId: string;
+  durationHours: number;
+  description?: string;
+  entryDate: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+}
+
+export interface CreateTimeEntryInput {
+  projectId: string;
+  taskId?: string;
+  userId: string;
+  durationHours: number;
+  description?: string;
+  entryDate: string;
+}
+
+export interface UpdateTimeEntryInput {
+  durationHours?: number;
+  description?: string;
+  entryDate?: string;
+  taskId?: string;
+}
+
+// ============= LINKS =============
+
+export interface Link {
+  id: string;
+  shortId: string;
+  projectId: string;
+  title: string;
+  description?: string;
+  url: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+  deletedBy?: string;
+}
+
+export interface CreateLinkInput {
+  projectId: string;
+  title: string;
+  description?: string;
+  url: string;
+}
+
+export interface UpdateLinkInput {
+  title?: string;
+  description?: string;
+  url?: string;
+}
+
+// ============= PROJECT CHAT =============
+
+export interface ProjectChatMessage {
+  id: string;
+  shortId: string;
+  projectId: string;
+  userId: string;
+  content: string;
+  referencedFiles: string[];
+  referencedTasks: string[];
+  replyToMessageId?: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+  deletedBy?: string;
+}
+
+export interface CreateMessageInput {
+  projectId: string;
+  content: string;
+  referencedFiles?: string[];
+  referencedTasks?: string[];
+  replyToMessageId?: string;
+}
+
+export interface UpdateMessageInput {
+  content: string;
+}
+
+// ============= NOTIFICATIONS =============
+
+export interface Notification {
+  id: string;
+  shortId: string;
+  userId: string;
+  workspaceId?: string;
+  projectId?: string;
+  type: string;
+  title: string;
+  content?: string;
+  isRead: boolean;
+  readAt?: string;
+  actionUrl?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+}
+
+// ============= USER PREFERENCES =============
+
+export interface UserPreferences {
+  id: string;
+  userId: string;
+  theme: 'light' | 'dark' | 'system';
+  notificationsEnabled: boolean;
+  emailDigest: boolean;
+  sidebarCollapsed: boolean;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateUserPreferencesInput {
+  theme?: 'light' | 'dark' | 'system';
+  notificationsEnabled?: boolean;
+  emailDigest?: boolean;
+  sidebarCollapsed?: boolean;
+  metadata?: Record<string, unknown>;
+}
+
+// ============= WORKSPACE SETTINGS =============
+
+export interface WorkspaceSettings {
+  id: string;
+  workspaceId: string;
+  defaultInvoiceTerms: number;
+  companyName?: string;
+  companyLogoUrl?: string;
+  taxId?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateWorkspaceSettingsInput {
+  defaultInvoiceTerms?: number;
+  companyName?: string;
+  companyLogoUrl?: string;
+  taxId?: string;
+  metadata?: Record<string, unknown>;
 }
