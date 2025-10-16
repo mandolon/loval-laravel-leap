@@ -225,14 +225,6 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
         <div className="flex items-center justify-between">
           {!isCollapsed && user && (
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <Avatar className="h-8 w-8 flex-shrink-0">
-                <AvatarFallback 
-                  className="text-white text-xs font-semibold"
-                  style={{ background: user.avatar || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
-                >
-                  {user.initials}
-                </AvatarFallback>
-              </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">
                   {user.first_name} {user.last_name}
