@@ -5,7 +5,8 @@ import type { User as AuthUser, Session } from "@supabase/supabase-js";
 
 interface Profile {
   id: string;
-  name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   initials: string;
   avatar: string | null;

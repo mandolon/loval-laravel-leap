@@ -15,7 +15,8 @@ export default function ProfilePage() {
   
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: user?.name || "",
+    first_name: user?.first_name || "",
+    last_name: user?.last_name || "",
     email: user?.email || "",
   });
 
@@ -124,7 +125,7 @@ export default function ProfilePage() {
               </AvatarFallback>
             </Avatar>
             <div>
-              <h3 className="font-semibold text-lg">{user.name}</h3>
+              <h3 className="font-semibold text-lg">{user.first_name} {user.last_name}</h3>
               <p className="text-sm text-muted-foreground">{user.email}</p>
               <Badge className={`mt-2 ${roleColors[user.role]}`}>
                 {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
@@ -179,14 +180,27 @@ export default function ProfilePage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">
+            <Label htmlFor="first-name">
               <UserIcon className="inline mr-2 h-4 w-4" />
-              Full Name
+              First Name
             </Label>
             <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              id="first-name"
+              value={formData.first_name}
+              onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+              disabled={!isEditing}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="last-name">
+              <UserIcon className="inline mr-2 h-4 w-4" />
+              Last Name
+            </Label>
+            <Input
+              id="last-name"
+              value={formData.last_name}
+              onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
               disabled={!isEditing}
             />
           </div>
@@ -226,7 +240,11 @@ export default function ProfilePage() {
               <Button
                 variant="outline"
                 onClick={() => {
-                  setFormData({ name: user.name, email: user.email });
+                  setFormData({ 
+                    first_name: user.first_name, 
+                    last_name: user.last_name,
+                    email: user.email 
+                  });
                   setIsEditing(false);
                 }}
               >

@@ -2,7 +2,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface UserAvatarUser {
-  name: string;
+  first_name?: string;
+  last_name?: string;
+  name?: string; // For backward compatibility
   initials: string;
   avatar?: string | null;
   role?: string;
@@ -20,6 +22,10 @@ const sizeClasses = {
 };
 
 export const UserAvatar = ({ user, size = "md" }: UserAvatarProps) => {
+  const displayName = user.first_name && user.last_name 
+    ? `${user.first_name} ${user.last_name}`
+    : user.first_name || user.name || 'User';
+
   return (
     <Tooltip>
       <TooltipTrigger>
@@ -33,7 +39,7 @@ export const UserAvatar = ({ user, size = "md" }: UserAvatarProps) => {
         </Avatar>
       </TooltipTrigger>
       <TooltipContent>
-        <p className="font-medium">{user.name}</p>
+        <p className="font-medium">{displayName}</p>
         {user.role && <p className="text-xs text-muted-foreground capitalize">{user.role}</p>}
       </TooltipContent>
     </Tooltip>

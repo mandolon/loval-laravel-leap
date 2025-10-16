@@ -12,7 +12,8 @@ import { z } from "zod";
 const authSchema = z.object({
   email: z.string().email("Invalid email address").trim(),
   password: z.string().min(6, "Password must be at least 6 characters").max(255, "Password too long"),
-  name: z.string().trim().min(1, "Name is required").max(100, "Name too long").optional(),
+  first_name: z.string().trim().min(1, "First name is required").max(50, "First name too long").optional(),
+  last_name: z.string().trim().max(50, "Last name too long").optional(),
 });
 
 export default function AuthPage() {
@@ -21,7 +22,8 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
 
   useEffect(() => {
     // Check if user is already logged in
@@ -37,7 +39,7 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
-      const validated = authSchema.parse({ email, password, name });
+      const validated = authSchema.parse({ email, password, first_name: firstName, last_name: lastName });
       
       const redirectUrl = `${window.location.origin}/`;
       
@@ -47,7 +49,8 @@ export default function AuthPage() {
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            name: validated.name || validated.email.split('@')[0],
+            first_name: validated.first_name || validated.email.split('@')[0],
+            last_name: validated.last_name || '',
           }
         }
       });
@@ -178,14 +181,25 @@ export default function AuthPage() {
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4 mt-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-name">Name</Label>
+                  <Label htmlFor="signup-first-name">First Name</Label>
                   <Input
-                    id="signup-name"
+                    id="signup-first-name"
                     type="text"
-                    placeholder="Your name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    placeholder="First name"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
                     required
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-last-name">Last Name</Label>
+                  <Input
+                    id="signup-last-name"
+                    type="text"
+                    placeholder="Last name (optional)"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
                     disabled={loading}
                   />
                 </div>

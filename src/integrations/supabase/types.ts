@@ -19,30 +19,33 @@ export type Database = {
           avatar: string | null
           created_at: string | null
           email: string
+          first_name: string
           id: string
           initials: string
           is_active: boolean | null
-          name: string
+          last_name: string
           updated_at: string | null
         }
         Insert: {
           avatar?: string | null
           created_at?: string | null
           email: string
+          first_name?: string
           id: string
           initials: string
           is_active?: boolean | null
-          name: string
+          last_name?: string
           updated_at?: string | null
         }
         Update: {
           avatar?: string | null
           created_at?: string | null
           email?: string
+          first_name?: string
           id?: string
           initials?: string
           is_active?: boolean | null
-          name?: string
+          last_name?: string
           updated_at?: string | null
         }
         Relationships: []
