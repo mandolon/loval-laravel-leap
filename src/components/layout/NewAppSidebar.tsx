@@ -8,6 +8,8 @@ import { CreateProjectDialog } from "@/components/CreateProjectDialog";
 import { api } from "@/lib/api/client";
 import type { Project } from "@/lib/api/types";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/contexts/UserContext";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface NewAppSidebarProps {
   onWorkspaceChange?: (workspaceId: string) => void;
@@ -18,6 +20,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { user } = useUser();
   const [activeTab, setActiveTab] = useState<'home' | 'workspace' | 'tasks' | 'ai'>('workspace');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -220,14 +223,23 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
       {/* 1. User Profile Section */}
       <div className="p-3 border-b border-border flex-shrink-0">
         <div className="flex items-center justify-between">
-          {!isCollapsed && (
+          {!isCollapsed && user && (
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <User className="h-4 w-4 text-primary" />
-              </div>
+              <Avatar className="h-8 w-8 flex-shrink-0">
+                <AvatarFallback 
+                  className="text-white text-xs font-semibold"
+                  style={{ background: user.avatar || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
+                >
+                  {user.initials}
+                </AvatarFallback>
+              </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">Sarah Johnson</p>
-                <p className="text-xs text-muted-foreground truncate">Admin</p>
+                <p className="text-sm font-medium truncate">
+                  {user.first_name} {user.last_name}
+                </p>
+                <p className="text-xs text-muted-foreground truncate capitalize">
+                  {user.role}
+                </p>
               </div>
             </div>
           )}
