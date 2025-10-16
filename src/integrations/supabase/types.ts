@@ -85,6 +85,8 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           id: string
           message_type: string
           metadata: Json | null
@@ -99,6 +101,8 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           message_type: string
           metadata?: Json | null
@@ -113,6 +117,8 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           message_type?: string
           metadata?: Json | null
