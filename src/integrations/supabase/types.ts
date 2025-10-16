@@ -14,44 +14,685 @@ export type Database = {
   }
   public: {
     Tables: {
-      profiles: {
+      files: {
         Row: {
-          avatar: string | null
           created_at: string | null
-          email: string
-          first_name: string
+          deleted_at: string | null
+          deleted_by: string | null
+          download_count: number | null
+          filename: string
+          filesize: number | null
+          folder_id: string
           id: string
-          initials: string
-          is_active: boolean | null
-          last_name: string
-          title: string | null
+          is_shareable: boolean | null
+          mimetype: string | null
+          parent_file_id: string | null
+          project_id: string
+          share_token: string | null
+          short_id: string
+          storage_path: string
+          task_id: string | null
+          updated_at: string | null
+          uploaded_by: string
+          version_number: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          download_count?: number | null
+          filename: string
+          filesize?: number | null
+          folder_id: string
+          id?: string
+          is_shareable?: boolean | null
+          mimetype?: string | null
+          parent_file_id?: string | null
+          project_id: string
+          share_token?: string | null
+          short_id?: string
+          storage_path: string
+          task_id?: string | null
+          updated_at?: string | null
+          uploaded_by: string
+          version_number?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          download_count?: number | null
+          filename?: string
+          filesize?: number | null
+          folder_id?: string
+          id?: string
+          is_shareable?: boolean | null
+          mimetype?: string | null
+          parent_file_id?: string | null
+          project_id?: string
+          share_token?: string | null
+          short_id?: string
+          storage_path?: string
+          task_id?: string | null
+          updated_at?: string | null
+          uploaded_by?: string
+          version_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "files_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "files_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "files_parent_file_id_fkey"
+            columns: ["parent_file_id"]
+            isOneToOne: false
+            referencedRelation: "files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "files_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "files_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "files_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      folders: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          is_system_folder: boolean | null
+          name: string
+          parent_folder_id: string | null
+          path: string | null
+          project_id: string
+          short_id: string
           updated_at: string | null
         }
         Insert: {
-          avatar?: string | null
           created_at?: string | null
-          email: string
-          first_name?: string
-          id: string
-          initials: string
-          is_active?: boolean | null
-          last_name?: string
-          title?: string | null
+          created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_system_folder?: boolean | null
+          name: string
+          parent_folder_id?: string | null
+          path?: string | null
+          project_id: string
+          short_id?: string
           updated_at?: string | null
         }
         Update: {
-          avatar?: string | null
           created_at?: string | null
-          email?: string
-          first_name?: string
+          created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
-          initials?: string
-          is_active?: boolean | null
-          last_name?: string
-          title?: string | null
+          is_system_folder?: boolean | null
+          name?: string
+          parent_folder_id?: string | null
+          path?: string | null
+          project_id?: string
+          short_id?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "folders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "folders_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "folders_parent_folder_id_fkey"
+            columns: ["parent_folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "folders_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_line_items: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string
+          id: string
+          invoice_id: string
+          phase: string | null
+          short_id: string
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          description: string
+          id?: string
+          invoice_id: string
+          phase?: string | null
+          short_id?: string
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string
+          id?: string
+          invoice_id?: string
+          phase?: string | null
+          short_id?: string
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
+          due_date: string
+          id: string
+          invoice_date: string
+          invoice_number: string
+          notes: string | null
+          paid_amount: number | null
+          paid_date: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          processing_fee_amount: number | null
+          processing_fee_percent: number | null
+          project_id: string
+          short_id: string
+          status: string
+          submitted_to_names: string[] | null
+          subtotal: number
+          total: number
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          due_date: string
+          id?: string
+          invoice_date: string
+          invoice_number: string
+          notes?: string | null
+          paid_amount?: number | null
+          paid_date?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          processing_fee_amount?: number | null
+          processing_fee_percent?: number | null
+          project_id: string
+          short_id?: string
+          status?: string
+          submitted_to_names?: string[] | null
+          subtotal: number
+          total: number
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          due_date?: string
+          id?: string
+          invoice_date?: string
+          invoice_number?: string
+          notes?: string | null
+          paid_amount?: number | null
+          paid_date?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          processing_fee_amount?: number | null
+          processing_fee_percent?: number | null
+          project_id?: string
+          short_id?: string
+          status?: string
+          submitted_to_names?: string[] | null
+          subtotal?: number
+          total?: number
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notes: {
+        Row: {
+          content: string
+          created_at: string | null
+          created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          project_id: string
+          short_id: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          project_id: string
+          short_id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          project_id?: string
+          short_id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notes_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notes_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_members: {
+        Row: {
+          created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          project_id: string
+          short_id: string
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          project_id: string
+          short_id?: string
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          project_id?: string
+          short_id?: string
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_members_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_members_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          address: Json | null
+          completed_tasks: number | null
+          created_at: string | null
+          created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
+          description: string | null
+          due_date: string | null
+          estimated_amount: number | null
+          id: string
+          name: string
+          phase: string
+          primary_client_address: Json | null
+          primary_client_email: string | null
+          primary_client_first_name: string | null
+          primary_client_last_name: string | null
+          primary_client_phone: string | null
+          progress: number | null
+          secondary_client_address: Json | null
+          secondary_client_email: string | null
+          secondary_client_first_name: string | null
+          secondary_client_last_name: string | null
+          secondary_client_phone: string | null
+          short_id: string
+          status: string
+          team_member_count: number | null
+          total_tasks: number | null
+          updated_at: string | null
+          updated_by: string | null
+          workspace_id: string
+        }
+        Insert: {
+          address?: Json | null
+          completed_tasks?: number | null
+          created_at?: string | null
+          created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          estimated_amount?: number | null
+          id?: string
+          name: string
+          phase?: string
+          primary_client_address?: Json | null
+          primary_client_email?: string | null
+          primary_client_first_name?: string | null
+          primary_client_last_name?: string | null
+          primary_client_phone?: string | null
+          progress?: number | null
+          secondary_client_address?: Json | null
+          secondary_client_email?: string | null
+          secondary_client_first_name?: string | null
+          secondary_client_last_name?: string | null
+          secondary_client_phone?: string | null
+          short_id?: string
+          status?: string
+          team_member_count?: number | null
+          total_tasks?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+          workspace_id: string
+        }
+        Update: {
+          address?: Json | null
+          completed_tasks?: number | null
+          created_at?: string | null
+          created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          estimated_amount?: number | null
+          id?: string
+          name?: string
+          phase?: string
+          primary_client_address?: Json | null
+          primary_client_email?: string | null
+          primary_client_first_name?: string | null
+          primary_client_last_name?: string | null
+          primary_client_phone?: string | null
+          progress?: number | null
+          secondary_client_address?: Json | null
+          secondary_client_email?: string | null
+          secondary_client_first_name?: string | null
+          secondary_client_last_name?: string | null
+          secondary_client_phone?: string | null
+          short_id?: string
+          status?: string
+          team_member_count?: number | null
+          total_tasks?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_new_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_new_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_new_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_new_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          actual_time: number | null
+          assignees: string[] | null
+          attached_files: string[] | null
+          created_at: string | null
+          created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
+          description: string | null
+          due_date: string | null
+          estimated_time: number | null
+          id: string
+          priority: string
+          project_id: string
+          short_id: string
+          sort_order: number | null
+          status: string
+          title: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          actual_time?: number | null
+          assignees?: string[] | null
+          attached_files?: string[] | null
+          created_at?: string | null
+          created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          estimated_time?: number | null
+          id?: string
+          priority?: string
+          project_id: string
+          short_id?: string
+          sort_order?: number | null
+          status?: string
+          title: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          actual_time?: number | null
+          assignees?: string[] | null
+          attached_files?: string[] | null
+          created_at?: string | null
+          created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          estimated_time?: number | null
+          id?: string
+          priority?: string
+          project_id?: string
+          short_id?: string
+          sort_order?: number | null
+          status?: string
+          title?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_new_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_new_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_new_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_new_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -71,11 +712,150 @@ export type Database = {
         }
         Relationships: []
       }
+      users: {
+        Row: {
+          auth_id: string | null
+          avatar_url: string | null
+          created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          email: string
+          id: string
+          last_active_at: string | null
+          name: string
+          phone: string | null
+          short_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          auth_id?: string | null
+          avatar_url?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          email: string
+          id?: string
+          last_active_at?: string | null
+          name: string
+          phone?: string | null
+          short_id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          auth_id?: string | null
+          avatar_url?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          email?: string
+          id?: string
+          last_active_at?: string | null
+          name?: string
+          phone?: string | null
+          short_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "users_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_members: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          role: string | null
+          short_id: string | null
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          role?: string | null
+          short_id?: string | null
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          role?: string | null
+          short_id?: string | null
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_members_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspaces: {
+        Row: {
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          short_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          short_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          short_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      generate_file_share_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_short_id: {
+        Args: { prefix: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
