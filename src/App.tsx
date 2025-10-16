@@ -14,6 +14,7 @@ import ClientsPage from "./pages/ClientsPage";
 import ProjectDetails from "./pages/ProjectDetails";
 import ProfilePage from "./pages/ProfilePage";
 import AuthPage from "./pages/AuthPage";
+import AIChatPage from "./pages/AIChatPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -93,6 +94,16 @@ const App = () => (
                 <ProtectedRoute>
                   <NewAppLayout>
                     <ProjectDetails />
+                  </NewAppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/workspace/:workspaceId/ai"
+              element={
+                <ProtectedRoute>
+                  <NewAppLayout>
+                    <AIChatPage />
                   </NewAppLayout>
                 </ProtectedRoute>
               }

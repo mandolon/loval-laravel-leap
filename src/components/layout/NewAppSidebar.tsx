@@ -198,7 +198,12 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                 Chats
               </span>
-              <Button variant="ghost" size="icon" className="h-5 w-5">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-5 w-5"
+                onClick={() => currentWorkspaceId && navigate(`/workspace/${currentWorkspaceId}/ai`)}
+              >
                 <Plus className="h-3 w-3" />
               </Button>
             </div>
