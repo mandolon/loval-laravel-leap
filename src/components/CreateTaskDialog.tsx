@@ -17,8 +17,10 @@ export const CreateTaskDialog = ({ projects, onCreateTask }: CreateTaskDialogPro
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [projectId, setProjectId] = useState(projects[0]?.id || "");
+  const activeProjects = projects.filter(p => p.status === 'active');
+  const [projectId, setProjectId] = useState(activeProjects[0]?.id || "");
   const [priority, setPriority] = useState<Task['priority']>('medium');
+  const [status, setStatus] = useState<'task_redline' | 'progress_update'>('task_redline');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,12 +32,13 @@ export const CreateTaskDialog = ({ projects, onCreateTask }: CreateTaskDialogPro
       description: description.trim(),
       projectId: projectId,
       priority,
-      status: 'task_redline',
+      status: status,
     });
 
     setTitle("");
     setDescription("");
     setPriority('medium');
+    setStatus('task_redline');
     setOpen(false);
   };
 
@@ -56,17 +59,29 @@ export const CreateTaskDialog = ({ projects, onCreateTask }: CreateTaskDialogPro
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
-            <Label htmlFor="project">Project</Label>
+            <Label htmlFor="project">Project (Active)</Label>
             <Select value={projectId} onValueChange={setProjectId}>
               <SelectTrigger id="project">
                 <SelectValue placeholder="Select project" />
               </SelectTrigger>
               <SelectContent>
-                {projects.map((project) => (
+                {activeProjects.map((project) => (
                   <SelectItem key={project.id} value={project.id}>
                     {project.name}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="status">Destination</Label>
+            <Select value={status} onValueChange={(value) => setStatus(value as 'task_redline' | 'progress_update')}>
+              <SelectTrigger id="status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="task_redline">Task Redline</SelectItem>
+                <SelectItem value="progress_update">Progress Update</SelectItem>
               </SelectContent>
             </Select>
           </div>
