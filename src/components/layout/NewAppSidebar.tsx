@@ -1,4 +1,4 @@
-import { Home, FolderKanban, CheckSquare, Bot, Plus, ChevronRight, ChevronLeft, User } from "lucide-react";
+import { Home, FolderKanban, CheckSquare, Bot, Plus, ChevronRight, ChevronLeft } from "lucide-react";
 import { NavLink, useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -9,7 +9,6 @@ import { api } from "@/lib/api/client";
 import type { Project } from "@/lib/api/types";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/UserContext";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface NewAppSidebarProps {
   onWorkspaceChange?: (workspaceId: string) => void;
