@@ -17,18 +17,30 @@ const ProjectsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [phaseFilter, setPhaseFilter] = useState<string>("all");
+  const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(null);
 
   useEffect(() => {
-    const currentWorkspaceId = api.workspaces.getCurrentWorkspaceId();
-    if (currentWorkspaceId) {
-      setProjects(api.projects.list(currentWorkspaceId));
-    } else {
-      setProjects(api.projects.list());
-    }
+    loadProjects();
   }, []);
 
+  const loadProjects = () => {
+    const workspaceId = api.workspaces.getCurrentWorkspaceId();
+    setCurrentWorkspaceId(workspaceId);
+    
+    if (workspaceId) {
+      const workspaceProjects = api.projects.list(workspaceId);
+      setProjects(workspaceProjects);
+    } else {
+      setProjects([]);
+      toast({
+        title: "No workspace selected",
+        description: "Please select a workspace to view projects",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleCreateProject = (input: Parameters<typeof api.projects.create>[0]) => {
-    const currentWorkspaceId = api.workspaces.getCurrentWorkspaceId();
     if (!currentWorkspaceId) {
       toast({
         title: "No workspace selected",
@@ -81,6 +93,9 @@ const ProjectsPage = () => {
     
     return matchesSearch && matchesStatus && matchesPhase;
   });
+
+  // Show workspace name in empty state
+  const currentWorkspace = currentWorkspaceId ? api.workspaces.get(currentWorkspaceId) : null;
 
   return (
     <div className="h-full bg-background">
@@ -146,10 +161,20 @@ const ProjectsPage = () => {
 
       {/* Content Area */}
       <div className="p-6">
-        {filteredProjects.length === 0 ? (
+        {!currentWorkspaceId ? (
+          <div className="text-center py-20">
+            <p className="text-muted-foreground text-lg mb-2">No workspace selected</p>
+            <p className="text-sm text-muted-foreground">
+              Please select a workspace from the sidebar to view projects
+            </p>
+          </div>
+        ) : filteredProjects.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-muted-foreground">
-              No projects yet. Click the "+" button in the sidebar to create one.
+              {projects.length === 0 
+                ? `No projects in ${currentWorkspace?.name}. Click the "+" button in the sidebar to create one.`
+                : "No projects match your filters. Try adjusting your search or filters."
+              }
             </p>
           </div>
         ) : (

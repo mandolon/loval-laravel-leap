@@ -14,20 +14,44 @@ const HomePage = () => {
     completedTasks: 0,
     teamMembers: 0,
   });
+  const [currentWorkspace, setCurrentWorkspace] = useState<any>(null);
 
   useEffect(() => {
-    const projects = api.projects.list();
-    const tasks = api.tasks.list();
-    const users = api.users.list();
-
-    setStats({
-      totalProjects: projects.length,
-      activeProjects: projects.filter(p => p.status === 'active').length,
-      totalTasks: tasks.length,
-      completedTasks: tasks.filter(t => t.status === 'done').length,
-      teamMembers: users.length,
-    });
+    loadStats();
   }, []);
+
+  const loadStats = () => {
+    const workspaceId = api.workspaces.getCurrentWorkspaceId();
+    
+    if (workspaceId) {
+      const workspace = api.workspaces.get(workspaceId);
+      setCurrentWorkspace(workspace);
+      
+      // Get projects for current workspace only
+      const projects = api.projects.list(workspaceId);
+      
+      // Get tasks for projects in current workspace
+      const allTasks = projects.flatMap(p => api.tasks.list(p.id));
+      
+      const users = api.users.list();
+
+      setStats({
+        totalProjects: projects.length,
+        activeProjects: projects.filter(p => p.status === 'active').length,
+        totalTasks: allTasks.length,
+        completedTasks: allTasks.filter(t => t.status === 'done').length,
+        teamMembers: users.length,
+      });
+    } else {
+      setStats({
+        totalProjects: 0,
+        activeProjects: 0,
+        totalTasks: 0,
+        completedTasks: 0,
+        teamMembers: 0,
+      });
+    }
+  };
 
   const statCards = [
     {
@@ -92,7 +116,10 @@ const HomePage = () => {
       <div>
         <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
         <p className="text-muted-foreground text-lg">
-          Welcome back! Here's an overview of your projects.
+          {currentWorkspace 
+            ? `Welcome back! Here's an overview of ${currentWorkspace.name}.`
+            : "Welcome back! Select a workspace to get started."
+          }
         </p>
       </div>
 
@@ -147,25 +174,33 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* Recent Activity */}
+      {/* Get Started */}
       <div>
         <h2 className="text-2xl font-bold mb-4">Get Started</h2>
         <Card>
           <CardContent className="pt-6">
-            <div className="space-y-4">
-              <p className="text-muted-foreground">
-                Start managing your construction projects efficiently. View projects, track tasks, 
-                and collaborate with your team all in one place.
-              </p>
-              <div className="flex gap-3">
-                <Button onClick={() => navigate("/projects")}>
-                  View Projects
-                </Button>
-                <Button variant="outline" onClick={() => navigate("/tasks")}>
-                  View Tasks
-                </Button>
+            {currentWorkspace ? (
+              <div className="space-y-4">
+                <p className="text-muted-foreground">
+                  Start managing your construction projects efficiently in <strong>{currentWorkspace.name}</strong>. 
+                  View projects, track tasks, and collaborate with your team all in one place.
+                </p>
+                <div className="flex gap-3">
+                  <Button onClick={() => navigate("/projects")}>
+                    View Projects
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate("/tasks")}>
+                    View Tasks
+                  </Button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-muted-foreground">
+                  Please select a workspace from the sidebar to start managing your projects.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
