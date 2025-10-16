@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { UserProvider } from "./contexts/UserContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { NewAppLayout } from "./components/layout/NewAppLayout";
 import HomePage from "./pages/HomePage";
 import ProjectsPage from "./pages/Index";
@@ -12,40 +13,157 @@ import TeamPage from "./pages/TeamPage";
 import ClientsPage from "./pages/ClientsPage";
 import ProjectDetails from "./pages/ProjectDetails";
 import ProfilePage from "./pages/ProfilePage";
+import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <UserProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <NewAppLayout>
-            <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/workspace/:workspaceId" element={<HomePage />} />
-            <Route path="/workspace/:workspaceId/projects" element={<ProjectsPage />} />
-            <Route path="/workspace/:workspaceId/tasks" element={<TasksPage />} />
-            <Route path="/workspace/:workspaceId/team" element={<TeamPage />} />
-            <Route path="/workspace/:workspaceId/clients" element={<ClientsPage />} />
-            <Route path="/workspace/:workspaceId/project/:id" element={<ProjectDetails />} />
-            <Route path="/profile" element={<ProfilePage />} />
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <UserProvider>
+          <Routes>
+            <Route path="/auth" element={<AuthPage />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <NewAppLayout>
+                    <HomePage />
+                  </NewAppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/workspace/:workspaceId"
+              element={
+                <ProtectedRoute>
+                  <NewAppLayout>
+                    <HomePage />
+                  </NewAppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/workspace/:workspaceId/projects"
+              element={
+                <ProtectedRoute>
+                  <NewAppLayout>
+                    <ProjectsPage />
+                  </NewAppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/workspace/:workspaceId/tasks"
+              element={
+                <ProtectedRoute>
+                  <NewAppLayout>
+                    <TasksPage />
+                  </NewAppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/workspace/:workspaceId/team"
+              element={
+                <ProtectedRoute>
+                  <NewAppLayout>
+                    <TeamPage />
+                  </NewAppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/workspace/:workspaceId/clients"
+              element={
+                <ProtectedRoute>
+                  <NewAppLayout>
+                    <ClientsPage />
+                  </NewAppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/workspace/:workspaceId/project/:id"
+              element={
+                <ProtectedRoute>
+                  <NewAppLayout>
+                    <ProjectDetails />
+                  </NewAppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <NewAppLayout>
+                    <ProfilePage />
+                  </NewAppLayout>
+                </ProtectedRoute>
+              }
+            />
             {/* Legacy routes for backward compatibility */}
-            <Route path="/projects" element={<ProjectsPage />} />
-            <Route path="/tasks" element={<TasksPage />} />
-            <Route path="/team" element={<TeamPage />} />
-            <Route path="/clients" element={<ClientsPage />} />
-            <Route path="/project/:id" element={<ProjectDetails />} />
+            <Route
+              path="/projects"
+              element={
+                <ProtectedRoute>
+                  <NewAppLayout>
+                    <ProjectsPage />
+                  </NewAppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tasks"
+              element={
+                <ProtectedRoute>
+                  <NewAppLayout>
+                    <TasksPage />
+                  </NewAppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/team"
+              element={
+                <ProtectedRoute>
+                  <NewAppLayout>
+                    <TeamPage />
+                  </NewAppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/clients"
+              element={
+                <ProtectedRoute>
+                  <NewAppLayout>
+                    <ClientsPage />
+                  </NewAppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/project/:id"
+              element={
+                <ProtectedRoute>
+                  <NewAppLayout>
+                    <ProjectDetails />
+                  </NewAppLayout>
+                </ProtectedRoute>
+              }
+            />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
-            </Routes>
-          </NewAppLayout>
-        </BrowserRouter>
-      </TooltipProvider>
-    </UserProvider>
+          </Routes>
+        </UserProvider>
+      </BrowserRouter>
+    </TooltipProvider>
   </QueryClientProvider>
 );
 

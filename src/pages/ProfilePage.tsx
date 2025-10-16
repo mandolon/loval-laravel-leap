@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Camera, Mail, User as UserIcon, Shield } from "lucide-react";
+import { Camera, Mail, User as UserIcon, Shield, LogOut } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -11,13 +11,21 @@ import { useUser } from "@/contexts/UserContext";
 
 export default function ProfilePage() {
   const { toast } = useToast();
-  const { user, updateUser } = useUser();
+  const { user, updateUser, signOut } = useUser();
   
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: user.name,
-    email: user.email,
+    name: user?.name || "",
+    email: user?.email || "",
   });
+
+  if (!user) {
+    return (
+      <div className="container max-w-4xl py-8">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   const avatarGradients = [
     "linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)",
@@ -34,20 +42,44 @@ export default function ProfilePage() {
     "linear-gradient(135deg, hsl(40, 95%, 60%) 0%, hsl(340, 85%, 65%) 100%)",
   ];
 
-  const handleAvatarChange = (gradient: string) => {
-    updateUser({ avatar: gradient });
-    toast({
-      title: "Avatar color updated",
-      description: "Your profile avatar color has been changed successfully.",
-    });
+  const handleAvatarChange = async (gradient: string) => {
+    try {
+      await updateUser({ avatar: gradient });
+      toast({
+        title: "Avatar color updated",
+        description: "Your profile avatar color has been changed successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update avatar",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleSaveProfile = () => {
-    updateUser(formData);
-    setIsEditing(false);
+  const handleSaveProfile = async () => {
+    try {
+      await updateUser(formData);
+      setIsEditing(false);
+      toast({
+        title: "Profile updated",
+        description: "Your profile information has been saved.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update profile",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
     toast({
-      title: "Profile updated",
-      description: "Your profile information has been saved.",
+      title: "Signed out",
+      description: "You have been signed out successfully.",
     });
   };
 
@@ -61,11 +93,17 @@ export default function ProfilePage() {
   return (
     <div className="container max-w-4xl py-8 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Profile Settings</h1>
-        <p className="text-muted-foreground mt-2">
-          Manage your account settings and profile information
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Profile Settings</h1>
+          <p className="text-muted-foreground mt-2">
+            Manage your account settings and profile information
+          </p>
+        </div>
+        <Button variant="outline" onClick={handleSignOut} className="gap-2">
+          <LogOut className="h-4 w-4" />
+          Sign Out
+        </Button>
       </div>
 
       {/* Avatar Section */}

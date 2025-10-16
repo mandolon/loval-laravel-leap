@@ -364,6 +364,9 @@ const tasks = {
   },
 
   create: (input: CreateTaskInput): Task => {
+    // Get current user from session - in real implementation this would come from auth
+    const currentUserId = '1'; // This will be replaced with actual auth user ID
+    
     const newTask: Task = {
       id: generateId(),
       title: input.title,
@@ -374,7 +377,7 @@ const tasks = {
       priority: input.priority || 'medium',
       dueDate: input.dueDate,
       estimatedTime: input.estimatedTime,
-      createdById: '1', // Default to first user for now
+      createdById: currentUserId,
       createdAt: timestamp(),
       updatedAt: timestamp(),
     };

@@ -1,9 +1,15 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import type { User } from "@/lib/api/types";
+
+interface UserAvatarUser {
+  name: string;
+  initials: string;
+  avatar?: string | null;
+  role?: string;
+}
 
 interface UserAvatarProps {
-  user: User;
+  user: UserAvatarUser;
   size?: "sm" | "md" | "lg";
 }
 
@@ -18,15 +24,17 @@ export const UserAvatar = ({ user, size = "md" }: UserAvatarProps) => {
     <Tooltip>
       <TooltipTrigger>
         <Avatar className={sizeClasses[size]}>
-          {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
-          <AvatarFallback className="bg-primary text-primary-foreground">
+          <AvatarFallback 
+            className="text-white"
+            style={{ background: user.avatar || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
+          >
             {user.initials}
           </AvatarFallback>
         </Avatar>
       </TooltipTrigger>
       <TooltipContent>
         <p className="font-medium">{user.name}</p>
-        <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
+        {user.role && <p className="text-xs text-muted-foreground capitalize">{user.role}</p>}
       </TooltipContent>
     </Tooltip>
   );
