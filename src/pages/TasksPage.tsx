@@ -83,24 +83,6 @@ const TasksPage = () => {
     setCollapsedSections(prev => ({ ...prev, [sectionId]: !prev[sectionId] }));
   };
 
-  const statusConfig = {
-    task_redline: { 
-      label: "TASK/REDLINE", 
-      color: "bg-destructive text-destructive-foreground",
-      count: tasks.filter(t => t.status === 'task_redline').length
-    },
-    progress_update: { 
-      label: "PROGRESS/UPDATE", 
-      color: "bg-primary text-primary-foreground",
-      count: tasks.filter(t => t.status === 'progress_update').length
-    },
-    complete: { 
-      label: "COMPLETE", 
-      color: "bg-secondary text-secondary-foreground",
-      count: tasks.filter(t => t.status === 'complete').length
-    },
-  };
-
   const filteredTasks = tasks.filter(task => {
     if (filter === 'completed') return task.status === 'complete';
     if (filter === 'my') {
@@ -109,6 +91,24 @@ const TasksPage = () => {
     }
     return true;
   });
+
+  const statusConfig = {
+    task_redline: { 
+      label: "TASK/REDLINE", 
+      color: "bg-destructive text-destructive-foreground",
+      count: filteredTasks.filter(t => t.status === 'task_redline').length
+    },
+    progress_update: { 
+      label: "PROGRESS/UPDATE", 
+      color: "bg-primary text-primary-foreground",
+      count: filteredTasks.filter(t => t.status === 'progress_update').length
+    },
+    complete: { 
+      label: "COMPLETE", 
+      color: "bg-secondary text-secondary-foreground",
+      count: filteredTasks.filter(t => t.status === 'complete').length
+    },
+  };
 
   const taskRedlineTasks = filteredTasks.filter(t => t.status === 'task_redline');
   const progressUpdateTasks = filteredTasks.filter(t => t.status === 'progress_update');
