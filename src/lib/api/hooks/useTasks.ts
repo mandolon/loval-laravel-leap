@@ -5,12 +5,13 @@ import { useToast } from '@/hooks/use-toast'
 import { handleApiError } from '../errors'
 import { supabase } from '@/integrations/supabase/client'
 
-// Query key factory for tasks
+// Query key factory for tasks with workspace support
 export const taskKeys = {
   all: ['tasks'] as const,
   lists: () => [...taskKeys.all, 'list'] as const,
   list: (projectId?: string, query?: ListQuery) => 
     [...taskKeys.lists(), projectId, query] as const,
+  workspace: (workspaceId: string) => [...taskKeys.lists(), 'workspace', workspaceId] as const,
   details: () => [...taskKeys.all, 'detail'] as const,
   detail: (id: string) => [...taskKeys.details(), id] as const,
 }
@@ -61,6 +62,28 @@ export const useTasks = (projectId?: string, query?: ListQuery) => {
   })
 }
 
+// Fetch all tasks for a workspace (across all projects)
+export const useWorkspaceTasks = (workspaceId: string) => {
+  return useQuery({
+    queryKey: taskKeys.workspace(workspaceId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select(`
+          *,
+          projects!inner(workspace_id)
+        `)
+        .eq('projects.workspace_id', workspaceId)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data.map(transformTask);
+    },
+    enabled: !!workspaceId,
+  })
+}
+
 // Fetch single task
 export const useTask = (id: string) => {
   return useQuery({
@@ -87,7 +110,13 @@ export const useCreateTask = (projectId?: string) => {
 
   return useMutation({
     mutationFn: async (input: CreateTaskInput) => {
-      const { data: user } = await supabase.auth.getUser();
+      const { data: userData } = await supabase.auth.getUser();
+      
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', userData.user!.id)
+        .single();
       
       const { data, error } = await supabase
         .from('tasks')
@@ -102,7 +131,7 @@ export const useCreateTask = (projectId?: string) => {
           due_date: input.dueDate,
           estimated_time: input.estimatedTime,
           sort_order: input.sortOrder || 0,
-          created_by: user.user?.id || '',
+          created_by: userProfile!.id,
         })
         .select()
         .single();
@@ -110,8 +139,21 @@ export const useCreateTask = (projectId?: string) => {
       if (error) throw error;
       return transformTask(data);
     },
-    onSuccess: () => {
+    onSuccess: async (task) => {
+      // Get workspace_id from project to invalidate workspace queries
+      const { data: project } = await supabase
+        .from('projects')
+        .select('workspace_id')
+        .eq('id', task.projectId)
+        .single();
+      
+      // Invalidate both project and workspace queries
       queryClient.invalidateQueries({ queryKey: taskKeys.list(projectId) })
+      queryClient.invalidateQueries({ queryKey: taskKeys.lists() })
+      if (project) {
+        queryClient.invalidateQueries({ queryKey: taskKeys.workspace(project.workspace_id) })
+      }
+      
       toast({
         title: 'Task created',
         description: 'New task has been added',
@@ -174,9 +216,21 @@ export const useUpdateTask = (projectId?: string) => {
 
       return { previousTasks }
     },
-    onSuccess: (_, variables) => {
+    onSuccess: async (task, variables) => {
+      // Get workspace_id from project to invalidate workspace queries
+      const { data: project } = await supabase
+        .from('projects')
+        .select('workspace_id')
+        .eq('id', task.projectId)
+        .single();
+      
+      // Invalidate both project and workspace queries
       queryClient.invalidateQueries({ queryKey: taskKeys.list(projectId) })
+      queryClient.invalidateQueries({ queryKey: taskKeys.lists() })
       queryClient.invalidateQueries({ queryKey: taskKeys.detail(variables.id) })
+      if (project) {
+        queryClient.invalidateQueries({ queryKey: taskKeys.workspace(project.workspace_id) })
+      }
     },
     onError: (error, _, context: any) => {
       // Rollback on error
@@ -211,8 +265,29 @@ export const useDeleteTask = (projectId?: string) => {
       
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: taskKeys.list(projectId) })
+    onSuccess: async (_, taskId) => {
+      // Get task's project to find workspace_id
+      const { data: task } = await supabase
+        .from('tasks')
+        .select('project_id')
+        .eq('id', taskId)
+        .single();
+      
+      if (task) {
+        const { data: project } = await supabase
+          .from('projects')
+          .select('workspace_id')
+          .eq('id', task.project_id)
+          .single();
+        
+        // Invalidate both project and workspace queries
+        queryClient.invalidateQueries({ queryKey: taskKeys.list(projectId) })
+        queryClient.invalidateQueries({ queryKey: taskKeys.lists() })
+        if (project) {
+          queryClient.invalidateQueries({ queryKey: taskKeys.workspace(project.workspace_id) })
+        }
+      }
+      
       toast({
         title: 'Task deleted',
         description: 'Task has been removed',

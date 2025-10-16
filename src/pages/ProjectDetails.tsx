@@ -11,8 +11,15 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useProject } from "@/lib/api/hooks/useProjects";
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from "@/lib/api/hooks/useTasks";
+import { useNotes, useCreateNote, useUpdateNote, useDeleteNote } from "@/lib/api/hooks/useNotes";
+import { useProjectMessages, useCreateMessage, useDeleteMessage } from "@/lib/api/hooks/useProjectChat";
+import { NoteCard } from "@/components/notes/NoteCard";
+import { CreateNoteDialog } from "@/components/notes/CreateNoteDialog";
+import { ChatMessage, ChatMessageData } from "@/components/chat/ChatMessage";
+import { ChatInput } from "@/components/chat/ChatInput";
 import { supabase } from "@/integrations/supabase/client";
 
 const ProjectDetails = () => {
@@ -21,12 +28,22 @@ const ProjectDetails = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("project");
   const [chatOpen, setChatOpen] = useState(true);
+  const [replyingTo, setReplyingTo] = useState<ChatMessageData | null>(null);
   
   const { data: project, isLoading: projectLoading } = useProject(id || "");
   const { data: tasks = [], isLoading: tasksLoading } = useTasks(id || "");
   const createTaskMutation = useCreateTask(id || "");
   const updateTaskMutation = useUpdateTask(id || "");
   const deleteTaskMutation = useDeleteTask(id || "");
+  
+  const { data: notes = [], isLoading: notesLoading } = useNotes(id || "");
+  const createNoteMutation = useCreateNote(id || "");
+  const updateNoteMutation = useUpdateNote(id || "");
+  const deleteNoteMutation = useDeleteNote(id || "");
+  
+  const { data: messages = [], isLoading: chatLoading } = useProjectMessages(id || "");
+  const sendChatMutation = useCreateMessage();
+  const deleteMessageMutation = useDeleteMessage();
 
   const handleCreateTask = async (input: { title: string; description?: string; projectId: string }) => {
     createTaskMutation.mutate(input);
@@ -368,12 +385,28 @@ const ProjectDetails = () => {
 
             <TabsContent value="notes" className="mt-6">
               <Card>
-                <CardHeader>
-                  <CardTitle>Notes</CardTitle>
-                  <CardDescription>Project notes and comments</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                  <div>
+                    <CardTitle>Notes</CardTitle>
+                    <CardDescription>Project notes and comments</CardDescription>
+                  </div>
+                  <CreateNoteDialog onCreateNote={(content) => createNoteMutation.mutate({ content })} />
                 </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">No notes yet</p>
+                <CardContent className="space-y-4">
+                  {notesLoading ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">Loading notes...</p>
+                  ) : notes.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">No notes yet. Create your first note above.</p>
+                  ) : (
+                    notes.map(note => (
+                      <NoteCard
+                        key={note.id}
+                        note={note}
+                        onUpdate={(id, content) => updateNoteMutation.mutate({ id, content })}
+                        onDelete={(id) => deleteNoteMutation.mutate(id)}
+                      />
+                    ))
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

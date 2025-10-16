@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { api } from "@/lib/api/client";
 import type { Task, User } from "@/lib/api/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,73 +9,94 @@ import { useToast } from "@/hooks/use-toast";
 import { TaskDetailDialog } from "@/components/TaskDetailDialog";
 import { CreateTaskDialog } from "@/components/CreateTaskDialog";
 import type { CreateTaskInput } from "@/lib/api/types";
+import { useWorkspaceTasks, useCreateTask, useUpdateTask, useDeleteTask } from "@/lib/api/hooks/useTasks";
+import { useProjects } from "@/lib/api/hooks/useProjects";
+import { supabase } from "@/integrations/supabase/client";
 
 const TasksPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { workspaceId } = useParams<{ workspaceId: string }>();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [currentWorkspace, setCurrentWorkspace] = useState<any>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [filter, setFilter] = useState<'all' | 'my' | 'completed'>('all');
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const [groupBy, setGroupBy] = useState<'status' | 'date' | 'creator'>('status');
   
-  const currentWorkspaceId = workspaceId || api.workspaces.getCurrentWorkspaceId();
+  // Use React Query hooks for data
+  const { data: tasks = [], isLoading: tasksLoading } = useWorkspaceTasks(workspaceId || '');
+  const { data: projects = [] } = useProjects(workspaceId || '');
+  const createTaskMutation = useCreateTask();
+  const updateTaskMutation = useUpdateTask();
+  const deleteTaskMutation = useDeleteTask();
 
   useEffect(() => {
-    loadTasks();
-  }, [currentWorkspaceId]);
-
-  useEffect(() => {
-    if (!workspaceId && currentWorkspaceId) {
-      navigate(`/workspace/${currentWorkspaceId}/tasks`, { replace: true });
+    if (!workspaceId) {
+      navigate('/');
     }
-  }, [workspaceId, currentWorkspaceId, navigate]);
-
-  const loadTasks = () => {
-    const workspaceId = currentWorkspaceId;
-    
-    if (workspaceId) {
-      const workspace = api.workspaces.get(workspaceId);
-      setCurrentWorkspace(workspace);
-      
-      const projects = api.projects.list(workspaceId);
-      const allTasks = projects.flatMap(p => api.tasks.list(p.id));
-      setTasks(allTasks);
-    } else {
-      setCurrentWorkspace(null);
-      setTasks([]);
-    }
-  };
+  }, [workspaceId, navigate]);
 
   const handleTaskClick = (task: Task) => {
     setSelectedTask(task);
   };
 
   const handleTaskUpdate = (taskId: string, updates: Partial<Task>) => {
-    api.tasks.update(taskId, updates);
-    setTasks(tasks.map(t => t.id === taskId ? { ...t, ...updates } : t));
+    updateTaskMutation.mutate({ id: taskId, input: updates });
     if (selectedTask?.id === taskId) {
       setSelectedTask({ ...selectedTask, ...updates });
     }
   };
 
   const handleCreateTask = (input: CreateTaskInput) => {
-    const newTask = api.tasks.create(input);
-    setTasks([...tasks, newTask]);
-    toast({
-      title: "Task created",
-      description: "New task has been added",
-    });
+    createTaskMutation.mutate(input);
   };
 
-  const getTaskAssignees = (assigneeIds: string[]): User[] => {
-    return assigneeIds.map(id => api.users.get(id)).filter(Boolean) as User[];
+  const getTaskAssignees = async (assigneeIds: string[]): Promise<User[]> => {
+    if (assigneeIds.length === 0) return [];
+    
+    const { data } = await supabase
+      .from('users')
+      .select('*')
+      .in('id', assigneeIds);
+    
+    return (data || []).map(user => ({
+      id: user.id,
+      shortId: user.short_id,
+      authId: user.auth_id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      avatarUrl: user.avatar_url,
+      lastActiveAt: user.last_active_at,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
+      deletedAt: user.deleted_at,
+      deletedBy: user.deleted_by,
+    }));
   };
 
-  const getTaskCreator = (createdById: string): User => {
-    return api.users.get(createdById) as User;
+  const getTaskCreator = async (createdById: string): Promise<User | null> => {
+    const { data } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', createdById)
+      .single();
+    
+    if (!data) return null;
+    
+    return {
+      id: data.id,
+      shortId: data.short_id,
+      authId: data.auth_id,
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      avatarUrl: data.avatar_url,
+      lastActiveAt: data.last_active_at,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+      deletedAt: data.deleted_at,
+      deletedBy: data.deleted_by,
+    };
   };
 
   const toggleSection = (sectionId: string) => {
@@ -120,9 +140,17 @@ const TasksPage = () => {
   };
 
   const TaskRow = ({ task }: { task: Task }) => {
-    const assignees = getTaskAssignees(task.assignees);
-    const creator = getTaskCreator(task.createdBy);
+    const [assignees, setAssignees] = useState<User[]>([]);
+    const [creator, setCreator] = useState<User | null>(null);
+    
+    useEffect(() => {
+      getTaskAssignees(task.assignees).then(setAssignees);
+      getTaskCreator(task.createdBy).then(setCreator);
+    }, [task.assignees, task.createdBy]);
+    
     const fileCount = task.attachedFiles?.length || 0;
+
+    if (!creator) return null;
 
     return (
       <div 
@@ -244,15 +272,15 @@ const TasksPage = () => {
           <div>
             <h1 className="text-3xl font-bold">Task Board</h1>
             <p className="text-muted-foreground">
-              {currentWorkspace 
-                ? `Track and manage tasks in ${currentWorkspace.name}`
+              {workspaceId 
+                ? `Track and manage tasks across all projects`
                 : "Select a workspace to view tasks"
               }
             </p>
           </div>
-          {currentWorkspace && api.projects.list(currentWorkspace.id).length > 0 && (
+          {workspaceId && projects.length > 0 && (
             <CreateTaskDialog 
-              projects={api.projects.list(currentWorkspace.id)} 
+              projects={projects} 
               onCreateTask={handleCreateTask}
             />
           )}
@@ -273,13 +301,17 @@ const TasksPage = () => {
         </div>
 
         {/* Task Sections */}
-        {!currentWorkspace ? (
+        {tasksLoading ? (
+          <div className="text-center py-20">
+            <p className="text-muted-foreground text-lg">Loading tasks...</p>
+          </div>
+        ) : !workspaceId ? (
           <div className="text-center py-20">
             <p className="text-muted-foreground text-lg">
               Please select a workspace from the sidebar to view tasks
             </p>
           </div>
-        ) : api.projects.list(currentWorkspace.id).length === 0 ? (
+        ) : projects.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-muted-foreground text-lg mb-4">
               No projects in this workspace yet
@@ -304,8 +336,8 @@ const TasksPage = () => {
           open={!!selectedTask}
           onOpenChange={(open) => !open && setSelectedTask(null)}
           onUpdate={(updates) => handleTaskUpdate(selectedTask.id, updates)}
-          assignees={getTaskAssignees(selectedTask.assignees)}
-          createdBy={getTaskCreator(selectedTask.createdBy)}
+          assignees={[]} // Will be loaded async
+          createdBy={null as any} // Will be loaded async
         />
       )}
     </div>
