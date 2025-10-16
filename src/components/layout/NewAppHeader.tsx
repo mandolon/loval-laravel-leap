@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useUser } from "@/contexts/UserContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +15,7 @@ import {
 export function NewAppHeader() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const navigate = useNavigate();
+  const { user } = useUser();
 
   return (
     <header className="h-[60px] w-full border-b border-border bg-card flex items-center px-4 gap-4 flex-shrink-0">
@@ -47,8 +49,11 @@ export function NewAppHeader() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-8 w-8 rounded-full p-0">
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                  UU
+                <AvatarFallback 
+                  className="text-white text-xs font-semibold"
+                  style={{ background: user.avatar }}
+                >
+                  {user.initials}
                 </AvatarFallback>
               </Avatar>
             </Button>

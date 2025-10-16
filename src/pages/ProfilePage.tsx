@@ -1,29 +1,18 @@
 import { useState } from "react";
 import { Camera, Mail, User as UserIcon, Shield } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import type { User } from "@/lib/api/types";
+import { useUser } from "@/contexts/UserContext";
 
 export default function ProfilePage() {
   const { toast } = useToast();
+  const { user, updateUser } = useUser();
   
-  // Mock current user data - replace with actual user data from your auth system
-  const [user, setUser] = useState<User>({
-    id: "1",
-    name: "Alex Morgan",
-    email: "alex.morgan@example.com",
-    role: "admin",
-    initials: "AM",
-    avatar: undefined,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  });
-
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: user.name,
@@ -46,7 +35,7 @@ export default function ProfilePage() {
   ];
 
   const handleAvatarChange = (gradient: string) => {
-    setUser({ ...user, avatar: gradient });
+    updateUser({ avatar: gradient });
     toast({
       title: "Avatar color updated",
       description: "Your profile avatar color has been changed successfully.",
@@ -54,7 +43,7 @@ export default function ProfilePage() {
   };
 
   const handleSaveProfile = () => {
-    setUser({ ...user, ...formData });
+    updateUser(formData);
     setIsEditing(false);
     toast({
       title: "Profile updated",

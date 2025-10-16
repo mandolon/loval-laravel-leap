@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { UserProvider } from "./contexts/UserContext";
 import { NewAppLayout } from "./components/layout/NewAppLayout";
 import HomePage from "./pages/HomePage";
 import ProjectsPage from "./pages/Index";
@@ -17,12 +18,13 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <NewAppLayout>
-          <Routes>
+    <UserProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <NewAppLayout>
+            <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/workspace/:workspaceId" element={<HomePage />} />
             <Route path="/workspace/:workspaceId/projects" element={<ProjectsPage />} />
@@ -39,10 +41,11 @@ const App = () => (
             <Route path="/project/:id" element={<ProjectDetails />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
-          </Routes>
-        </NewAppLayout>
-      </BrowserRouter>
-    </TooltipProvider>
+            </Routes>
+          </NewAppLayout>
+        </BrowserRouter>
+      </TooltipProvider>
+    </UserProvider>
   </QueryClientProvider>
 );
 
