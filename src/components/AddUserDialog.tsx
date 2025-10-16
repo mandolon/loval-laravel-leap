@@ -74,7 +74,6 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
 
     try {
       // Create user with Supabase Auth
-      // Generate a temporary password (user will need to reset it)
       const tempPassword = Math.random().toString(36).slice(-12) + 'Aa1!';
       
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
@@ -111,9 +110,24 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
         if (roleError) throw roleError;
       }
 
+      // Send welcome email
+      try {
+        await supabase.functions.invoke('send-welcome-email', {
+          body: {
+            email: formData.email,
+            first_name: formData.first_name,
+            last_name: formData.last_name,
+            app_url: window.location.origin,
+          },
+        });
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+        // Don't fail user creation if email fails
+      }
+
       toast({
         title: "User created",
-        description: `${formData.first_name} ${formData.last_name} has been added. They will receive a confirmation email.`,
+        description: `${formData.first_name} ${formData.last_name} has been added and will receive a welcome email.`,
       });
 
       // Reset form
