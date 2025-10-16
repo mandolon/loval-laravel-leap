@@ -14,7 +14,7 @@ export function NewAppHeader() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   return (
-    <header className="h-[60px] border-b border-border bg-card flex items-center px-4 gap-4">
+    <header className="h-[60px] w-full border-b border-border bg-card flex items-center px-4 gap-4 flex-shrink-0">
       {/* Left: User Info */}
       <div className="flex items-center gap-2 min-w-[180px]">
         <span className="text-sm font-medium">Unknown User</span>
