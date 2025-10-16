@@ -91,16 +91,18 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
   ];
 
   const statusFilters = [
-    { label: 'In Progress', value: 'active' },
-    { label: 'Pending', value: 'on_hold' },
-    { label: 'Completed', value: 'active' },
-    { label: 'Archived', value: 'archived' },
+    { label: 'In Progress', value: 'active', type: 'status' as const },
+    { label: 'Pending', value: 'on_hold', type: 'status' as const },
+    { label: 'Completed', value: 'completed', type: 'phase' as const },
+    { label: 'Archived', value: 'archived', type: 'status' as const },
   ];
 
-  const handleStatusFilterClick = (value: string) => {
-    setStatusFilter(value);
+  const handleStatusFilterClick = (filter: typeof statusFilters[0]) => {
+    const filterKey = filter.type === 'phase' ? 'phase' : 'status';
+    const filterValue = filter.value;
+    setStatusFilter(filterValue);
     if (currentWorkspaceId) {
-      navigate(`/workspace/${currentWorkspaceId}/projects?status=${value}`);
+      navigate(`/workspace/${currentWorkspaceId}/projects?${filterKey}=${filterValue}`);
     }
   };
 
@@ -179,7 +181,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
               {statusFilters.map((filter) => (
                 <button
                   key={filter.label}
-                  onClick={() => handleStatusFilterClick(filter.value)}
+                  onClick={() => handleStatusFilterClick(filter)}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
                     statusFilter === filter.value
                       ? 'bg-accent/50 text-foreground'
