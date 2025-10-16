@@ -1,164 +1,207 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
+import { Send, Bot, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Sparkles, BarChart3, Users, Code, ChevronDown, ArrowUp } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/hooks/use-toast";
+import { useAIChat } from "@/hooks/useAIChat";
+import { supabase } from "@/integrations/supabase/client";
+import { useUser } from "@/contexts/UserContext";
 
-const AIChatPage = () => {
+type Message = { role: "user" | "assistant"; content: string };
+
+export default function AIChatPage() {
   const { workspaceId } = useParams<{ workspaceId: string }>();
-  const [message, setMessage] = useState("");
-  const [selectedProject, setSelectedProject] = useState("All Projects");
+  const { user } = useUser();
+  const { toast } = useToast();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [threadId, setThreadId] = useState<string>("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+  
+  const { sendMessage, isLoading } = useAIChat(threadId, workspaceId || "");
 
-  const suggestionChips = [
-    {
-      icon: BarChart3,
-      label: "Workspace Updates",
-      description: "Get latest project status",
-    },
-    {
-      icon: BarChart3,
-      label: "Project Status",
-      description: "Check project progress",
-    },
-    {
-      icon: Users,
-      label: "Assign Tasks",
-      description: "Manage team assignments",
-    },
-    {
-      icon: Code,
-      label: "Code Analysis",
-      description: "Review code quality",
-    },
-  ];
+  // Load or create thread
+  useEffect(() => {
+    if (!workspaceId || !user) return;
 
-  const handleSend = () => {
-    if (message.trim()) {
-      // TODO: Implement AI chat functionality
-      console.log("Sending message:", message);
-      setMessage("");
+    const loadThread = async () => {
+      // Get most recent thread for this workspace
+      const { data: threads } = await supabase
+        .from("ai_chat_threads")
+        .select("*")
+        .eq("workspace_id", workspaceId)
+        .eq("user_id", user.id)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (threads && threads.length > 0) {
+        setThreadId(threads[0].id);
+        
+        // Load messages for this thread
+        const { data: msgs } = await supabase
+          .from("ai_chat_messages")
+          .select("*")
+          .eq("thread_id", threads[0].id)
+          .order("created_at", { ascending: true });
+
+        if (msgs) {
+          setMessages(msgs.map(m => ({ 
+            role: m.message_type as "user" | "assistant", 
+            content: m.content 
+          })));
+        }
+      } else {
+        // Create new thread
+        const { data: newThread } = await supabase
+          .from("ai_chat_threads")
+          .insert({
+            workspace_id: workspaceId,
+            user_id: user.id,
+            title: "New AI Chat",
+          })
+          .select()
+          .single();
+
+        if (newThread) {
+          setThreadId(newThread.id);
+        }
+      }
+    };
+
+    loadThread();
+  }, [workspaceId, user]);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  };
+  }, [messages]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+  const handleSend = async () => {
+    if (!input.trim() || isLoading || !threadId || !user) return;
+
+    const userMessage = input.trim();
+    setInput("");
+
+    // Add user message to UI
+    const newUserMsg: Message = { role: "user", content: userMessage };
+    setMessages(prev => [...prev, newUserMsg]);
+
+    // Save user message to DB
+    await supabase.from("ai_chat_messages").insert({
+      thread_id: threadId,
+      message_type: "user",
+      content: userMessage,
+    });
+
+    let assistantContent = "";
+    const upsertAssistant = (chunk: string) => {
+      assistantContent += chunk;
+      setMessages(prev => {
+        const last = prev[prev.length - 1];
+        if (last?.role === "assistant") {
+          return prev.map((m, i) => 
+            i === prev.length - 1 ? { ...m, content: assistantContent } : m
+          );
+        }
+        return [...prev, { role: "assistant", content: assistantContent }];
+      });
+    };
+
+    try {
+      await sendMessage(
+        userMessage,
+        messages,
+        upsertAssistant,
+        async () => {
+          // Save assistant message to DB
+          await supabase.from("ai_chat_messages").insert({
+            thread_id: threadId,
+            message_type: "assistant",
+            content: assistantContent,
+            model: "google/gemini-2.5-flash",
+          });
+        }
+      );
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send message",
+        variant: "destructive",
+      });
+      // Remove failed messages
+      setMessages(prev => prev.slice(0, -1));
     }
   };
 
   return (
-    <div className="flex flex-col h-full bg-background">
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col items-center justify-center p-8">
-        {/* Greeting */}
-        <div className="flex items-center gap-2 mb-8">
-          <Sparkles className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-medium text-foreground">
-            How can I help you today?
-          </h1>
-        </div>
-
-        {/* Suggestion Chips */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl w-full mb-12">
-          {suggestionChips.map((chip, index) => (
-            <Button
-              key={index}
-              variant="outline"
-              className="h-auto py-4 px-4 flex items-start gap-3 hover:bg-accent/50 transition-colors"
-              onClick={() => setMessage(chip.description)}
-            >
-              <chip.icon className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
-              <div className="flex flex-col items-start text-left">
-                <span className="font-medium text-foreground">{chip.label}</span>
-                <span className="text-sm text-muted-foreground">
-                  {chip.description}
-                </span>
-              </div>
-            </Button>
-          ))}
-        </div>
+    <div className="h-full flex flex-col bg-background">
+      <div className="border-b p-4">
+        <h1 className="text-2xl font-bold">AI Assistant</h1>
+        <p className="text-sm text-muted-foreground">
+          Ask me anything about your workspace, projects, or tasks
+        </p>
       </div>
 
-      {/* Input Area */}
-      <div className="border-t border-border bg-card">
-        <div className="max-w-4xl mx-auto p-4">
-          {/* Message Input */}
-          <div className="relative bg-background border border-border rounded-lg">
-            <Textarea
-              placeholder="Message ChatGPT..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="min-h-[60px] resize-none border-0 focus-visible:ring-0 pr-12"
-            />
-            <Button
-              size="icon"
-              className="absolute right-2 bottom-2 h-8 w-8 rounded-md"
-              onClick={handleSend}
-              disabled={!message.trim()}
-            >
-              <ArrowUp className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {/* Bottom Controls */}
-          <div className="flex items-center justify-between mt-3">
-            <div className="flex items-center gap-2">
-              {/* Project Selector */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-sm text-muted-foreground hover:text-foreground"
-                  >
-                    {selectedProject}
-                    <ChevronDown className="ml-1 h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48">
-                  <DropdownMenuItem onClick={() => setSelectedProject("All Projects")}>
-                    All Projects
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSelectedProject("Project 1")}>
-                    Project 1
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSelectedProject("Project 2")}>
-                    Project 2
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Summarize Button */}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-sm text-muted-foreground hover:text-foreground"
-              >
-                <Sparkles className="mr-1 h-3 w-3" />
-                Summarize
-              </Button>
+      <ScrollArea ref={scrollRef} className="flex-1 p-4">
+        <div className="max-w-3xl mx-auto space-y-4">
+          {messages.length === 0 && (
+            <div className="text-center py-12 text-muted-foreground">
+              <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Start a conversation with your AI assistant</p>
             </div>
+          )}
+          
+          {messages.map((msg, i) => (
+            <div
+              key={i}
+              className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              {msg.role === "assistant" && (
+                <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                  <Bot className="h-5 w-5 text-primary-foreground" />
+                </div>
+              )}
+              
+              <div
+                className={`rounded-lg px-4 py-2 max-w-[80%] ${
+                  msg.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted"
+                }`}
+              >
+                <p className="whitespace-pre-wrap">{msg.content}</p>
+              </div>
 
-            {/* Model Indicator */}
-            <span className="text-xs text-muted-foreground">ChatGPT 4</span>
-          </div>
+              {msg.role === "user" && (
+                <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center flex-shrink-0">
+                  <User className="h-5 w-5" />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </ScrollArea>
 
-          {/* Disclaimer */}
-          <p className="text-center text-xs text-muted-foreground mt-3">
-            ChatGPT can make mistakes. Check important info.
-          </p>
+      <div className="border-t p-4">
+        <div className="max-w-3xl mx-auto flex gap-2">
+          <Input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+            placeholder="Ask me anything..."
+            disabled={isLoading}
+            className="flex-1"
+          />
+          <Button onClick={handleSend} disabled={isLoading || !input.trim()}>
+            <Send className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </div>
   );
-};
-
-export default AIChatPage;
+}
