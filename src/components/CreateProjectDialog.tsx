@@ -23,7 +23,7 @@ const projectSchema = z.object({
   clientLastName: z.string().trim().min(1, "Last name is required").max(50),
   clientEmail: z.string().trim().email("Invalid email").max(255),
   clientPhone: z.string().trim().optional(),
-  status: z.enum(['pending', 'active', 'on_hold', 'completed', 'archived']),
+  status: z.enum(['pending', 'active', 'completed', 'archived']),
   phase: z.enum(['Pre-Design', 'Design', 'Permit', 'Build']),
 });
 
@@ -51,7 +51,7 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
   const [secondaryClientEmail, setSecondaryClientEmail] = useState("");
   const [secondaryClientPhone, setSecondaryClientPhone] = useState("");
   const [estimatedAmount, setEstimatedAmount] = useState("");
-  const [status, setStatus] = useState<'pending' | 'active' | 'on_hold' | 'completed' | 'archived'>('pending');
+  const [status, setStatus] = useState<'pending' | 'active' | 'completed' | 'archived'>('pending');
   const [phase, setPhase] = useState<'Pre-Design' | 'Design' | 'Permit' | 'Build'>('Pre-Design');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [workspaceId, setWorkspaceId] = useState("");
@@ -230,8 +230,7 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="on_hold">On Hold</SelectItem>
+                    <SelectItem value="active">In Progress</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
                     <SelectItem value="archived">Archived</SelectItem>
                   </SelectContent>

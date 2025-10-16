@@ -75,8 +75,7 @@ const ProjectsPage = () => {
                 <SelectContent className="bg-popover">
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="on_hold">On Hold</SelectItem>
+                  <SelectItem value="active">In Progress</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="archived">Archived</SelectItem>
                 </SelectContent>

@@ -22,9 +22,15 @@ const phaseColors = {
 const statusColors = {
   pending: 'secondary',
   active: 'default',
-  on_hold: 'outline',
   completed: 'outline',
   archived: 'outline',
+} as const;
+
+const statusLabels = {
+  pending: 'Pending',
+  active: 'In Progress',
+  completed: 'Completed',
+  archived: 'Archived',
 } as const;
 
 export const ProjectCard = ({ project, onDelete, onClick }: ProjectCardProps) => {
@@ -53,8 +59,8 @@ export const ProjectCard = ({ project, onDelete, onClick }: ProjectCardProps) =>
             <Badge variant={phaseColors[project.phase]} className="text-xs">
               {project.phase}
             </Badge>
-            <Badge variant={statusColors[project.status]} className="capitalize text-xs">
-              {project.status.replace('_', ' ')}
+            <Badge variant={statusColors[project.status]} className="text-xs">
+              {statusLabels[project.status]}
             </Badge>
           </div>
           <CardDescription className="line-clamp-2">

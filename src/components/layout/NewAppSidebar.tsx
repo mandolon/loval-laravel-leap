@@ -123,8 +123,8 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
   ];
 
   const statusFilters = [
-    { label: 'Active', value: 'active' },
-    { label: 'On Hold', value: 'on_hold' },
+    { label: 'In Progress', value: 'active' },
+    { label: 'Pending', value: 'pending' },
     { label: 'Completed', value: 'completed' },
     { label: 'Archived', value: 'archived' },
   ];
