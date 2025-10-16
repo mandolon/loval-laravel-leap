@@ -32,6 +32,9 @@ import { Trash2, Users, Check, X, Pencil, Filter } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import { AddUserDialog } from "@/components/AddUserDialog";
 
+// Protected admin email that cannot be modified or deleted
+const PROTECTED_ADMIN_EMAIL = "armando@rehome.build";
+
 interface TeamMember {
   id: string;
   first_name: string;
@@ -365,7 +368,7 @@ const TeamPage = () => {
                     <Select
                       value={user.role}
                       onValueChange={(value) => handleRoleChange(user.id, value)}
-                      disabled={user.id === currentUser?.id} // Can't change own role
+                      disabled={user.id === currentUser?.id || user.email === PROTECTED_ADMIN_EMAIL}
                     >
                       <SelectTrigger className="w-32 h-8">
                         <SelectValue />
@@ -393,7 +396,7 @@ const TeamPage = () => {
                       variant="ghost"
                       className="h-8 w-8"
                       onClick={() => setDeleteUserId(user.id)}
-                      disabled={user.id === currentUser?.id} // Can't delete yourself
+                      disabled={user.id === currentUser?.id || user.email === PROTECTED_ADMIN_EMAIL}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
