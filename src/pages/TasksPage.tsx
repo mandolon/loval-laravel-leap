@@ -237,32 +237,6 @@ const TasksPage = () => {
 
   return (
     <div className="flex h-full">
-      {/* Left Sidebar */}
-      <div className="w-48 border-r p-4 space-y-2">
-        <h3 className="font-semibold text-sm mb-4 text-muted-foreground uppercase">Task Board</h3>
-        <Button
-          variant={filter === 'all' ? 'secondary' : 'ghost'}
-          className="w-full justify-start"
-          onClick={() => setFilter('all')}
-        >
-          All Tasks
-        </Button>
-        <Button
-          variant={filter === 'my' ? 'secondary' : 'ghost'}
-          className="w-full justify-start"
-          onClick={() => setFilter('my')}
-        >
-          My Tasks
-        </Button>
-        <Button
-          variant={filter === 'completed' ? 'secondary' : 'ghost'}
-          className="w-full justify-start"
-          onClick={() => setFilter('completed')}
-        >
-          Completed
-        </Button>
-      </div>
-
       {/* Main Content */}
       <div className="flex-1 p-6 space-y-6 overflow-auto">
         {/* Header */}
