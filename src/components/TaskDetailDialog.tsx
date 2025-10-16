@@ -16,7 +16,7 @@ interface TaskDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   onUpdate: (updates: Partial<Task>) => void;
   assignees: User[];
-  createdBy: User;
+  createdBy: User | null;
 }
 
 export function TaskDetailDialog({ 
@@ -129,17 +129,21 @@ export function TaskDetailDialog({
             {/* Created By */}
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Created by</Label>
-              <div className="flex items-center gap-2">
-                <Avatar className="h-6 w-6">
-                  <AvatarFallback 
-                    className="text-white text-xs"
-                    style={{ background: createdBy.avatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
-                  >
-                    {createdBy.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-sm">{createdBy.name}</span>
-              </div>
+              {createdBy ? (
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-6 w-6">
+                    <AvatarFallback 
+                      className="text-white text-xs"
+                      style={{ background: createdBy.avatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
+                    >
+                      {createdBy.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm">{createdBy.name}</span>
+                </div>
+              ) : (
+                <span className="text-sm text-muted-foreground">Loading...</span>
+              )}
             </div>
 
             {/* Date Created */}

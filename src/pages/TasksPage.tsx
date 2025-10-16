@@ -336,8 +336,8 @@ const TasksPage = () => {
           open={!!selectedTask}
           onOpenChange={(open) => !open && setSelectedTask(null)}
           onUpdate={(updates) => handleTaskUpdate(selectedTask.id, updates)}
-          assignees={[]} // Will be loaded async
-          createdBy={null as any} // Will be loaded async
+          assignees={[]} // TODO: Load task assignees from user IDs
+          createdBy={null} // TODO: Load creator from user ID
         />
       )}
     </div>
