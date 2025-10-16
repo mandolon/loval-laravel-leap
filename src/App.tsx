@@ -10,6 +10,7 @@ import TasksPage from "./pages/TasksPage";
 import TeamPage from "./pages/TeamPage";
 import ClientsPage from "./pages/ClientsPage";
 import ProjectDetails from "./pages/ProjectDetails";
+import ProfilePage from "./pages/ProfilePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/workspace/:workspaceId/team" element={<TeamPage />} />
             <Route path="/workspace/:workspaceId/clients" element={<ClientsPage />} />
             <Route path="/workspace/:workspaceId/project/:id" element={<ProjectDetails />} />
+            <Route path="/profile" element={<ProfilePage />} />
             {/* Legacy routes for backward compatibility */}
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/tasks" element={<TasksPage />} />
