@@ -12,7 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useProject } from "@/lib/api/hooks/useProjects";
+import { useProject, useUpdateProject } from "@/lib/api/hooks/useProjects";
+import type { UpdateProjectInput } from "@/lib/api/types";
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from "@/lib/api/hooks/useTasks";
 import { useNotes, useCreateNote, useUpdateNote, useDeleteNote } from "@/lib/api/hooks/useNotes";
 import { useProjectMessages, useCreateMessage, useDeleteMessage, ProjectChatMessageWithUser } from "@/lib/api/hooks/useProjectChat";
@@ -20,6 +21,9 @@ import { NoteCard } from "@/components/notes/NoteCard";
 import { CreateNoteDialog } from "@/components/notes/CreateNoteDialog";
 import { ChatMessage } from "@/components/chat/ChatMessage";
 import { ChatInput } from "@/components/chat/ChatInput";
+import { EditClientDialog } from "@/components/project/EditClientDialog";
+import { EditProjectDetailsDialog } from "@/components/project/EditProjectDetailsDialog";
+import { EditProjectAddressDialog } from "@/components/project/EditProjectAddressDialog";
 import { supabase } from "@/integrations/supabase/client";
 
 const ProjectDetails = () => {
@@ -35,6 +39,7 @@ const ProjectDetails = () => {
   const createTaskMutation = useCreateTask(id || "");
   const updateTaskMutation = useUpdateTask(id || "");
   const deleteTaskMutation = useDeleteTask(id || "");
+  const updateProjectMutation = useUpdateProject(workspaceId || "");
   
   const { data: notes = [], isLoading: notesLoading } = useNotes(id || "");
   const createNoteMutation = useCreateNote(id || "");
@@ -57,6 +62,11 @@ const ProjectDetails = () => {
   const handleDeleteMessage = (messageId: string) => {
     if (!id) return;
     deleteMessageMutation.mutate({ id: messageId, projectId: id });
+  };
+
+  const handleUpdateProject = (input: UpdateProjectInput) => {
+    if (!id) return;
+    updateProjectMutation.mutate({ id, input });
   };
 
   const handleCreateTask = async (input: { title: string; description?: string; projectId: string }) => {
@@ -257,10 +267,10 @@ const ProjectDetails = () => {
                   <div>
                     <CardTitle>Project Narrative</CardTitle>
                   </div>
-                  <Button variant="ghost" size="sm">
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
+                  <EditProjectDetailsDialog
+                    description={project.description}
+                    onUpdate={(description) => handleUpdateProject({ description })}
+                  />
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">{project.description || "Select a project to view its details. Once project data is available, this tab will display key information, status updates, permits, and team members for the selected project."}</p>
@@ -283,10 +293,10 @@ const ProjectDetails = () => {
                   <div>
                     <CardTitle>Project Address</CardTitle>
                   </div>
-                  <Button variant="ghost" size="sm">
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
+                  <EditProjectAddressDialog
+                    address={project.address}
+                    onUpdate={(address) => handleUpdateProject({ address })}
+                  />
                 </CardHeader>
                 <CardContent>
                   <p className="font-medium">
@@ -361,8 +371,14 @@ const ProjectDetails = () => {
 
             <TabsContent value="client" className="mt-6">
               <Card>
-                <CardHeader>
-                  <CardTitle>Client Information</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Client Information</CardTitle>
+                  </div>
+                  <EditClientDialog
+                    project={project}
+                    onUpdate={(data) => handleUpdateProject(data)}
+                  />
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
