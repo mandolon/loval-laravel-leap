@@ -23,15 +23,15 @@ const priorityColors = {
 } as const;
 
 export const TaskItem = ({ task, assignees, onStatusChange, onDelete }: TaskItemProps) => {
-  const isDone = task.status === 'done';
+  const isDone = task.status === 'complete';
 
   const handleStatusClick = () => {
-    if (task.status === 'todo') {
-      onStatusChange(task.id, 'in_progress');
-    } else if (task.status === 'in_progress') {
-      onStatusChange(task.id, 'done');
+    if (task.status === 'task_redline') {
+      onStatusChange(task.id, 'progress_update');
+    } else if (task.status === 'progress_update') {
+      onStatusChange(task.id, 'complete');
     } else {
-      onStatusChange(task.id, 'todo');
+      onStatusChange(task.id, 'task_redline');
     }
   };
 

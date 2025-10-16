@@ -116,7 +116,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
   const taskFilters = [
     { label: 'All Tasks', count: projects.flatMap(p => api.tasks.list(p.id)).length },
     { label: 'My Tasks', count: 0 },
-    { label: 'Completed', count: projects.flatMap(p => api.tasks.list(p.id)).filter(t => t.status === 'done').length },
+    { label: 'Completed', count: projects.flatMap(p => api.tasks.list(p.id)).filter(t => t.status === 'complete').length },
   ];
 
   // Render dynamic content based on active tab

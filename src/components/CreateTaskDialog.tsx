@@ -29,7 +29,7 @@ export const CreateTaskDialog = ({ projectId, onCreateTask }: CreateTaskDialogPr
       description: description.trim(),
       projectId: projectId,
       priority,
-      status: 'todo',
+      status: 'task_redline',
     });
 
     setTitle("");

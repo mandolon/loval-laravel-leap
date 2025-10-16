@@ -49,7 +49,7 @@ const HomePage = () => {
         totalProjects: projects.length,
         activeProjects: projects.filter(p => p.status === 'active').length,
         totalTasks: allTasks.length,
-        completedTasks: allTasks.filter(t => t.status === 'done').length,
+        completedTasks: allTasks.filter(t => t.status === 'complete').length,
         teamMembers: users.length,
       });
     } else {

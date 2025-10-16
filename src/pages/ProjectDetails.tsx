@@ -65,9 +65,9 @@ const ProjectDetails = () => {
   const client = api.clients.get(project.clientId);
   const team = project.teamIds.map(id => api.users.get(id)).filter(Boolean) as any[];
   
-  const todoTasks = tasks.filter(t => t.status === 'todo');
-  const inProgressTasks = tasks.filter(t => t.status === 'in_progress');
-  const doneTasks = tasks.filter(t => t.status === 'done');
+  const taskRedlineTasks = tasks.filter(t => t.status === 'task_redline');
+  const progressUpdateTasks = tasks.filter(t => t.status === 'progress_update');
+  const completeTasks = tasks.filter(t => t.status === 'complete');
 
   const getTaskAssignees = (assigneeIds: string[]) => {
     return assigneeIds.map(id => api.users.get(id)).filter(Boolean) as any[];
@@ -123,17 +123,17 @@ const ProjectDetails = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Todo Column */}
+          {/* Task/Redline Column */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-lg">To Do</h3>
-              <Badge variant="secondary">{todoTasks.length}</Badge>
+              <h3 className="font-semibold text-lg">Task/Redline</h3>
+              <Badge className="bg-destructive text-destructive-foreground">{taskRedlineTasks.length}</Badge>
             </div>
             <div className="space-y-3">
-              {todoTasks.length === 0 ? (
+              {taskRedlineTasks.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">No tasks</p>
               ) : (
-                todoTasks.map(task => (
+                taskRedlineTasks.map(task => (
                   <TaskItem
                     key={task.id}
                     task={task}
@@ -146,17 +146,17 @@ const ProjectDetails = () => {
             </div>
           </div>
 
-          {/* In Progress Column */}
+          {/* Progress/Update Column */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-lg">In Progress</h3>
-              <Badge variant="default">{inProgressTasks.length}</Badge>
+              <h3 className="font-semibold text-lg">Progress/Update</h3>
+              <Badge className="bg-primary text-primary-foreground">{progressUpdateTasks.length}</Badge>
             </div>
             <div className="space-y-3">
-              {inProgressTasks.length === 0 ? (
+              {progressUpdateTasks.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">No tasks</p>
               ) : (
-                inProgressTasks.map(task => (
+                progressUpdateTasks.map(task => (
                   <TaskItem
                     key={task.id}
                     task={task}
@@ -169,17 +169,17 @@ const ProjectDetails = () => {
             </div>
           </div>
 
-          {/* Done Column */}
+          {/* Complete Column */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-lg">Done</h3>
-              <Badge variant="outline">{doneTasks.length}</Badge>
+              <h3 className="font-semibold text-lg">Complete</h3>
+              <Badge className="bg-secondary text-secondary-foreground">{completeTasks.length}</Badge>
             </div>
             <div className="space-y-3">
-              {doneTasks.length === 0 ? (
+              {completeTasks.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">No tasks</p>
               ) : (
-                doneTasks.map(task => (
+                completeTasks.map(task => (
                   <TaskItem
                     key={task.id}
                     task={task}

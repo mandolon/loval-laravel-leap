@@ -52,7 +52,7 @@ export interface Task {
   title: string;
   description: string;
   projectId: string;
-  status: 'todo' | 'in_progress' | 'done';
+  status: 'task_redline' | 'progress_update' | 'complete';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   assigneeIds: string[];
   createdById: string;
@@ -61,6 +61,18 @@ export interface Task {
   dueDate?: string;
   estimatedTime?: number;
   actualTime?: number;
+  trackedTime?: number;
+  attachments?: TaskAttachment[];
+}
+
+export interface TaskAttachment {
+  id: string;
+  name: string;
+  size: number;
+  category?: string;
+  url: string;
+  uploadedAt: string;
+  uploadedBy: string;
 }
 
 export interface CreateProjectInput {
@@ -81,7 +93,7 @@ export interface CreateTaskInput {
   description: string;
   projectId: string;
   assigneeIds?: string[];
-  status?: 'todo' | 'in_progress' | 'done';
+  status?: 'task_redline' | 'progress_update' | 'complete';
   priority?: 'low' | 'medium' | 'high' | 'urgent';
   dueDate?: string;
   estimatedTime?: number;
@@ -105,11 +117,12 @@ export interface UpdateTaskInput {
   title?: string;
   description?: string;
   assigneeIds?: string[];
-  status?: 'todo' | 'in_progress' | 'done';
+  status?: 'task_redline' | 'progress_update' | 'complete';
   priority?: 'low' | 'medium' | 'high' | 'urgent';
   dueDate?: string;
   estimatedTime?: number;
   actualTime?: number;
+  trackedTime?: number;
 }
 
 export interface CreateUserInput {
