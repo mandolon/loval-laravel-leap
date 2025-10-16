@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api } from "@/lib/api/client";
 import type { Project } from "@/lib/api/types";
 import { ProjectCard } from "@/components/ProjectCard";
@@ -13,22 +13,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const ProjectsPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { workspaceId } = useParams<{ workspaceId: string }>();
+  const [searchParams] = useSearchParams();
   const [projects, setProjects] = useState<Project[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [phaseFilter, setPhaseFilter] = useState<string>("all");
-  const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(null);
+  
+  // Get status filter from URL or default to 'all'
+  const statusFilter = searchParams.get('status') || 'all';
+  const currentWorkspaceId = workspaceId || api.workspaces.getCurrentWorkspaceId();
 
   useEffect(() => {
     loadProjects();
-  }, []);
+  }, [currentWorkspaceId]);
+
+  useEffect(() => {
+    // Redirect to workspace route if not already there
+    if (!workspaceId && currentWorkspaceId) {
+      navigate(`/workspace/${currentWorkspaceId}/projects`, { replace: true });
+    }
+  }, [workspaceId, currentWorkspaceId, navigate]);
 
   const loadProjects = () => {
-    const workspaceId = api.workspaces.getCurrentWorkspaceId();
-    setCurrentWorkspaceId(workspaceId);
-    
-    if (workspaceId) {
-      const workspaceProjects = api.projects.list(workspaceId);
+    if (currentWorkspaceId) {
+      const workspaceProjects = api.projects.list(currentWorkspaceId);
       setProjects(workspaceProjects);
     } else {
       setProjects([]);
@@ -121,7 +129,14 @@ const ProjectsPage = () => {
                 </SelectContent>
               </Select>
               
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select 
+                value={statusFilter} 
+                onValueChange={(value) => {
+                  if (currentWorkspaceId) {
+                    navigate(`/workspace/${currentWorkspaceId}/projects?status=${value}`);
+                  }
+                }}
+              >
                 <SelectTrigger className="w-[120px] h-8 text-sm border-border">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
@@ -187,7 +202,7 @@ const ProjectsPage = () => {
                 team={getProjectTeam(project.teamIds)}
                 taskCount={getTaskCount(project.id)}
                 onDelete={handleDeleteProject}
-                onClick={() => navigate(`/project/${project.id}`)}
+                onClick={() => navigate(`/workspace/${currentWorkspaceId}/project/${project.id}`)}
               />
             ))}
           </div>

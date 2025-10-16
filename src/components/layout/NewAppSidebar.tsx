@@ -1,5 +1,5 @@
 import { Home, FolderKanban, CheckSquare, Settings, Plus, ChevronRight } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { Separator } from "@/components/ui/separator";
@@ -11,39 +11,67 @@ interface NewAppSidebarProps {
 }
 
 export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
+  const { workspaceId } = useParams<{ workspaceId: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<'home' | 'workspace' | 'tasks' | 'settings'>('workspace');
   const [projectCount, setProjectCount] = useState(0);
+  const [statusFilter, setStatusFilter] = useState<string>('active');
+
+  const currentWorkspaceId = workspaceId || api.workspaces.getCurrentWorkspaceId();
 
   useEffect(() => {
     updateProjectCount();
-  }, []);
+  }, [currentWorkspaceId, location.pathname]);
 
   const updateProjectCount = () => {
-    const currentWorkspaceId = api.workspaces.getCurrentWorkspaceId();
     if (currentWorkspaceId) {
       const projects = api.projects.list(currentWorkspaceId);
       setProjectCount(projects.length);
     }
   };
 
-  const handleWorkspaceChange = (workspaceId: string) => {
+  const handleWorkspaceChange = (newWorkspaceId: string) => {
+    api.workspaces.setCurrentWorkspaceId(newWorkspaceId);
     updateProjectCount();
-    onWorkspaceChange?.(workspaceId);
+    onWorkspaceChange?.(newWorkspaceId);
+    
+    // Navigate to the same page but with new workspace
+    const currentPath = location.pathname;
+    if (currentPath.includes('/workspace/')) {
+      const pathParts = currentPath.split('/');
+      pathParts[2] = newWorkspaceId;
+      navigate(pathParts.join('/'));
+    } else {
+      navigate(`/workspace/${newWorkspaceId}/projects`);
+    }
+  };
+
+  const getNavPath = (basePath: string) => {
+    if (!currentWorkspaceId) return basePath;
+    return basePath === '/' ? `/workspace/${currentWorkspaceId}` : `/workspace/${currentWorkspaceId}${basePath}`;
   };
 
   const navIcons = [
-    { id: 'home' as const, icon: Home, label: 'Home', path: '/' },
-    { id: 'workspace' as const, icon: FolderKanban, label: 'Workspace', path: '/projects' },
-    { id: 'tasks' as const, icon: CheckSquare, label: 'Tasks', path: '/tasks' },
-    { id: 'settings' as const, icon: Settings, label: 'Settings', path: '/team' },
+    { id: 'home' as const, icon: Home, label: 'Home', path: getNavPath('') },
+    { id: 'workspace' as const, icon: FolderKanban, label: 'Workspace', path: getNavPath('/projects') },
+    { id: 'tasks' as const, icon: CheckSquare, label: 'Tasks', path: getNavPath('/tasks') },
+    { id: 'settings' as const, icon: Settings, label: 'Settings', path: getNavPath('/team') },
   ];
 
   const statusFilters = [
-    { label: 'In Progress', active: true },
-    { label: 'Pending', active: false },
-    { label: 'Completed', active: false },
-    { label: 'Archived', active: false },
+    { label: 'In Progress', value: 'active' },
+    { label: 'Pending', value: 'on_hold' },
+    { label: 'Completed', value: 'active' },
+    { label: 'Archived', value: 'archived' },
   ];
+
+  const handleStatusFilterClick = (value: string) => {
+    setStatusFilter(value);
+    if (currentWorkspaceId) {
+      navigate(`/workspace/${currentWorkspaceId}/projects?status=${value}`);
+    }
+  };
 
   return (
     <aside className="w-[200px] bg-card border-r border-border flex flex-col h-screen">
@@ -104,8 +132,9 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
           {statusFilters.map((filter) => (
             <button
               key={filter.label}
+              onClick={() => handleStatusFilterClick(filter.value)}
               className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                filter.active
+                statusFilter === filter.value
                   ? 'bg-accent/50 text-foreground'
                   : 'text-muted-foreground hover:bg-accent/30'
               }`}

@@ -11,11 +11,13 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { useToast } from "@/hooks/use-toast";
 
 const ProjectDetails = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id, workspaceId } = useParams<{ id: string; workspaceId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
+  
+  const currentWorkspaceId = workspaceId || api.workspaces.getCurrentWorkspaceId();
 
   useEffect(() => {
     if (!id) return;
@@ -27,13 +29,13 @@ const ProjectDetails = () => {
         description: "The project you're looking for doesn't exist",
         variant: "destructive",
       });
-      navigate("/");
+      navigate(currentWorkspaceId ? `/workspace/${currentWorkspaceId}/projects` : "/");
       return;
     }
     
     setProject(projectData);
     setTasks(api.tasks.list(id));
-  }, [id, navigate, toast]);
+  }, [id, navigate, toast, currentWorkspaceId]);
 
   const handleCreateTask = (input: Parameters<typeof api.tasks.create>[0]) => {
     const newTask = api.tasks.create(input);
@@ -76,7 +78,7 @@ const ProjectDetails = () => {
         <div className="space-y-4">
           <Button 
             variant="ghost" 
-            onClick={() => navigate("/projects")}
+            onClick={() => navigate(currentWorkspaceId ? `/workspace/${currentWorkspaceId}/projects` : "/projects")}
             size="sm"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />

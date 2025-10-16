@@ -23,6 +23,13 @@ const App = () => (
         <NewAppLayout>
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/workspace/:workspaceId" element={<HomePage />} />
+            <Route path="/workspace/:workspaceId/projects" element={<ProjectsPage />} />
+            <Route path="/workspace/:workspaceId/tasks" element={<TasksPage />} />
+            <Route path="/workspace/:workspaceId/team" element={<TeamPage />} />
+            <Route path="/workspace/:workspaceId/clients" element={<ClientsPage />} />
+            <Route path="/workspace/:workspaceId/project/:id" element={<ProjectDetails />} />
+            {/* Legacy routes for backward compatibility */}
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/tasks" element={<TasksPage />} />
             <Route path="/team" element={<TeamPage />} />

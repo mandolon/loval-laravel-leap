@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Building2, Plus, Check } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -22,6 +23,8 @@ interface WorkspaceSwitcherProps {
 
 export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps) {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { workspaceId } = useParams<{ workspaceId: string }>();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -36,20 +39,23 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
     const allWorkspaces = api.workspaces.list();
     setWorkspaces(allWorkspaces);
     
-    const currentId = api.workspaces.getCurrentWorkspaceId();
+    // Use workspace from URL if available, otherwise use stored value
+    const currentId = workspaceId || api.workspaces.getCurrentWorkspaceId();
     if (currentId) {
       setCurrentWorkspaceId(currentId);
+      api.workspaces.setCurrentWorkspaceId(currentId);
     } else if (allWorkspaces.length > 0) {
       // Set first workspace as current if none selected
       setCurrentWorkspaceId(allWorkspaces[0].id);
       api.workspaces.setCurrentWorkspaceId(allWorkspaces[0].id);
+      navigate(`/workspace/${allWorkspaces[0].id}/projects`);
     }
   };
 
-  const handleWorkspaceChange = (workspaceId: string) => {
-    setCurrentWorkspaceId(workspaceId);
-    api.workspaces.setCurrentWorkspaceId(workspaceId);
-    onWorkspaceChange?.(workspaceId);
+  const handleWorkspaceChange = (newWorkspaceId: string) => {
+    setCurrentWorkspaceId(newWorkspaceId);
+    api.workspaces.setCurrentWorkspaceId(newWorkspaceId);
+    onWorkspaceChange?.(newWorkspaceId);
   };
 
   const handleCreateWorkspace = (e: React.FormEvent) => {
@@ -76,6 +82,9 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
     setNewWorkspaceDescription("");
     setCreateDialogOpen(false);
     onWorkspaceChange?.(newWorkspace.id);
+    
+    // Navigate to new workspace
+    navigate(`/workspace/${newWorkspace.id}/projects`);
   };
 
   const currentWorkspace = workspaces.find(w => w.id === currentWorkspaceId);

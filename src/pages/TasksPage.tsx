@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { api } from "@/lib/api/client";
 import type { Task } from "@/lib/api/types";
 import { TaskItem } from "@/components/TaskItem";
@@ -7,15 +8,26 @@ import { useToast } from "@/hooks/use-toast";
 
 const TasksPage = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { workspaceId } = useParams<{ workspaceId: string }>();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [currentWorkspace, setCurrentWorkspace] = useState<any>(null);
+  
+  const currentWorkspaceId = workspaceId || api.workspaces.getCurrentWorkspaceId();
 
   useEffect(() => {
     loadTasks();
-  }, []);
+  }, [currentWorkspaceId]);
+
+  useEffect(() => {
+    // Redirect to workspace route if not already there
+    if (!workspaceId && currentWorkspaceId) {
+      navigate(`/workspace/${currentWorkspaceId}/tasks`, { replace: true });
+    }
+  }, [workspaceId, currentWorkspaceId, navigate]);
 
   const loadTasks = () => {
-    const workspaceId = api.workspaces.getCurrentWorkspaceId();
+    const workspaceId = currentWorkspaceId;
     
     if (workspaceId) {
       const workspace = api.workspaces.get(workspaceId);
