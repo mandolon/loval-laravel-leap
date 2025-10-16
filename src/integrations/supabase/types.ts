@@ -1160,7 +1160,7 @@ export type Database = {
       user_preferences: {
         Row: {
           created_at: string
-          email_digest: string | null
+          email_digest: boolean | null
           id: string
           metadata: Json | null
           notifications_enabled: boolean | null
@@ -1172,7 +1172,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          email_digest?: string | null
+          email_digest?: boolean | null
           id?: string
           metadata?: Json | null
           notifications_enabled?: boolean | null
@@ -1184,7 +1184,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          email_digest?: string | null
+          email_digest?: boolean | null
           id?: string
           metadata?: Json | null
           notifications_enabled?: boolean | null
@@ -1328,7 +1328,7 @@ export type Database = {
           company_logo_url: string | null
           company_name: string | null
           created_at: string
-          default_invoice_terms: string | null
+          default_invoice_terms: number | null
           id: string
           metadata: Json | null
           short_id: string
@@ -1340,7 +1340,7 @@ export type Database = {
           company_logo_url?: string | null
           company_name?: string | null
           created_at?: string
-          default_invoice_terms?: string | null
+          default_invoice_terms?: number | null
           id?: string
           metadata?: Json | null
           short_id?: string
@@ -1352,7 +1352,7 @@ export type Database = {
           company_logo_url?: string | null
           company_name?: string | null
           created_at?: string
-          default_invoice_terms?: string | null
+          default_invoice_terms?: number | null
           id?: string
           metadata?: Json | null
           short_id?: string

@@ -17,7 +17,7 @@ export const ClientInfoSchema = z.object({
   lastName: z.string().optional(),
   email: z.string().email().optional().or(z.literal('')),
   phone: z.string().optional(),
-  address: z.any().optional(),
+  address: AddressSchema.optional(),
 })
 
 // ============= Entity Schemas =============
@@ -213,12 +213,14 @@ export const CreateProjectInputSchema = z.object({
     lastName: z.string().min(1, 'Last name required'),
     email: z.string().email('Valid email required'),
     phone: z.string().optional(),
+    address: AddressSchema.optional(),
   }),
   secondaryClient: z.object({
     firstName: z.string().optional(),
     lastName: z.string().optional(),
     email: z.string().email().optional().or(z.literal('')),
     phone: z.string().optional(),
+    address: AddressSchema.optional(),
   }).optional(),
   estimatedAmount: z.number().optional(),
   dueDate: z.string().optional(),

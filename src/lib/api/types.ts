@@ -233,12 +233,26 @@ export interface CreateProjectInput {
     lastName: string;
     email: string;
     phone?: string;
+    address?: {
+      streetNumber: string;
+      streetName: string;
+      city: string;
+      state: string;
+      zipCode: string;
+    };
   };
   secondaryClient?: {
     firstName?: string;
     lastName?: string;
     email?: string;
     phone?: string;
+    address?: {
+      streetNumber: string;
+      streetName: string;
+      city: string;
+      state: string;
+      zipCode: string;
+    };
   };
   estimatedAmount?: number;
   dueDate?: string;
