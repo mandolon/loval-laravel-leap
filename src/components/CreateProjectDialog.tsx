@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import { api } from "@/lib/api/client";
 import type { CreateProjectInput } from "@/lib/api/types";
@@ -20,6 +21,8 @@ const projectSchema = z.object({
   clientFirstName: z.string().trim().min(1, "First name is required").max(50, "First name must be less than 50 characters"),
   clientLastName: z.string().trim().min(1, "Last name is required").max(50, "Last name must be less than 50 characters"),
   clientEmail: z.string().trim().email("Invalid email address").max(255, "Email must be less than 255 characters"),
+  status: z.enum(['active', 'on_hold', 'archived']),
+  phase: z.enum(['design', 'permit', 'build', 'completed']),
 });
 
 interface CreateProjectDialogProps {
@@ -39,6 +42,8 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
   const [clientFirstName, setClientFirstName] = useState("");
   const [clientLastName, setClientLastName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
+  const [status, setStatus] = useState<'active' | 'on_hold' | 'archived'>('on_hold');
+  const [phase, setPhase] = useState<'design' | 'permit' | 'build' | 'completed'>('design');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [workspaceId, setWorkspaceId] = useState("");
 
@@ -66,6 +71,8 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
       clientFirstName,
       clientLastName,
       clientEmail,
+      status,
+      phase,
     };
 
     const result = projectSchema.safeParse(formData);
@@ -104,8 +111,8 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
       description: description.trim(),
       address: fullAddress,
       clientId,
-      status: 'active',
-      phase: 'design',
+      status,
+      phase,
     });
 
     // Reset form
@@ -119,6 +126,8 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
     setClientFirstName("");
     setClientLastName("");
     setClientEmail("");
+    setStatus('on_hold');
+    setPhase('design');
     setErrors({});
     setOpen(false);
   };
@@ -288,6 +297,44 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
                 className={errors.clientEmail ? "border-destructive" : ""}
               />
               {errors.clientEmail && <p className="text-xs text-destructive">{errors.clientEmail}</p>}
+            </div>
+          </div>
+
+          {/* Project Settings */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold">Project Settings</h3>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="status">Initial Status *</Label>
+                <Select value={status} onValueChange={(value: any) => setStatus(value)}>
+                  <SelectTrigger id="status" className={errors.status ? "border-destructive" : ""}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="on_hold">Pending</SelectItem>
+                    <SelectItem value="active">In Progress</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.status && <p className="text-xs text-destructive">{errors.status}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phase">Initial Phase *</Label>
+                <Select value={phase} onValueChange={(value: any) => setPhase(value)}>
+                  <SelectTrigger id="phase" className={errors.phase ? "border-destructive" : ""}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="design">Design</SelectItem>
+                    <SelectItem value="permit">Permit</SelectItem>
+                    <SelectItem value="build">Build</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.phase && <p className="text-xs text-destructive">{errors.phase}</p>}
+              </div>
             </div>
           </div>
 
