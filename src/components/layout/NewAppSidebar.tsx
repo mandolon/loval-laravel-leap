@@ -48,7 +48,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
   return (
     <aside className="w-[200px] bg-card border-r border-border flex flex-col h-screen">
       {/* Navigation Icons */}
-      <div className="p-3 flex items-center justify-around border-b border-border">
+      <div className="p-3 flex items-center justify-around border-b border-border flex-shrink-0">
         {navIcons.map((item) => (
           <NavLink
             key={item.id}
@@ -67,7 +67,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
       </div>
 
       {/* Projects Section */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto min-h-0">
         <div className="p-3">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -113,7 +113,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
       </div>
 
       {/* Workspace Footer */}
-      <div className="p-3 border-t border-border">
+      <div className="p-3 border-t border-border flex-shrink-0 bg-card">
         <WorkspaceSwitcher onWorkspaceChange={handleWorkspaceChange} />
       </div>
     </aside>
