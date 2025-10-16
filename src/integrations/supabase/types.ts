@@ -863,6 +863,7 @@ export type Database = {
       projects: {
         Row: {
           address: Json | null
+          assessor_parcel_info: Json | null
           completed_tasks: number | null
           created_at: string | null
           created_by: string
@@ -895,6 +896,7 @@ export type Database = {
         }
         Insert: {
           address?: Json | null
+          assessor_parcel_info?: Json | null
           completed_tasks?: number | null
           created_at?: string | null
           created_by: string
@@ -927,6 +929,7 @@ export type Database = {
         }
         Update: {
           address?: Json | null
+          assessor_parcel_info?: Json | null
           completed_tasks?: number | null
           created_at?: string | null
           created_by?: string

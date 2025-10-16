@@ -39,6 +39,7 @@ const transformProject = (row: any): Project => ({
     phone: row.secondary_client_phone,
     address: row.secondary_client_address,
   } : undefined,
+  assessorParcelInfo: row.assessor_parcel_info || {},
   estimatedAmount: row.estimated_amount,
   dueDate: row.due_date,
   progress: row.progress,
@@ -159,6 +160,7 @@ export const useUpdateProject = (workspaceId: string) => {
       if (input.status !== undefined) updateData.status = input.status;
       if (input.phase !== undefined) updateData.phase = input.phase;
       if (input.address !== undefined) updateData.address = input.address;
+      if (input.assessorParcelInfo !== undefined) updateData.assessor_parcel_info = input.assessorParcelInfo;
       if (input.primaryClient) {
         if (input.primaryClient.firstName !== undefined) updateData.primary_client_first_name = input.primaryClient.firstName;
         if (input.primaryClient.lastName !== undefined) updateData.primary_client_last_name = input.primaryClient.lastName;

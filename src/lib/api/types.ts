@@ -71,6 +71,18 @@ export interface Project {
     phone?: string;
     address?: any;
   };
+  assessorParcelInfo?: {
+    parcelNumber?: string;
+    occupancyClass?: string;
+    zoningDesignation?: string;
+    construction?: string;
+    stories?: string;
+    plateHeight?: string;
+    roofHeight?: string;
+    yearBuilt?: string;
+    lotArea?: string;
+    acres?: string;
+  };
   estimatedAmount?: number; // Design fee
   dueDate?: string;
   progress: number;
@@ -281,6 +293,18 @@ export interface UpdateProjectInput {
     lastName?: string;
     email?: string;
     phone?: string;
+  };
+  assessorParcelInfo?: {
+    parcelNumber?: string;
+    occupancyClass?: string;
+    zoningDesignation?: string;
+    construction?: string;
+    stories?: string;
+    plateHeight?: string;
+    roofHeight?: string;
+    yearBuilt?: string;
+    lotArea?: string;
+    acres?: string;
   };
   estimatedAmount?: number;
   dueDate?: string;

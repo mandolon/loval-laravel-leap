@@ -13,7 +13,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useProject, useUpdateProject } from "@/lib/api/hooks/useProjects";
-import type { UpdateProjectInput } from "@/lib/api/types";
+import type { UpdateProjectInput, Project } from "@/lib/api/types";
+import { AssessorParcelInfo } from "@/components/project/EditAssessorParcelDialog";
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from "@/lib/api/hooks/useTasks";
 import { useNotes, useCreateNote, useUpdateNote, useDeleteNote } from "@/lib/api/hooks/useNotes";
 import { useProjectMessages, useCreateMessage, useDeleteMessage, ProjectChatMessageWithUser } from "@/lib/api/hooks/useProjectChat";
@@ -24,6 +25,7 @@ import { ChatInput } from "@/components/chat/ChatInput";
 import { EditClientDialog } from "@/components/project/EditClientDialog";
 import { EditProjectDetailsDialog } from "@/components/project/EditProjectDetailsDialog";
 import { EditProjectAddressDialog } from "@/components/project/EditProjectAddressDialog";
+import { EditAssessorParcelDialog } from "@/components/project/EditAssessorParcelDialog";
 import { supabase } from "@/integrations/supabase/client";
 
 const ProjectDetails = () => {
@@ -313,55 +315,55 @@ const ProjectDetails = () => {
                   <div>
                     <CardTitle>Assessor Parcel Information</CardTitle>
                   </div>
-                  <Button variant="ghost" size="sm">
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
+                  <EditAssessorParcelDialog
+                    data={project.assessorParcelInfo}
+                    onUpdate={(data) => handleUpdateProject({ assessorParcelInfo: data })}
+                  />
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     <div className="grid grid-cols-4 gap-4">
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Assessor's Parcel #</p>
-                        <p className="font-medium text-primary">—</p>
+                        <p className="font-medium text-primary">{project.assessorParcelInfo?.parcelNumber || '—'}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Occupancy Class</p>
-                        <p className="font-medium">—</p>
+                        <p className="font-medium">{project.assessorParcelInfo?.occupancyClass || '—'}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Zoning Designation</p>
-                        <p className="font-medium text-primary">—</p>
+                        <p className="font-medium text-primary">{project.assessorParcelInfo?.zoningDesignation || '—'}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Construction</p>
-                        <p className="font-medium">—</p>
+                        <p className="font-medium">{project.assessorParcelInfo?.construction || '—'}</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-6 gap-4">
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Stories</p>
-                        <p className="font-medium">—</p>
+                        <p className="font-medium">{project.assessorParcelInfo?.stories || '—'}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Plate Height</p>
-                        <p className="font-medium">—</p>
+                        <p className="font-medium">{project.assessorParcelInfo?.plateHeight || '—'}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Roof Height</p>
-                        <p className="font-medium">—</p>
+                        <p className="font-medium">{project.assessorParcelInfo?.roofHeight || '—'}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Year Built</p>
-                        <p className="font-medium">—</p>
+                        <p className="font-medium">{project.assessorParcelInfo?.yearBuilt || '—'}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Approx Lot Area</p>
-                        <p className="font-medium">—</p>
+                        <p className="font-medium">{project.assessorParcelInfo?.lotArea || '—'}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Acres</p>
-                        <p className="font-medium">—</p>
+                        <p className="font-medium">{project.assessorParcelInfo?.acres || '—'}</p>
                       </div>
                     </div>
                   </div>

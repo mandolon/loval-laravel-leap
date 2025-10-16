@@ -28,6 +28,8 @@ export function TaskDetailDialog({
   createdBy 
 }: TaskDetailDialogProps) {
   const { user: currentUser } = useUser();
+  const [title, setTitle] = useState(task.title);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [description, setDescription] = useState(task.description);
   const [dueDate, setDueDate] = useState(task.dueDate || "");
 
@@ -44,6 +46,26 @@ export function TaskDetailDialog({
       label: "COMPLETE", 
       className: "bg-secondary text-secondary-foreground"
     },
+  };
+
+  const handleTitleBlur = () => {
+    if (title !== task.title && title.trim()) {
+      onUpdate({ title: title.trim() });
+      setIsEditingTitle(false);
+    } else if (!title.trim()) {
+      setTitle(task.title);
+      setIsEditingTitle(false);
+    }
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleTitleBlur();
+    } else if (e.key === 'Escape') {
+      setTitle(task.title);
+      setIsEditingTitle(false);
+    }
   };
 
   const handleDescriptionBlur = () => {
@@ -84,7 +106,23 @@ export function TaskDetailDialog({
           </div>
 
           {/* Title */}
-          <h2 className="text-2xl font-bold">{task.title}</h2>
+          {isEditingTitle ? (
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              onBlur={handleTitleBlur}
+              onKeyDown={handleTitleKeyDown}
+              className="text-2xl font-bold h-auto py-2"
+              autoFocus
+            />
+          ) : (
+            <h2 
+              className="text-2xl font-bold cursor-pointer hover:text-primary transition-colors"
+              onClick={() => setIsEditingTitle(true)}
+            >
+              {task.title}
+            </h2>
+          )}
 
           {/* Task Info Grid */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
