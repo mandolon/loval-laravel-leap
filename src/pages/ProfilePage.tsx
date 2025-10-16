@@ -30,20 +30,26 @@ export default function ProfilePage() {
     email: user.email,
   });
 
-  const avatarOptions = [
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Morgan",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=User1",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=User2",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=User3",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=User4",
+  const avatarGradients = [
+    "linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)",
+    "linear-gradient(135deg, hsl(200, 80%, 55%) 0%, hsl(250, 75%, 65%) 100%)",
+    "linear-gradient(135deg, hsl(340, 85%, 60%) 0%, hsl(20, 90%, 65%) 100%)",
+    "linear-gradient(135deg, hsl(160, 75%, 50%) 0%, hsl(200, 80%, 60%) 100%)",
+    "linear-gradient(135deg, hsl(30, 90%, 60%) 0%, hsl(60, 85%, 65%) 100%)",
+    "linear-gradient(135deg, hsl(260, 75%, 60%) 0%, hsl(180, 70%, 60%) 100%)",
+    "linear-gradient(135deg, hsl(0, 80%, 60%) 0%, hsl(340, 85%, 65%) 100%)",
+    "linear-gradient(135deg, hsl(120, 70%, 50%) 0%, hsl(160, 75%, 55%) 100%)",
+    "linear-gradient(135deg, hsl(220, 85%, 60%) 0%, hsl(280, 80%, 65%) 100%)",
+    "linear-gradient(135deg, hsl(300, 75%, 60%) 0%, hsl(360, 70%, 65%) 100%)",
+    "linear-gradient(135deg, hsl(180, 70%, 55%) 0%, hsl(220, 75%, 60%) 100%)",
+    "linear-gradient(135deg, hsl(40, 95%, 60%) 0%, hsl(340, 85%, 65%) 100%)",
   ];
 
-  const handleAvatarChange = (newAvatar: string) => {
-    setUser({ ...user, avatar: newAvatar });
+  const handleAvatarChange = (gradient: string) => {
+    setUser({ ...user, avatar: gradient });
     toast({
-      title: "Avatar updated",
-      description: "Your profile picture has been changed successfully.",
+      title: "Avatar color updated",
+      description: "Your profile avatar color has been changed successfully.",
     });
   };
 
@@ -83,8 +89,10 @@ export default function ProfilePage() {
           {/* Current Avatar */}
           <div className="flex items-center gap-6">
             <Avatar className="h-24 w-24">
-              {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
-              <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
+              <AvatarFallback 
+                className="text-white text-2xl font-semibold"
+                style={{ background: user.avatar || avatarGradients[0] }}
+              >
                 {user.initials}
               </AvatarFallback>
             </Avatar>
@@ -99,35 +107,31 @@ export default function ProfilePage() {
 
           {/* Avatar Selector */}
           <div>
-            <Label className="text-sm font-medium mb-3 block">Choose Avatar</Label>
-            <div className="grid grid-cols-6 gap-4">
-              {avatarOptions.map((avatarUrl, index) => (
+            <Label className="text-sm font-medium mb-3 block">Choose Avatar Color</Label>
+            <div className="grid grid-cols-6 gap-3">
+              {avatarGradients.map((gradient, index) => (
                 <button
                   key={index}
-                  onClick={() => handleAvatarChange(avatarUrl)}
-                  className={`relative rounded-full border-2 transition-all hover:scale-110 ${
-                    user.avatar === avatarUrl
+                  onClick={() => handleAvatarChange(gradient)}
+                  className={`relative h-16 w-16 rounded-full border-2 transition-all hover:scale-110 ${
+                    user.avatar === gradient
                       ? "border-primary ring-2 ring-primary ring-offset-2"
                       : "border-border hover:border-primary"
                   }`}
+                  style={{ background: gradient }}
                 >
-                  <Avatar className="h-16 w-16">
-                    <AvatarImage src={avatarUrl} alt={`Avatar ${index + 1}`} />
-                  </Avatar>
-                  {user.avatar === avatarUrl && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-primary/20 rounded-full">
-                      <Camera className="h-6 w-6 text-primary" />
+                  <div className="absolute inset-0 flex items-center justify-center text-white font-semibold text-sm">
+                    {user.initials}
+                  </div>
+                  {user.avatar === gradient && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-full">
+                      <Camera className="h-5 w-5 text-white" />
                     </div>
                   )}
                 </button>
               ))}
             </div>
           </div>
-
-          <Button variant="outline" className="w-full">
-            <Camera className="mr-2 h-4 w-4" />
-            Upload Custom Image
-          </Button>
         </CardContent>
       </Card>
 
