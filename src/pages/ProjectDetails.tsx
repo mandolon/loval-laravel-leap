@@ -118,7 +118,7 @@ const ProjectDetails = () => {
                 </div>
               </div>
             </div>
-            <CreateTaskDialog projectId={project.id} onCreateTask={handleCreateTask} />
+            <CreateTaskDialog projects={[project]} onCreateTask={handleCreateTask} />
           </div>
         </div>
 

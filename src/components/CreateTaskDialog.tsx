@@ -6,23 +6,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus } from "lucide-react";
-import type { CreateTaskInput, Task } from "@/lib/api/types";
+import type { CreateTaskInput, Task, Project } from "@/lib/api/types";
 
 interface CreateTaskDialogProps {
-  projectId: string;
+  projects: Project[];
   onCreateTask: (input: CreateTaskInput) => void;
 }
 
-export const CreateTaskDialog = ({ projectId, onCreateTask }: CreateTaskDialogProps) => {
+export const CreateTaskDialog = ({ projects, onCreateTask }: CreateTaskDialogProps) => {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [projectId, setProjectId] = useState(projects[0]?.id || "");
   const [priority, setPriority] = useState<Task['priority']>('medium');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!title.trim()) return;
+    if (!title.trim() || !projectId) return;
 
     onCreateTask({
       title: title.trim(),
@@ -54,6 +55,21 @@ export const CreateTaskDialog = ({ projectId, onCreateTask }: CreateTaskDialogPr
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          <div className="space-y-2">
+            <Label htmlFor="project">Project</Label>
+            <Select value={projectId} onValueChange={setProjectId}>
+              <SelectTrigger id="project">
+                <SelectValue placeholder="Select project" />
+              </SelectTrigger>
+              <SelectContent>
+                {projects.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="title">Task Title</Label>
             <Input

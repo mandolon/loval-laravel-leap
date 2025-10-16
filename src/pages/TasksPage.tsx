@@ -5,7 +5,7 @@ import type { Task, User } from "@/lib/api/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Plus, FileText, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, ChevronDown, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TaskDetailDialog } from "@/components/TaskDetailDialog";
 import { CreateTaskDialog } from "@/components/CreateTaskDialog";
@@ -235,11 +235,6 @@ const TasksPage = () => {
     );
   };
 
-  // Get first project for creating tasks
-  const firstProject = currentWorkspace 
-    ? api.projects.list(currentWorkspace.id)[0] 
-    : null;
-
   return (
     <div className="flex h-full">
       {/* Left Sidebar */}
@@ -281,9 +276,9 @@ const TasksPage = () => {
               }
             </p>
           </div>
-          {firstProject && (
+          {currentWorkspace && api.projects.list(currentWorkspace.id).length > 0 && (
             <CreateTaskDialog 
-              projectId={firstProject.id} 
+              projects={api.projects.list(currentWorkspace.id)} 
               onCreateTask={handleCreateTask}
             />
           )}
@@ -308,6 +303,15 @@ const TasksPage = () => {
           <div className="text-center py-20">
             <p className="text-muted-foreground text-lg">
               Please select a workspace from the sidebar to view tasks
+            </p>
+          </div>
+        ) : api.projects.list(currentWorkspace.id).length === 0 ? (
+          <div className="text-center py-20">
+            <p className="text-muted-foreground text-lg mb-4">
+              No projects in this workspace yet
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Create a project first to start adding tasks
             </p>
           </div>
         ) : (
