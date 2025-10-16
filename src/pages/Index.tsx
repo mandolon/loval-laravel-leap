@@ -7,6 +7,7 @@ import { CreateProjectDialog } from "@/components/CreateProjectDialog";
 import { useToast } from "@/hooks/use-toast";
 import { FolderKanban } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const ProjectsPage = () => {
@@ -62,85 +63,91 @@ const ProjectsPage = () => {
   });
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold mb-2">Projects</h1>
-          <p className="text-muted-foreground text-lg">
-            Manage your construction projects
-          </p>
-        </div>
-        <CreateProjectDialog onCreateProject={handleCreateProject} />
-      </div>
-
-      {/* Filters */}
-      <div className="flex gap-4 flex-wrap">
-        <Input
-          placeholder="Search projects..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-sm"
-        />
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="on_hold">On Hold</SelectItem>
-            <SelectItem value="archived">Archived</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={phaseFilter} onValueChange={setPhaseFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Phase" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Phases</SelectItem>
-            <SelectItem value="design">Design</SelectItem>
-            <SelectItem value="permit">Permit</SelectItem>
-            <SelectItem value="build">Build</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Projects Grid */}
-      {filteredProjects.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
-            <FolderKanban className="h-12 w-12 text-muted-foreground" />
+    <div className="h-full bg-background">
+      {/* Page Header */}
+      <div className="border-b border-border bg-card">
+        <div className="px-6 py-4">
+          <h1 className="text-2xl font-semibold mb-4">Projects</h1>
+          
+          {/* Filters */}
+          <div className="flex items-center justify-between">
+            <div className="flex gap-2">
+              <span className="text-sm text-muted-foreground">Filter by:</span>
+              <Select value={phaseFilter} onValueChange={setPhaseFilter}>
+                <SelectTrigger className="w-[120px] h-8 text-sm border-border">
+                  <SelectValue placeholder="Phase" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="all">Phase</SelectItem>
+                  <SelectItem value="design">Design</SelectItem>
+                  <SelectItem value="permit">Permit</SelectItem>
+                  <SelectItem value="build">Build</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[120px] h-8 text-sm border-border">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="all">Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="on_hold">On Hold</SelectItem>
+                  <SelectItem value="archived">Archived</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Button variant="outline" size="sm" className="h-8 text-sm">
+                Team Member
+              </Button>
+            </div>
+            
+            <div className="flex gap-1">
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <svg className="h-4 w-4" viewBox="0 0 16 16" fill="currentColor">
+                  <rect x="2" y="2" width="5" height="5" rx="1"/>
+                  <rect x="9" y="2" width="5" height="5" rx="1"/>
+                  <rect x="2" y="9" width="5" height="5" rx="1"/>
+                  <rect x="9" y="9" width="5" height="5" rx="1"/>
+                </svg>
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <svg className="h-4 w-4" viewBox="0 0 16 16" fill="currentColor">
+                  <rect x="2" y="2" width="12" height="2" rx="1"/>
+                  <rect x="2" y="7" width="12" height="2" rx="1"/>
+                  <rect x="2" y="12" width="12" height="2" rx="1"/>
+                </svg>
+              </Button>
+            </div>
           </div>
-          <h3 className="text-2xl font-semibold mb-2">
-            {projects.length === 0 ? "No projects yet" : "No matching projects"}
-          </h3>
-          <p className="text-muted-foreground mb-6">
-            {projects.length === 0 
-              ? "Create your first project to get started"
-              : "Try adjusting your filters"
-            }
-          </p>
-          {projects.length === 0 && (
-            <CreateProjectDialog onCreateProject={handleCreateProject} />
-          )}
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.map(project => (
-            <ProjectCard
-              key={project.id}
-              project={project}
-              client={getProjectClient(project.clientId)}
-              team={getProjectTeam(project.teamIds)}
-              taskCount={getTaskCount(project.id)}
-              onDelete={handleDeleteProject}
-              onClick={() => navigate(`/project/${project.id}`)}
-            />
-          ))}
-        </div>
-      )}
+      </div>
+
+      {/* Content Area */}
+      <div className="p-6">
+        {filteredProjects.length === 0 ? (
+          <div className="text-center py-20">
+            <p className="text-muted-foreground">
+              No projects yet. Click the "+" button in the sidebar to create one.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProjects.map(project => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                client={getProjectClient(project.clientId)}
+                team={getProjectTeam(project.teamIds)}
+                taskCount={getTaskCount(project.id)}
+                onDelete={handleDeleteProject}
+                onClick={() => navigate(`/project/${project.id}`)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
