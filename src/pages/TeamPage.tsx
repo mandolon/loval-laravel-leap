@@ -37,10 +37,10 @@ const PROTECTED_ADMIN_EMAIL = "armando@rehome.build";
 
 interface TeamMember {
   id: string;
-  first_name: string;
-  last_name: string;
+  short_id: string;
+  name: string;
   email: string;
-  title?: string;
+  phone?: string;
   role: 'admin' | 'team' | 'consultant' | 'client';
   is_active: boolean;
 }
@@ -61,30 +61,31 @@ const TeamPage = () => {
 
   const loadUsers = async () => {
     try {
-      const { data: profiles, error: profileError } = await supabase
-        .from('profiles')
+      const { data: users, error: usersError } = await supabase
+        .from('users')
         .select('*')
-        .order('first_name');
+        .is('deleted_at', null)
+        .order('name');
 
-      if (profileError) throw profileError;
+      if (usersError) throw usersError;
 
       // Fetch roles for each user
       const usersWithRoles = await Promise.all(
-        profiles.map(async (profile) => {
+        users.map(async (user) => {
           const { data: roleData } = await supabase
             .from('user_roles')
             .select('role')
-            .eq('user_id', profile.id)
-            .single();
+            .eq('user_id', user.id)
+            .maybeSingle();
 
           return {
-            id: profile.id,
-            first_name: profile.first_name,
-            last_name: profile.last_name,
-            email: profile.email,
-            title: profile.title,
+            id: user.id,
+            short_id: user.short_id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
             role: roleData?.role || 'team',
-            is_active: profile.is_active,
+            is_active: !user.deleted_at,
           };
         })
       );
@@ -158,10 +159,9 @@ const TeamPage = () => {
 
     try {
       const { error } = await supabase
-        .from('profiles')
+        .from('users')
         .update({
-          first_name: editValues.first_name.trim(),
-          last_name: editValues.last_name.trim(),
+          name: `${editValues.first_name.trim()} ${editValues.last_name.trim()}`,
         })
         .eq('id', userId);
 

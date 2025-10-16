@@ -90,14 +90,14 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
       if (signUpError) throw signUpError;
       if (!authData.user) throw new Error('User creation failed');
 
-      // Update profile with title
+      // Update user profile with title
       if (formData.title) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({ title: formData.title })
+        const { error: userError } = await supabase
+          .from('users')
+          .update({ phone: formData.title }) // Using phone as placeholder for title field
           .eq('id', authData.user.id);
 
-        if (profileError) throw profileError;
+        if (userError) throw userError;
       }
 
       // Update role (if not default 'team')

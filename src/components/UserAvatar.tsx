@@ -4,9 +4,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 interface UserAvatarUser {
   first_name?: string;
   last_name?: string;
-  name?: string; // For backward compatibility with mock data
-  initials: string;
+  name?: string;
+  initials?: string;
   avatar?: string | null;
+  avatar_url?: string | null;
   role?: string;
 }
 
@@ -27,15 +28,23 @@ export const UserAvatar = ({ user, size = "md" }: UserAvatarProps) => {
     ? `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}` 
     : user.name || 'User';
   
+  // Generate initials if not provided
+  const initials = user.initials || 
+    fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 
+    'U';
+  
+  // Use avatar_url or avatar
+  const avatarBg = user.avatar_url || user.avatar || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)';
+  
   return (
     <Tooltip>
       <TooltipTrigger>
         <Avatar className={sizeClasses[size]}>
           <AvatarFallback 
             className="text-white"
-            style={{ background: user.avatar || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
+            style={{ background: avatarBg }}
           >
-            {user.initials}
+            {initials}
           </AvatarFallback>
         </Avatar>
       </TooltipTrigger>

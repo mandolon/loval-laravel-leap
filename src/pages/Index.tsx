@@ -83,16 +83,6 @@ const ProjectsPage = () => {
   const getTaskCount = (projectId: string) => {
     return api.tasks.list(projectId).length;
   };
-
-  const getProjectTeam = (teamIds: string[]) => {
-    return teamIds.map(id => api.users.get(id)).filter(Boolean) as any[];
-  };
-
-  const getProjectClient = (clientId: string) => {
-    return api.clients.get(clientId);
-  };
-
-  // Filter projects
   const filteredProjects = projects.filter(project => {
     const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          project.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -198,9 +188,6 @@ const ProjectsPage = () => {
               <ProjectCard
                 key={project.id}
                 project={project}
-                client={getProjectClient(project.clientId)}
-                team={getProjectTeam(project.teamIds)}
-                taskCount={getTaskCount(project.id)}
                 onDelete={handleDeleteProject}
                 onClick={() => navigate(`/workspace/${currentWorkspaceId}/project/${project.id}`)}
               />

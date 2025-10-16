@@ -5,24 +5,26 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus } from "lucide-react";
 import { api } from "@/lib/api/client";
 import type { CreateProjectInput } from "@/lib/api/types";
 import { z } from "zod";
 
 const projectSchema = z.object({
-  name: z.string().trim().min(1, "Project name is required").max(100, "Project name must be less than 100 characters"),
-  description: z.string().trim().max(500, "Description must be less than 500 characters"),
-  streetNumber: z.string().trim().min(1, "Street number is required").max(20, "Street number must be less than 20 characters"),
-  streetName: z.string().trim().min(1, "Street name is required").max(100, "Street name must be less than 100 characters"),
-  city: z.string().trim().min(1, "City is required").max(100, "City must be less than 100 characters"),
-  state: z.string().trim().min(2, "State is required").max(2, "State must be 2 characters").toUpperCase(),
-  zipCode: z.string().trim().regex(/^\d{5}(-\d{4})?$/, "Invalid zip code format"),
-  clientFirstName: z.string().trim().min(1, "First name is required").max(50, "First name must be less than 50 characters"),
-  clientLastName: z.string().trim().min(1, "Last name is required").max(50, "Last name must be less than 50 characters"),
-  clientEmail: z.string().trim().email("Invalid email address").max(255, "Email must be less than 255 characters"),
-  status: z.enum(['active', 'on_hold', 'archived']),
-  phase: z.enum(['design', 'permit', 'build', 'completed']),
+  name: z.string().trim().min(1, "Project name is required").max(100),
+  description: z.string().trim().max(500),
+  streetNumber: z.string().trim().min(1, "Street number is required").max(20),
+  streetName: z.string().trim().min(1, "Street name is required").max(100),
+  city: z.string().trim().min(1, "City is required").max(100),
+  state: z.string().trim().min(2, "State is required").max(2).toUpperCase(),
+  zipCode: z.string().trim().regex(/^\d{5}(-\d{4})?$/, "Invalid zip code"),
+  clientFirstName: z.string().trim().min(1, "First name is required").max(50),
+  clientLastName: z.string().trim().min(1, "Last name is required").max(50),
+  clientEmail: z.string().trim().email("Invalid email").max(255),
+  clientPhone: z.string().trim().optional(),
+  status: z.enum(['pending', 'active', 'completed', 'archived']),
+  phase: z.enum(['Pre-Design', 'Design', 'Permit', 'Build']),
 });
 
 interface CreateProjectDialogProps {
@@ -42,8 +44,15 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
   const [clientFirstName, setClientFirstName] = useState("");
   const [clientLastName, setClientLastName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
-  const [status, setStatus] = useState<'active' | 'on_hold' | 'archived'>('on_hold');
-  const [phase, setPhase] = useState<'design' | 'permit' | 'build' | 'completed'>('design');
+  const [clientPhone, setClientPhone] = useState("");
+  const [hasSecondaryClient, setHasSecondaryClient] = useState(false);
+  const [secondaryClientFirstName, setSecondaryClientFirstName] = useState("");
+  const [secondaryClientLastName, setSecondaryClientLastName] = useState("");
+  const [secondaryClientEmail, setSecondaryClientEmail] = useState("");
+  const [secondaryClientPhone, setSecondaryClientPhone] = useState("");
+  const [estimatedAmount, setEstimatedAmount] = useState("");
+  const [status, setStatus] = useState<'pending' | 'active' | 'completed' | 'archived'>('pending');
+  const [phase, setPhase] = useState<'Pre-Design' | 'Design' | 'Permit' | 'Build'>('Pre-Design');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [workspaceId, setWorkspaceId] = useState("");
 
@@ -71,6 +80,7 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
       clientFirstName,
       clientLastName,
       clientEmail,
+      clientPhone,
       status,
       phase,
     };
@@ -93,27 +103,35 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
       return;
     }
 
-    // Create or find client
-    const clientName = `${clientFirstName.trim()} ${clientLastName.trim()}`;
-    const existingClient = api.clients.list().find(c => c.email === clientEmail.trim());
-    
-    const clientId = existingClient?.id || api.clients.create({
-      name: clientName,
-      email: clientEmail.trim(),
-    }).id;
-
-    // Build full address
-    const fullAddress = `${streetNumber.trim()} ${streetName.trim()}, ${city.trim()}, ${state.trim().toUpperCase()} ${zipCode.trim()}`;
-
-    onCreateProject({
+    const projectInput: CreateProjectInput = {
       workspaceId,
       name: name.trim(),
       description: description.trim(),
-      address: fullAddress,
-      clientId,
+      address: {
+        streetNumber: streetNumber.trim(),
+        streetName: streetName.trim(),
+        city: city.trim(),
+        state: state.trim().toUpperCase(),
+        zipCode: zipCode.trim(),
+      },
+      primaryClient: {
+        firstName: clientFirstName.trim(),
+        lastName: clientLastName.trim(),
+        email: clientEmail.trim(),
+        phone: clientPhone.trim() || undefined,
+      },
+      secondaryClient: hasSecondaryClient ? {
+        firstName: secondaryClientFirstName.trim(),
+        lastName: secondaryClientLastName.trim(),
+        email: secondaryClientEmail.trim(),
+        phone: secondaryClientPhone.trim() || undefined,
+      } : undefined,
+      estimatedAmount: estimatedAmount ? parseFloat(estimatedAmount) : undefined,
       status,
       phase,
-    });
+    };
+
+    onCreateProject(projectInput);
 
     // Reset form
     setName("");
@@ -126,8 +144,15 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
     setClientFirstName("");
     setClientLastName("");
     setClientEmail("");
-    setStatus('on_hold');
-    setPhase('design');
+    setClientPhone("");
+    setHasSecondaryClient(false);
+    setSecondaryClientFirstName("");
+    setSecondaryClientLastName("");
+    setSecondaryClientEmail("");
+    setSecondaryClientPhone("");
+    setEstimatedAmount("");
+    setStatus('pending');
+    setPhase('Pre-Design');
     setErrors({});
     setOpen(false);
   };
@@ -146,10 +171,10 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
         <DialogHeader>
           <DialogTitle>Create New Project</DialogTitle>
           <DialogDescription>
-            Add a new construction project with client and address details
+            Add a new architecture project with client and address details
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+        <form onSubmit={handleSubmit} className="space-y-6 mt-4">
           {errors.form && (
             <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">
               {errors.form}
@@ -183,6 +208,49 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
                 className={errors.description ? "border-destructive" : ""}
               />
               {errors.description && <p className="text-xs text-destructive">{errors.description}</p>}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="estimatedAmount">Design Fee</Label>
+                <Input
+                  id="estimatedAmount"
+                  type="number"
+                  placeholder="45000"
+                  value={estimatedAmount}
+                  onChange={(e) => setEstimatedAmount(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="status">Initial Status *</Label>
+                <Select value={status} onValueChange={(value: any) => setStatus(value)}>
+                  <SelectTrigger id="status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phase">Initial Phase *</Label>
+                <Select value={phase} onValueChange={(value: any) => setPhase(value)}>
+                  <SelectTrigger id="phase">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pre-Design">Pre-Design</SelectItem>
+                    <SelectItem value="Design">Design</SelectItem>
+                    <SelectItem value="Permit">Permit</SelectItem>
+                    <SelectItem value="Build">Build</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
@@ -256,9 +324,9 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
             </div>
           </div>
 
-          {/* Client Information */}
+          {/* Primary Client Information */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold">Client Information</h3>
+            <h3 className="text-sm font-semibold">Primary Client</h3>
             
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
@@ -286,56 +354,95 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="clientEmail">Email *</Label>
-              <Input
-                id="clientEmail"
-                type="email"
-                placeholder="john.smith@example.com"
-                value={clientEmail}
-                onChange={(e) => setClientEmail(e.target.value)}
-                className={errors.clientEmail ? "border-destructive" : ""}
-              />
-              {errors.clientEmail && <p className="text-xs text-destructive">{errors.clientEmail}</p>}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="clientEmail">Email *</Label>
+                <Input
+                  id="clientEmail"
+                  type="email"
+                  placeholder="john.smith@example.com"
+                  value={clientEmail}
+                  onChange={(e) => setClientEmail(e.target.value)}
+                  className={errors.clientEmail ? "border-destructive" : ""}
+                />
+                {errors.clientEmail && <p className="text-xs text-destructive">{errors.clientEmail}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="clientPhone">Phone</Label>
+                <Input
+                  id="clientPhone"
+                  type="tel"
+                  placeholder="(503) 555-0123"
+                  value={clientPhone}
+                  onChange={(e) => setClientPhone(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
-          {/* Project Settings */}
+          {/* Optional Secondary Client */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold">Project Settings</h3>
-            
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="status">Initial Status *</Label>
-                <Select value={status} onValueChange={(value: any) => setStatus(value)}>
-                  <SelectTrigger id="status" className={errors.status ? "border-destructive" : ""}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="on_hold">Pending</SelectItem>
-                    <SelectItem value="active">In Progress</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
-                  </SelectContent>
-                </Select>
-                {errors.status && <p className="text-xs text-destructive">{errors.status}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phase">Initial Phase *</Label>
-                <Select value={phase} onValueChange={(value: any) => setPhase(value)}>
-                  <SelectTrigger id="phase" className={errors.phase ? "border-destructive" : ""}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="design">Design</SelectItem>
-                    <SelectItem value="permit">Permit</SelectItem>
-                    <SelectItem value="build">Build</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                  </SelectContent>
-                </Select>
-                {errors.phase && <p className="text-xs text-destructive">{errors.phase}</p>}
-              </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="hasSecondaryClient"
+                checked={hasSecondaryClient}
+                onCheckedChange={(checked) => setHasSecondaryClient(checked as boolean)}
+              />
+              <Label htmlFor="hasSecondaryClient" className="font-semibold cursor-pointer">
+                Add Secondary Client
+              </Label>
             </div>
+
+            {hasSecondaryClient && (
+              <div className="space-y-4 pl-6 border-l-2">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="secondaryClientFirstName">First Name</Label>
+                    <Input
+                      id="secondaryClientFirstName"
+                      placeholder="Jane"
+                      value={secondaryClientFirstName}
+                      onChange={(e) => setSecondaryClientFirstName(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="secondaryClientLastName">Last Name</Label>
+                    <Input
+                      id="secondaryClientLastName"
+                      placeholder="Smith"
+                      value={secondaryClientLastName}
+                      onChange={(e) => setSecondaryClientLastName(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="secondaryClientEmail">Email</Label>
+                    <Input
+                      id="secondaryClientEmail"
+                      type="email"
+                      placeholder="jane.smith@example.com"
+                      value={secondaryClientEmail}
+                      onChange={(e) => setSecondaryClientEmail(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="secondaryClientPhone">Phone</Label>
+                    <Input
+                      id="secondaryClientPhone"
+                      type="tel"
+                      placeholder="(503) 555-0124"
+                      value={secondaryClientPhone}
+                      onChange={(e) => setSecondaryClientPhone(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-4">

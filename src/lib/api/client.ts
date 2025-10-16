@@ -1,44 +1,58 @@
-// Centralized API Client - localStorage for now, easy to swap to Laravel later!
+// Centralized API Client - Updated for Phase 1 MVP Schema (11 Core Tables)
 
 import type { 
   Project, 
   Task,
   User,
-  Client,
   Workspace,
+  ProjectMember,
+  Folder,
+  File,
+  Note,
+  Invoice,
+  InvoiceLineItem,
   CreateProjectInput, 
   CreateTaskInput,
   CreateUserInput,
-  CreateClientInput,
+  CreateNoteInput,
+  CreateInvoiceInput,
+  CreateInvoiceLineItemInput,
   CreateWorkspaceInput,
   UpdateProjectInput,
   UpdateTaskInput,
+  UpdateNoteInput,
+  UpdateInvoiceInput,
   UpdateWorkspaceInput
 } from './types';
 
 // Helper to generate IDs
 const generateId = () => crypto.randomUUID();
 
+// Helper to generate short IDs
+const generateShortId = (prefix: string): string => {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let id = prefix + '-';
+  for (let i = 0; i < 4; i++) {
+    id += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return id;
+};
+
 // Helper to get timestamp
 const timestamp = () => new Date().toISOString();
 
-// Helper to generate initials
-const generateInitials = (name: string) => {
-  return name
-    .split(' ')
-    .map(n => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-};
-
-// localStorage keys
+// localStorage keys - NO MORE CLIENTS
 const STORAGE_KEYS = {
   PROJECTS: 'projects',
   TASKS: 'tasks',
   USERS: 'users',
-  CLIENTS: 'clients',
   WORKSPACES: 'workspaces',
+  PROJECT_MEMBERS: 'project_members',
+  FOLDERS: 'folders',
+  FILES: 'files',
+  NOTES: 'notes',
+  INVOICES: 'invoices',
+  INVOICE_LINE_ITEMS: 'invoice_line_items',
   CURRENT_WORKSPACE: 'current_workspace_id',
   INITIALIZED: 'data_initialized',
 };
@@ -53,17 +67,10 @@ const initializeSampleData = () => {
   const sampleWorkspaces: Workspace[] = [
     {
       id: '1',
-      name: 'Workspace 1',
-      description: 'Main workspace for projects',
+      shortId: 'W-abc1',
+      name: 'Main Workspace',
+      description: 'Primary architecture projects',
       icon: '🏢',
-      createdAt: '2024-01-01T10:00:00Z',
-      updatedAt: '2024-01-01T10:00:00Z',
-    },
-    {
-      id: '2',
-      name: 'Personal Projects',
-      description: 'Personal construction projects',
-      icon: '🏠',
       createdAt: '2024-01-01T10:00:00Z',
       updatedAt: '2024-01-01T10:00:00Z',
     },
@@ -73,107 +80,87 @@ const initializeSampleData = () => {
   const sampleUsers: User[] = [
     {
       id: '1',
+      shortId: 'U-xyz1',
       name: 'Alex Morgan',
       email: 'alex.morgan@example.com',
-      role: 'admin',
-      initials: 'AM',
-      avatar: 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)',
-      isActive: true,
+      avatarUrl: 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)',
       createdAt: '2024-01-01T10:00:00Z',
+      updatedAt: '2024-01-01T10:00:00Z',
     },
     {
       id: '2',
-      name: 'Mike Chen',
-      email: 'mike@example.com',
-      role: 'team',
-      initials: 'MC',
-      avatar: 'linear-gradient(135deg, hsl(200, 80%, 55%) 0%, hsl(250, 75%, 65%) 100%)',
-      isActive: true,
-      createdAt: '2024-01-01T10:00:00Z',
-    },
-    {
-      id: '3',
-      name: 'Sarah Johnson',
+      shortId: 'U-xyz2',
+      name: 'Sarah Chen',
       email: 'sarah@example.com',
-      role: 'consultant',
-      initials: 'SJ',
-      avatar: 'linear-gradient(135deg, hsl(340, 85%, 60%) 0%, hsl(20, 90%, 65%) 100%)',
-      isActive: true,
+      avatarUrl: 'linear-gradient(135deg, hsl(200, 80%, 55%) 0%, hsl(250, 75%, 65%) 100%)',
       createdAt: '2024-01-01T10:00:00Z',
+      updatedAt: '2024-01-01T10:00:00Z',
     },
   ];
 
-  // Sample clients
-  const sampleClients: Client[] = [
-    {
-      id: '1',
-      name: 'John Smith',
-      email: 'john@example.com',
-      company: 'Smith Family Trust',
-      phone: '(503) 555-0123',
-      address: '123 Oak Street, Portland, OR 97201',
-      createdAt: '2024-01-01T10:00:00Z',
-    },
-    {
-      id: '2',
-      name: 'Emily Davis',
-      email: 'emily@example.com',
-      company: 'Davis Development LLC',
-      phone: '(206) 555-0456',
-      address: '456 Pine Avenue, Seattle, WA 98101',
-      createdAt: '2024-01-01T10:00:00Z',
-    },
-  ];
-
-  // Sample projects
+  // Sample projects with EMBEDDED clients
   const sampleProjects: Project[] = [
     {
       id: '1',
+      shortId: 'P-abc1',
       workspaceId: '1',
       name: 'Modern Family Home',
-      description: 'Contemporary 3-bedroom home with open concept living, high ceilings, and sustainable materials',
+      description: 'Contemporary 3-bedroom home with open concept living',
       status: 'active',
-      phase: 'design',
-      address: '123 Oak Street, Portland, OR 97201',
-      clientId: '1',
-      teamIds: ['1', '2'],
+      phase: 'Design',
+      address: {
+        streetNumber: '123',
+        streetName: 'Oak Street',
+        city: 'Portland',
+        state: 'OR',
+        zipCode: '97201'
+      },
+      primaryClient: {
+        firstName: 'John',
+        lastName: 'Smith',
+        email: 'john.smith@example.com',
+        phone: '(503) 555-0123',
+      },
+      estimatedAmount: 45000,
+      dueDate: '2024-06-15',
+      progress: 25,
+      totalTasks: 2,
+      completedTasks: 0,
+      teamMemberCount: 2,
+      createdBy: '1',
       createdAt: '2024-01-15T10:00:00Z',
       updatedAt: '2024-01-20T14:30:00Z',
-      dueDate: '2024-06-15T00:00:00Z',
-      budget: 450000,
-      progress: 25,
     },
     {
       id: '2',
-      workspaceId: '1',
-      name: 'Luxury Condo Complex',
-      description: 'High-end residential complex with 20 units, rooftop amenities, and underground parking',
-      status: 'active',
-      phase: 'permit',
-      address: '456 Pine Avenue, Seattle, WA 98101',
-      clientId: '2',
-      teamIds: ['1', '3'],
-      createdAt: '2024-01-10T09:00:00Z',
-      updatedAt: '2024-01-22T16:45:00Z',
-      dueDate: '2024-12-31T00:00:00Z',
-      budget: 2500000,
-      progress: 40,
-    },
-    {
-      id: '3',
+      shortId: 'P-xyz2',
       workspaceId: '1',
       name: 'Downtown Office Renovation',
-      description: 'Complete interior renovation of 5,000 sq ft office space with modern finishes',
+      description: '5,000 sq ft office space renovation',
       status: 'active',
-      phase: 'build',
-      address: '789 Main Street, Portland, OR 97204',
-      clientId: '1',
-      teamIds: ['2', '3'],
-      createdAt: '2024-02-01T08:00:00Z',
-      updatedAt: '2024-02-05T11:20:00Z',
-      dueDate: '2024-04-30T00:00:00Z',
-      budget: 180000,
-      progress: 65,
+      phase: 'Permit',
+      address: {
+        streetNumber: '456',
+        streetName: 'Pine Avenue',
+        city: 'Seattle',
+        state: 'WA',
+        zipCode: '98101'
+      },
+      primaryClient: {
+        firstName: 'Emily',
+        lastName: 'Davis',
+        email: 'emily.davis@example.com',
+        phone: '(206) 555-0456',
+      },
+      estimatedAmount: 75000,
+      dueDate: '2024-12-31',
+      progress: 60,
+      totalTasks: 1,
+      completedTasks: 0,
+      teamMemberCount: 1,
+      createdBy: '1',
+      createdAt: '2024-01-10T09:00:00Z',
+      updatedAt: '2024-01-22T16:45:00Z',
     },
   ];
 
@@ -181,87 +168,50 @@ const initializeSampleData = () => {
   const sampleTasks: Task[] = [
     {
       id: '1',
+      shortId: 'T-abc1',
       title: 'Create initial floor plans',
-      description: 'Design 3-bedroom layout with open concept kitchen and living area. Include multiple bathroom options.',
+      description: 'Design 3-bedroom layout with open concept kitchen',
       projectId: '1',
       status: 'progress_update',
       priority: 'high',
-      assigneeIds: ['1'],
-      createdById: '1',
+      assignees: ['1'],
+      attachedFiles: [],
+      dueDate: '2024-02-15',
+      estimatedTime: 40,
+      sortOrder: 0,
+      createdBy: '1',
       createdAt: '2024-01-15T10:00:00Z',
       updatedAt: '2024-01-20T14:30:00Z',
-      dueDate: '2024-02-15T00:00:00Z',
-      estimatedTime: 40,
-      trackedTime: 12,
     },
     {
       id: '2',
-      title: 'Select exterior materials',
-      description: 'Review and finalize exterior cladding, roofing, and window selections with client',
-      projectId: '1',
-      status: 'task_redline',
-      priority: 'medium',
-      assigneeIds: ['2'],
-      createdById: '1',
-      createdAt: '2024-01-16T09:00:00Z',
-      updatedAt: '2024-01-16T09:00:00Z',
-      dueDate: '2024-02-20T00:00:00Z',
-      estimatedTime: 16,
-      trackedTime: 0,
-    },
-    {
-      id: '3',
+      shortId: 'T-xyz2',
       title: 'Submit permit application',
-      description: 'Prepare and submit all required documents to city planning department including drawings, surveys, and fees',
+      description: 'Prepare and submit all required documents',
       projectId: '2',
-      status: 'progress_update',
+      status: 'task_redline',
       priority: 'urgent',
-      assigneeIds: ['3'],
-      createdById: '1',
+      assignees: ['2'],
+      attachedFiles: [],
+      dueDate: '2024-02-01',
+      estimatedTime: 16,
+      sortOrder: 0,
+      createdBy: '1',
       createdAt: '2024-01-10T09:00:00Z',
       updatedAt: '2024-01-22T16:45:00Z',
-      dueDate: '2024-02-01T00:00:00Z',
-      estimatedTime: 16,
-      trackedTime: 8,
-    },
-    {
-      id: '4',
-      title: 'Foundation inspection',
-      description: 'Schedule and coordinate foundation inspection with city inspector',
-      projectId: '3',
-      status: 'complete',
-      priority: 'high',
-      assigneeIds: ['2'],
-      createdById: '2',
-      createdAt: '2024-02-01T08:00:00Z',
-      updatedAt: '2024-02-05T11:20:00Z',
-      dueDate: '2024-02-10T00:00:00Z',
-      estimatedTime: 8,
-      actualTime: 6,
-      trackedTime: 6,
-    },
-    {
-      id: '5',
-      title: 'Install electrical systems',
-      description: 'Complete all rough electrical work including panel, circuits, and fixture boxes',
-      projectId: '3',
-      status: 'progress_update',
-      priority: 'high',
-      assigneeIds: ['3'],
-      createdById: '2',
-      createdAt: '2024-02-03T10:00:00Z',
-      updatedAt: '2024-02-05T14:00:00Z',
-      dueDate: '2024-02-25T00:00:00Z',
-      estimatedTime: 80,
-      trackedTime: 20,
     },
   ];
 
   localStorage.setItem(STORAGE_KEYS.WORKSPACES, JSON.stringify(sampleWorkspaces));
   localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(sampleUsers));
-  localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(sampleClients));
   localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(sampleProjects));
   localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(sampleTasks));
+  localStorage.setItem(STORAGE_KEYS.PROJECT_MEMBERS, JSON.stringify([]));
+  localStorage.setItem(STORAGE_KEYS.FOLDERS, JSON.stringify([]));
+  localStorage.setItem(STORAGE_KEYS.FILES, JSON.stringify([]));
+  localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify([]));
+  localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify([]));
+  localStorage.setItem(STORAGE_KEYS.INVOICE_LINE_ITEMS, JSON.stringify([]));
   localStorage.setItem(STORAGE_KEYS.CURRENT_WORKSPACE, '1');
   localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
 };
@@ -290,17 +240,22 @@ const projects = {
   create: (input: CreateProjectInput): Project => {
     const newProject: Project = {
       id: generateId(),
+      shortId: generateShortId('P'),
       workspaceId: input.workspaceId,
       name: input.name,
       description: input.description,
       address: input.address,
-      clientId: input.clientId,
-      teamIds: input.teamIds || [],
-      status: input.status || 'active',
-      phase: input.phase || 'design',
+      primaryClient: input.primaryClient,
+      secondaryClient: input.secondaryClient,
+      status: input.status || 'pending',
+      phase: input.phase || 'Pre-Design',
       dueDate: input.dueDate,
-      budget: input.budget,
+      estimatedAmount: input.estimatedAmount,
       progress: 0,
+      totalTasks: 0,
+      completedTasks: 0,
+      teamMemberCount: 0,
+      createdBy: '1', // TODO: Get from auth
       createdAt: timestamp(),
       updatedAt: timestamp(),
     };
@@ -364,20 +319,22 @@ const tasks = {
   },
 
   create: (input: CreateTaskInput): Task => {
-    // Get current user from session - in real implementation this would come from auth
-    const currentUserId = '1'; // This will be replaced with actual auth user ID
+    const currentUserId = '1'; // TODO: Get from auth
     
     const newTask: Task = {
       id: generateId(),
+      shortId: generateShortId('T'),
       title: input.title,
       description: input.description,
       projectId: input.projectId,
-      assigneeIds: input.assigneeIds || [],
+      assignees: input.assignees || [],
+      attachedFiles: input.attachedFiles || [],
       status: input.status || 'task_redline',
       priority: input.priority || 'medium',
       dueDate: input.dueDate,
       estimatedTime: input.estimatedTime,
-      createdById: currentUserId,
+      sortOrder: input.sortOrder || 0,
+      createdBy: currentUserId,
       createdAt: timestamp(),
       updatedAt: timestamp(),
     };
@@ -431,12 +388,11 @@ const users = {
   create: (input: CreateUserInput): User => {
     const newUser: User = {
       id: generateId(),
+      shortId: generateShortId('U'),
       name: input.name,
       email: input.email,
-      role: input.role,
-      initials: generateInitials(input.name),
-      isActive: true,
       createdAt: timestamp(),
+      updatedAt: timestamp(),
     };
 
     const allUsers = users.list();
@@ -447,34 +403,368 @@ const users = {
   },
 };
 
-// Clients API
-const clients = {
-  list: (): Client[] => {
-    const data = localStorage.getItem(STORAGE_KEYS.CLIENTS);
-    return data ? JSON.parse(data) : [];
+// Project Members API
+const projectMembers = {
+  list: (projectId: string): ProjectMember[] => {
+    const data = localStorage.getItem(STORAGE_KEYS.PROJECT_MEMBERS);
+    const all = data ? JSON.parse(data) : [];
+    return all.filter((pm: ProjectMember) => pm.projectId === projectId && !pm.deletedAt);
   },
 
-  get: (id: string): Client | null => {
-    const allClients = clients.list();
-    return allClients.find(c => c.id === id) || null;
-  },
-
-  create: (input: CreateClientInput): Client => {
-    const newClient: Client = {
+  create: (projectId: string, userId: string, title?: string): ProjectMember => {
+    const newMember: ProjectMember = {
       id: generateId(),
-      name: input.name,
-      email: input.email,
-      company: input.company,
-      phone: input.phone,
-      address: input.address,
+      shortId: generateShortId('PM'),
+      projectId,
+      userId,
+      title,
       createdAt: timestamp(),
     };
 
-    const allClients = clients.list();
-    allClients.push(newClient);
-    localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(allClients));
+    const all = projectMembers.list(projectId);
+    all.push(newMember);
+    localStorage.setItem(STORAGE_KEYS.PROJECT_MEMBERS, JSON.stringify(all));
 
-    return newClient;
+    return newMember;
+  },
+
+  remove: (id: string): boolean => {
+    const data = localStorage.getItem(STORAGE_KEYS.PROJECT_MEMBERS);
+    const all = data ? JSON.parse(data) : [];
+    const index = all.findIndex((pm: ProjectMember) => pm.id === id);
+    
+    if (index === -1) return false;
+
+    all[index].deletedAt = timestamp();
+    localStorage.setItem(STORAGE_KEYS.PROJECT_MEMBERS, JSON.stringify(all));
+    return true;
+  },
+};
+
+// Folders API
+const folders = {
+  list: (projectId: string): Folder[] => {
+    const data = localStorage.getItem(STORAGE_KEYS.FOLDERS);
+    const all = data ? JSON.parse(data) : [];
+    return all.filter((f: Folder) => f.projectId === projectId && !f.deletedAt);
+  },
+
+  get: (id: string): Folder | null => {
+    const data = localStorage.getItem(STORAGE_KEYS.FOLDERS);
+    const all = data ? JSON.parse(data) : [];
+    return all.find((f: Folder) => f.id === id) || null;
+  },
+
+  create: (projectId: string, name: string, parentId?: string): Folder => {
+    const newFolder: Folder = {
+      id: generateId(),
+      shortId: generateShortId('FD'),
+      projectId,
+      parentFolderId: parentId,
+      name,
+      isSystemFolder: false,
+      createdBy: '1', // TODO: Get from auth
+      createdAt: timestamp(),
+      updatedAt: timestamp(),
+    };
+
+    const data = localStorage.getItem(STORAGE_KEYS.FOLDERS);
+    const all = data ? JSON.parse(data) : [];
+    all.push(newFolder);
+    localStorage.setItem(STORAGE_KEYS.FOLDERS, JSON.stringify(all));
+
+    return newFolder;
+  },
+
+  delete: (id: string): boolean => {
+    const data = localStorage.getItem(STORAGE_KEYS.FOLDERS);
+    const all = data ? JSON.parse(data) : [];
+    const index = all.findIndex((f: Folder) => f.id === id);
+    
+    if (index === -1) return false;
+
+    all[index].deletedAt = timestamp();
+    localStorage.setItem(STORAGE_KEYS.FOLDERS, JSON.stringify(all));
+    return true;
+  },
+};
+
+// Files API
+const files = {
+  listByFolder: (folderId: string): File[] => {
+    const data = localStorage.getItem(STORAGE_KEYS.FILES);
+    const all = data ? JSON.parse(data) : [];
+    return all.filter((f: File) => f.folderId === folderId && !f.deletedAt);
+  },
+
+  listByProject: (projectId: string): File[] => {
+    const data = localStorage.getItem(STORAGE_KEYS.FILES);
+    const all = data ? JSON.parse(data) : [];
+    return all.filter((f: File) => f.projectId === projectId && !f.deletedAt);
+  },
+
+  get: (id: string): File | null => {
+    const data = localStorage.getItem(STORAGE_KEYS.FILES);
+    const all = data ? JSON.parse(data) : [];
+    return all.find((f: File) => f.id === id) || null;
+  },
+
+  upload: (projectId: string, folderId: string, file: any): File => {
+    const newFile: File = {
+      id: generateId(),
+      shortId: generateShortId('F'),
+      projectId,
+      folderId,
+      filename: file.name,
+      versionNumber: 1,
+      filesize: file.size,
+      mimetype: file.type,
+      storagePath: `/files/${projectId}/${file.name}`,
+      downloadCount: 0,
+      isShareable: false,
+      uploadedBy: '1', // TODO: Get from auth
+      createdAt: timestamp(),
+      updatedAt: timestamp(),
+    };
+
+    const data = localStorage.getItem(STORAGE_KEYS.FILES);
+    const all = data ? JSON.parse(data) : [];
+    all.push(newFile);
+    localStorage.setItem(STORAGE_KEYS.FILES, JSON.stringify(all));
+
+    return newFile;
+  },
+
+  delete: (id: string): boolean => {
+    const data = localStorage.getItem(STORAGE_KEYS.FILES);
+    const all = data ? JSON.parse(data) : [];
+    const index = all.findIndex((f: File) => f.id === id);
+    
+    if (index === -1) return false;
+
+    all[index].deletedAt = timestamp();
+    localStorage.setItem(STORAGE_KEYS.FILES, JSON.stringify(all));
+    return true;
+  },
+
+  generateShareLink: (fileId: string): string | null => {
+    const data = localStorage.getItem(STORAGE_KEYS.FILES);
+    const all = data ? JSON.parse(data) : [];
+    const index = all.findIndex((f: File) => f.id === fileId);
+    
+    if (index === -1) return null;
+
+    all[index].isShareable = true;
+    all[index].shareToken = crypto.randomUUID().replace(/-/g, '');
+    localStorage.setItem(STORAGE_KEYS.FILES, JSON.stringify(all));
+
+    return `/share/${all[index].shareToken}`;
+  },
+
+  revokeShareLink: (fileId: string): boolean => {
+    const data = localStorage.getItem(STORAGE_KEYS.FILES);
+    const all = data ? JSON.parse(data) : [];
+    const index = all.findIndex((f: File) => f.id === fileId);
+    
+    if (index === -1) return false;
+
+    all[index].isShareable = false;
+    all[index].shareToken = undefined;
+    localStorage.setItem(STORAGE_KEYS.FILES, JSON.stringify(all));
+    return true;
+  },
+
+  getVersionHistory: (fileId: string): File[] => {
+    const data = localStorage.getItem(STORAGE_KEYS.FILES);
+    const all = data ? JSON.parse(data) : [];
+    const versions: File[] = [];
+    let currentFile = all.find((f: File) => f.id === fileId);
+
+    while (currentFile) {
+      versions.push(currentFile);
+      if (currentFile.parentFileId) {
+        currentFile = all.find((f: File) => f.id === currentFile.parentFileId);
+      } else {
+        break;
+      }
+    }
+
+    return versions;
+  },
+};
+
+// Notes API
+const notes = {
+  list: (projectId: string): Note[] => {
+    const data = localStorage.getItem(STORAGE_KEYS.NOTES);
+    const all = data ? JSON.parse(data) : [];
+    return all.filter((n: Note) => n.projectId === projectId && !n.deletedAt);
+  },
+
+  get: (id: string): Note | null => {
+    const data = localStorage.getItem(STORAGE_KEYS.NOTES);
+    const all = data ? JSON.parse(data) : [];
+    return all.find((n: Note) => n.id === id) || null;
+  },
+
+  create: (input: CreateNoteInput): Note => {
+    const newNote: Note = {
+      id: generateId(),
+      shortId: generateShortId('N'),
+      projectId: input.projectId,
+      content: input.content,
+      createdBy: '1', // TODO: Get from auth
+      createdAt: timestamp(),
+      updatedAt: timestamp(),
+    };
+
+    const data = localStorage.getItem(STORAGE_KEYS.NOTES);
+    const all = data ? JSON.parse(data) : [];
+    all.push(newNote);
+    localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(all));
+
+    return newNote;
+  },
+
+  update: (id: string, input: UpdateNoteInput): Note | null => {
+    const data = localStorage.getItem(STORAGE_KEYS.NOTES);
+    const all = data ? JSON.parse(data) : [];
+    const index = all.findIndex((n: Note) => n.id === id);
+    
+    if (index === -1) return null;
+
+    all[index] = {
+      ...all[index],
+      ...input,
+      updatedAt: timestamp(),
+      updatedBy: '1', // TODO: Get from auth
+    };
+
+    localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(all));
+    return all[index];
+  },
+
+  delete: (id: string): boolean => {
+    const data = localStorage.getItem(STORAGE_KEYS.NOTES);
+    const all = data ? JSON.parse(data) : [];
+    const index = all.findIndex((n: Note) => n.id === id);
+    
+    if (index === -1) return false;
+
+    all[index].deletedAt = timestamp();
+    localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(all));
+    return true;
+  },
+};
+
+// Invoices API
+const invoices = {
+  list: (projectId: string): Invoice[] => {
+    const data = localStorage.getItem(STORAGE_KEYS.INVOICES);
+    const all = data ? JSON.parse(data) : [];
+    return all.filter((i: Invoice) => i.projectId === projectId && !i.deletedAt);
+  },
+
+  get: (id: string): Invoice | null => {
+    const data = localStorage.getItem(STORAGE_KEYS.INVOICES);
+    const all = data ? JSON.parse(data) : [];
+    return all.find((i: Invoice) => i.id === id) || null;
+  },
+
+  create: (input: CreateInvoiceInput): Invoice => {
+    const newInvoice: Invoice = {
+      id: generateId(),
+      shortId: generateShortId('INV'),
+      invoiceNumber: input.invoiceNumber,
+      projectId: input.projectId,
+      submittedToNames: input.submittedToNames,
+      invoiceDate: input.invoiceDate,
+      dueDate: input.dueDate,
+      subtotal: input.subtotal,
+      processingFeePercent: input.processingFeePercent || 3.5,
+      processingFeeAmount: input.processingFeeAmount,
+      total: input.total,
+      status: input.status || 'draft',
+      notes: input.notes,
+      createdBy: '1', // TODO: Get from auth
+      createdAt: timestamp(),
+      updatedAt: timestamp(),
+    };
+
+    const data = localStorage.getItem(STORAGE_KEYS.INVOICES);
+    const all = data ? JSON.parse(data) : [];
+    all.push(newInvoice);
+    localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(all));
+
+    return newInvoice;
+  },
+
+  update: (id: string, input: UpdateInvoiceInput): Invoice | null => {
+    const data = localStorage.getItem(STORAGE_KEYS.INVOICES);
+    const all = data ? JSON.parse(data) : [];
+    const index = all.findIndex((i: Invoice) => i.id === id);
+    
+    if (index === -1) return null;
+
+    all[index] = {
+      ...all[index],
+      ...input,
+      updatedAt: timestamp(),
+      updatedBy: '1', // TODO: Get from auth
+    };
+
+    localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(all));
+    return all[index];
+  },
+
+  delete: (id: string): boolean => {
+    const data = localStorage.getItem(STORAGE_KEYS.INVOICES);
+    const all = data ? JSON.parse(data) : [];
+    const index = all.findIndex((i: Invoice) => i.id === id);
+    
+    if (index === -1) return false;
+
+    all[index].deletedAt = timestamp();
+    localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(all));
+    return true;
+  },
+
+  addLineItem: (input: CreateInvoiceLineItemInput): InvoiceLineItem => {
+    const newItem: InvoiceLineItem = {
+      id: generateId(),
+      shortId: generateShortId('ILI'),
+      invoiceId: input.invoiceId,
+      phase: input.phase,
+      description: input.description,
+      amount: input.amount,
+      sortOrder: input.sortOrder || 0,
+      createdAt: timestamp(),
+      updatedAt: timestamp(),
+    };
+
+    const data = localStorage.getItem(STORAGE_KEYS.INVOICE_LINE_ITEMS);
+    const all = data ? JSON.parse(data) : [];
+    all.push(newItem);
+    localStorage.setItem(STORAGE_KEYS.INVOICE_LINE_ITEMS, JSON.stringify(all));
+
+    return newItem;
+  },
+
+  listLineItems: (invoiceId: string): InvoiceLineItem[] => {
+    const data = localStorage.getItem(STORAGE_KEYS.INVOICE_LINE_ITEMS);
+    const all = data ? JSON.parse(data) : [];
+    return all.filter((i: InvoiceLineItem) => i.invoiceId === invoiceId);
+  },
+
+  removeLineItem: (id: string): boolean => {
+    const data = localStorage.getItem(STORAGE_KEYS.INVOICE_LINE_ITEMS);
+    const all = data ? JSON.parse(data) : [];
+    const filtered = all.filter((i: InvoiceLineItem) => i.id !== id);
+    
+    if (filtered.length === all.length) return false;
+
+    localStorage.setItem(STORAGE_KEYS.INVOICE_LINE_ITEMS, JSON.stringify(filtered));
+    return true;
   },
 };
 
@@ -493,6 +783,7 @@ const workspaces = {
   create: (input: CreateWorkspaceInput): Workspace => {
     const newWorkspace: Workspace = {
       id: generateId(),
+      shortId: generateShortId('W'),
       name: input.name,
       description: input.description,
       icon: input.icon || '🏢',
@@ -548,11 +839,15 @@ const workspaces = {
   },
 };
 
-// Export unified API
+// Export unified API - NO MORE CLIENTS
 export const api = {
   projects,
   tasks,
   users,
-  clients,
+  projectMembers,
+  folders,
+  files,
+  notes,
+  invoices,
   workspaces,
 };
