@@ -15,14 +15,6 @@ export function NewAppHeader() {
 
   return (
     <header className="h-[60px] w-full border-b border-border bg-card flex items-center px-4 gap-4 flex-shrink-0">
-      {/* Left: User Info */}
-      <div className="flex items-center gap-2 min-w-[180px]">
-        <span className="text-sm font-medium">Unknown User</span>
-        <Button variant="ghost" size="icon" className="h-8 w-8">
-          <Menu className="h-4 w-4" />
-        </Button>
-      </div>
-
       {/* Center: Search Bar */}
       <div className="flex-1 max-w-2xl mx-auto">
         <div className="relative">
