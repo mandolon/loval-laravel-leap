@@ -271,6 +271,7 @@ export interface UpdateProjectInput {
   estimatedAmount?: number;
   dueDate?: string;
   progress?: number;
+  // Note: totalTasks, completedTasks, teamMemberCount are read-only (auto-managed by triggers)
 }
 
 export interface CreateTaskInput {
