@@ -14,9 +14,10 @@ export default function ProfilePage() {
   const { user, updateUser, signOut } = useUser();
   
   const [isEditing, setIsEditing] = useState(false);
+  const nameParts = user?.name.split(' ') || ['', ''];
   const [formData, setFormData] = useState({
-    first_name: user?.first_name || "",
-    last_name: user?.last_name || "",
+    first_name: nameParts[0] || "",
+    last_name: nameParts.slice(1).join(' ') || "",
     email: user?.email || "",
   });
 
@@ -45,7 +46,7 @@ export default function ProfilePage() {
 
   const handleAvatarChange = async (gradient: string) => {
     try {
-      await updateUser({ avatar: gradient });
+      await updateUser({ avatar_url: gradient });
       toast({
         title: "Avatar color updated",
         description: "Your profile avatar color has been changed successfully.",
@@ -61,7 +62,11 @@ export default function ProfilePage() {
 
   const handleSaveProfile = async () => {
     try {
-      await updateUser(formData);
+      const fullName = `${formData.first_name.trim()} ${formData.last_name.trim()}`.trim();
+      await updateUser({ 
+        name: fullName,
+        email: formData.email 
+      });
       setIsEditing(false);
       toast({
         title: "Profile updated",
@@ -119,13 +124,13 @@ export default function ProfilePage() {
             <Avatar className="h-24 w-24">
               <AvatarFallback 
                 className="text-white text-2xl font-semibold"
-                style={{ background: user.avatar || avatarGradients[0] }}
+                style={{ background: user.avatar_url || avatarGradients[0] }}
               >
                 {user.initials}
               </AvatarFallback>
             </Avatar>
             <div>
-              <h3 className="font-semibold text-lg">{user.first_name} {user.last_name}</h3>
+              <h3 className="font-semibold text-lg">{user.name}</h3>
               <p className="text-sm text-muted-foreground">{user.email}</p>
               <Badge className={`mt-2 ${roleColors[user.role]}`}>
                 {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
@@ -142,7 +147,7 @@ export default function ProfilePage() {
                   key={index}
                   onClick={() => handleAvatarChange(gradient)}
                   className={`relative h-16 w-16 rounded-full border-2 transition-all hover:scale-110 ${
-                    user.avatar === gradient
+                    user.avatar_url === gradient
                       ? "border-primary ring-2 ring-primary ring-offset-2"
                       : "border-border hover:border-primary"
                   }`}
@@ -151,7 +156,7 @@ export default function ProfilePage() {
                   <div className="absolute inset-0 flex items-center justify-center text-white font-semibold text-sm">
                     {user.initials}
                   </div>
-                  {user.avatar === gradient && (
+                  {user.avatar_url === gradient && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-full">
                       <Camera className="h-5 w-5 text-white" />
                     </div>
@@ -240,9 +245,10 @@ export default function ProfilePage() {
               <Button
                 variant="outline"
                 onClick={() => {
+                  const nameParts = user.name.split(' ');
                   setFormData({ 
-                    first_name: user.first_name, 
-                    last_name: user.last_name,
+                    first_name: nameParts[0] || '', 
+                    last_name: nameParts.slice(1).join(' ') || '',
                     email: user.email 
                   });
                   setIsEditing(false);

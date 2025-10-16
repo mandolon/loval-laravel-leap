@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Calendar, Upload, FileText } from "lucide-react";
-import type { Task, User, TaskAttachment } from "@/lib/api/types";
+import type { Task, User } from "@/lib/api/types";
 import { useUser } from "@/contexts/UserContext";
 
 interface TaskDetailDialogProps {
@@ -40,7 +40,7 @@ export function TaskDetailDialog({
       label: "PROGRESS/UPDATE", 
       className: "bg-primary text-primary-foreground"
     },
-    complete: { 
+    done_completed: { 
       label: "COMPLETE", 
       className: "bg-secondary text-secondary-foreground"
     },
@@ -95,9 +95,9 @@ export function TaskDetailDialog({
                 <Avatar className="h-6 w-6">
                   <AvatarFallback 
                     className="text-white text-xs"
-                    style={{ background: createdBy.avatar }}
+                    style={{ background: createdBy.avatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
                   >
-                    {createdBy.initials}
+                    {createdBy.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-sm">{createdBy.name}</span>
@@ -118,9 +118,9 @@ export function TaskDetailDialog({
                   <Avatar key={assignee.id} className="h-6 w-6">
                     <AvatarFallback 
                       className="text-white text-xs"
-                      style={{ background: assignee.avatar }}
+                      style={{ background: assignee.avatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
                     >
-                      {assignee.initials}
+                      {assignee.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                     </AvatarFallback>
                   </Avatar>
                 ))}
@@ -133,7 +133,7 @@ export function TaskDetailDialog({
             {/* Track Time */}
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Track Time</Label>
-              <div className="text-sm">{task.trackedTime || 0}h</div>
+              <div className="text-sm">{task.actualTime || 0}h</div>
             </div>
 
             {/* Due Date */}
@@ -190,7 +190,7 @@ export function TaskDetailDialog({
             </div>
 
             {/* Attachments Table */}
-            {task.attachments && task.attachments.length > 0 ? (
+            {task.attachedFiles && task.attachedFiles.length > 0 ? (
               <div className="border rounded-lg overflow-hidden">
                 <table className="w-full">
                   <thead className="bg-muted/50">
@@ -203,18 +203,18 @@ export function TaskDetailDialog({
                     </tr>
                   </thead>
                   <tbody>
-                    {task.attachments.map((attachment) => (
-                      <tr key={attachment.id} className="border-t hover:bg-muted/30">
+                    {task.attachedFiles.map((fileId) => (
+                      <tr key={fileId} className="border-t hover:bg-muted/30">
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
                             <FileText className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">{attachment.name}</span>
+                            <span className="text-sm">File {fileId.substring(0, 8)}</span>
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-sm">{formatFileSize(attachment.size)}</td>
-                        <td className="py-3 px-4 text-sm">{attachment.category || '-'}</td>
-                        <td className="py-3 px-4 text-sm">{formatDate(attachment.uploadedAt)}</td>
-                        <td className="py-3 px-4 text-sm">{attachment.uploadedBy}</td>
+                        <td className="py-3 px-4 text-sm">—</td>
+                        <td className="py-3 px-4 text-sm">—</td>
+                        <td className="py-3 px-4 text-sm">—</td>
+                        <td className="py-3 px-4 text-sm">—</td>
                       </tr>
                     ))}
                   </tbody>

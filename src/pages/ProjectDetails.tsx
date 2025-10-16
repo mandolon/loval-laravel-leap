@@ -67,15 +67,12 @@ const ProjectDetails = () => {
 
   if (!project) return null;
 
-  const client = api.clients.get(project.clientId);
-  const team = project.teamIds.map(id => api.users.get(id)).filter(Boolean) as any[];
-  
   const taskRedlineTasks = tasks.filter(t => t.status === 'task_redline');
   const progressUpdateTasks = tasks.filter(t => t.status === 'progress_update');
-  const completeTasks = tasks.filter(t => t.status === 'complete');
+  const completeTasks = tasks.filter(t => t.status === 'done_completed');
 
-  const getTaskAssignees = (assigneeIds: string[]) => {
-    return assigneeIds.map(id => api.users.get(id)).filter(Boolean) as any[];
+  const getTaskAssignees = (assignees: string[]) => {
+    return assignees.map(id => api.users.get(id)).filter(Boolean) as any[];
   };
 
   return (
@@ -159,7 +156,7 @@ const ProjectDetails = () => {
                         <TaskItem
                           key={task.id}
                           task={task}
-                          assignees={getTaskAssignees(task.assigneeIds)}
+                          assignees={getTaskAssignees(task.assignees)}
                           onStatusChange={handleStatusChange}
                           onDelete={handleDeleteTask}
                         />
@@ -182,7 +179,7 @@ const ProjectDetails = () => {
                         <TaskItem
                           key={task.id}
                           task={task}
-                          assignees={getTaskAssignees(task.assigneeIds)}
+                          assignees={getTaskAssignees(task.assignees)}
                           onStatusChange={handleStatusChange}
                           onDelete={handleDeleteTask}
                         />
@@ -205,7 +202,7 @@ const ProjectDetails = () => {
                         <TaskItem
                           key={task.id}
                           task={task}
-                          assignees={getTaskAssignees(task.assigneeIds)}
+                          assignees={getTaskAssignees(task.assignees)}
                           onStatusChange={handleStatusChange}
                           onDelete={handleDeleteTask}
                         />
@@ -263,21 +260,7 @@ const ProjectDetails = () => {
                   <CardTitle>Team</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {team.length === 0 ? (
-                    <p className="text-muted-foreground">No team members assigned</p>
-                  ) : (
-                    <div className="flex items-center gap-4">
-                      {team.map(user => (
-                        <div key={user.id} className="flex items-center gap-2">
-                          <UserAvatar user={user} size="md" />
-                          <div>
-                            <p className="font-medium">{user.first_name} {user.last_name}</p>
-                            <p className="text-xs text-muted-foreground">{user.role}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <p className="text-muted-foreground">Team members: {project.teamMemberCount}</p>
                 </CardContent>
               </Card>
 
@@ -293,7 +276,11 @@ const ProjectDetails = () => {
                   </Button>
                 </CardHeader>
                 <CardContent>
-                  <p className="font-medium">{project.address || '—'}</p>
+                  <p className="font-medium">
+                    {typeof project.address === 'object' && project.address 
+                      ? `${project.address.streetNumber || ''} ${project.address.streetName || ''}, ${project.address.city || ''}, ${project.address.state || ''} ${project.address.zipCode || ''}`.trim() 
+                      : '—'}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -365,34 +352,34 @@ const ProjectDetails = () => {
                   <CardTitle>Client Information</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {client ? (
-                    <div className="space-y-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Name</p>
-                        <p className="font-medium text-lg">{client.name}</p>
-                      </div>
-                      {client.company && (
-                        <div>
-                          <p className="text-sm text-muted-foreground">Company</p>
-                          <p className="font-medium">{client.company}</p>
-                        </div>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Primary Client</p>
+                      <p className="font-medium text-lg">
+                        {project.primaryClient?.firstName} {project.primaryClient?.lastName}
+                      </p>
+                      {project.primaryClient?.email && (
+                        <p className="text-sm">{project.primaryClient.email}</p>
                       )}
-                      {client.email && (
-                        <div>
-                          <p className="text-sm text-muted-foreground">Email</p>
-                          <p className="font-medium">{client.email}</p>
-                        </div>
-                      )}
-                      {client.phone && (
-                        <div>
-                          <p className="text-sm text-muted-foreground">Phone</p>
-                          <p className="font-medium">{client.phone}</p>
-                        </div>
+                      {project.primaryClient?.phone && (
+                        <p className="text-sm">{project.primaryClient.phone}</p>
                       )}
                     </div>
-                  ) : (
-                    <p className="text-muted-foreground">No client assigned</p>
-                  )}
+                    {project.secondaryClient && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Secondary Client</p>
+                        <p className="font-medium text-lg">
+                          {project.secondaryClient.firstName} {project.secondaryClient.lastName}
+                        </p>
+                        {project.secondaryClient.email && (
+                          <p className="text-sm">{project.secondaryClient.email}</p>
+                        )}
+                        {project.secondaryClient.phone && (
+                          <p className="text-sm">{project.secondaryClient.phone}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

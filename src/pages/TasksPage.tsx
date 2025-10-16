@@ -84,7 +84,7 @@ const TasksPage = () => {
   };
 
   const filteredTasks = tasks.filter(task => {
-    if (filter === 'completed') return task.status === 'complete';
+    if (filter === 'completed') return task.status === 'done_completed';
     if (filter === 'my') {
       // Filter for current user - for now show all since we don't have auth
       return true;
@@ -103,16 +103,16 @@ const TasksPage = () => {
       color: "bg-primary text-primary-foreground",
       count: filteredTasks.filter(t => t.status === 'progress_update').length
     },
-    complete: { 
+    done_completed: { 
       label: "COMPLETE", 
       color: "bg-secondary text-secondary-foreground",
-      count: filteredTasks.filter(t => t.status === 'complete').length
+      count: filteredTasks.filter(t => t.status === 'done_completed').length
     },
   };
 
   const taskRedlineTasks = filteredTasks.filter(t => t.status === 'task_redline');
   const progressUpdateTasks = filteredTasks.filter(t => t.status === 'progress_update');
-  const completeTasks = filteredTasks.filter(t => t.status === 'complete');
+  const completeTasks = filteredTasks.filter(t => t.status === 'done_completed');
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -120,9 +120,9 @@ const TasksPage = () => {
   };
 
   const TaskRow = ({ task }: { task: Task }) => {
-    const assignees = getTaskAssignees(task.assigneeIds);
-    const creator = getTaskCreator(task.createdById);
-    const fileCount = task.attachments?.length || 0;
+    const assignees = getTaskAssignees(task.assignees);
+    const creator = getTaskCreator(task.createdBy);
+    const fileCount = task.attachedFiles?.length || 0;
 
     return (
       <div 
@@ -156,9 +156,9 @@ const TasksPage = () => {
           <Avatar className="h-8 w-8">
             <AvatarFallback 
               className="text-white text-xs"
-              style={{ background: creator.avatar }}
+              style={{ background: creator.avatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
             >
-              {creator.initials}
+              {creator.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
             </AvatarFallback>
           </Avatar>
         </div>
@@ -169,9 +169,9 @@ const TasksPage = () => {
             <Avatar key={assignee.id} className="h-8 w-8">
               <AvatarFallback 
                 className="text-white text-xs"
-                style={{ background: assignee.avatar }}
+                style={{ background: assignee.avatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
               >
-                {assignee.initials}
+                {assignee.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
               </AvatarFallback>
             </Avatar>
           ))}
@@ -292,7 +292,7 @@ const TasksPage = () => {
           <div className="space-y-4">
             <TaskSection status="task_redline" tasks={taskRedlineTasks} />
             <TaskSection status="progress_update" tasks={progressUpdateTasks} />
-            <TaskSection status="complete" tasks={completeTasks} />
+            <TaskSection status="done_completed" tasks={completeTasks} />
           </div>
         )}
       </div>
@@ -304,8 +304,8 @@ const TasksPage = () => {
           open={!!selectedTask}
           onOpenChange={(open) => !open && setSelectedTask(null)}
           onUpdate={(updates) => handleTaskUpdate(selectedTask.id, updates)}
-          assignees={getTaskAssignees(selectedTask.assigneeIds)}
-          createdBy={getTaskCreator(selectedTask.createdById)}
+          assignees={getTaskAssignees(selectedTask.assignees)}
+          createdBy={getTaskCreator(selectedTask.createdBy)}
         />
       )}
     </div>

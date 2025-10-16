@@ -49,7 +49,7 @@ const TeamPage = () => {
   const [users, setUsers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState({ first_name: '', last_name: '' });
+  const [editValues, setEditValues] = useState({ name: '' });
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'team' | 'consultant' | 'client'>('all');
   const { toast } = useToast();
@@ -137,21 +137,20 @@ const TeamPage = () => {
   const startEditing = (user: TeamMember) => {
     setEditingId(user.id);
     setEditValues({
-      first_name: user.first_name,
-      last_name: user.last_name,
+      name: user.name,
     });
   };
 
   const cancelEditing = () => {
     setEditingId(null);
-    setEditValues({ first_name: '', last_name: '' });
+    setEditValues({ name: '' });
   };
 
   const saveEdit = async (userId: string) => {
-    if (!editValues.first_name.trim() || !editValues.last_name.trim()) {
+    if (!editValues.name.trim()) {
       toast({
         title: "Validation error",
-        description: "First name and last name are required",
+        description: "Name is required",
         variant: "destructive",
       });
       return;
@@ -161,7 +160,7 @@ const TeamPage = () => {
       const { error } = await supabase
         .from('users')
         .update({
-          name: `${editValues.first_name.trim()} ${editValues.last_name.trim()}`,
+          name: editValues.name.trim(),
         })
         .eq('id', userId);
 
@@ -169,7 +168,7 @@ const TeamPage = () => {
 
       setUsers(users.map(u => 
         u.id === userId 
-          ? { ...u, first_name: editValues.first_name.trim(), last_name: editValues.last_name.trim() }
+          ? { ...u, name: editValues.name.trim() }
           : u
       ));
 
@@ -310,16 +309,10 @@ const TeamPage = () => {
                     {editingId === user.id ? (
                       <div className="flex gap-2 items-center">
                         <Input
-                          value={editValues.first_name}
-                          onChange={(e) => setEditValues({ ...editValues, first_name: e.target.value })}
-                          placeholder="First Name"
-                          className="h-8 w-24"
-                        />
-                        <Input
-                          value={editValues.last_name}
-                          onChange={(e) => setEditValues({ ...editValues, last_name: e.target.value })}
-                          placeholder="Last Name"
-                          className="h-8 w-24"
+                          value={editValues.name}
+                          onChange={(e) => setEditValues({ name: e.target.value })}
+                          placeholder="Full Name"
+                          className="h-8"
                         />
                         <Button
                           size="icon"
@@ -341,7 +334,7 @@ const TeamPage = () => {
                     ) : (
                       <div className="flex items-center gap-2">
                         <span className="font-medium">
-                          {user.first_name} {user.last_name}
+                          {user.name}
                         </span>
                         <Button
                           size="icon"
@@ -357,7 +350,7 @@ const TeamPage = () => {
 
                   {/* Title Cell */}
                   <TableCell className="text-muted-foreground">
-                    {user.title || '-'}
+                    —
                   </TableCell>
 
                   {/* Email Cell */}
