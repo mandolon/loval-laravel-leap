@@ -5,7 +5,8 @@ import { useState, useEffect } from "react";
 import { Separator } from "@/components/ui/separator";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 import { CreateProjectDialog } from "@/components/CreateProjectDialog";
-import { api } from "@/lib/api/client";
+import { supabase } from "@/integrations/supabase/client";
+import { useWorkspaces } from "@/hooks/useWorkspaces";
 import type { Project } from "@/lib/api/types";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/UserContext";
@@ -20,29 +21,39 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
   const location = useLocation();
   const { toast } = useToast();
   const { user } = useUser();
+  const { currentWorkspace, currentWorkspaceId } = useWorkspaces();
   const [activeTab, setActiveTab] = useState<'home' | 'workspace' | 'tasks' | 'ai'>('workspace');
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('active');
 
-  const currentWorkspaceId = workspaceId || api.workspaces.getCurrentWorkspaceId();
-  const currentWorkspace = currentWorkspaceId ? api.workspaces.get(currentWorkspaceId) : null;
-
   useEffect(() => {
-    loadProjects();
-  }, [currentWorkspaceId, location.pathname]);
+    if (currentWorkspaceId || workspaceId) {
+      loadProjects();
+    }
+  }, [currentWorkspaceId, workspaceId, location.pathname]);
 
-  const loadProjects = () => {
-    if (currentWorkspaceId) {
-      const workspaceProjects = api.projects.list(currentWorkspaceId);
-      setProjects(workspaceProjects);
-    } else {
-      setProjects([]);
+  const loadProjects = async () => {
+    const wsId = workspaceId || currentWorkspaceId;
+    if (!wsId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*")
+        .eq("workspace_id", wsId)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setProjects(data || []);
+    } catch (error) {
+      console.error("Error loading projects:", error);
     }
   };
 
   const handleWorkspaceChange = (newWorkspaceId: string) => {
-    api.workspaces.setCurrentWorkspaceId(newWorkspaceId);
+    localStorage.setItem("current_workspace_id", newWorkspaceId);
     loadProjects();
     onWorkspaceChange?.(newWorkspaceId);
     
@@ -57,8 +68,9 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
     }
   };
 
-  const handleCreateProject = (input: Parameters<typeof api.projects.create>[0]) => {
-    if (!currentWorkspaceId) {
+  const handleCreateProject = async (input: { name: string; description?: string; status?: string; phase?: string }) => {
+    const wsId = workspaceId || currentWorkspaceId;
+    if (!wsId || !user?.id) {
       toast({
         title: "No workspace selected",
         description: "Please select a workspace first",
@@ -67,17 +79,35 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
       return;
     }
 
-    const projectInput = {
-      ...input,
-      workspaceId: currentWorkspaceId,
-    };
+    try {
+      const { data: newProject, error } = await supabase
+        .from("projects")
+        .insert({
+          workspace_id: wsId,
+          name: input.name,
+          description: input.description || null,
+          status: input.status || "active",
+          phase: input.phase || "Pre-Design",
+          created_by: user.id,
+        })
+        .select()
+        .single();
 
-    const newProject = api.projects.create(projectInput);
-    loadProjects();
-    toast({
-      title: "Project created",
-      description: `${newProject.name} has been created successfully`,
-    });
+      if (error) throw error;
+
+      await loadProjects();
+      toast({
+        title: "Project created",
+        description: `${newProject.name} has been created successfully`,
+      });
+    } catch (error) {
+      console.error("Error creating project:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create project",
+        variant: "destructive",
+      });
+    }
   };
 
   const getNavPath = (basePath: string) => {
@@ -116,9 +146,9 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
   ];
 
   const taskFilters = [
-    { label: 'All Tasks', count: projects.flatMap(p => api.tasks.list(p.id)).length },
+    { label: 'All Tasks', count: 0 },
     { label: 'My Tasks', count: 0 },
-    { label: 'Completed', count: projects.flatMap(p => api.tasks.list(p.id)).filter(t => t.status === 'done_completed').length },
+    { label: 'Completed', count: 0 },
   ];
 
   // Render dynamic content based on active tab

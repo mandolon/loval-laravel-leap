@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Building2, Plus, Check } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,8 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { api } from "@/lib/api/client";
-import type { Workspace } from "@/lib/api/types";
+import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { useToast } from "@/hooks/use-toast";
 
 interface WorkspaceSwitcherProps {
@@ -24,70 +23,50 @@ interface WorkspaceSwitcherProps {
 export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { workspaceId } = useParams<{ workspaceId: string }>();
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(null);
+  const {
+    workspaces,
+    currentWorkspace,
+    currentWorkspaceId,
+    createWorkspace,
+    switchWorkspace,
+  } = useWorkspaces();
+  
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [newWorkspaceDescription, setNewWorkspaceDescription] = useState("");
 
-  useEffect(() => {
-    loadWorkspaces();
-  }, []);
-
-  const loadWorkspaces = () => {
-    const allWorkspaces = api.workspaces.list();
-    setWorkspaces(allWorkspaces);
-    
-    // Use workspace from URL if available, otherwise use stored value
-    const currentId = workspaceId || api.workspaces.getCurrentWorkspaceId();
-    if (currentId) {
-      setCurrentWorkspaceId(currentId);
-      api.workspaces.setCurrentWorkspaceId(currentId);
-    } else if (allWorkspaces.length > 0) {
-      // Set first workspace as current if none selected
-      setCurrentWorkspaceId(allWorkspaces[0].id);
-      api.workspaces.setCurrentWorkspaceId(allWorkspaces[0].id);
-      navigate(`/workspace/${allWorkspaces[0].id}/projects`);
-    }
-  };
-
   const handleWorkspaceChange = (newWorkspaceId: string) => {
-    setCurrentWorkspaceId(newWorkspaceId);
-    api.workspaces.setCurrentWorkspaceId(newWorkspaceId);
+    switchWorkspace(newWorkspaceId);
     onWorkspaceChange?.(newWorkspaceId);
+    navigate(`/workspace/${newWorkspaceId}/projects`);
   };
 
-  const handleCreateWorkspace = (e: React.FormEvent) => {
+  const handleCreateWorkspace = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!newWorkspaceName.trim()) return;
 
-    const newWorkspace = api.workspaces.create({
+    const newWorkspace = await createWorkspace({
       name: newWorkspaceName.trim(),
       description: newWorkspaceDescription.trim(),
       icon: '🏢',
     });
 
-    setWorkspaces([...workspaces, newWorkspace]);
-    setCurrentWorkspaceId(newWorkspace.id);
-    api.workspaces.setCurrentWorkspaceId(newWorkspace.id);
-    
-    toast({
-      title: "Workspace created",
-      description: `${newWorkspace.name} has been created successfully`,
-    });
+    if (newWorkspace) {
+      toast({
+        title: "Workspace created",
+        description: `${newWorkspace.name} has been created successfully`,
+      });
 
-    setNewWorkspaceName("");
-    setNewWorkspaceDescription("");
-    setCreateDialogOpen(false);
-    onWorkspaceChange?.(newWorkspace.id);
-    
-    // Navigate to new workspace
-    navigate(`/workspace/${newWorkspace.id}/projects`);
+      setNewWorkspaceName("");
+      setNewWorkspaceDescription("");
+      setCreateDialogOpen(false);
+      onWorkspaceChange?.(newWorkspace.id);
+      
+      // Navigate to new workspace
+      navigate(`/workspace/${newWorkspace.id}/projects`);
+    }
   };
-
-  const currentWorkspace = workspaces.find(w => w.id === currentWorkspaceId);
 
   return (
     <>

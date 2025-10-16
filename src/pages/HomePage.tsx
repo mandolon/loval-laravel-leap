@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { api } from "@/lib/api/client";
+import { supabase } from "@/integrations/supabase/client";
+import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FolderKanban, CheckSquare, Users, TrendingUp, ArrowRight } from "lucide-react";
@@ -8,6 +9,7 @@ import { FolderKanban, CheckSquare, Users, TrendingUp, ArrowRight } from "lucide
 const HomePage = () => {
   const navigate = useNavigate();
   const { workspaceId } = useParams<{ workspaceId: string }>();
+  const { currentWorkspace, currentWorkspaceId, loading } = useWorkspaces();
   const [stats, setStats] = useState({
     totalProjects: 0,
     activeProjects: 0,
@@ -15,53 +17,94 @@ const HomePage = () => {
     completedTasks: 0,
     teamMembers: 0,
   });
-  const [currentWorkspace, setCurrentWorkspace] = useState<any>(null);
-  
-  const currentWorkspaceId = workspaceId || api.workspaces.getCurrentWorkspaceId();
 
+  // Redirect to current workspace if no workspace in URL
   useEffect(() => {
-    loadStats();
-  }, [currentWorkspaceId]);
-
-  useEffect(() => {
-    // Redirect to workspace route if not already there
-    if (!workspaceId && currentWorkspaceId) {
+    if (!loading && !workspaceId && currentWorkspaceId) {
       navigate(`/workspace/${currentWorkspaceId}`, { replace: true });
     }
-  }, [workspaceId, currentWorkspaceId, navigate]);
+  }, [workspaceId, currentWorkspaceId, loading, navigate]);
 
-  const loadStats = () => {
-    const workspaceId = currentWorkspaceId;
-    
+  useEffect(() => {
     if (workspaceId) {
-      const workspace = api.workspaces.get(workspaceId);
-      setCurrentWorkspace(workspace);
+      loadStats();
+    }
+  }, [workspaceId]);
+
+  const loadStats = async () => {
+    if (!workspaceId) return;
+
+    try {
+      // Get projects count
+      const { count: projectsCount } = await supabase
+        .from("projects")
+        .select("*", { count: "exact", head: true })
+        .eq("workspace_id", workspaceId)
+        .is("deleted_at", null);
+
+      const { count: activeProjectsCount } = await supabase
+        .from("projects")
+        .select("*", { count: "exact", head: true })
+        .eq("workspace_id", workspaceId)
+        .eq("status", "active")
+        .is("deleted_at", null);
+
+      // Get tasks count for workspace projects
+      const { data: projects } = await supabase
+        .from("projects")
+        .select("id")
+        .eq("workspace_id", workspaceId)
+        .is("deleted_at", null);
+
+      const projectIds = projects?.map(p => p.id) || [];
+
+      let tasksCount = 0;
+      let completedTasksCount = 0;
       
-      // Get projects for current workspace only
-      const projects = api.projects.list(workspaceId);
-      
-      // Get tasks for projects in current workspace
-      const allTasks = projects.flatMap(p => api.tasks.list(p.id));
-      
-      const users = api.users.list();
+      if (projectIds.length > 0) {
+        const { count: totalTasks } = await supabase
+          .from("tasks")
+          .select("*", { count: "exact", head: true })
+          .in("project_id", projectIds)
+          .is("deleted_at", null);
+
+        const { count: completedTasks } = await supabase
+          .from("tasks")
+          .select("*", { count: "exact", head: true })
+          .in("project_id", projectIds)
+          .eq("status", "done_completed")
+          .is("deleted_at", null);
+
+        tasksCount = totalTasks || 0;
+        completedTasksCount = completedTasks || 0;
+      }
+
+      // Get team members count
+      const { count: teamCount } = await supabase
+        .from("workspace_members")
+        .select("*", { count: "exact", head: true })
+        .eq("workspace_id", workspaceId)
+        .is("deleted_at", null);
 
       setStats({
-        totalProjects: projects.length,
-        activeProjects: projects.filter(p => p.status === 'active').length,
-        totalTasks: allTasks.length,
-        completedTasks: allTasks.filter(t => t.status === 'done_completed').length,
-        teamMembers: users.length,
+        totalProjects: projectsCount || 0,
+        activeProjects: activeProjectsCount || 0,
+        totalTasks: tasksCount,
+        completedTasks: completedTasksCount,
+        teamMembers: teamCount || 0,
       });
-    } else {
-      setStats({
-        totalProjects: 0,
-        activeProjects: 0,
-        totalTasks: 0,
-        completedTasks: 0,
-        teamMembers: 0,
-      });
+    } catch (error) {
+      console.error("Error loading stats:", error);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
 
   const statCards = [
     {
