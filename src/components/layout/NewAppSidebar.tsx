@@ -1,10 +1,13 @@
-import { Home, FolderKanban, CheckSquare, Settings, Plus, ChevronRight } from "lucide-react";
+import { Home, FolderKanban, CheckSquare, Bot, Plus, ChevronRight, ChevronLeft, User } from "lucide-react";
 import { NavLink, useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { Separator } from "@/components/ui/separator";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
+import { CreateProjectDialog } from "@/components/CreateProjectDialog";
 import { api } from "@/lib/api/client";
+import type { Project } from "@/lib/api/types";
+import { useToast } from "@/hooks/use-toast";
 
 interface NewAppSidebarProps {
   onWorkspaceChange?: (workspaceId: string) => void;
@@ -14,26 +17,31 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState<'home' | 'workspace' | 'tasks' | 'settings'>('workspace');
-  const [projectCount, setProjectCount] = useState(0);
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<'home' | 'workspace' | 'tasks' | 'ai'>('workspace');
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('active');
 
   const currentWorkspaceId = workspaceId || api.workspaces.getCurrentWorkspaceId();
+  const currentWorkspace = currentWorkspaceId ? api.workspaces.get(currentWorkspaceId) : null;
 
   useEffect(() => {
-    updateProjectCount();
+    loadProjects();
   }, [currentWorkspaceId, location.pathname]);
 
-  const updateProjectCount = () => {
+  const loadProjects = () => {
     if (currentWorkspaceId) {
-      const projects = api.projects.list(currentWorkspaceId);
-      setProjectCount(projects.length);
+      const workspaceProjects = api.projects.list(currentWorkspaceId);
+      setProjects(workspaceProjects);
+    } else {
+      setProjects([]);
     }
   };
 
   const handleWorkspaceChange = (newWorkspaceId: string) => {
     api.workspaces.setCurrentWorkspaceId(newWorkspaceId);
-    updateProjectCount();
+    loadProjects();
     onWorkspaceChange?.(newWorkspaceId);
     
     // Navigate to the same page but with new workspace
@@ -47,6 +55,29 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
     }
   };
 
+  const handleCreateProject = (input: Parameters<typeof api.projects.create>[0]) => {
+    if (!currentWorkspaceId) {
+      toast({
+        title: "No workspace selected",
+        description: "Please select a workspace first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const projectInput = {
+      ...input,
+      workspaceId: currentWorkspaceId,
+    };
+
+    const newProject = api.projects.create(projectInput);
+    loadProjects();
+    toast({
+      title: "Project created",
+      description: `${newProject.name} has been created successfully`,
+    });
+  };
+
   const getNavPath = (basePath: string) => {
     if (!currentWorkspaceId) return basePath;
     return basePath === '/' ? `/workspace/${currentWorkspaceId}` : `/workspace/${currentWorkspaceId}${basePath}`;
@@ -56,7 +87,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
     { id: 'home' as const, icon: Home, label: 'Home', path: getNavPath('') },
     { id: 'workspace' as const, icon: FolderKanban, label: 'Workspace', path: getNavPath('/projects') },
     { id: 'tasks' as const, icon: CheckSquare, label: 'Tasks', path: getNavPath('/tasks') },
-    { id: 'settings' as const, icon: Settings, label: 'Settings', path: getNavPath('/team') },
+    { id: 'ai' as const, icon: Bot, label: 'AI', path: getNavPath('/ai') },
   ];
 
   const statusFilters = [
@@ -73,15 +104,165 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
     }
   };
 
+  const homeLinks = [
+    { label: 'Home', path: getNavPath('') },
+    { label: 'Users', path: getNavPath('/team') },
+    { label: 'Invoices', path: getNavPath('/invoices') },
+    { label: 'Work Records', path: getNavPath('/work-records') },
+  ];
+
+  const taskFilters = [
+    { label: 'All Tasks', count: projects.flatMap(p => api.tasks.list(p.id)).length },
+    { label: 'My Tasks', count: 0 },
+    { label: 'Completed', count: projects.flatMap(p => api.tasks.list(p.id)).filter(t => t.status === 'done').length },
+  ];
+
+  // Render dynamic content based on active tab
+  const renderDynamicContent = () => {
+    switch (activeTab) {
+      case 'home':
+        return (
+          <div className="p-3 space-y-1">
+            {homeLinks.map((link) => (
+              <NavLink
+                key={link.label}
+                to={link.path}
+                className={({ isActive }) => `
+                  w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors
+                  ${isActive ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/30'}
+                `}
+              >
+                {link.label}
+              </NavLink>
+            ))}
+          </div>
+        );
+
+      case 'workspace':
+        return (
+          <>
+            <div className="p-3">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Projects
+                </span>
+                <CreateProjectDialog onCreateProject={handleCreateProject}>
+                  <Button variant="ghost" size="icon" className="h-5 w-5">
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </CreateProjectDialog>
+              </div>
+              
+              <div className="space-y-1 max-h-[200px] overflow-y-auto">
+                {projects.length === 0 ? (
+                  <div className="text-xs text-muted-foreground py-2">
+                    No projects yet
+                  </div>
+                ) : (
+                  projects.slice(0, 5).map((project) => (
+                    <button
+                      key={project.id}
+                      onClick={() => navigate(`/workspace/${currentWorkspaceId}/project/${project.id}`)}
+                      className="w-full text-left px-2 py-1.5 rounded text-xs text-muted-foreground hover:bg-accent/30 transition-colors truncate"
+                    >
+                      {project.name}
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Status Filters */}
+            <div className="p-3 space-y-1">
+              {statusFilters.map((filter) => (
+                <button
+                  key={filter.label}
+                  onClick={() => handleStatusFilterClick(filter.value)}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                    statusFilter === filter.value
+                      ? 'bg-accent/50 text-foreground'
+                      : 'text-muted-foreground hover:bg-accent/30'
+                  }`}
+                >
+                  <ChevronRight className="h-3 w-3" />
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+          </>
+        );
+
+      case 'tasks':
+        return (
+          <div className="p-3 space-y-1">
+            {taskFilters.map((filter) => (
+              <button
+                key={filter.label}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-md text-sm text-muted-foreground hover:bg-accent/30 transition-colors"
+              >
+                <span>{filter.label}</span>
+                <span className="text-xs bg-accent/50 px-2 py-0.5 rounded">{filter.count}</span>
+              </button>
+            ))}
+          </div>
+        );
+
+      case 'ai':
+        return (
+          <div className="p-3">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Chats
+              </span>
+              <Button variant="ghost" size="icon" className="h-5 w-5">
+                <Plus className="h-3 w-3" />
+              </Button>
+            </div>
+            <div className="text-xs text-muted-foreground py-2">
+              No chats yet
+            </div>
+          </div>
+        );
+    }
+  };
+
   return (
-    <aside className="w-[200px] bg-card border-r border-border flex flex-col h-screen">
-      {/* Navigation Icons */}
-      <div className="p-3 flex items-center justify-around border-b border-border flex-shrink-0">
+    <aside className={`${isCollapsed ? 'w-16' : 'w-[240px]'} bg-card border-r border-border flex flex-col h-full transition-all duration-300`}>
+      {/* 1. User Profile Section */}
+      <div className="p-3 border-b border-border flex-shrink-0">
+        <div className="flex items-center justify-between">
+          {!isCollapsed && (
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <User className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">Sarah Johnson</p>
+                <p className="text-xs text-muted-foreground truncate">Admin</p>
+              </div>
+            </div>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 flex-shrink-0"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+          >
+            <ChevronLeft className={`h-4 w-4 transition-transform ${isCollapsed ? 'rotate-180' : ''}`} />
+          </Button>
+        </div>
+      </div>
+
+      {/* 2. Navigation Icons */}
+      <div className={`p-3 border-b border-border flex-shrink-0 ${isCollapsed ? 'flex-col space-y-2' : 'flex items-center justify-around'}`}>
         {navIcons.map((item) => (
           <NavLink
             key={item.id}
             to={item.path}
             onClick={() => setActiveTab(item.id)}
+            title={item.label}
           >
             <Button
               variant="ghost"
@@ -94,57 +275,19 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
         ))}
       </div>
 
-      {/* Workspace Switcher */}
-      <div className="p-3 border-b border-border flex-shrink-0">
-        <WorkspaceSwitcher onWorkspaceChange={handleWorkspaceChange} />
-      </div>
-
-      {/* Projects Section */}
-      <div className="flex-1 overflow-y-auto min-h-0">
-        <div className="p-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Projects
-            </span>
-            <Button variant="ghost" size="icon" className="h-5 w-5">
-              <Plus className="h-3 w-3" />
-            </Button>
-          </div>
-          
-          {projectCount === 0 ? (
-            <>
-              <div className="text-xs text-destructive mb-2">Error loading projects</div>
-              <Button variant="link" className="h-auto p-0 text-xs text-primary" onClick={updateProjectCount}>
-                Retry
-              </Button>
-            </>
-          ) : (
-            <div className="text-xs text-muted-foreground">
-              {projectCount} {projectCount === 1 ? 'project' : 'projects'}
-            </div>
-          )}
+      {/* 3. Dynamic Content Area */}
+      {!isCollapsed && (
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {renderDynamicContent()}
         </div>
+      )}
 
-        <Separator />
-
-        {/* Status Filters */}
-        <div className="p-3 space-y-1">
-          {statusFilters.map((filter) => (
-            <button
-              key={filter.label}
-              onClick={() => handleStatusFilterClick(filter.value)}
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                statusFilter === filter.value
-                  ? 'bg-accent/50 text-foreground'
-                  : 'text-muted-foreground hover:bg-accent/30'
-              }`}
-            >
-              <ChevronRight className="h-3 w-3" />
-              {filter.label}
-            </button>
-          ))}
+      {/* 4. Footer with Workspace Selector */}
+      {!isCollapsed && (
+        <div className="p-3 border-t border-border flex-shrink-0 mt-auto">
+          <WorkspaceSwitcher onWorkspaceChange={handleWorkspaceChange} />
         </div>
-      </div>
+      )}
     </aside>
   );
 }

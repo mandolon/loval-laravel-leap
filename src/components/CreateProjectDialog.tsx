@@ -11,9 +11,10 @@ import type { CreateProjectInput } from "@/lib/api/types";
 
 interface CreateProjectDialogProps {
   onCreateProject: (input: CreateProjectInput) => void;
+  children?: React.ReactNode;
 }
 
-export const CreateProjectDialog = ({ onCreateProject }: CreateProjectDialogProps) => {
+export const CreateProjectDialog = ({ onCreateProject, children }: CreateProjectDialogProps) => {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -55,10 +56,12 @@ export const CreateProjectDialog = ({ onCreateProject }: CreateProjectDialogProp
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="lg" className="gap-2">
-          <Plus className="h-5 w-5" />
-          New Project
-        </Button>
+        {children || (
+          <Button size="lg" className="gap-2">
+            <Plus className="h-5 w-5" />
+            New Project
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
