@@ -14,8 +14,10 @@ import {
 
 export function NewAppHeader() {
   const navigate = useNavigate();
-  const { user } = useUser();
+  const { user, signOut } = useUser();
   const { theme, setTheme } = useTheme();
+
+  if (!user) return null;
 
   return (
     <header className="h-[60px] w-full border-b border-border bg-card flex items-center px-4 gap-4 flex-shrink-0">
@@ -47,7 +49,7 @@ export function NewAppHeader() {
               <Avatar className="h-8 w-8">
                 <AvatarFallback 
                   className="text-white text-xs font-semibold"
-                  style={{ background: user.avatar }}
+                  style={{ background: user.avatar || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
                 >
                   {user.initials}
                 </AvatarFallback>
@@ -57,7 +59,7 @@ export function NewAppHeader() {
           <DropdownMenuContent align="end" className="w-48 bg-popover">
             <DropdownMenuItem onClick={() => navigate('/profile')}>Profile</DropdownMenuItem>
             <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuItem>Sign out</DropdownMenuItem>
+            <DropdownMenuItem onClick={signOut}>Sign out</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
