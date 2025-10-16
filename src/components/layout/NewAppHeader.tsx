@@ -32,10 +32,6 @@ export function NewAppHeader() {
 
       {/* Right: Actions */}
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" className="text-sm">
-          Entities
-        </Button>
-        
         <Button
           variant="ghost"
           size="icon"
