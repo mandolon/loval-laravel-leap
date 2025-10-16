@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { api } from "@/lib/api/client";
-import type { Project, Task } from "@/lib/api/types";
+import type { Task } from "@/lib/api/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, FileText, CheckSquare, FileSpreadsheet, Link as LinkIcon, FolderOpen, User, MessageSquare, Edit, ChevronRight, ChevronLeft } from "lucide-react";
@@ -12,67 +11,50 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useProject } from "@/lib/api/hooks/useProjects";
+import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from "@/lib/api/hooks/useTasks";
+import { supabase } from "@/integrations/supabase/client";
 
 const ProjectDetails = () => {
   const { id, workspaceId } = useParams<{ id: string; workspaceId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [project, setProject] = useState<Project | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
   const [activeTab, setActiveTab] = useState("project");
   const [chatOpen, setChatOpen] = useState(true);
   
-  const currentWorkspaceId = workspaceId || api.workspaces.getCurrentWorkspaceId();
+  const { data: project, isLoading: projectLoading } = useProject(id || "");
+  const { data: tasks = [], isLoading: tasksLoading } = useTasks(id || "");
+  const createTaskMutation = useCreateTask(id || "");
+  const updateTaskMutation = useUpdateTask(id || "");
+  const deleteTaskMutation = useDeleteTask(id || "");
 
-  useEffect(() => {
-    if (!id) return;
-    
-    const projectData = api.projects.get(id);
-    if (!projectData) {
-      toast({
-        title: "Project not found",
-        description: "The project you're looking for doesn't exist",
-        variant: "destructive",
-      });
-      navigate(currentWorkspaceId ? `/workspace/${currentWorkspaceId}/projects` : "/");
-      return;
-    }
-    
-    setProject(projectData);
-    setTasks(api.tasks.list(id));
-  }, [id, navigate, toast, currentWorkspaceId]);
-
-  const handleCreateTask = (input: Parameters<typeof api.tasks.create>[0]) => {
-    const newTask = api.tasks.create(input);
-    setTasks([...tasks, newTask]);
-    toast({
-      title: "Task created",
-      description: "Your task has been added successfully",
-    });
+  const handleCreateTask = async (input: { title: string; description?: string; projectId: string }) => {
+    createTaskMutation.mutate(input);
   };
 
   const handleStatusChange = (taskId: string, status: Task['status']) => {
-    api.tasks.update(taskId, { status });
-    setTasks(tasks.map(t => t.id === taskId ? { ...t, status } : t));
+    updateTaskMutation.mutate({ id: taskId, input: { status } });
   };
 
   const handleDeleteTask = (taskId: string) => {
-    api.tasks.delete(taskId);
-    setTasks(tasks.filter(t => t.id !== taskId));
-    toast({
-      title: "Task deleted",
-      description: "The task has been removed",
-    });
+    deleteTaskMutation.mutate(taskId);
   };
 
-  if (!project) return null;
+  if (projectLoading || tasksLoading) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  }
+
+  if (!project) {
+    return <div className="flex items-center justify-center h-screen">Project not found</div>;
+  }
 
   const taskRedlineTasks = tasks.filter(t => t.status === 'task_redline');
   const progressUpdateTasks = tasks.filter(t => t.status === 'progress_update');
   const completeTasks = tasks.filter(t => t.status === 'done_completed');
 
   const getTaskAssignees = (assignees: string[]) => {
-    return assignees.map(id => api.users.get(id)).filter(Boolean) as any[];
+    // TODO: Fetch actual user data from Supabase
+    return [];
   };
 
   return (
@@ -80,9 +62,9 @@ const ProjectDetails = () => {
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
         <div className="p-6 space-y-6">
-          <Button 
+            <Button 
             variant="ghost" 
-            onClick={() => navigate(currentWorkspaceId ? `/workspace/${currentWorkspaceId}/projects` : "/projects")}
+            onClick={() => navigate(workspaceId ? `/workspace/${workspaceId}/projects` : "/projects")}
             size="sm"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -260,7 +242,7 @@ const ProjectDetails = () => {
                   <CardTitle>Team</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">Team members: {project.teamMemberCount}</p>
+                  <p className="text-muted-foreground">Team members: {project.teamMemberCount || 0}</p>
                 </CardContent>
               </Card>
 
@@ -356,12 +338,12 @@ const ProjectDetails = () => {
                     <div>
                       <p className="text-sm text-muted-foreground">Primary Client</p>
                       <p className="font-medium text-lg">
-                        {project.primaryClient?.firstName} {project.primaryClient?.lastName}
+                        {project.primaryClient.firstName} {project.primaryClient.lastName}
                       </p>
-                      {project.primaryClient?.email && (
+                      {project.primaryClient.email && (
                         <p className="text-sm">{project.primaryClient.email}</p>
                       )}
-                      {project.primaryClient?.phone && (
+                      {project.primaryClient.phone && (
                         <p className="text-sm">{project.primaryClient.phone}</p>
                       )}
                     </div>
