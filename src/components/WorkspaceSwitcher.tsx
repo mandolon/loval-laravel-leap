@@ -16,6 +16,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { useToast } from "@/hooks/use-toast";
 import { useUpdateWorkspace } from "@/lib/api/hooks/useWorkspaces";
+import { WorkspaceMembersTable } from "@/components/workspace/WorkspaceMembersTable";
+import { DialogFooter } from "@/components/ui/dialog";
 
 interface WorkspaceSwitcherProps {
   onWorkspaceChange?: (workspaceId: string) => void;
@@ -225,14 +227,21 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
                 rows={3}
               />
             </div>
-            <div className="flex justify-end gap-2">
+            
+            <div className="space-y-4 pt-4 border-t">
+              {currentWorkspaceId && (
+                <WorkspaceMembersTable workspaceId={currentWorkspaceId} />
+              )}
+            </div>
+            
+            <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setSettingsDialogOpen(false)}>
                 Cancel
               </Button>
               <Button type="submit" disabled={updateWorkspaceMutation.isPending}>
                 {updateWorkspaceMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
