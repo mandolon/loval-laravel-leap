@@ -60,8 +60,6 @@ const TeamPage = () => {
   }, []);
 
   const loadUsers = async () => {
-    console.log('Current user ID:', currentUser?.id);
-    console.log('Current user email:', currentUser?.email);
     try {
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
