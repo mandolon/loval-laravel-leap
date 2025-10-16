@@ -123,18 +123,17 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
   ];
 
   const statusFilters = [
-    { label: 'In Progress', value: 'active', type: 'status' as const },
-    { label: 'Pending', value: 'on_hold', type: 'status' as const },
-    { label: 'Completed', value: 'completed', type: 'phase' as const },
-    { label: 'Archived', value: 'archived', type: 'status' as const },
+    { label: 'Active', value: 'active' },
+    { label: 'On Hold', value: 'on_hold' },
+    { label: 'Completed', value: 'completed' },
+    { label: 'Archived', value: 'archived' },
   ];
 
   const handleStatusFilterClick = (filter: typeof statusFilters[0]) => {
-    const filterKey = filter.type === 'phase' ? 'phase' : 'status';
     const filterValue = filter.value;
     setStatusFilter(filterValue);
     if (currentWorkspaceId) {
-      navigate(`/workspace/${currentWorkspaceId}/projects?${filterKey}=${filterValue}`);
+      navigate(`/workspace/${currentWorkspaceId}/projects?status=${filterValue}`);
     }
   };
 
@@ -302,24 +301,29 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
         </div>
       )}
 
-      {/* 4. Status Filters (Bottom Section) */}
-      {!isCollapsed && (
+      {/* 4. Project Status Filters */}
+      {!isCollapsed && activeTab === 'workspace' && (
         <div className="border-t border-border flex-shrink-0">
-          <div className="p-3 space-y-1">
-            {statusFilters.map((filter) => (
-              <button
-                key={filter.label}
-                onClick={() => handleStatusFilterClick(filter)}
-                className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                  statusFilter === filter.value
-                    ? 'bg-accent/50 text-foreground'
-                    : 'text-muted-foreground hover:bg-accent/30'
-                }`}
-              >
-                <ChevronRight className="h-3 w-3" />
-                {filter.label}
-              </button>
-            ))}
+          <div className="p-3">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 block">
+              Filter by Status
+            </span>
+            <div className="space-y-1">
+              {statusFilters.map((filter) => (
+                <button
+                  key={filter.label}
+                  onClick={() => handleStatusFilterClick(filter)}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                    statusFilter === filter.value
+                      ? 'bg-accent/50 text-foreground'
+                      : 'text-muted-foreground hover:bg-accent/30'
+                  }`}
+                >
+                  <ChevronRight className="h-3 w-3" />
+                  {filter.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}

@@ -48,7 +48,7 @@ export interface Project {
   workspaceId: string;
   name: string;
   description?: string;
-  status: 'pending' | 'active' | 'completed' | 'archived';
+  status: 'pending' | 'active' | 'on_hold' | 'completed' | 'archived';
   phase: 'Pre-Design' | 'Design' | 'Permit' | 'Build';
   address: {
     streetNumber?: string;
@@ -219,7 +219,7 @@ export interface CreateProjectInput {
   workspaceId: string;
   name: string;
   description?: string;
-  status?: 'pending' | 'active' | 'completed' | 'archived';
+  status?: 'pending' | 'active' | 'on_hold' | 'completed' | 'archived';
   phase?: 'Pre-Design' | 'Design' | 'Permit' | 'Build';
   address: {
     streetNumber: string;
@@ -247,7 +247,7 @@ export interface CreateProjectInput {
 export interface UpdateProjectInput {
   name?: string;
   description?: string;
-  status?: 'pending' | 'active' | 'completed' | 'archived';
+  status?: 'pending' | 'active' | 'on_hold' | 'completed' | 'archived';
   phase?: 'Pre-Design' | 'Design' | 'Permit' | 'Build';
   address?: {
     streetNumber?: string;

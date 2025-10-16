@@ -1,99 +1,41 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { api } from "@/lib/api/client";
 import type { Project } from "@/lib/api/types";
 import { ProjectCard } from "@/components/ProjectCard";
-import { CreateProjectDialog } from "@/components/CreateProjectDialog";
 import { useToast } from "@/hooks/use-toast";
-import { FolderKanban } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useProjects } from "@/lib/api/hooks/useProjects";
 
 const ProjectsPage = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const [searchParams] = useSearchParams();
-  const [projects, setProjects] = useState<Project[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [phaseFilter, setPhaseFilter] = useState<string>("all");
   
   // Get status filter from URL or default to 'all'
   const statusFilter = searchParams.get('status') || 'all';
-  const currentWorkspaceId = workspaceId || api.workspaces.getCurrentWorkspaceId();
+  
+  const { data: projects = [], isLoading } = useProjects(workspaceId || '');
 
   useEffect(() => {
-    loadProjects();
-  }, [currentWorkspaceId]);
-
-  useEffect(() => {
-    // Redirect to workspace route if not already there
-    if (!workspaceId && currentWorkspaceId) {
-      navigate(`/workspace/${currentWorkspaceId}/projects`, { replace: true });
+    if (!workspaceId) {
+      const storedWorkspaceId = localStorage.getItem("current_workspace_id");
+      if (storedWorkspaceId) {
+        navigate(`/workspace/${storedWorkspaceId}/projects`, { replace: true });
+      }
     }
-  }, [workspaceId, currentWorkspaceId, navigate]);
-
-  const loadProjects = () => {
-    if (currentWorkspaceId) {
-      const workspaceProjects = api.projects.list(currentWorkspaceId);
-      setProjects(workspaceProjects);
-    } else {
-      setProjects([]);
-      toast({
-        title: "No workspace selected",
-        description: "Please select a workspace to view projects",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleCreateProject = (input: Parameters<typeof api.projects.create>[0]) => {
-    if (!currentWorkspaceId) {
-      toast({
-        title: "No workspace selected",
-        description: "Please select a workspace first",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const projectInput = {
-      ...input,
-      workspaceId: currentWorkspaceId,
-    };
-
-    const newProject = api.projects.create(projectInput);
-    setProjects([...projects, newProject]);
-    toast({
-      title: "Project created",
-      description: `${newProject.name} has been created successfully`,
-    });
-  };
-
-  const handleDeleteProject = (id: string) => {
-    api.projects.delete(id);
-    setProjects(projects.filter(p => p.id !== id));
-    toast({
-      title: "Project deleted",
-      description: "The project and all its tasks have been removed",
-    });
-  };
-
-  const getTaskCount = (projectId: string) => {
-    return api.tasks.list(projectId).length;
-  };
+  }, [workspaceId, navigate]);
   const filteredProjects = projects.filter(project => {
     const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         project.description.toLowerCase().includes(searchQuery.toLowerCase());
+                         (project.description || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || project.status === statusFilter;
     const matchesPhase = phaseFilter === "all" || project.phase === phaseFilter;
     
     return matchesSearch && matchesStatus && matchesPhase;
   });
-
-  // Show workspace name in empty state
-  const currentWorkspace = currentWorkspaceId ? api.workspaces.get(currentWorkspaceId) : null;
 
   return (
     <div className="h-full bg-background">
@@ -111,19 +53,19 @@ const ProjectsPage = () => {
                   <SelectValue placeholder="Phase" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover">
-                  <SelectItem value="all">Phase</SelectItem>
-                  <SelectItem value="design">Design</SelectItem>
-                  <SelectItem value="permit">Permit</SelectItem>
-                  <SelectItem value="build">Build</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="all">All Phases</SelectItem>
+                  <SelectItem value="Pre-Design">Pre-Design</SelectItem>
+                  <SelectItem value="Design">Design</SelectItem>
+                  <SelectItem value="Permit">Permit</SelectItem>
+                  <SelectItem value="Build">Build</SelectItem>
                 </SelectContent>
               </Select>
               
               <Select 
                 value={statusFilter} 
                 onValueChange={(value) => {
-                  if (currentWorkspaceId) {
-                    navigate(`/workspace/${currentWorkspaceId}/projects?status=${value}`);
+                  if (workspaceId) {
+                    navigate(`/workspace/${workspaceId}/projects?status=${value}`);
                   }
                 }}
               >
@@ -131,9 +73,11 @@ const ProjectsPage = () => {
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover">
-                  <SelectItem value="all">Status</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="on_hold">On Hold</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="archived">Archived</SelectItem>
                 </SelectContent>
               </Select>
@@ -166,18 +110,22 @@ const ProjectsPage = () => {
 
       {/* Content Area */}
       <div className="p-6">
-        {!currentWorkspaceId ? (
+        {!workspaceId ? (
           <div className="text-center py-20">
             <p className="text-muted-foreground text-lg mb-2">No workspace selected</p>
             <p className="text-sm text-muted-foreground">
               Please select a workspace from the sidebar to view projects
             </p>
           </div>
+        ) : isLoading ? (
+          <div className="text-center py-20">
+            <p className="text-muted-foreground">Loading projects...</p>
+          </div>
         ) : filteredProjects.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-muted-foreground">
               {projects.length === 0 
-                ? `No projects in ${currentWorkspace?.name}. Click the "+" button in the sidebar to create one.`
+                ? "No projects yet. Click the '+' button in the sidebar to create one."
                 : "No projects match your filters. Try adjusting your search or filters."
               }
             </p>
@@ -188,8 +136,7 @@ const ProjectsPage = () => {
               <ProjectCard
                 key={project.id}
                 project={project}
-                onDelete={handleDeleteProject}
-                onClick={() => navigate(`/workspace/${currentWorkspaceId}/project/${project.id}`)}
+                onClick={() => navigate(`/workspace/${workspaceId}/project/${project.id}`)}
               />
             ))}
           </div>

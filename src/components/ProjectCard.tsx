@@ -8,8 +8,8 @@ import type { Project } from "@/lib/api/types";
 
 interface ProjectCardProps {
   project: Project;
-  onDelete: (id: string) => void;
   onClick: () => void;
+  onDelete?: (id: string) => void;
 }
 
 const phaseColors = {
@@ -22,6 +22,7 @@ const phaseColors = {
 const statusColors = {
   pending: 'secondary',
   active: 'default',
+  on_hold: 'outline',
   completed: 'outline',
   archived: 'outline',
 } as const;
@@ -53,36 +54,38 @@ export const ProjectCard = ({ project, onDelete, onClick }: ProjectCardProps) =>
               {project.phase}
             </Badge>
             <Badge variant={statusColors[project.status]} className="capitalize text-xs">
-              {project.status}
+              {project.status.replace('_', ' ')}
             </Badge>
           </div>
           <CardDescription className="line-clamp-2">
             {project.description}
           </CardDescription>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
-            >
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem 
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(project.id);
-              }}
-              className="text-destructive"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete Project
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {onDelete && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(project.id);
+                }}
+                className="text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Project
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Progress */}
