@@ -1,11 +1,35 @@
-import { Home, FolderKanban, CheckSquare, Settings, Plus, ChevronRight, Building2 } from "lucide-react";
+import { Home, FolderKanban, CheckSquare, Settings, Plus, ChevronRight } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Separator } from "@/components/ui/separator";
+import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
+import { api } from "@/lib/api/client";
 
-export function NewAppSidebar() {
+interface NewAppSidebarProps {
+  onWorkspaceChange?: (workspaceId: string) => void;
+}
+
+export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
   const [activeTab, setActiveTab] = useState<'home' | 'workspace' | 'tasks' | 'settings'>('workspace');
+  const [projectCount, setProjectCount] = useState(0);
+
+  useEffect(() => {
+    updateProjectCount();
+  }, []);
+
+  const updateProjectCount = () => {
+    const currentWorkspaceId = api.workspaces.getCurrentWorkspaceId();
+    if (currentWorkspaceId) {
+      const projects = api.projects.list(currentWorkspaceId);
+      setProjectCount(projects.length);
+    }
+  };
+
+  const handleWorkspaceChange = (workspaceId: string) => {
+    updateProjectCount();
+    onWorkspaceChange?.(workspaceId);
+  };
 
   const navIcons = [
     { id: 'home' as const, icon: Home, label: 'Home', path: '/' },
@@ -54,10 +78,18 @@ export function NewAppSidebar() {
             </Button>
           </div>
           
-          <div className="text-xs text-destructive mb-2">Error loading projects</div>
-          <Button variant="link" className="h-auto p-0 text-xs text-primary">
-            Retry
-          </Button>
+          {projectCount === 0 ? (
+            <>
+              <div className="text-xs text-destructive mb-2">Error loading projects</div>
+              <Button variant="link" className="h-auto p-0 text-xs text-primary" onClick={updateProjectCount}>
+                Retry
+              </Button>
+            </>
+          ) : (
+            <div className="text-xs text-muted-foreground">
+              {projectCount} {projectCount === 1 ? 'project' : 'projects'}
+            </div>
+          )}
         </div>
 
         <Separator />
@@ -82,10 +114,7 @@ export function NewAppSidebar() {
 
       {/* Workspace Footer */}
       <div className="p-3 border-t border-border">
-        <button className="w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-accent/30 text-sm">
-          <Building2 className="h-4 w-4" />
-          <span>Workspace 1</span>
-        </button>
+        <WorkspaceSwitcher onWorkspaceChange={handleWorkspaceChange} />
       </div>
     </aside>
   );

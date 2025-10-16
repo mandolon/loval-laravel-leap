@@ -5,12 +5,15 @@ import type {
   Task,
   User,
   Client,
+  Workspace,
   CreateProjectInput, 
   CreateTaskInput,
   CreateUserInput,
   CreateClientInput,
+  CreateWorkspaceInput,
   UpdateProjectInput,
-  UpdateTaskInput 
+  UpdateTaskInput,
+  UpdateWorkspaceInput
 } from './types';
 
 // Helper to generate IDs
@@ -35,6 +38,8 @@ const STORAGE_KEYS = {
   TASKS: 'tasks',
   USERS: 'users',
   CLIENTS: 'clients',
+  WORKSPACES: 'workspaces',
+  CURRENT_WORKSPACE: 'current_workspace_id',
   INITIALIZED: 'data_initialized',
 };
 
@@ -43,6 +48,26 @@ const initializeSampleData = () => {
   if (localStorage.getItem(STORAGE_KEYS.INITIALIZED)) {
     return;
   }
+
+  // Sample workspaces
+  const sampleWorkspaces: Workspace[] = [
+    {
+      id: '1',
+      name: 'Workspace 1',
+      description: 'Main workspace for projects',
+      icon: '🏢',
+      createdAt: '2024-01-01T10:00:00Z',
+      updatedAt: '2024-01-01T10:00:00Z',
+    },
+    {
+      id: '2',
+      name: 'Personal Projects',
+      description: 'Personal construction projects',
+      icon: '🏠',
+      createdAt: '2024-01-01T10:00:00Z',
+      updatedAt: '2024-01-01T10:00:00Z',
+    },
+  ];
 
   // Sample users
   const sampleUsers: User[] = [
@@ -101,6 +126,7 @@ const initializeSampleData = () => {
   const sampleProjects: Project[] = [
     {
       id: '1',
+      workspaceId: '1',
       name: 'Modern Family Home',
       description: 'Contemporary 3-bedroom home with open concept living, high ceilings, and sustainable materials',
       status: 'active',
@@ -116,6 +142,7 @@ const initializeSampleData = () => {
     },
     {
       id: '2',
+      workspaceId: '1',
       name: 'Luxury Condo Complex',
       description: 'High-end residential complex with 20 units, rooftop amenities, and underground parking',
       status: 'active',
@@ -131,6 +158,7 @@ const initializeSampleData = () => {
     },
     {
       id: '3',
+      workspaceId: '1',
       name: 'Downtown Office Renovation',
       description: 'Complete interior renovation of 5,000 sq ft office space with modern finishes',
       status: 'active',
@@ -221,10 +249,12 @@ const initializeSampleData = () => {
     },
   ];
 
+  localStorage.setItem(STORAGE_KEYS.WORKSPACES, JSON.stringify(sampleWorkspaces));
   localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(sampleUsers));
   localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(sampleClients));
   localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(sampleProjects));
   localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(sampleTasks));
+  localStorage.setItem(STORAGE_KEYS.CURRENT_WORKSPACE, '1');
   localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
 };
 
@@ -233,9 +263,15 @@ initializeSampleData();
 
 // Projects API
 const projects = {
-  list: (): Project[] => {
+  list: (workspaceId?: string): Project[] => {
     const data = localStorage.getItem(STORAGE_KEYS.PROJECTS);
-    return data ? JSON.parse(data) : [];
+    const allProjects = data ? JSON.parse(data) : [];
+    
+    if (workspaceId) {
+      return allProjects.filter((p: Project) => p.workspaceId === workspaceId);
+    }
+    
+    return allProjects;
   },
 
   get: (id: string): Project | null => {
@@ -246,6 +282,7 @@ const projects = {
   create: (input: CreateProjectInput): Project => {
     const newProject: Project = {
       id: generateId(),
+      workspaceId: input.workspaceId,
       name: input.name,
       description: input.description,
       address: input.address,
@@ -430,10 +467,81 @@ const clients = {
   },
 };
 
+// Workspaces API
+const workspaces = {
+  list: (): Workspace[] => {
+    const data = localStorage.getItem(STORAGE_KEYS.WORKSPACES);
+    return data ? JSON.parse(data) : [];
+  },
+
+  get: (id: string): Workspace | null => {
+    const allWorkspaces = workspaces.list();
+    return allWorkspaces.find(w => w.id === id) || null;
+  },
+
+  create: (input: CreateWorkspaceInput): Workspace => {
+    const newWorkspace: Workspace = {
+      id: generateId(),
+      name: input.name,
+      description: input.description,
+      icon: input.icon || '🏢',
+      createdAt: timestamp(),
+      updatedAt: timestamp(),
+    };
+
+    const allWorkspaces = workspaces.list();
+    allWorkspaces.push(newWorkspace);
+    localStorage.setItem(STORAGE_KEYS.WORKSPACES, JSON.stringify(allWorkspaces));
+
+    return newWorkspace;
+  },
+
+  update: (id: string, input: UpdateWorkspaceInput): Workspace | null => {
+    const allWorkspaces = workspaces.list();
+    const index = allWorkspaces.findIndex(w => w.id === id);
+    
+    if (index === -1) return null;
+
+    allWorkspaces[index] = {
+      ...allWorkspaces[index],
+      ...input,
+      updatedAt: timestamp(),
+    };
+
+    localStorage.setItem(STORAGE_KEYS.WORKSPACES, JSON.stringify(allWorkspaces));
+    return allWorkspaces[index];
+  },
+
+  delete: (id: string): boolean => {
+    const allWorkspaces = workspaces.list();
+    const filtered = allWorkspaces.filter(w => w.id !== id);
+    
+    if (filtered.length === allWorkspaces.length) return false;
+
+    localStorage.setItem(STORAGE_KEYS.WORKSPACES, JSON.stringify(filtered));
+    
+    // Also delete all projects in this workspace
+    const allProjects = projects.list();
+    const filteredProjects = allProjects.filter(p => p.workspaceId !== id);
+    localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(filteredProjects));
+
+    return true;
+  },
+
+  getCurrentWorkspaceId: (): string | null => {
+    return localStorage.getItem(STORAGE_KEYS.CURRENT_WORKSPACE);
+  },
+
+  setCurrentWorkspaceId: (id: string): void => {
+    localStorage.setItem(STORAGE_KEYS.CURRENT_WORKSPACE, id);
+  },
+};
+
 // Export unified API
 export const api = {
   projects,
   tasks,
   users,
   clients,
+  workspaces,
 };

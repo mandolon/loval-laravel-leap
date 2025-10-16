@@ -20,17 +20,23 @@ export const CreateProjectDialog = ({ onCreateProject }: CreateProjectDialogProp
   const [address, setAddress] = useState("");
   const [clientId, setClientId] = useState("");
   const [clients, setClients] = useState<any[]>([]);
+  const [workspaceId, setWorkspaceId] = useState("");
 
   useEffect(() => {
     setClients(api.clients.list());
+    const currentWorkspace = api.workspaces.getCurrentWorkspaceId();
+    if (currentWorkspace) {
+      setWorkspaceId(currentWorkspace);
+    }
   }, [open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name.trim() || !address.trim() || !clientId) return;
+    if (!name.trim() || !address.trim() || !clientId || !workspaceId) return;
 
     onCreateProject({
+      workspaceId,
       name: name.trim(),
       description: description.trim(),
       address: address.trim(),

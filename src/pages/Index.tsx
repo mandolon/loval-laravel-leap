@@ -19,11 +19,31 @@ const ProjectsPage = () => {
   const [phaseFilter, setPhaseFilter] = useState<string>("all");
 
   useEffect(() => {
-    setProjects(api.projects.list());
+    const currentWorkspaceId = api.workspaces.getCurrentWorkspaceId();
+    if (currentWorkspaceId) {
+      setProjects(api.projects.list(currentWorkspaceId));
+    } else {
+      setProjects(api.projects.list());
+    }
   }, []);
 
   const handleCreateProject = (input: Parameters<typeof api.projects.create>[0]) => {
-    const newProject = api.projects.create(input);
+    const currentWorkspaceId = api.workspaces.getCurrentWorkspaceId();
+    if (!currentWorkspaceId) {
+      toast({
+        title: "No workspace selected",
+        description: "Please select a workspace first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const projectInput = {
+      ...input,
+      workspaceId: currentWorkspaceId,
+    };
+
+    const newProject = api.projects.create(projectInput);
     setProjects([...projects, newProject]);
     toast({
       title: "Project created",

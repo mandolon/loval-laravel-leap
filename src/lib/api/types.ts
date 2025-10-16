@@ -21,8 +21,18 @@ export interface Client {
   createdAt: string;
 }
 
+export interface Workspace {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Project {
   id: string;
+  workspaceId: string;
   name: string;
   description: string;
   status: 'active' | 'archived' | 'on_hold';
@@ -54,6 +64,7 @@ export interface Task {
 }
 
 export interface CreateProjectInput {
+  workspaceId: string;
   name: string;
   description: string;
   address: string;
@@ -77,6 +88,7 @@ export interface CreateTaskInput {
 }
 
 export interface UpdateProjectInput {
+  workspaceId?: string;
   name?: string;
   description?: string;
   address?: string;
@@ -112,4 +124,16 @@ export interface CreateClientInput {
   company?: string;
   phone?: string;
   address?: string;
+}
+
+export interface CreateWorkspaceInput {
+  name: string;
+  description?: string;
+  icon?: string;
+}
+
+export interface UpdateWorkspaceInput {
+  name?: string;
+  description?: string;
+  icon?: string;
 }
