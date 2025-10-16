@@ -4,13 +4,14 @@ import { api } from "@/lib/api/client";
 import type { Project, Task } from "@/lib/api/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FileText, CheckSquare, FileSpreadsheet, Link as LinkIcon, FolderOpen, User, MessageSquare, Edit } from "lucide-react";
+import { ArrowLeft, FileText, CheckSquare, FileSpreadsheet, Link as LinkIcon, FolderOpen, User, MessageSquare, Edit, ChevronRight, ChevronLeft } from "lucide-react";
 import { TaskItem } from "@/components/TaskItem";
 import { CreateTaskDialog } from "@/components/CreateTaskDialog";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const ProjectDetails = () => {
   const { id, workspaceId } = useParams<{ id: string; workspaceId: string }>();
@@ -19,6 +20,7 @@ const ProjectDetails = () => {
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [activeTab, setActiveTab] = useState("project");
+  const [chatOpen, setChatOpen] = useState(true);
   
   const currentWorkspaceId = workspaceId || api.workspaces.getCurrentWorkspaceId();
 
@@ -411,12 +413,26 @@ const ProjectDetails = () => {
       </div>
 
       {/* Project Chat Sidebar */}
-      <div className="w-80 border-l bg-background p-6 overflow-auto">
-        <h3 className="font-semibold text-lg mb-4">Project Chat</h3>
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground text-center py-8">No messages yet</p>
+      <Collapsible open={chatOpen} onOpenChange={setChatOpen}>
+        <div className="relative">
+          <CollapsibleTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute -left-10 top-4 z-10 h-8 w-8"
+            >
+              {chatOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </Button>
+          </CollapsibleTrigger>
+          
+          <CollapsibleContent className="w-80 border-l bg-background p-6 overflow-auto data-[state=closed]:w-0 data-[state=closed]:p-0 transition-all">
+            <h3 className="font-semibold text-lg mb-4">Project Chat</h3>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground text-center py-8">No messages yet</p>
+            </div>
+          </CollapsibleContent>
         </div>
-      </div>
+      </Collapsible>
     </div>
   );
 };
