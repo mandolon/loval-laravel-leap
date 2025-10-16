@@ -1,293 +1,271 @@
-# Laravel API Contract
+# API Contract Documentation
 
-This document defines the API endpoints your Laravel backend should implement to integrate with this React frontend.
+## Overview
 
-## Base URL
-```
-/api
-```
+This document defines the API contract for the Loval Laravel Leap application. The contract is environment-agnostic and works across:
 
-## Projects API
+- **Web (localStorage)**: Client-side mock data storage
+- **Web (Network API)**: Laravel/Supabase REST API
+- **Desktop (Tauri + localStorage)**: Offline-first desktop app
+- **Desktop (Tauri + Network API)**: Desktop app with backend connectivity
 
-### List All Projects
-```
-GET /api/projects
-```
-**Response:**
-```json
-[
-  {
-    "id": "uuid",
-    "name": "string",
-    "description": "string",
-    "status": "active|archived",
-    "created_at": "ISO 8601 timestamp",
-    "updated_at": "ISO 8601 timestamp"
+## Core Principles
+
+1. **Single Source of Truth**: All types defined in `src/lib/api/types.ts`
+2. **Consistent Responses**: All responses follow `ApiOk<T>` or `ApiErr` format
+3. **Workspace Scoping**: Every entity belongs to a workspace
+4. **UUID Identifiers**: All entities use UUID v4 for IDs
+5. **Timestamps**: All entities include `createdAt` and `updatedAt`
+6. **Validation**: Zod schemas validate all inputs/outputs
+
+## Response Formats
+
+### Success Response
+```typescript
+{
+  data: T,
+  meta?: {
+    page?: number,
+    limit?: number,
+    total?: number,
+    apiVersion?: string
   }
-]
-```
-
-### Get Single Project
-```
-GET /api/projects/{id}
-```
-**Response:**
-```json
-{
-  "id": "uuid",
-  "name": "string",
-  "description": "string",
-  "status": "active|archived",
-  "created_at": "ISO 8601 timestamp",
-  "updated_at": "ISO 8601 timestamp"
 }
 ```
 
-### Create Project
-```
-POST /api/projects
-```
-**Request Body:**
-```json
+### Error Response
+```typescript
 {
-  "name": "string (required)",
-  "description": "string (required)",
-  "status": "active|archived (optional, defaults to 'active')"
-}
-```
-**Response:** Same as Get Single Project
-
-### Update Project
-```
-PUT /api/projects/{id}
-```
-**Request Body:**
-```json
-{
-  "name": "string (optional)",
-  "description": "string (optional)",
-  "status": "active|archived (optional)"
-}
-```
-**Response:** Same as Get Single Project
-
-### Delete Project
-```
-DELETE /api/projects/{id}
-```
-**Response:**
-```json
-{
-  "success": true
-}
-```
-**Note:** Should also delete all tasks associated with this project.
-
----
-
-## Tasks API
-
-### List All Tasks
-```
-GET /api/tasks
-```
-**Query Parameters:**
-- `project_id` (optional): Filter tasks by project
-
-**Response:**
-```json
-[
-  {
-    "id": "uuid",
-    "title": "string",
-    "description": "string",
-    "project_id": "uuid",
-    "status": "todo|in_progress|done",
-    "priority": "low|medium|high",
-    "created_at": "ISO 8601 timestamp",
-    "updated_at": "ISO 8601 timestamp"
+  error: {
+    code: string,        // Machine-readable error code
+    message: string,     // Human-readable message
+    details?: unknown    // Additional context (optional)
   }
-]
-```
-
-### Get Single Task
-```
-GET /api/tasks/{id}
-```
-**Response:**
-```json
-{
-  "id": "uuid",
-  "title": "string",
-  "description": "string",
-  "project_id": "uuid",
-  "status": "todo|in_progress|done",
-  "priority": "low|medium|high",
-  "created_at": "ISO 8601 timestamp",
-  "updated_at": "ISO 8601 timestamp"
 }
 ```
 
-### Create Task
-```
-POST /api/tasks
-```
-**Request Body:**
-```json
-{
-  "title": "string (required)",
-  "description": "string (required)",
-  "project_id": "uuid (required)",
-  "status": "todo|in_progress|done (optional, defaults to 'todo')",
-  "priority": "low|medium|high (optional, defaults to 'medium')"
-}
-```
-**Response:** Same as Get Single Task
+## Common Query Parameters
 
-### Update Task
-```
-PUT /api/tasks/{id}
-```
-**Request Body:**
-```json
-{
-  "title": "string (optional)",
-  "description": "string (optional)",
-  "status": "todo|in_progress|done (optional)",
-  "priority": "low|medium|high (optional)"
-}
-```
-**Response:** Same as Get Single Task
+All list endpoints support these query parameters:
 
-### Delete Task
-```
-DELETE /api/tasks/{id}
-```
-**Response:**
-```json
-{
-  "success": true
-}
-```
+| Parameter | Type | Description | Example |
+|-----------|------|-------------|---------|
+| `page` | number | Page number (1-indexed) | `?page=2` |
+| `limit` | number | Items per page | `?limit=50` |
+| `search` | string | Full-text search | `?search=kitchen` |
+| `sort` | string | Sort field:direction | `?sort=updatedAt:desc` |
 
----
+## Entities
 
-## Integration Instructions
-
-### Step 1: When Ready to Switch to Laravel
-
-1. Build your Laravel API matching the endpoints above
-2. Set up CORS in Laravel:
-```php
-// config/cors.php
-'allowed_origins' => [env('FRONTEND_URL', 'http://localhost:8080')],
-```
-
-### Step 2: Update React App
-
-Replace `src/lib/api/client.ts` with the Laravel API client:
+### Workspace
 
 ```typescript
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
-
-const fetchAPI = async (endpoint: string, options?: RequestInit) => {
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  });
-  
-  if (!response.ok) {
-    throw new Error(`API Error: ${response.statusText}`);
-  }
-  
-  return response.json();
-};
-
-export const api = {
-  projects: {
-    list: () => fetchAPI('/projects'),
-    get: (id: string) => fetchAPI(`/projects/${id}`),
-    create: (input) => fetchAPI('/projects', {
-      method: 'POST',
-      body: JSON.stringify(input)
-    }),
-    update: (id: string, input) => fetchAPI(`/projects/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(input)
-    }),
-    delete: (id: string) => fetchAPI(`/projects/${id}`, {
-      method: 'DELETE'
-    }),
-  },
-  tasks: {
-    list: (projectId?: string) => 
-      fetchAPI(`/tasks${projectId ? `?project_id=${projectId}` : ''}`),
-    get: (id: string) => fetchAPI(`/tasks/${id}`),
-    create: (input) => fetchAPI('/tasks', {
-      method: 'POST',
-      body: JSON.stringify(input)
-    }),
-    update: (id: string, input) => fetchAPI(`/tasks/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(input)
-    }),
-    delete: (id: string) => fetchAPI(`/tasks/${id}`, {
-      method: 'DELETE'
-    }),
-  },
-};
+{
+  id: string              // UUID
+  name: string            // Workspace name
+  description?: string    // Optional description
+  createdAt: string       // ISO 8601 timestamp
+  updatedAt: string       // ISO 8601 timestamp
+}
 ```
 
-### Step 3: Update Environment Variables
+**Endpoints:**
+- `GET /workspaces` → List workspaces
+- `GET /workspaces/:id` → Get single workspace
+- `POST /workspaces` → Create workspace
+- `PATCH /workspaces/:id` → Update workspace
+- `DELETE /workspaces/:id` → Delete workspace (cascade deletes projects)
 
-Create `.env`:
-```
-VITE_API_BASE_URL=http://localhost:8000/api
-```
-
-### Step 4: Test
-
-Start both servers:
-```bash
-# Laravel
-php artisan serve
-
-# React
-npm run dev
-```
-
-That's it! Your app is now connected to Laravel with zero component changes needed.
+**Filters:**
+- `search`: Search by name or description
 
 ---
 
-## Database Schema Recommendations
+### Project
 
-### Projects Table
-```sql
-CREATE TABLE projects (
-    id UUID PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
-    status ENUM('active', 'archived') DEFAULT 'active',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+```typescript
+{
+  id: string              // UUID
+  workspaceId: string     // Parent workspace UUID
+  name: string            // Project name
+  description?: string    // Optional description
+  address: {
+    streetNumber: string
+    streetName: string
+    unit?: string
+    city: string
+    state: string
+    zipCode: string
+    fullAddress: string
+  }
+  status: 'active' | 'pending' | 'completed' | 'archived'
+  phase: 'Design' | 'Permit' | 'Build'
+  createdAt: string       // ISO 8601 timestamp
+  updatedAt: string       // ISO 8601 timestamp
+}
 ```
 
-### Tasks Table
-```sql
-CREATE TABLE tasks (
-    id UUID PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    project_id UUID NOT NULL,
-    status ENUM('todo', 'in_progress', 'done') DEFAULT 'todo',
-    priority ENUM('low', 'medium', 'high') DEFAULT 'medium',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
-);
+**Endpoints:**
+- `GET /projects?workspace_id={id}` → List projects (workspace-scoped)
+- `GET /projects/:id` → Get single project
+- `POST /projects` → Create project
+- `PATCH /projects/:id` → Update project
+- `DELETE /projects/:id` → Delete project (cascade deletes tasks)
+
+**Filters:**
+- `status`: Filter by status
+- `phase`: Filter by phase
+- `search`: Search by name, description, or address
+
+---
+
+### Task
+
+```typescript
+{
+  id: string              // UUID
+  projectId: string       // Parent project UUID
+  title: string           // Task title
+  description?: string    // Optional description
+  status: 'todo' | 'in_progress' | 'completed' | 'blocked'
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+  dueDate?: string        // ISO 8601 date (optional)
+  assignedTo?: string     // User UUID (optional)
+  createdAt: string       // ISO 8601 timestamp
+  updatedAt: string       // ISO 8601 timestamp
+}
 ```
+
+**Endpoints:**
+- `GET /tasks?project_id={id}` → List tasks (project-scoped)
+- `GET /tasks/:id` → Get single task
+- `POST /tasks` → Create task
+- `PATCH /tasks/:id` → Update task
+- `DELETE /tasks/:id` → Delete task
+
+**Filters:**
+- `status`: Filter by status
+- `priority`: Filter by priority
+- `assignedTo`: Filter by assignee
+- `search`: Search by title or description
+
+---
+
+### User
+
+```typescript
+{
+  id: string              // UUID
+  email: string           // Unique email
+  first_name: string      // User's first name
+  last_name: string       // User's last name
+  role: 'admin' | 'member' | 'viewer'
+  avatar?: string         // Avatar URL (optional)
+  createdAt: string       // ISO 8601 timestamp
+  updatedAt: string       // ISO 8601 timestamp
+}
+```
+
+**Endpoints:**
+- `GET /users` → List users
+- `GET /users/:id` → Get single user
+- `POST /users` → Create user
+
+---
+
+### Client
+
+```typescript
+{
+  id: string              // UUID
+  name: string            // Client name
+  email?: string          // Client email (optional)
+  phone?: string          // Client phone (optional)
+  company?: string        // Company name (optional)
+  createdAt: string       // ISO 8601 timestamp
+  updatedAt: string       // ISO 8601 timestamp
+}
+```
+
+**Endpoints:**
+- `GET /clients` → List clients
+- `GET /clients/:id` → Get single client
+- `POST /clients` → Create client
+
+---
+
+## Error Codes
+
+| Code | HTTP Status | Description |
+|------|-------------|-------------|
+| `NOT_FOUND` | 404 | Entity not found |
+| `VALIDATION_ERROR` | 400 | Input validation failed |
+| `UNAUTHORIZED` | 401 | Authentication required |
+| `FORBIDDEN` | 403 | Insufficient permissions |
+| `CONFLICT` | 409 | Duplicate or conflicting resource |
+| `INTERNAL_ERROR` | 500 | Server error |
+| `NETWORK_ERROR` | 0 | Network request failed (client-side) |
+
+## Environment Modes
+
+### localStorage Mode (`VITE_USE_LOCAL_STORAGE=true`)
+
+- Data stored in browser's localStorage (web) or Tauri's app data directory (desktop)
+- No network requests
+- Instant responses
+- Data persists across sessions
+- No authentication required
+
+### Network API Mode (`VITE_USE_LOCAL_STORAGE=false`)
+
+- Data fetched from `VITE_API_BASE_URL`
+- Network latency applies
+- Authentication required (JWT or session cookies)
+- Supports multi-user collaboration
+
+## Desktop (Tauri) Specific
+
+When running in Tauri:
+- `window.__TAURI__` is defined
+- localStorage persists in OS-specific app data directory:
+  - Windows: `%APPDATA%/app.lovable.loval-laravel-leap`
+  - macOS: `~/Library/Application Support/app.lovable.loval-laravel-leap`
+  - Linux: `~/.local/share/app.lovable.loval-laravel-leap`
+- CSP allows `http://127.0.0.1:*` for local Laravel API
+- File system access available via Tauri plugins (future)
+
+## Migration Path
+
+To switch from localStorage to Laravel/Supabase:
+
+1. Set `VITE_USE_LOCAL_STORAGE=false` in `.env`
+2. Set `VITE_API_BASE_URL=http://127.0.0.1:8000/api` (Laravel) or Supabase URL
+3. Implement endpoints matching this contract
+4. Add authentication headers in `src/lib/api/client.ts`
+5. No changes required to UI components or React Query hooks
+
+## Validation Schemas
+
+All entities have Zod schemas in `src/lib/api/schemas.ts`:
+
+- `WorkspaceSchema` / `CreateWorkspaceSchema` / `UpdateWorkspaceSchema`
+- `ProjectSchema` / `CreateProjectSchema` / `UpdateProjectSchema`
+- `TaskSchema` / `CreateTaskSchema` / `UpdateTaskSchema`
+- `UserSchema` / `CreateUserSchema`
+- `ClientSchema` / `CreateClientSchema`
+
+These schemas are used to:
+1. Validate API inputs before sending
+2. Validate API responses after receiving
+3. Ensure type safety at runtime
+4. Generate TypeScript types via `z.infer<>`
+
+## Best Practices
+
+1. **Always scope by workspace**: Never fetch data without a `workspaceId`
+2. **Use pagination**: Default to `limit=20`, allow up to `limit=100`
+3. **Validate inputs**: Use Zod schemas before API calls
+4. **Handle errors gracefully**: Use `handleApiError()` for user-friendly messages
+5. **Log in debug mode**: Set `VITE_DEBUG_API=true` to trace API calls
+6. **Optimize queries**: Use React Query's `staleTime` and `cacheTime`
+7. **Provide feedback**: Show toast notifications for success/error states
