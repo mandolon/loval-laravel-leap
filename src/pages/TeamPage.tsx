@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Users, Check, X, Pencil } from "lucide-react";
+import { Trash2, Users, Check, X, Pencil, Filter } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import { AddUserDialog } from "@/components/AddUserDialog";
 
@@ -48,6 +48,7 @@ const TeamPage = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState({ first_name: '', last_name: '' });
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
+  const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'team' | 'consultant' | 'client'>('all');
   const { toast } = useToast();
   const { user: currentUser } = useUser();
 
@@ -234,8 +235,48 @@ const TeamPage = () => {
         <AddUserDialog onUserAdded={loadUsers} />
       </div>
 
+      {/* Filter Buttons */}
+      <div className="flex items-center gap-2">
+        <Filter className="h-4 w-4 text-muted-foreground" />
+        <Button
+          variant={roleFilter === 'all' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setRoleFilter('all')}
+        >
+          All ({users.length})
+        </Button>
+        <Button
+          variant={roleFilter === 'admin' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setRoleFilter('admin')}
+        >
+          Admin ({users.filter(u => u.role === 'admin').length})
+        </Button>
+        <Button
+          variant={roleFilter === 'team' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setRoleFilter('team')}
+        >
+          Team ({users.filter(u => u.role === 'team').length})
+        </Button>
+        <Button
+          variant={roleFilter === 'consultant' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setRoleFilter('consultant')}
+        >
+          Consultant ({users.filter(u => u.role === 'consultant').length})
+        </Button>
+        <Button
+          variant={roleFilter === 'client' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setRoleFilter('client')}
+        >
+          Client ({users.filter(u => u.role === 'client').length})
+        </Button>
+      </div>
+
       {/* Users Table */}
-      {users.length === 0 ? (
+      {users.filter(u => roleFilter === 'all' || u.role === roleFilter).length === 0 ? (
         <div className="text-center py-16">
           <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
             <Users className="h-12 w-12 text-muted-foreground" />
@@ -259,7 +300,7 @@ const TeamPage = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user) => (
+              {users.filter(u => roleFilter === 'all' || u.role === roleFilter).map((user) => (
                 <TableRow key={user.id}>
                   {/* Name Cell - Editable */}
                   <TableCell>
