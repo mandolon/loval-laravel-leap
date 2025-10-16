@@ -32,28 +32,36 @@ import { Trash2, Users, Check, X, Pencil, Filter } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import { AddUserDialog } from "@/components/AddUserDialog";
 
-// Protected admin email that cannot be modified or deleted
-const PROTECTED_ADMIN_EMAIL = "armando@rehome.build";
-
-interface TeamMember {
+interface SystemUser {
   id: string;
   short_id: string;
   name: string;
   email: string;
   phone?: string;
-  role: 'admin' | 'team' | 'consultant' | 'client';
+  is_admin: boolean;
   is_active: boolean;
 }
 
 const TeamPage = () => {
-  const [users, setUsers] = useState<TeamMember[]>([]);
+  const [users, setUsers] = useState<SystemUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState({ name: '' });
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
-  const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'team' | 'consultant' | 'client'>('all');
   const { toast } = useToast();
   const { user: currentUser } = useUser();
+
+  // Only admins can access this page
+  if (!currentUser?.is_admin) {
+    return (
+      <div className="p-6 space-y-6 max-w-7xl mx-auto">
+        <div className="text-center py-16">
+          <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
+          <p className="text-muted-foreground">Only administrators can access this page.</p>
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     loadUsers();
@@ -69,33 +77,20 @@ const TeamPage = () => {
 
       if (usersError) throw usersError;
 
-      // Fetch roles for each user
-      const usersWithRoles = await Promise.all(
-        users.map(async (user) => {
-          const { data: roleData } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', user.id)
-            .maybeSingle();
-
-          return {
-            id: user.id,
-            short_id: user.short_id,
-            name: user.name,
-            email: user.email,
-            phone: user.phone,
-            role: roleData?.role || 'team',
-            is_active: !user.deleted_at,
-          };
-        })
-      );
-
-      setUsers(usersWithRoles);
+      setUsers(users.map(user => ({
+        id: user.id,
+        short_id: user.short_id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        is_admin: user.is_admin || false,
+        is_active: !user.deleted_at,
+      })));
     } catch (error) {
       console.error('Error loading users:', error);
       toast({
         title: "Error loading users",
-        description: "Failed to fetch team members",
+        description: "Failed to fetch users",
         variant: "destructive",
       });
     } finally {
@@ -103,38 +98,36 @@ const TeamPage = () => {
     }
   };
 
-  const handleRoleChange = async (userId: string, newRole: string) => {
-    const roleValue = newRole as 'admin' | 'team' | 'consultant' | 'client';
-    
+  const handleToggleAdmin = async (userId: string, currentAdminStatus: boolean) => {
     try {
       const { error } = await supabase
-        .from('user_roles')
-        .update({ role: roleValue })
-        .eq('user_id', userId);
+        .from('users')
+        .update({ is_admin: !currentAdminStatus })
+        .eq('id', userId);
 
       if (error) throw error;
 
       setUsers(users.map(u => 
         u.id === userId 
-          ? { ...u, role: roleValue } 
+          ? { ...u, is_admin: !currentAdminStatus } 
           : u
       ));
       
       toast({
-        title: "Role updated",
-        description: "User role has been changed successfully",
+        title: `User ${!currentAdminStatus ? 'promoted to' : 'removed from'} admin`,
+        description: "Admin status has been updated",
       });
     } catch (error) {
-      console.error('Error updating role:', error);
+      console.error('Error toggling admin:', error);
       toast({
-        title: "Error updating role",
-        description: "Failed to change user role",
+        title: "Error updating admin status",
+        description: "Failed to change admin status",
         variant: "destructive",
       });
     }
   };
 
-  const startEditing = (user: TeamMember) => {
+  const startEditing = (user: SystemUser) => {
     setEditingId(user.id);
     setEditValues({
       name: user.name,
@@ -189,11 +182,33 @@ const TeamPage = () => {
   };
 
   const handleDelete = async () => {
-    if (!deleteUserId) return;
+    if (!deleteUserId || !currentUser) return;
+
+    const userToDelete = users.find(u => u.id === deleteUserId);
+    
+    // Prevent last admin deletion
+    if (userToDelete?.is_admin) {
+      const adminCount = users.filter(u => u.is_admin && u.is_active).length;
+      if (adminCount <= 1) {
+        toast({
+          title: "Cannot delete last admin",
+          description: "At least one admin must remain active",
+          variant: "destructive",
+        });
+        setDeleteUserId(null);
+        return;
+      }
+    }
 
     try {
-      // Delete from auth.users (cascade will handle profiles and user_roles)
-      const { error } = await supabase.auth.admin.deleteUser(deleteUserId);
+      // Soft delete user
+      const { error } = await supabase
+        .from('users')
+        .update({ 
+          deleted_at: new Date().toISOString(),
+          deleted_by: currentUser.id 
+        })
+        .eq('id', deleteUserId);
 
       if (error) throw error;
 
@@ -201,14 +216,14 @@ const TeamPage = () => {
       setDeleteUserId(null);
       
       toast({
-        title: "User deleted",
-        description: "User has been removed successfully",
+        title: "User deactivated",
+        description: "User has been soft-deleted and can be restored from admin tools",
       });
     } catch (error) {
       console.error('Error deleting user:', error);
       toast({
         title: "Error deleting user",
-        description: "Failed to remove user. You may not have permission.",
+        description: "Failed to deactivate user",
         variant: "destructive",
       });
     }
@@ -229,56 +244,16 @@ const TeamPage = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold mb-2">Team Members</h1>
+          <h1 className="text-4xl font-bold mb-2">User Management</h1>
           <p className="text-muted-foreground text-lg">
-            Manage your team and their roles
+            Global admin panel - manage all system users
           </p>
         </div>
         <AddUserDialog onUserAdded={loadUsers} />
       </div>
 
-      {/* Filter Buttons */}
-      <div className="flex items-center gap-2">
-        <Filter className="h-4 w-4 text-muted-foreground" />
-        <Button
-          variant={roleFilter === 'all' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setRoleFilter('all')}
-        >
-          All ({users.length})
-        </Button>
-        <Button
-          variant={roleFilter === 'admin' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setRoleFilter('admin')}
-        >
-          Admin ({users.filter(u => u.role === 'admin').length})
-        </Button>
-        <Button
-          variant={roleFilter === 'team' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setRoleFilter('team')}
-        >
-          Team ({users.filter(u => u.role === 'team').length})
-        </Button>
-        <Button
-          variant={roleFilter === 'consultant' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setRoleFilter('consultant')}
-        >
-          Consultant ({users.filter(u => u.role === 'consultant').length})
-        </Button>
-        <Button
-          variant={roleFilter === 'client' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setRoleFilter('client')}
-        >
-          Client ({users.filter(u => u.role === 'client').length})
-        </Button>
-      </div>
-
       {/* Users Table */}
-      {users.filter(u => roleFilter === 'all' || u.role === roleFilter).length === 0 ? (
+      {users.length === 0 ? (
         <div className="text-center py-16">
           <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
             <Users className="h-12 w-12 text-muted-foreground" />
@@ -294,15 +269,14 @@ const TeamPage = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Title</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
+                <TableHead>Admin Status</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.filter(u => roleFilter === 'all' || u.role === roleFilter).map((user) => (
+              {users.map((user) => (
                 <TableRow key={user.id}>
                   {/* Name Cell - Editable */}
                   <TableCell>
@@ -348,31 +322,19 @@ const TeamPage = () => {
                     )}
                   </TableCell>
 
-                  {/* Title Cell */}
-                  <TableCell className="text-muted-foreground">
-                    —
-                  </TableCell>
-
                   {/* Email Cell */}
                   <TableCell className="text-muted-foreground">{user.email}</TableCell>
 
-                  {/* Role Selector */}
+                  {/* Admin Toggle */}
                   <TableCell>
-                    <Select
-                      value={user.role}
-                      onValueChange={(value) => handleRoleChange(user.id, value)}
-                      disabled={user.id === currentUser?.id || user.email === PROTECTED_ADMIN_EMAIL}
+                    <Button
+                      variant={user.is_admin ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleToggleAdmin(user.id, user.is_admin)}
+                      disabled={user.id === currentUser?.id}
                     >
-                      <SelectTrigger className="w-32 h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="team">Team</SelectItem>
-                        <SelectItem value="consultant">Consultant</SelectItem>
-                        <SelectItem value="client">Client</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      {user.is_admin ? '✓ Admin' : 'Make Admin'}
+                    </Button>
                   </TableCell>
 
                   {/* Status Cell */}
@@ -389,7 +351,7 @@ const TeamPage = () => {
                       variant="ghost"
                       className="h-8 w-8"
                       onClick={() => setDeleteUserId(user.id)}
-                      disabled={user.id === currentUser?.id || user.email === PROTECTED_ADMIN_EMAIL}
+                      disabled={user.id === currentUser?.id}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>

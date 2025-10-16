@@ -24,11 +24,9 @@ import { UserPlus } from "lucide-react";
 import { z } from "zod";
 
 const userSchema = z.object({
-  first_name: z.string().trim().min(1, "First name is required").max(100),
-  last_name: z.string().trim().min(1, "Last name is required").max(100),
+  name: z.string().trim().min(1, "Name is required").max(200),
   email: z.string().trim().email("Invalid email address").max(255),
-  title: z.string().trim().max(100).optional(),
-  role: z.enum(['admin', 'team', 'consultant', 'client']),
+  is_admin: z.boolean(),
 });
 
 interface AddUserDialogProps {
@@ -41,11 +39,9 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
+    name: '',
     email: '',
-    title: '',
-    role: 'team' as 'admin' | 'team' | 'consultant' | 'client',
+    is_admin: false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -81,8 +77,7 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
         password: tempPassword,
         options: {
           data: {
-            first_name: formData.first_name,
-            last_name: formData.last_name,
+            name: formData.name,
           },
         },
       });
@@ -90,24 +85,24 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
       if (signUpError) throw signUpError;
       if (!authData.user) throw new Error('User creation failed');
 
-      // Update user profile with title
-      if (formData.title) {
-        const { error: userError } = await supabase
+      // Wait for trigger to create users record
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Get users record
+      const { data: userRecord, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', authData.user.id)
+        .single();
+
+      if (userError) throw userError;
+
+      // Set admin flag if checked
+      if (formData.is_admin) {
+        await supabase
           .from('users')
-          .update({ phone: formData.title }) // Using phone as placeholder for title field
-          .eq('id', authData.user.id);
-
-        if (userError) throw userError;
-      }
-
-      // Update role (if not default 'team')
-      if (formData.role !== 'team') {
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .update({ role: formData.role })
-          .eq('user_id', authData.user.id);
-
-        if (roleError) throw roleError;
+          .update({ is_admin: true })
+          .eq('id', userRecord.id);
       }
 
       // Send welcome email
@@ -115,28 +110,25 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
         await supabase.functions.invoke('send-welcome-email', {
           body: {
             email: formData.email,
-            first_name: formData.first_name,
-            last_name: formData.last_name,
+            first_name: formData.name,
+            last_name: '',
             app_url: window.location.origin,
           },
         });
       } catch (emailError) {
         console.error('Failed to send welcome email:', emailError);
-        // Don't fail user creation if email fails
       }
 
       toast({
         title: "User created",
-        description: `${formData.first_name} ${formData.last_name} has been added and will receive a welcome email.`,
+        description: `${formData.name} has been added and will receive a welcome email.`,
       });
 
       // Reset form
       setFormData({
-        first_name: '',
-        last_name: '',
+        name: '',
         email: '',
-        title: '',
-        role: 'team',
+        is_admin: false,
       });
       
       setOpen(false);
@@ -179,37 +171,20 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
         
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
-            {/* First Name */}
+            {/* Name */}
             <div className="grid gap-2">
-              <Label htmlFor="first_name">
-                First Name <span className="text-destructive">*</span>
+              <Label htmlFor="name">
+                Name <span className="text-destructive">*</span>
               </Label>
               <Input
-                id="first_name"
-                value={formData.first_name}
-                onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                placeholder="John"
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="John Doe"
                 disabled={loading}
               />
-              {errors.first_name && (
-                <p className="text-sm text-destructive">{errors.first_name}</p>
-              )}
-            </div>
-
-            {/* Last Name */}
-            <div className="grid gap-2">
-              <Label htmlFor="last_name">
-                Last Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="last_name"
-                value={formData.last_name}
-                onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                placeholder="Doe"
-                disabled={loading}
-              />
-              {errors.last_name && (
-                <p className="text-sm text-destructive">{errors.last_name}</p>
+              {errors.name && (
+                <p className="text-sm text-destructive">{errors.name}</p>
               )}
             </div>
 
@@ -231,44 +206,19 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
               )}
             </div>
 
-            {/* Title */}
-            <div className="grid gap-2">
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="Project Manager"
+            {/* Admin Checkbox */}
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="is_admin"
+                checked={formData.is_admin}
+                onChange={(e) => setFormData({ ...formData, is_admin: e.target.checked })}
                 disabled={loading}
+                className="h-4 w-4"
               />
-              {errors.title && (
-                <p className="text-sm text-destructive">{errors.title}</p>
-              )}
-            </div>
-
-            {/* Role */}
-            <div className="grid gap-2">
-              <Label htmlFor="role">
-                Role <span className="text-destructive">*</span>
+              <Label htmlFor="is_admin" className="cursor-pointer">
+                Global Admin (full system access)
               </Label>
-              <Select
-                value={formData.role}
-                onValueChange={(value: any) => setFormData({ ...formData, role: value })}
-                disabled={loading}
-              >
-                <SelectTrigger id="role">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="team">Team</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="consultant">Consultant</SelectItem>
-                  <SelectItem value="client">Client</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.role && (
-                <p className="text-sm text-destructive">{errors.role}</p>
-              )}
             </div>
           </div>
 

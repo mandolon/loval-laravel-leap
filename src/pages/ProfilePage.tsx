@@ -132,9 +132,11 @@ export default function ProfilePage() {
             <div>
               <h3 className="font-semibold text-lg">{user.name}</h3>
               <p className="text-sm text-muted-foreground">{user.email}</p>
-              <Badge className={`mt-2 ${roleColors[user.role]}`}>
-                {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-              </Badge>
+              {user.is_admin && (
+                <Badge className="mt-2 bg-primary">
+                  Admin
+                </Badge>
+              )}
             </div>
           </div>
 
@@ -227,14 +229,16 @@ export default function ProfilePage() {
           <div className="space-y-2">
             <Label>
               <Shield className="inline mr-2 h-4 w-4" />
-              Role
+              Admin Status
             </Label>
             <div className="flex items-center gap-2">
-              <Badge className={roleColors[user.role]}>
-                {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-              </Badge>
+              {user.is_admin ? (
+                <Badge className="bg-primary">Admin</Badge>
+              ) : (
+                <Badge variant="outline">User</Badge>
+              )}
               <span className="text-sm text-muted-foreground">
-                Contact an admin to change your role
+                Contact an admin to change your status
               </span>
             </div>
           </div>

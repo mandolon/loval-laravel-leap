@@ -257,8 +257,8 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
                 <p className="text-sm font-medium truncate">
                   {user.name}
                 </p>
-                <p className="text-xs text-muted-foreground truncate capitalize">
-                  {user.role}
+                <p className="text-xs text-muted-foreground truncate">
+                  {user.is_admin ? 'Admin' : user.email}
                 </p>
               </div>
             </div>
