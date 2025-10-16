@@ -30,12 +30,14 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Users, Check, X, Pencil } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
+import { AddUserDialog } from "@/components/AddUserDialog";
 
 interface TeamMember {
   id: string;
   first_name: string;
   last_name: string;
   email: string;
+  title?: string;
   role: 'admin' | 'team' | 'consultant' | 'client';
   is_active: boolean;
 }
@@ -76,6 +78,7 @@ const TeamPage = () => {
             first_name: profile.first_name,
             last_name: profile.last_name,
             email: profile.email,
+            title: profile.title,
             role: roleData?.role || 'team',
             is_active: profile.is_active,
           };
@@ -221,11 +224,14 @@ const TeamPage = () => {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div>
-        <h1 className="text-4xl font-bold mb-2">Team Members</h1>
-        <p className="text-muted-foreground text-lg">
-          Manage your team and their roles
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold mb-2">Team Members</h1>
+          <p className="text-muted-foreground text-lg">
+            Manage your team and their roles
+          </p>
+        </div>
+        <AddUserDialog onUserAdded={loadUsers} />
       </div>
 
       {/* Users Table */}
@@ -245,6 +251,7 @@ const TeamPage = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Title</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
@@ -302,6 +309,11 @@ const TeamPage = () => {
                         </Button>
                       </div>
                     )}
+                  </TableCell>
+
+                  {/* Title Cell */}
+                  <TableCell className="text-muted-foreground">
+                    {user.title || '-'}
                   </TableCell>
 
                   {/* Email Cell */}
