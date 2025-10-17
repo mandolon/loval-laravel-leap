@@ -940,6 +940,7 @@ export default function FileExplorer({
           id: child.id,
           name: child.name,
           type: 'folder',
+          phase: rootFolder.name, // Add phase name to folder
         })),
     }))
     
@@ -1322,7 +1323,7 @@ export default function FileExplorer({
             ...phase,
             children: [
               ...(phase.children || []),
-              { name: folderName.trim(), type: 'folder' }
+              { name: folderName.trim(), type: 'folder', phase: phase.name }
             ]
           };
           // Update selectedPhase reference to point to the new phase object
