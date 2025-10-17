@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
-import { useQuery } from '@tanstack/react-query';
 import { 
   Folder, 
   Search, 
@@ -13,7 +12,9 @@ import {
   Plus,
   ChevronUp
 } from 'lucide-react';
-import { MOCK_PROJECT, MOCK_FILES } from '@/data/mock';
+import { MOCK_FILES } from '@/data/mock';
+import { useProjectFolders, useProjectFiles as useProjectFilesApi } from '@/lib/api/hooks/useProjectFiles';
+import { supabase } from '@/integrations/supabase/client';
 
 // Utility: format bytes to human readable (simplistic)
 function formatFileSize(bytes: number) {
@@ -904,75 +905,78 @@ export default function FileExplorer({
   onClick
 }: FileExplorerProps) {
   
-  // Fetch live data from MSW if projectId is provided
-  const { data: liveData } = useQuery({
-    queryKey: ['files', projectId],
-    enabled: !!projectId,
-    queryFn: async () => {
-      const r = await fetch(`/api/files?project_id=${projectId}`)
-      if (!r.ok) throw new Error('Failed to load files')
-      const json = await r.json()
-      return json.data // { files: [], folders: [] }
-    },
-    staleTime: 300000,
-  })
+  // Fetch real folders and files from Supabase
+  const { data: foldersData = [] } = useProjectFolders(projectId || '')
+  const { data: filesData = [] } = useProjectFilesApi(projectId || '')
   
-  // Transform MSW folders into the tree structure expected by FileExplorer
+  // Transform folders into tree structure
   const root = useMemo(() => {
-    if (!liveData?.folders || liveData.folders.length === 0) {
-      return MOCK_PROJECT // Fallback to mock if no live data
+    if (!foldersData || foldersData.length === 0) {
+      return {
+        name: 'Project Files',
+        type: 'project',
+        children: [],
+      }
     }
     
-    // Group folders by phase
-    const phaseMap = new Map<string, any[]>()
-    liveData.folders.forEach((folder: any) => {
-      const phase = folder.phase || folder.name
-      if (!phaseMap.has(phase)) {
-        phaseMap.set(phase, [])
-      }
-      phaseMap.get(phase)!.push({
-        id: folder.id,
-        name: folder.name,
-        type: 'folder',
-      })
-    })
+    // Get root folders (no parent) - these are our phases
+    const rootFolders = foldersData.filter(f => f.parent_folder_id === null)
     
-    // Build root structure
+    // Get child folders for each root folder
+    const rootWithChildren = rootFolders.map(rootFolder => ({
+      id: rootFolder.id,
+      name: rootFolder.name,
+      type: 'phase',
+      is_system: rootFolder.is_system_folder,
+      children: foldersData
+        .filter(f => f.parent_folder_id === rootFolder.id)
+        .map(child => ({
+          id: child.id,
+          name: child.name,
+          type: 'folder',
+        })),
+    }))
+    
     return {
       name: 'Project Files',
       type: 'project',
-      children: Array.from(phaseMap.entries()).map(([phaseName, folders]) => ({
-        name: phaseName,
-        type: 'phase',
-        children: folders,
-      })),
+      children: rootWithChildren,
     }
-  }, [liveData])
+  }, [foldersData])
   
-  // Transform MSW files into the format expected by FileExplorer
+  // Transform files into the format expected by FileExplorer
   const liveFiles = useMemo(() => {
-    if (!liveData?.files || liveData.files.length === 0) {
+    if (!filesData || filesData.length === 0) {
       return MOCK_FILES // Fallback to mock if no live data
     }
     
-    return liveData.files.map((file: any) => {
-      // Find the folder and phase for this file
-      const folder = liveData.folders.find((f: any) => f.id === file.folder_id)
-      const phase = folder?.phase || folder?.name || 'Uncategorized'
-      const folderName = folder?.name || 'Root'
+    return filesData.map((file) => {
+      // Find the folder and parent folder (phase) for this file
+      const folder = foldersData.find((f) => f.id === file.folder_id)
+      const parentFolder = folder?.parent_folder_id 
+        ? foldersData.find((f) => f.id === folder.parent_folder_id)
+        : null
+      
+      const phaseName = parentFolder?.name || folder?.name || 'Uncategorized'
+      const folderName = folder?.parent_folder_id ? folder.name : 'Root'
+      
+      // Get public URL for the file
+      const { data: { publicUrl } } = supabase.storage
+        .from('project-files')
+        .getPublicUrl(file.storage_path)
       
       return {
-        name: file.name,
-        size: formatFileSize(file.size_bytes),
+        name: file.filename,
+        size: formatFileSize(file.filesize || 0),
         modified: new Date(file.created_at).toLocaleDateString(),
-        phase: phase,
+        phase: phaseName,
         folder: folderName,
-        type: file.kind || 'other',
-        url: file.storage_url,
+        type: file.mimetype?.split('/')[0] || 'other',
+        url: publicUrl,
         id: file.id,
       }
     })
-  }, [liveData])
+  }, [filesData, foldersData])
   
   // Core navigation state
   const [rootState, setRootState] = useState(root);
