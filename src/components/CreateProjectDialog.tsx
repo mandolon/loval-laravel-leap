@@ -176,131 +176,102 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
             {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
           </div>
 
-          {/* Row 2: Project Address */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold">Project Address</h3>
-            
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="streetNumber">Street # *</Label>
+          {/* Row 2: Project Address - All fields in one row */}
+          <div className="space-y-2">
+            <Label>Project Address *</Label>
+            <div className="grid grid-cols-12 gap-2">
+              <div className="col-span-2">
                 <Input
-                  id="streetNumber"
-                  placeholder="123"
+                  placeholder="Street #"
                   value={streetNumber}
                   onChange={(e) => setStreetNumber(e.target.value)}
                   className={errors.streetNumber ? "border-destructive" : ""}
                 />
-                {errors.streetNumber && <p className="text-xs text-destructive">{errors.streetNumber}</p>}
               </div>
-
-              <div className="space-y-2 col-span-2">
-                <Label htmlFor="streetName">Street Name *</Label>
+              <div className="col-span-4">
                 <Input
-                  id="streetName"
-                  placeholder="Oak Street"
+                  placeholder="Street Name"
                   value={streetName}
                   onChange={(e) => setStreetName(e.target.value)}
                   className={errors.streetName ? "border-destructive" : ""}
                 />
-                {errors.streetName && <p className="text-xs text-destructive">{errors.streetName}</p>}
               </div>
-            </div>
-
-            <div className="grid grid-cols-4 gap-3">
-              <div className="space-y-2 col-span-2">
-                <Label htmlFor="city">City *</Label>
+              <div className="col-span-3">
                 <Input
-                  id="city"
-                  placeholder="Portland"
+                  placeholder="City"
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
                   className={errors.city ? "border-destructive" : ""}
                 />
-                {errors.city && <p className="text-xs text-destructive">{errors.city}</p>}
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="state">State *</Label>
+              <div className="col-span-1">
                 <Input
-                  id="state"
-                  placeholder="OR"
+                  placeholder="ST"
                   value={state}
                   onChange={(e) => setState(e.target.value.toUpperCase())}
                   maxLength={2}
                   className={errors.state ? "border-destructive" : ""}
                 />
-                {errors.state && <p className="text-xs text-destructive">{errors.state}</p>}
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="zipCode">Zip *</Label>
+              <div className="col-span-2">
                 <Input
-                  id="zipCode"
-                  placeholder="97201"
+                  placeholder="Zip"
                   value={zipCode}
                   onChange={(e) => setZipCode(e.target.value)}
                   className={errors.zipCode ? "border-destructive" : ""}
                 />
-                {errors.zipCode && <p className="text-xs text-destructive">{errors.zipCode}</p>}
               </div>
             </div>
+            {(errors.streetNumber || errors.streetName || errors.city || errors.state || errors.zipCode) && (
+              <p className="text-xs text-destructive">
+                {errors.streetNumber || errors.streetName || errors.city || errors.state || errors.zipCode}
+              </p>
+            )}
           </div>
 
-          {/* Row 3: Primary Client */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold">Primary Client</h3>
-            
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="clientFirstName">First Name *</Label>
+          {/* Row 3: Primary Client - All fields in one row */}
+          <div className="space-y-2">
+            <Label>Primary Client *</Label>
+            <div className="grid grid-cols-4 gap-2">
+              <div>
                 <Input
-                  id="clientFirstName"
-                  placeholder="John"
+                  placeholder="First Name"
                   value={clientFirstName}
                   onChange={(e) => setClientFirstName(e.target.value)}
                   className={errors.clientFirstName ? "border-destructive" : ""}
                 />
-                {errors.clientFirstName && <p className="text-xs text-destructive">{errors.clientFirstName}</p>}
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="clientLastName">Last Name *</Label>
+              <div>
                 <Input
-                  id="clientLastName"
-                  placeholder="Smith"
+                  placeholder="Last Name"
                   value={clientLastName}
                   onChange={(e) => setClientLastName(e.target.value)}
                   className={errors.clientLastName ? "border-destructive" : ""}
                 />
-                {errors.clientLastName && <p className="text-xs text-destructive">{errors.clientLastName}</p>}
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="clientEmail">Email *</Label>
+              <div>
                 <Input
-                  id="clientEmail"
                   type="email"
-                  placeholder="john.smith@example.com"
+                  placeholder="Email"
                   value={clientEmail}
                   onChange={(e) => setClientEmail(e.target.value)}
                   className={errors.clientEmail ? "border-destructive" : ""}
                 />
-                {errors.clientEmail && <p className="text-xs text-destructive">{errors.clientEmail}</p>}
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="clientPhone">Phone</Label>
+              <div>
                 <Input
-                  id="clientPhone"
                   type="tel"
-                  placeholder="(503) 555-0123"
+                  placeholder="Phone (optional)"
                   value={clientPhone}
                   onChange={(e) => setClientPhone(e.target.value)}
                 />
               </div>
             </div>
+            {(errors.clientFirstName || errors.clientLastName || errors.clientEmail) && (
+              <p className="text-xs text-destructive">
+                {errors.clientFirstName || errors.clientLastName || errors.clientEmail}
+              </p>
+            )}
           </div>
 
           {/* Optional Secondary Client */}
