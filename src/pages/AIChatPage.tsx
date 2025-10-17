@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { Send, Bot, User } from "lucide-react";
+import { Send, Bot, User, FileText } from "lucide-react";
+import ChatSummarizer from "@/components/chat/ChatSummarizer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -23,7 +24,7 @@ export default function AIChatPage() {
   const [selectedProject, setSelectedProject] = useState<string>("select");
   const scrollRef = useRef<HTMLDivElement>(null);
   
-  const { sendMessage, isLoading } = useAIChat(threadId, workspaceId || "");
+  const { sendMessage, isLoading } = useAIChat(threadId, workspaceId || "", selectedProject);
   const { data: projects = [] } = useProjects(workspaceId || "");
 
   // Load or create thread
@@ -145,10 +146,23 @@ export default function AIChatPage() {
   return (
     <div className="h-full flex flex-col bg-background">
       <div className="border-b p-4">
-        <h1 className="text-2xl font-bold">AI Assistant</h1>
-        <p className="text-sm text-muted-foreground">
-          Ask me anything about your workspace, projects, or tasks
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">AI Assistant</h1>
+            <p className="text-sm text-muted-foreground">
+              Ask me anything about your workspace, projects, or tasks
+            </p>
+          </div>
+          {messages.length > 0 && threadId && workspaceId && selectedProject !== "select" && (
+            <ChatSummarizer
+              threadId={threadId}
+              workspaceId={workspaceId}
+              projectId={selectedProject === "all" ? workspaceId : selectedProject}
+              userId={user?.id || ""}
+              messages={messages}
+            />
+          )}
+        </div>
       </div>
 
       <ScrollArea ref={scrollRef} className="flex-1 p-4">

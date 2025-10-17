@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { buildAIContext, buildWorkspaceContext } from "@/ai/context-builder";
 
 type Message = { role: "user" | "assistant"; content: string };
 
-export function useAIChat(threadId: string, workspaceId: string) {
+export function useAIChat(threadId: string, workspaceId: string, projectId?: string) {
   const [isLoading, setIsLoading] = useState(false);
 
   const sendMessage = async (
@@ -15,6 +16,16 @@ export function useAIChat(threadId: string, workspaceId: string) {
     setIsLoading(true);
 
     try {
+      // Build AI context if project is selected
+      let projectContext = "";
+      if (projectId && projectId !== "select" && projectId !== "all") {
+        const context = await buildAIContext(workspaceId, projectId, userMessage);
+        projectContext = context.contextString;
+      } else if (projectId === "all") {
+        const context = await buildWorkspaceContext(workspaceId, userMessage);
+        projectContext = context.contextString;
+      }
+
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
       
       const resp = await fetch(CHAT_URL, {
@@ -26,7 +37,9 @@ export function useAIChat(threadId: string, workspaceId: string) {
         body: JSON.stringify({ 
           messages: [...messages, { role: "user", content: userMessage }],
           threadId,
-          workspaceId 
+          workspaceId,
+          projectId,
+          projectContext
         }),
       });
 
