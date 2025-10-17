@@ -12,20 +12,20 @@ interface ProjectMembersTableProps {
 export const ProjectMembersTable = ({ projectId, workspaceId }: ProjectMembersTableProps) => {
   const { data: workspaceMembers, isLoading: workspaceMembersLoading } = useWorkspaceMembers(workspaceId);
   const { data: projectMembers, isLoading: projectMembersLoading } = useProjectMembers(projectId);
-  const assignMember = useAssignProjectMember();
-  const unassignMember = useUnassignProjectMember();
+  const assignProjectMember = useAssignProjectMember();
+  const unassignProjectMember = useUnassignProjectMember();
 
   const handleToggleMember = async (userId: string, isCurrentlyMember: boolean) => {
     if (isCurrentlyMember) {
       const member = projectMembers?.find(m => m.userId === userId);
       if (member) {
-        await unassignMember.mutateAsync({
+        await unassignProjectMember.mutateAsync({
           id: member.id,
           projectId,
         });
       }
     } else {
-      await assignMember.mutateAsync({
+      await assignProjectMember.mutateAsync({
         projectId,
         userId,
       });
@@ -57,7 +57,7 @@ export const ProjectMembersTable = ({ projectId, workspaceId }: ProjectMembersTa
                 <Checkbox
                   checked={isMember}
                   onCheckedChange={() => handleToggleMember(member.userId, isMember)}
-                  disabled={assignMember.isPending || unassignMember.isPending}
+                  disabled={assignProjectMember.isPending || unassignProjectMember.isPending}
                 />
                 <UserAvatar
                   user={{ 

@@ -15,20 +15,28 @@ export const WorkspaceMembersTable = ({ workspaceId }: WorkspaceMembersTableProp
   const unassignMember = useUnassignMember();
 
   const handleToggleMember = async (userId: string, isCurrentlyMember: boolean) => {
-    if (isCurrentlyMember) {
-      const member = members?.find(m => m.userId === userId);
-      if (member) {
-        await unassignMember.mutateAsync({
-          id: member.id,
-          workspaceId,
-        });
+    try {
+      if (isCurrentlyMember) {
+        const member = members?.find(m => m.userId === userId);
+        if (member) {
+          await unassignMember.mutateAsync({
+            id: member.id,
+            workspaceId,
+          });
+        }
+      } else {
+        // Check again to prevent duplicate assignments
+        const stillNotMember = !members?.some(m => m.userId === userId && !m.deletedAt);
+        if (stillNotMember) {
+          await assignMember.mutateAsync({
+            workspaceId,
+            userId,
+            role: 'team',
+          });
+        }
       }
-    } else {
-      await assignMember.mutateAsync({
-        workspaceId,
-        userId,
-        role: 'team',
-      });
+    } catch (error) {
+      console.error('Error toggling workspace member:', error);
     }
   };
 
