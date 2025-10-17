@@ -87,7 +87,7 @@ export const useUploadTaskFile = () => {
 
       // Upload to storage
       const { error: uploadError } = await supabase.storage
-        .from('task-files')
+        .from('project-files')
         .upload(storagePath, file, {
           cacheControl: '3600',
           upsert: false,
@@ -176,7 +176,7 @@ export const useDeleteTaskFile = () => {
 
       // Delete from storage
       const { error: storageError } = await supabase.storage
-        .from('task-files')
+        .from('project-files')
         .remove([file.storage_path])
 
       if (storageError) throw storageError
@@ -230,7 +230,7 @@ export const useDeleteTaskFile = () => {
 // Download file helper
 export const downloadTaskFile = async (storagePath: string, filename: string) => {
   const { data, error } = await supabase.storage
-    .from('task-files')
+    .from('project-files')
     .download(storagePath)
 
   if (error) throw error

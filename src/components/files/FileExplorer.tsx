@@ -179,7 +179,7 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
 
       // Upload to storage
       const { error: uploadError } = await supabase.storage
-        .from('task-files')
+        .from('project-files')
         .upload(storagePath, file);
 
       if (uploadError) throw uploadError;
@@ -207,7 +207,7 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
 
       if (insertError) {
         // Cleanup storage on error
-        await supabase.storage.from('task-files').remove([storagePath]);
+        await supabase.storage.from('project-files').remove([storagePath]);
         throw insertError;
       }
 
@@ -240,7 +240,7 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
     mutationFn: async (file: FileRecord) => {
       // Get signed URL
       const { data, error } = await supabase.storage
-        .from('task-files')
+        .from('project-files')
         .createSignedUrl(file.storage_path, 60);
 
       if (error) throw error;
@@ -288,7 +288,7 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
       try {
         // Get signed URL for PDF
         const { data, error } = await supabase.storage
-          .from('task-files')
+          .from('project-files')
           .createSignedUrl(selectedFile.storage_path, 60);
 
         if (error) throw error;
