@@ -402,9 +402,18 @@ export const LinkSchema = z.object({
   id: z.string().uuid(),
   shortId: z.string().regex(/^L-[a-z0-9]{4}$/),
   projectId: z.string().uuid(),
-  title: z.string().min(1).max(255),
-  description: z.string().max(500).optional(),
-  url: z.string().url().max(2048),
+  title: z.string()
+    .trim()
+    .min(1, 'Title is required')
+    .max(255, 'Title must be less than 255 characters'),
+  description: z.string()
+    .trim()
+    .max(500, 'Description must be less than 500 characters')
+    .optional(),
+  url: z.string()
+    .trim()
+    .url('Please enter a valid URL')
+    .max(2048, 'URL must be less than 2048 characters'),
   createdBy: z.string().uuid(),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -414,15 +423,35 @@ export const LinkSchema = z.object({
 
 export const CreateLinkInputSchema = z.object({
   projectId: z.string().uuid(),
-  title: z.string().min(1).max(255),
-  description: z.string().max(500).optional(),
-  url: z.string().url().max(2048),
+  title: z.string()
+    .trim()
+    .min(1, 'Title is required')
+    .max(255, 'Title must be less than 255 characters'),
+  description: z.string()
+    .trim()
+    .max(500, 'Description must be less than 500 characters')
+    .optional(),
+  url: z.string()
+    .trim()
+    .url('Please enter a valid URL')
+    .max(2048, 'URL must be less than 2048 characters'),
 })
 
 export const UpdateLinkInputSchema = z.object({
-  title: z.string().min(1).max(255).optional(),
-  description: z.string().max(500).optional(),
-  url: z.string().url().max(2048).optional(),
+  title: z.string()
+    .trim()
+    .min(1, 'Title is required')
+    .max(255, 'Title must be less than 255 characters')
+    .optional(),
+  description: z.string()
+    .trim()
+    .max(500, 'Description must be less than 500 characters')
+    .optional(),
+  url: z.string()
+    .trim()
+    .url('Please enter a valid URL')
+    .max(2048, 'URL must be less than 2048 characters')
+    .optional(),
 })
 
 export type Link = z.infer<typeof LinkSchema>

@@ -28,6 +28,10 @@ import { EditInvoiceDialog } from "@/components/invoice/EditInvoiceDialog";
 import { InvoicePDF } from "@/components/invoice/InvoicePDF";
 import { NoteCard } from "@/components/notes/NoteCard";
 import { CreateNoteDialog } from "@/components/notes/CreateNoteDialog";
+import { LinkCard } from "@/components/links/LinkCard";
+import { CreateLinkDialog } from "@/components/links/CreateLinkDialog";
+import { EditLinkDialog } from "@/components/links/EditLinkDialog";
+import { useLinks, useDeleteLink } from "@/lib/api/hooks/useLinks";
 import { ChatMessage } from "@/components/chat/ChatMessage";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { EditClientDialog } from "@/components/project/EditClientDialog";
@@ -48,6 +52,8 @@ const ProjectDetails = () => {
   const [viewInvoiceOpen, setViewInvoiceOpen] = useState(false);
   const [editInvoiceOpen, setEditInvoiceOpen] = useState(false);
   const [invoiceViewMode, setInvoiceViewMode] = useState<'card' | 'list'>('card');
+  const [selectedLink, setSelectedLink] = useState<any>(null);
+  const [editLinkOpen, setEditLinkOpen] = useState(false);
   
   const { data: project, isLoading: projectLoading } = useProject(id || "");
   const { data: tasks = [], isLoading: tasksLoading } = useTasks(id || "");
@@ -67,6 +73,9 @@ const ProjectDetails = () => {
 
   const { data: invoices = [], isLoading: invoicesLoading } = useInvoices(id || "");
   const deleteInvoiceMutation = useDeleteInvoice(id || "");
+
+  const { data: links = [], isLoading: linksLoading } = useLinks(id || "");
+  const deleteLinkMutation = useDeleteLink();
 
   const handleSendMessage = (content: string, replyToId?: string) => {
     if (!id) return;
@@ -371,15 +380,53 @@ const ProjectDetails = () => {
             </TabsContent>
 
             <TabsContent value="links" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Links</CardTitle>
-                  <CardDescription>Related project links</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">No links added yet</p>
-                </CardContent>
-              </Card>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold">Links</h2>
+                    <p className="text-muted-foreground">Reference links and resources</p>
+                  </div>
+                  <CreateLinkDialog projectId={id || ''} />
+                </div>
+
+                {linksLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <p className="text-muted-foreground">Loading links...</p>
+                  </div>
+                ) : links.length === 0 ? (
+                  <Card>
+                    <CardContent className="py-12">
+                      <p className="text-center text-muted-foreground">
+                        No links yet. Add your first reference link to get started.
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {links.map((link) => (
+                      <LinkCard
+                        key={link.id}
+                        link={link}
+                        onEdit={(link) => {
+                          setSelectedLink(link);
+                          setEditLinkOpen(true);
+                        }}
+                        onDelete={(linkId) => {
+                          if (confirm('Are you sure you want to delete this link?')) {
+                            deleteLinkMutation.mutate({ id: linkId, projectId: id || '' });
+                          }
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <EditLinkDialog
+                link={selectedLink}
+                open={editLinkOpen}
+                onOpenChange={setEditLinkOpen}
+              />
             </TabsContent>
 
             <TabsContent value="project" className="mt-6 space-y-6">
