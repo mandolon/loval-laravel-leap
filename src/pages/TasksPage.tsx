@@ -150,6 +150,9 @@ const TasksPage = () => {
     }, [task.assignees, task.createdBy]);
     
     const fileCount = task.attachedFiles?.length || 0;
+    const project = projects.find(p => p.id === task.projectId);
+    const projectAddress = project?.address as { street?: string; city?: string; state?: string; zip?: string } | undefined;
+    const addressDisplay = projectAddress?.street || '-';
 
     if (!creator) return null;
 
@@ -158,12 +161,10 @@ const TasksPage = () => {
         onClick={() => handleTaskClick(task)}
         className="cursor-pointer"
       >
-        {/* Name & Description */}
+        {/* Name & Address */}
         <TableCell>
           <div className="font-medium">{task.title}</div>
-          {task.description && (
-            <div className="text-sm text-muted-foreground truncate max-w-md">{task.description}</div>
-          )}
+          <div className="text-sm text-muted-foreground truncate max-w-md">{addressDisplay}</div>
         </TableCell>
 
         {/* Files */}
