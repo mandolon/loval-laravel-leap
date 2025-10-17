@@ -1,16 +1,24 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Download } from 'lucide-react';
+import { PDFDownloadLink } from '@react-pdf/renderer';
 import type { Invoice, InvoiceLineItem } from '@/lib/api/types';
 import { format } from 'date-fns';
+import { InvoicePDF } from './InvoicePDF';
 
 interface ViewInvoiceDialogProps {
   invoice: (Invoice & { lineItems: InvoiceLineItem[] }) | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  project: {
+    name: string;
+    address?: any;
+  };
 }
 
-export const ViewInvoiceDialog = ({ invoice, open, onOpenChange }: ViewInvoiceDialogProps) => {
+export const ViewInvoiceDialog = ({ invoice, open, onOpenChange, project }: ViewInvoiceDialogProps) => {
   if (!invoice) return null;
 
   const getStatusColor = (status: Invoice['status']) => {
@@ -152,6 +160,25 @@ export const ViewInvoiceDialog = ({ invoice, open, onOpenChange }: ViewInvoiceDi
             </div>
           )}
         </div>
+
+        <DialogFooter>
+          <PDFDownloadLink
+            document={
+              <InvoicePDF 
+                invoice={invoice} 
+                project={project}
+              />
+            }
+            fileName={`Invoice-${invoice.invoiceNumber}.pdf`}
+          >
+            {({ loading }) => (
+              <Button variant="default" disabled={loading}>
+                <Download className="mr-2 h-4 w-4" />
+                {loading ? 'Generating...' : 'Download PDF'}
+              </Button>
+            )}
+          </PDFDownloadLink>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

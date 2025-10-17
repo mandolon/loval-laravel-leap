@@ -1,19 +1,25 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Download } from 'lucide-react';
+import { PDFDownloadLink } from '@react-pdf/renderer';
 import { useUpdateInvoice } from '@/lib/api/hooks/useInvoices';
 import type { Invoice, InvoiceLineItem } from '@/lib/api/types';
+import { InvoicePDF } from './InvoicePDF';
 
 interface EditInvoiceDialogProps {
   invoice: (Invoice & { lineItems: InvoiceLineItem[] }) | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectId: string;
+  project: {
+    name: string;
+    address?: any;
+  };
 }
 
 interface LineItemState extends Partial<InvoiceLineItem> {
@@ -21,7 +27,7 @@ interface LineItemState extends Partial<InvoiceLineItem> {
   _tempId?: string;
 }
 
-export const EditInvoiceDialog = ({ invoice, open, onOpenChange, projectId }: EditInvoiceDialogProps) => {
+export const EditInvoiceDialog = ({ invoice, open, onOpenChange, projectId, project }: EditInvoiceDialogProps) => {
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [submittedTo, setSubmittedTo] = useState('');
   const [invoiceDate, setInvoiceDate] = useState('');
@@ -352,17 +358,38 @@ export const EditInvoiceDialog = ({ invoice, open, onOpenChange, projectId }: Ed
           </div>
         </div>
 
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleSubmit}
-            disabled={!invoiceNumber || !dueDate}
-          >
-            Update Invoice
-          </Button>
-        </div>
+        <DialogFooter>
+          <div className="flex justify-between w-full items-center">
+            <PDFDownloadLink
+              document={
+                <InvoicePDF 
+                  invoice={invoice} 
+                  project={project}
+                />
+              }
+              fileName={`Invoice-${invoice.invoiceNumber}.pdf`}
+            >
+              {({ loading }) => (
+                <Button variant="outline" disabled={loading}>
+                  <Download className="mr-2 h-4 w-4" />
+                  {loading ? 'Generating...' : 'Download PDF'}
+                </Button>
+              )}
+            </PDFDownloadLink>
+
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleSubmit}
+                disabled={!invoiceNumber || !dueDate}
+              >
+                Update Invoice
+              </Button>
+            </div>
+          </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

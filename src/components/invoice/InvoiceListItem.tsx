@@ -1,8 +1,10 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FileText, Eye, Edit, Trash2, Download } from 'lucide-react';
+import { PDFDownloadLink } from '@react-pdf/renderer';
 import type { Invoice, InvoiceLineItem } from '@/lib/api/types';
 import { format } from 'date-fns';
+import { InvoicePDF } from './InvoicePDF';
 
 interface InvoiceListItemProps {
   invoice: Invoice & { lineItems: InvoiceLineItem[] };
@@ -10,9 +12,13 @@ interface InvoiceListItemProps {
   onEdit: (invoice: Invoice & { lineItems: InvoiceLineItem[] }) => void;
   onDelete: (id: string) => void;
   onDownloadPDF: (invoice: Invoice & { lineItems: InvoiceLineItem[] }) => void;
+  project: {
+    name: string;
+    address?: any;
+  };
 }
 
-export const InvoiceListItem = ({ invoice, onView, onEdit, onDelete, onDownloadPDF }: InvoiceListItemProps) => {
+export const InvoiceListItem = ({ invoice, onView, onEdit, onDelete, onDownloadPDF, project }: InvoiceListItemProps) => {
   const getStatusColor = (status: Invoice['status']) => {
     switch (status) {
       case 'paid':
@@ -69,9 +75,21 @@ export const InvoiceListItem = ({ invoice, onView, onEdit, onDelete, onDownloadP
         <Button variant="outline" size="sm" onClick={() => onView(invoice)}>
           <Eye className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={() => onDownloadPDF(invoice)}>
-          <Download className="h-4 w-4" />
-        </Button>
+        <PDFDownloadLink
+          document={
+            <InvoicePDF 
+              invoice={invoice} 
+              project={project}
+            />
+          }
+          fileName={`Invoice-${invoice.invoiceNumber}.pdf`}
+        >
+          {({ loading }) => (
+            <Button variant="outline" size="sm" disabled={loading}>
+              <Download className="h-4 w-4" />
+            </Button>
+          )}
+        </PDFDownloadLink>
         <Button variant="outline" size="sm" onClick={() => onEdit(invoice)}>
           <Edit className="h-4 w-4" />
         </Button>

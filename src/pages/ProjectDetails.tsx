@@ -3,7 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import type { Task } from "@/lib/api/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FileText, CheckSquare, FileSpreadsheet, Link as LinkIcon, FolderOpen, User, MessageSquare, Edit, ChevronRight, ChevronLeft, LayoutGrid, List } from "lucide-react";
+import { ArrowLeft, FileText, CheckSquare, FileSpreadsheet, Link as LinkIcon, FolderOpen, User, MessageSquare, Edit, ChevronRight, ChevronLeft, LayoutGrid, List, Download } from "lucide-react";
+import { PDFDownloadLink } from '@react-pdf/renderer';
 import { TaskItem } from "@/components/TaskItem";
 import { CreateTaskDialog } from "@/components/CreateTaskDialog";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -24,6 +25,7 @@ import { InvoiceCard } from "@/components/invoice/InvoiceCard";
 import { InvoiceListItem } from "@/components/invoice/InvoiceListItem";
 import { ViewInvoiceDialog } from "@/components/invoice/ViewInvoiceDialog";
 import { EditInvoiceDialog } from "@/components/invoice/EditInvoiceDialog";
+import { InvoicePDF } from "@/components/invoice/InvoicePDF";
 import { NoteCard } from "@/components/notes/NoteCard";
 import { CreateNoteDialog } from "@/components/notes/CreateNoteDialog";
 import { ChatMessage } from "@/components/chat/ChatMessage";
@@ -95,6 +97,15 @@ const ProjectDetails = () => {
 
   const handleDeleteTask = (taskId: string) => {
     deleteTaskMutation.mutate(taskId);
+  };
+
+  const handleDownloadPDF = (invoice: any) => {
+    // PDF download is handled by PDFDownloadLink component
+    // This function is kept for compatibility
+    toast({
+      title: "Generating PDF",
+      description: "Your invoice PDF is being prepared...",
+    });
   };
 
   if (projectLoading || tasksLoading) {
@@ -298,6 +309,7 @@ const ProjectDetails = () => {
                       <InvoiceCard
                         key={invoice.id}
                         invoice={invoice}
+                        project={{ name: project.name, address: project.address }}
                         onView={(inv) => {
                           setSelectedInvoice(inv);
                           setViewInvoiceOpen(true);
@@ -311,10 +323,7 @@ const ProjectDetails = () => {
                             deleteInvoiceMutation.mutate(invoiceId);
                           }
                         }}
-                        onDownloadPDF={(inv) => {
-                          // TODO: Implement PDF generation
-                          console.log('Download PDF for invoice:', inv.invoiceNumber);
-                        }}
+                        onDownloadPDF={handleDownloadPDF}
                       />
                     ))}
                   </div>
@@ -324,6 +333,7 @@ const ProjectDetails = () => {
                       <InvoiceListItem
                         key={invoice.id}
                         invoice={invoice}
+                        project={{ name: project.name, address: project.address }}
                         onView={(inv) => {
                           setSelectedInvoice(inv);
                           setViewInvoiceOpen(true);
@@ -337,10 +347,7 @@ const ProjectDetails = () => {
                             deleteInvoiceMutation.mutate(invoiceId);
                           }
                         }}
-                        onDownloadPDF={(inv) => {
-                          // TODO: Implement PDF generation
-                          console.log('Download PDF for invoice:', inv.invoiceNumber);
-                        }}
+                        onDownloadPDF={handleDownloadPDF}
                       />
                     ))}
                   </div>
@@ -351,6 +358,7 @@ const ProjectDetails = () => {
                 invoice={selectedInvoice}
                 open={viewInvoiceOpen}
                 onOpenChange={setViewInvoiceOpen}
+                project={{ name: project.name, address: project.address }}
               />
 
               <EditInvoiceDialog
@@ -358,6 +366,7 @@ const ProjectDetails = () => {
                 open={editInvoiceOpen}
                 onOpenChange={setEditInvoiceOpen}
                 projectId={id || ''}
+                project={{ name: project.name, address: project.address }}
               />
             </TabsContent>
 

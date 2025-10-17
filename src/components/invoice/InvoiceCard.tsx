@@ -2,8 +2,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { FileText, Eye, Edit, Trash2, Download } from 'lucide-react';
+import { PDFDownloadLink } from '@react-pdf/renderer';
 import type { Invoice, InvoiceLineItem } from '@/lib/api/types';
 import { format } from 'date-fns';
+import { InvoicePDF } from './InvoicePDF';
 
 interface InvoiceCardProps {
   invoice: Invoice & { lineItems: InvoiceLineItem[] };
@@ -11,9 +13,13 @@ interface InvoiceCardProps {
   onEdit: (invoice: Invoice & { lineItems: InvoiceLineItem[] }) => void;
   onDelete: (id: string) => void;
   onDownloadPDF: (invoice: Invoice & { lineItems: InvoiceLineItem[] }) => void;
+  project: {
+    name: string;
+    address?: any;
+  };
 }
 
-export const InvoiceCard = ({ invoice, onView, onEdit, onDelete, onDownloadPDF }: InvoiceCardProps) => {
+export const InvoiceCard = ({ invoice, onView, onEdit, onDelete, onDownloadPDF, project }: InvoiceCardProps) => {
   const getStatusColor = (status: Invoice['status']) => {
     switch (status) {
       case 'paid':
@@ -94,9 +100,21 @@ export const InvoiceCard = ({ invoice, onView, onEdit, onDelete, onDownloadPDF }
               <Eye className="h-4 w-4 mr-2" />
               View
             </Button>
-            <Button variant="outline" size="sm" onClick={() => onDownloadPDF(invoice)}>
-              <Download className="h-4 w-4" />
-            </Button>
+            <PDFDownloadLink
+              document={
+                <InvoicePDF 
+                  invoice={invoice} 
+                  project={project}
+                />
+              }
+              fileName={`Invoice-${invoice.invoiceNumber}.pdf`}
+            >
+              {({ loading }) => (
+                <Button variant="outline" size="sm" disabled={loading}>
+                  <Download className="h-4 w-4" />
+                </Button>
+              )}
+            </PDFDownloadLink>
             <Button variant="outline" size="sm" onClick={() => onEdit(invoice)}>
               <Edit className="h-4 w-4" />
             </Button>
