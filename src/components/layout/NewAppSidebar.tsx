@@ -68,7 +68,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
     }
   };
 
-  const handleCreateProject = async (input: { name: string; description?: string; status?: string; phase?: string }) => {
+  const handleCreateProject = async (input: any) => {
     const wsId = workspaceId || currentWorkspaceId;
     if (!wsId || !user?.id) {
       toast({
@@ -88,6 +88,15 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
           description: input.description || null,
           status: input.status || "active",
           phase: input.phase || "Pre-Design",
+          address: input.address || {},
+          primary_client_first_name: input.primaryClient?.firstName || null,
+          primary_client_last_name: input.primaryClient?.lastName || null,
+          primary_client_email: input.primaryClient?.email || null,
+          primary_client_phone: input.primaryClient?.phone || null,
+          secondary_client_first_name: input.secondaryClient?.firstName || null,
+          secondary_client_last_name: input.secondaryClient?.lastName || null,
+          secondary_client_email: input.secondaryClient?.email || null,
+          secondary_client_phone: input.secondaryClient?.phone || null,
           created_by: user.id,
         })
         .select()
