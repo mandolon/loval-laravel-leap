@@ -167,20 +167,7 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
             </div>
           )}
 
-          {/* Row 1: Project Name */}
-          <div className="space-y-2">
-            <Label htmlFor="name">Project Name</Label>
-            <Input
-              id="name"
-              placeholder="e.g., Modern Family Home (optional - defaults to address)"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className={errors.name ? "border-destructive" : ""}
-            />
-            {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
-          </div>
-
-          {/* Row 2: Project Address - All fields in one row */}
+          {/* Row 1: Project Address - All fields in one row */}
           <div className="space-y-2">
             <Label>Project Address *</Label>
             <div className="grid grid-cols-12 gap-2">
@@ -233,9 +220,21 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
             )}
           </div>
 
-          {/* Row 3: Primary Client - All fields in one row */}
+          {/* Row 2: Primary Client - All fields in one row */}
           <div className="space-y-2">
-            <Label>Primary Client (First Name Required) *</Label>
+            <div className="flex items-center justify-between">
+              <Label>Primary Client (First Name Required) *</Label>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="hasSecondaryClient"
+                  checked={hasSecondaryClient}
+                  onCheckedChange={(checked) => setHasSecondaryClient(checked as boolean)}
+                />
+                <Label htmlFor="hasSecondaryClient" className="text-sm font-medium cursor-pointer">
+                  Add Secondary Client
+                </Label>
+              </div>
+            </div>
             <div className="grid grid-cols-4 gap-2">
               <div>
                 <Input
@@ -278,55 +277,56 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
             )}
           </div>
 
-          {/* Optional Secondary Client */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="hasSecondaryClient"
-                checked={hasSecondaryClient}
-                onCheckedChange={(checked) => setHasSecondaryClient(checked as boolean)}
-              />
-              <Label htmlFor="hasSecondaryClient" className="text-sm font-medium cursor-pointer">
-                Add Secondary Client
-              </Label>
-            </div>
-
-            {hasSecondaryClient && (
-              <div className="pl-6">
-                <div className="grid grid-cols-4 gap-2">
-                  <div>
-                    <Input
-                      placeholder="First Name"
-                      value={secondaryClientFirstName}
-                      onChange={(e) => setSecondaryClientFirstName(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Input
-                      placeholder="Last Name"
-                      value={secondaryClientLastName}
-                      onChange={(e) => setSecondaryClientLastName(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Input
-                      type="email"
-                      placeholder="Email"
-                      value={secondaryClientEmail}
-                      onChange={(e) => setSecondaryClientEmail(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Input
-                      type="tel"
-                      placeholder="Phone (optional)"
-                      value={secondaryClientPhone}
-                      onChange={(e) => setSecondaryClientPhone(e.target.value)}
-                    />
-                  </div>
+          {/* Row 3: Optional Secondary Client */}
+          {hasSecondaryClient && (
+            <div className="space-y-2">
+              <Label>Secondary Client</Label>
+              <div className="grid grid-cols-4 gap-2">
+                <div>
+                  <Input
+                    placeholder="First Name"
+                    value={secondaryClientFirstName}
+                    onChange={(e) => setSecondaryClientFirstName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Input
+                    placeholder="Last Name"
+                    value={secondaryClientLastName}
+                    onChange={(e) => setSecondaryClientLastName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Input
+                    type="email"
+                    placeholder="Email"
+                    value={secondaryClientEmail}
+                    onChange={(e) => setSecondaryClientEmail(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Input
+                    type="tel"
+                    placeholder="Phone (optional)"
+                    value={secondaryClientPhone}
+                    onChange={(e) => setSecondaryClientPhone(e.target.value)}
+                  />
                 </div>
               </div>
-            )}
+            </div>
+          )}
+
+          {/* Row 4: Project Name (Last) */}
+          <div className="space-y-2">
+            <Label htmlFor="name">Project Name</Label>
+            <Input
+              id="name"
+              placeholder="e.g., Modern Family Home (optional - defaults to [Client Name] - [Address])"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={errors.name ? "border-destructive" : ""}
+            />
+            {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
