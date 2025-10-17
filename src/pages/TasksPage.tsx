@@ -7,7 +7,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, UserPlus, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, UserPlus, ChevronDown, ChevronRight, Upload, Paperclip } from "lucide-react";
+import { useUploadTaskFile } from "@/lib/api/hooks/useFiles";
 import { useToast } from "@/hooks/use-toast";
 import { TaskDetailDialog } from "@/components/TaskDetailDialog";
 import { CreateTaskDialog } from "@/components/CreateTaskDialog";
@@ -155,6 +156,8 @@ const TasksPage = () => {
     const [assignees, setAssignees] = useState<User[]>([]);
     const [creator, setCreator] = useState<User | null>(null);
     const [isAssignPopoverOpen, setIsAssignPopoverOpen] = useState(false);
+    const uploadFileMutation = useUploadTaskFile();
+    const fileInputRef = useState<HTMLInputElement | null>(null)[0];
     
     useEffect(() => {
       getTaskAssignees(task.assignees).then(setAssignees);
@@ -178,6 +181,20 @@ const TasksPage = () => {
         : [...currentAssignees, userId];
       
       handleTaskUpdate(task.id, { assignees: newAssignees });
+    };
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      uploadFileMutation.mutate({
+        file,
+        taskId: task.id,
+        projectId: task.projectId,
+      });
+
+      // Reset input
+      e.target.value = '';
     };
 
     if (!creator) return null;
@@ -204,14 +221,39 @@ const TasksPage = () => {
         </TableCell>
 
         {/* Files */}
-        <TableCell className="text-center w-[80px]">
-          {fileCount > 0 ? (
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-              <Plus className="h-4 w-4" />
+        <TableCell className="text-center w-[80px]" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-center gap-1">
+            {fileCount > 0 && (
+              <div className="flex items-center gap-1">
+                <Paperclip className="h-3 w-3 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">{fileCount}</span>
+              </div>
+            )}
+            <input
+              ref={(el) => fileInputRef || el}
+              type="file"
+              className="hidden"
+              onChange={handleFileUpload}
+              onClick={(e) => e.stopPropagation()}
+            />
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-8 w-8 p-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                const input = document.querySelector(`input[type="file"]`) as HTMLInputElement;
+                input?.click();
+              }}
+              disabled={uploadFileMutation.isPending}
+            >
+              {uploadFileMutation.isPending ? (
+                <Upload className="h-4 w-4 animate-pulse" />
+              ) : (
+                <Plus className="h-4 w-4" />
+              )}
             </Button>
-          ) : (
-            <span className="text-sm text-muted-foreground">-</span>
-          )}
+          </div>
         </TableCell>
 
         {/* Date Created */}

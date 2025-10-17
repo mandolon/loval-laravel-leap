@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,9 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Calendar, Upload, FileText } from "lucide-react";
+import { Calendar, Upload, FileText, Download, Trash2 } from "lucide-react";
 import type { Task, User } from "@/lib/api/types";
 import { useUser } from "@/contexts/UserContext";
+import { useTaskFiles, useUploadTaskFile, useDeleteTaskFile, downloadTaskFile } from "@/lib/api/hooks/useFiles";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TaskDetailDialogProps {
   task: Task;
@@ -32,6 +34,11 @@ export function TaskDetailDialog({
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [description, setDescription] = useState(task.description);
   const [dueDate, setDueDate] = useState(task.dueDate || "");
+  const [fileAuthors, setFileAuthors] = useState<Record<string, User>>({});
+  
+  const { data: files = [], isLoading: filesLoading } = useTaskFiles(task.id);
+  const uploadFileMutation = useUploadTaskFile();
+  const deleteFileMutation = useDeleteTaskFile();
 
   const statusConfig = {
     task_redline: { 
@@ -89,6 +96,70 @@ export function TaskDetailDialog({
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  // Fetch file authors
+  useEffect(() => {
+    const fetchAuthors = async () => {
+      const authorIds = [...new Set(files.map(f => f.uploadedBy))];
+      if (authorIds.length === 0) return;
+
+      const { data } = await supabase
+        .from('users')
+        .select('*')
+        .in('id', authorIds);
+
+      if (data) {
+        const authorsMap: Record<string, User> = {};
+        data.forEach(user => {
+          authorsMap[user.id] = {
+            id: user.id,
+            shortId: user.short_id,
+            authId: user.auth_id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            avatarUrl: user.avatar_url,
+            lastActiveAt: user.last_active_at,
+            createdAt: user.created_at,
+            updatedAt: user.updated_at,
+            deletedAt: user.deleted_at,
+            deletedBy: user.deleted_by,
+          };
+        });
+        setFileAuthors(authorsMap);
+      }
+    };
+
+    fetchAuthors();
+  }, [files]);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    uploadFileMutation.mutate({
+      file,
+      taskId: task.id,
+      projectId: task.projectId,
+    });
+
+    // Reset input
+    e.target.value = '';
+  };
+
+  const handleFileDownload = async (storagePath: string, filename: string) => {
+    try {
+      await downloadTaskFile(storagePath, filename);
+    } catch (error) {
+      console.error('Download failed:', error);
+    }
+  };
+
+  const handleFileDelete = (fileId: string) => {
+    if (confirm('Are you sure you want to delete this file?')) {
+      deleteFileMutation.mutate({ fileId, taskId: task.id });
+    }
   };
 
   return (
@@ -221,44 +292,107 @@ export function TaskDetailDialog({
             <Label className="font-semibold">Attachments</Label>
             
             {/* Upload Area */}
-            <div className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer">
-              <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground mb-1">
-                Drop your files here to upload
-              </p>
-              <p className="text-xs text-muted-foreground">
-                (Click box to select files)
-              </p>
-            </div>
+            <label className="block">
+              <input
+                type="file"
+                className="hidden"
+                onChange={handleFileUpload}
+                disabled={uploadFileMutation.isPending}
+              />
+              <div className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer">
+                <Upload className={`h-8 w-8 mx-auto mb-2 text-muted-foreground ${uploadFileMutation.isPending ? 'animate-pulse' : ''}`} />
+                <p className="text-sm text-muted-foreground mb-1">
+                  {uploadFileMutation.isPending ? 'Uploading...' : 'Drop your files here to upload'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {uploadFileMutation.isPending ? 'Please wait' : '(Click box to select files)'}
+                </p>
+              </div>
+            </label>
 
             {/* Attachments Table */}
-            {task.attachedFiles && task.attachedFiles.length > 0 ? (
+            {filesLoading ? (
+              <div className="text-center py-8 text-sm text-muted-foreground">
+                Loading files...
+              </div>
+            ) : files.length > 0 ? (
               <div className="border rounded-lg overflow-hidden">
                 <table className="w-full">
                   <thead className="bg-muted/50">
                     <tr>
                       <th className="text-left py-3 px-4 text-sm font-medium">Name</th>
                       <th className="text-left py-3 px-4 text-sm font-medium">Size</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium">Category</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium">Type</th>
                       <th className="text-left py-3 px-4 text-sm font-medium">Date</th>
                       <th className="text-left py-3 px-4 text-sm font-medium">Author</th>
+                      <th className="text-center py-3 px-4 text-sm font-medium w-[100px]">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {task.attachedFiles.map((fileId) => (
-                      <tr key={fileId} className="border-t hover:bg-muted/30">
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">File {fileId.substring(0, 8)}</span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-sm">—</td>
-                        <td className="py-3 px-4 text-sm">—</td>
-                        <td className="py-3 px-4 text-sm">—</td>
-                        <td className="py-3 px-4 text-sm">—</td>
-                      </tr>
-                    ))}
+                    {files.map((file) => {
+                      const author = fileAuthors[file.uploadedBy];
+                      return (
+                        <tr key={file.id} className="border-t hover:bg-muted/30">
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm truncate max-w-[200px]" title={file.filename}>
+                                {file.filename}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-sm">
+                            {file.filesize ? formatFileSize(file.filesize) : '—'}
+                          </td>
+                          <td className="py-3 px-4 text-sm">
+                            {file.mimetype?.split('/')[1]?.toUpperCase() || '—'}
+                          </td>
+                          <td className="py-3 px-4 text-sm">
+                            {formatDate(file.createdAt)}
+                          </td>
+                          <td className="py-3 px-4">
+                            {author ? (
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-6 w-6">
+                                  <AvatarFallback 
+                                    className="text-white text-xs"
+                                    style={{ background: author.avatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
+                                  >
+                                    {author.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="text-sm">{author.name}</span>
+                              </div>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">—</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center justify-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0"
+                                onClick={() => handleFileDownload(file.storagePath, file.filename)}
+                                title="Download"
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                onClick={() => handleFileDelete(file.id)}
+                                disabled={deleteFileMutation.isPending}
+                                title="Delete"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
