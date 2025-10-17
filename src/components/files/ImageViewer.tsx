@@ -17,6 +17,8 @@ interface ImageViewerProps {
   onClose?: () => void;
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
+  isFillPage?: boolean;
+  onToggleFillPage?: () => void;
   isActive?: boolean;
   onViewerStatus?: (status: any) => void;
   darkMode?: boolean;
@@ -24,7 +26,7 @@ interface ImageViewerProps {
   className?: string;
 }
 
-const ImageViewer = ({ file, onClose, isFullscreen = false, onToggleFullscreen, isActive = false, onViewerStatus, darkMode = false, onClick, className = '' }: ImageViewerProps) => {
+const ImageViewer = ({ file, onClose, isFullscreen = false, onToggleFullscreen, isFillPage = false, onToggleFillPage, isActive = false, onViewerStatus, darkMode = false, onClick, className = '' }: ImageViewerProps) => {
   const [scale, setScale] = useState(1.0);
   const [rotation, setRotation] = useState(0);
   // Position used for vertical wheel scrolling when zoomed in
@@ -395,6 +397,16 @@ const ImageViewer = ({ file, onClose, isFullscreen = false, onToggleFullscreen, 
               <RotateCw className="h-4 w-4" />
             </button>
           <div className="w-px h-5 bg-border mx-1" />
+          {/* Fill Page toggle */}
+          {onToggleFillPage && !isFullscreen && (
+            <button
+              onClick={onToggleFillPage}
+              className={`h-7 w-7 flex items-center justify-center rounded hover:bg-muted text-muted-foreground ${isFillPage ? 'bg-accent' : ''}`}
+              title="Fill page"
+            >
+              <Maximize2 className="h-4 w-4" />
+            </button>
+          )}
           {/* Fullscreen toggle */}
           {onToggleFullscreen && (
             <button

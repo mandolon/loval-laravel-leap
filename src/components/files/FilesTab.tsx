@@ -463,6 +463,8 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps)
           onClose={isFullscreen ? handleCloseViewer : undefined}
           isFullscreen={isFullscreen}
           onToggleFullscreen={handleToggleFullscreen}
+          isFillPage={isFillPage}
+          onToggleFillPage={handleToggleFillPage}
           isActive={isActiveTab && activePane === 'viewer'}
           onViewerStatus={setViewerStatus}
           darkMode={isDark}
