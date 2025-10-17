@@ -155,7 +155,7 @@ export default function SimplePDFViewer({
         )}
       </div>
 
-      {/* PDF Container - CRITICAL: No flex on this div */}
+      {/* PDF Container */}
       <div 
         ref={containerRef}
         className="flex-1 overflow-auto"
@@ -168,47 +168,44 @@ export default function SimplePDFViewer({
           width: '100%'
         }}
       >
-        {/* Constraining wrapper - uses CSS to limit size */}
-        <div style={{ maxWidth: `${pageWidth}px`, width: '100%' }}>
-          <Document
-            file={fileUrl}
-            onLoadSuccess={({ numPages }) => {
-              setNumPages(numPages);
-              console.log('✅ PDF loaded:', numPages, 'pages');
-              console.log('📐 Container width:', pageWidth);
-              // Re-measure after PDF loads
-              setTimeout(updateWidth, 50);
+        <Document
+          file={fileUrl}
+          onLoadSuccess={({ numPages }) => {
+            setNumPages(numPages);
+            console.log('✅ PDF loaded:', numPages, 'pages');
+            console.log('📐 Container width:', pageWidth);
+            // Re-measure after PDF loads
+            setTimeout(updateWidth, 50);
+          }}
+          onLoadError={(error) => {
+            console.error('❌ PDF load error:', error);
+          }}
+          loading={
+            <div className="text-muted-foreground text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto mb-2" />
+              <div>Loading PDF...</div>
+            </div>
+          }
+          error={
+            <div className="text-destructive text-center">
+              <div className="text-4xl mb-2">⚠️</div>
+              <div>Failed to load PDF</div>
+              <div className="text-sm mt-2">Check console for details</div>
+            </div>
+          }
+        >
+          <Page 
+            pageNumber={pageNumber}
+            width={pageWidth * scale}
+            renderTextLayer={true}
+            renderAnnotationLayer={true}
+            loading={<div className="text-muted-foreground">Loading page...</div>}
+            className="shadow-lg"
+            onLoadSuccess={() => {
+              console.log('📄 Page rendered | Width:', pageWidth * scale, '| Zoom:', scale);
             }}
-            onLoadError={(error) => {
-              console.error('❌ PDF load error:', error);
-            }}
-            loading={
-              <div className="text-muted-foreground text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto mb-2" />
-                <div>Loading PDF...</div>
-              </div>
-            }
-            error={
-              <div className="text-destructive text-center">
-                <div className="text-4xl mb-2">⚠️</div>
-                <div>Failed to load PDF</div>
-                <div className="text-sm mt-2">Check console for details</div>
-              </div>
-            }
-          >
-            <Page 
-              pageNumber={pageNumber}
-              scale={scale * (window.devicePixelRatio || 1) * 1.5}
-              renderTextLayer={true}
-              renderAnnotationLayer={true}
-              loading={<div className="text-muted-foreground">Loading page...</div>}
-              className="shadow-lg max-w-full h-auto"
-              onLoadSuccess={() => {
-                console.log('📄 Page rendered at scale:', scale * (window.devicePixelRatio || 1) * 1.5);
-              }}
-            />
-          </Document>
-        </div>
+          />
+        </Document>
       </div>
     </div>
   );
