@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { Separator } from "@/components/ui/separator";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 import { CreateProjectDialog } from "@/components/CreateProjectDialog";
+import { AIChatThreadsList } from "@/components/chat/AIChatThreadsList";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 import type { Project } from "@/lib/api/types";
@@ -244,26 +245,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
         );
 
       case 'ai':
-        return (
-          <div className="p-3">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                Chats
-              </span>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-5 w-5"
-                onClick={() => currentWorkspaceId && navigate(`/workspace/${currentWorkspaceId}/ai`)}
-              >
-                <Plus className="h-3 w-3" />
-              </Button>
-            </div>
-            <div className="text-xs text-muted-foreground py-2">
-              No chats yet
-            </div>
-          </div>
-        );
+        return <AIChatThreadsList workspaceId={currentWorkspaceId || workspaceId || ''} />;
     }
   };
 

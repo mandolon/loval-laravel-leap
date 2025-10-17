@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { Send, Bot, User, FileText, Plus } from "lucide-react";
 import ChatSummarizer from "@/components/chat/ChatSummarizer";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,8 @@ type Message = { role: "user" | "assistant"; content: string };
 
 export default function AIChatPage() {
   const { workspaceId } = useParams<{ workspaceId: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlThreadId = searchParams.get("thread");
   const { user } = useUser();
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -32,24 +34,15 @@ export default function AIChatPage() {
     if (!workspaceId || !user) return;
 
     const loadThread = async () => {
-      // Get most recent thread for this workspace
-      const { data: threads } = await supabase
-        .from("ai_chat_threads")
-        .select("*")
-        .eq("workspace_id", workspaceId)
-        .eq("user_id", user.id)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false })
-        .limit(1);
-
-      if (threads && threads.length > 0) {
-        setThreadId(threads[0].id);
+      // If URL has thread ID, load that specific thread
+      if (urlThreadId) {
+        setThreadId(urlThreadId);
         
-        // Load messages for this thread
         const { data: msgs } = await supabase
           .from("ai_chat_messages")
           .select("*")
-          .eq("thread_id", threads[0].id)
+          .eq("thread_id", urlThreadId)
+          .is("deleted_at", null)
           .order("created_at", { ascending: true });
 
         if (msgs) {
@@ -59,7 +52,7 @@ export default function AIChatPage() {
           })));
         }
       } else {
-        // Create new thread
+        // No thread specified - create new one
         const { data: newThread } = await supabase
           .from("ai_chat_threads")
           .insert({
@@ -72,12 +65,13 @@ export default function AIChatPage() {
 
         if (newThread) {
           setThreadId(newThread.id);
+          setSearchParams({ thread: newThread.id });
         }
       }
     };
 
     loadThread();
-  }, [workspaceId, user]);
+  }, [workspaceId, user, urlThreadId]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -103,6 +97,7 @@ export default function AIChatPage() {
     if (newThread) {
       setThreadId(newThread.id);
       setMessages([]);
+      setSearchParams({ thread: newThread.id });
       toast({
         title: "New chat started",
         description: "You can now begin a fresh conversation.",
