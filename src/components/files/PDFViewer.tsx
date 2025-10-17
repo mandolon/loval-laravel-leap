@@ -757,7 +757,7 @@ const PDFViewer = ({
               {/* Scroll Mode Toggle */}
               <button
                 onClick={() => setScrollMode(prev => prev === 'centered' ? 'continuous' : 'centered')}
-                className={`h-5 px-2 text-[10px] rounded hover:bg-muted ${scrollMode === 'continuous' ? 'bg-muted text-foreground' : 'text-muted-foreground'}`}
+                className={`h-5 px-2 text-[11px] rounded hover:bg-muted ${scrollMode === 'continuous' ? 'bg-muted text-foreground' : 'text-muted-foreground'}`}
                 title={scrollMode === 'centered' ? 'Switch to continuous scrolling' : 'Switch to single-page mode'}
               >
                 {scrollMode === 'centered' ? 'Single' : 'Continuous'}
@@ -779,7 +779,7 @@ const PDFViewer = ({
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
               </button>
-              <span className={`px-2 text-[10px] text-muted-foreground min-w-max flex items-center`}>
+              <span className={`px-2 text-[11px] text-muted-foreground min-w-max flex items-center`}>
                 {`${pageNumber} / ${numPages}`}
               </span>
               <button
@@ -806,7 +806,7 @@ const PDFViewer = ({
               >
                 <ZoomOut className="h-3.5 w-3.5" />
               </button>
-              <span className={`px-2 text-[10px] text-muted-foreground min-w-max flex items-center`}>
+              <span className={`px-2 text-[11px] text-muted-foreground min-w-max flex items-center`}>
                 {Math.round(scale * 100)}%
               </span>
               <button
@@ -819,21 +819,21 @@ const PDFViewer = ({
               <div className="w-px h-4 bg-border mx-1" />
               <button
                 onClick={handleZoomToFitWidth}
-                className={`h-5 px-2 text-[10px] rounded hover:bg-muted text-muted-foreground`}
+                className={`h-5 px-2 text-[11px] rounded hover:bg-muted text-muted-foreground`}
                 title="Fit to width"
               >
                 Width
               </button>
               <button
                 onClick={handleZoomToFitHeight}
-                className={`h-5 px-2 text-[10px] rounded hover:bg-muted text-muted-foreground`}
+                className={`h-5 px-2 text-[11px] rounded hover:bg-muted text-muted-foreground`}
                 title="Fit to height"
               >
                 Height
               </button>
               <button
                 onClick={handleZoomToFitPage}
-                className={`h-5 px-2 text-[10px] rounded hover:bg-muted text-muted-foreground`}
+                className={`h-5 px-2 text-[11px] rounded hover:bg-muted text-muted-foreground`}
                 title="Fit whole page"
               >
                 Page

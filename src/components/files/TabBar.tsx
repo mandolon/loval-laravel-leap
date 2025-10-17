@@ -40,7 +40,7 @@ export function TabBar({
             onClick={() => onSwitchTab(tab.id)}
           >
             <span
-              className={`text-[10px] truncate flex-1 ${
+              className={`text-[11px] truncate flex-1 ${
                 isActive ? 'font-medium text-foreground' : 'text-muted-foreground'
               }`}
               title={displayName}
