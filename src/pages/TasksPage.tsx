@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import type { Task, User } from "@/lib/api/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,13 +13,16 @@ import type { CreateTaskInput } from "@/lib/api/types";
 import { useWorkspaceTasks, useCreateTask, useUpdateTask, useDeleteTask } from "@/lib/api/hooks/useTasks";
 import { useProjects } from "@/lib/api/hooks/useProjects";
 import { supabase } from "@/integrations/supabase/client";
+import { useUser } from "@/contexts/UserContext";
 
 const TasksPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { workspaceId } = useParams<{ workspaceId: string }>();
+  const [searchParams] = useSearchParams();
+  const { user } = useUser();
+  const view = searchParams.get('view') || 'all';
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [filter, setFilter] = useState<'all' | 'my' | 'completed'>('all');
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const [groupBy, setGroupBy] = useState<'status' | 'date' | 'creator'>('status');
   
@@ -105,12 +108,17 @@ const TasksPage = () => {
   };
 
   const filteredTasks = tasks.filter(task => {
-    if (filter === 'completed') return task.status === 'done_completed';
-    if (filter === 'my') {
-      // Filter for current user - for now show all since we don't have auth
-      return true;
+    // Apply view-based filtering
+    if (view === 'completed') {
+      return task.status === 'done_completed';
+    } else if (view === 'my-tasks') {
+      // Show tasks assigned to the current user (excluding completed)
+      if (!user?.id || !task.assignees.includes(user.id)) return false;
+      return task.status !== 'done_completed';
+    } else {
+      // All tasks view: show Task Redline and Progress Update only (no completed)
+      return task.status === 'task_redline' || task.status === 'progress_update';
     }
-    return true;
   });
 
   const statusConfig = {
@@ -294,10 +302,16 @@ const TasksPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Task Board</h1>
+            <h1 className="text-3xl font-bold">
+              {view === 'completed' ? 'Completed Tasks' : view === 'my-tasks' ? 'My Tasks' : 'All Tasks'}
+            </h1>
             <p className="text-muted-foreground">
               {workspaceId 
-                ? `Track and manage tasks across all projects`
+                ? view === 'completed' 
+                  ? 'View all completed tasks'
+                  : view === 'my-tasks'
+                  ? 'Tasks assigned to you'
+                  : 'Active tasks (Task Redline & Progress Update)'
                 : "Select a workspace to view tasks"
               }
             </p>
@@ -346,9 +360,14 @@ const TasksPage = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            <TaskSection status="task_redline" tasks={taskRedlineTasks} />
-            <TaskSection status="progress_update" tasks={progressUpdateTasks} />
-            <TaskSection status="done_completed" tasks={completeTasks} />
+            {view === 'completed' ? (
+              <TaskSection status="done_completed" tasks={completeTasks} />
+            ) : (
+              <>
+                <TaskSection status="task_redline" tasks={taskRedlineTasks} />
+                <TaskSection status="progress_update" tasks={progressUpdateTasks} />
+              </>
+            )}
           </div>
         )}
       </div>

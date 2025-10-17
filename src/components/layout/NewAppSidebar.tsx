@@ -144,12 +144,6 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
     { label: 'Work Records', path: getNavPath('/work-records') },
   ];
 
-  const taskFilters = [
-    { label: 'All Tasks', count: 0 },
-    { label: 'My Tasks', count: 0 },
-    { label: 'Completed', count: 0 },
-  ];
-
   // Render dynamic content based on active tab
   const renderDynamicContent = () => {
     switch (activeTab) {
@@ -210,15 +204,33 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
       case 'tasks':
         return (
           <div className="p-3 space-y-1">
-            {taskFilters.map((filter) => (
-              <button
-                key={filter.label}
-                className="w-full flex items-center justify-between px-3 py-2 rounded-md text-sm text-muted-foreground hover:bg-accent/30 transition-colors"
-              >
-                <span>{filter.label}</span>
-                <span className="text-xs bg-accent/50 px-2 py-0.5 rounded">{filter.count}</span>
-              </button>
-            ))}
+            <NavLink
+              to={getNavPath('/tasks')}
+              className={({ isActive }) => `
+                w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors
+                ${isActive && !location.search ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/30'}
+              `}
+            >
+              <span>All Tasks</span>
+            </NavLink>
+            <NavLink
+              to={getNavPath('/tasks?view=my-tasks')}
+              className={({ isActive }) => `
+                w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors
+                ${location.search.includes('my-tasks') ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/30'}
+              `}
+            >
+              <span>My Tasks</span>
+            </NavLink>
+            <NavLink
+              to={getNavPath('/tasks?view=completed')}
+              className={({ isActive }) => `
+                w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors
+                ${location.search.includes('completed') ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/30'}
+              `}
+            >
+              <span>Completed</span>
+            </NavLink>
           </div>
         );
 
