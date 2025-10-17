@@ -47,8 +47,12 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
+      - name: Remove Bun lockfile
+        shell: bash
+        run: rm -f bun.lockb
+
       - name: Install frontend dependencies
-        run: npm install
+        run: npm ci || npm install
 
       - name: Copy Tauri configuration
         shell: bash
