@@ -426,9 +426,9 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
   // RENDER
   // ============================================
   return (
-    <div className="flex flex-col h-full w-full bg-background">
-      {/* Header */}
-      <div className="flex items-center justify-between p-3 bg-background border-b gap-4 flex-shrink-0">
+    <div className="flex flex-col w-full h-full bg-background">
+      {/* 1. TOOLBAR - Fixed height at top */}
+      <div className="flex items-center justify-between p-3 bg-background border-b gap-4 flex-shrink-0 h-14">
         <div className="flex items-center gap-2 min-w-0">
           {selectedFile ? (
             <div className="flex items-center gap-2 min-w-0">
@@ -532,8 +532,8 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
         </div>
       </div>
 
-      {/* 2. VIEWER/CANVAS - Middle section, takes available space */}
-      <div className="flex-1 min-h-0 bg-muted/30 border-b flex items-center justify-center overflow-auto">
+      {/* 2. VIEWER/CANVAS - Flexible middle section */}
+      <div className="flex-1 min-h-0 bg-muted/30 flex items-center justify-center overflow-auto">
         {selectedFile ? (
           <>
             {isPdfFile ? (
@@ -559,8 +559,8 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
         )}
       </div>
 
-      {/* 3. FILE EXPLORER - Bottom section with sidebar + file table */}
-      <div className="h-80 flex-shrink-0 flex border-t bg-background">
+      {/* 3. FILE EXPLORER - Fixed at bottom, aligned to page bottom */}
+      <div className="h-[320px] flex-shrink-0 flex border-t bg-background">
         {/* Left: Folder tree sidebar */}
         <div className="w-48 border-r bg-muted/30 overflow-y-auto flex-shrink-0">
           <div className="py-2">
