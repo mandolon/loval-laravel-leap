@@ -750,16 +750,8 @@ const ProjectDetails = () => {
       {/* Project Chat Sidebar - Full height */}
       {chatOpen && (
         <div className="w-80 border-l bg-background flex flex-col">
-          <div className="p-4 border-b flex items-center justify-between">
+          <div className="p-4 border-b">
             <h3 className="font-semibold">Project Chat</h3>
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => setChatOpen(false)}
-              className="h-8 w-8"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
           </div>
           
           <ScrollArea className="flex-1 p-4">
