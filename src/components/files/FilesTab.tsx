@@ -309,7 +309,8 @@ export function FilesTab({ projectId: _projectId, fileToOpen, onFileOpened }: Fi
       if (!containerRef.current) return
 
       const rect = containerRef.current.getBoundingClientRect()
-      const proposedHeight = rect.bottom - event.clientY - RESIZE_HANDLE_HEIGHT / 2
+      // Calculate height from bottom up - dragging UP decreases height, dragging DOWN increases
+      const proposedHeight = rect.bottom - event.clientY
       const clampedHeight = clampExplorerHeight(proposedHeight)
       setExplorerHeight(clampedHeight)
       lastExplorerHeightRef.current = clampedHeight
