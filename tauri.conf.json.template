@@ -33,11 +33,13 @@
     "targets": "all",
     "macOS": {
       "minimumSystemVersion": "10.13",
+      "signingIdentity": null,
+      "hardenedRuntime": false,
+      "entitlements": null,
       "frameworks": [],
       "exceptionDomain": "",
-      "signingIdentity": null,
       "providerShortName": null,
-      "entitlements": null
+      "files": {}
     },
     "icon": [
       "icons/32x32.png",
