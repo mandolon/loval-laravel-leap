@@ -1,6 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Document, Page } from 'react-pdf';
-import { Download, Share2, Maximize2 } from 'lucide-react';
+import { useRef, useEffect, useCallback, useState, useMemo } from 'react';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
+import { Maximize2 } from 'lucide-react';
+import { logger } from '@/utils/logger';
 import '../../lib/pdf-config';
 
 interface SimplePDFViewerProps {
@@ -12,60 +15,152 @@ interface SimplePDFViewerProps {
 }
 
 export default function SimplePDFViewer({ 
-  fileUrl, 
+  fileUrl,
   fileName,
   onDownload,
   onShare,
-  onMaximize 
+  onMaximize
 }: SimplePDFViewerProps) {
-  const [numPages, setNumPages] = useState<number>(0);
+  const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [scale, setScale] = useState<number>(1.0);
-  const [pageWidth, setPageWidth] = useState<number>(800); // Default fallback
+  const [pageSize, setPageSize] = useState({ width: 0, height: 0 });
+  const [viewerSize, setViewerSize] = useState({ width: 0, height: 0 });
+  const [error, setError] = useState<string | null>(null);
+  
   const containerRef = useRef<HTMLDivElement>(null);
-  const measureAttempts = useRef(0);
+  const centeredOnceRef = useRef(false);
+  const isMountedRef = useRef(true);
+  
+  const debug = true;
+  
+  // Performance optimization: use canvas mode for faster rendering
+  const renderMode = 'canvas' as const;
+  
+  // Progressive loading: start with lower quality, then upgrade
+  const [highQualityEnabled, setHighQualityEnabled] = useState(false);
+  
+  // Advanced performance: Dynamic quality based on scale
+  const shouldRenderTextLayer = useMemo(() => {
+    if (!highQualityEnabled) return false;
+    return scale >= 0.5 && scale <= 3.0;
+  }, [highQualityEnabled, scale]);
+  
+  const shouldRenderAnnotations = useMemo(() => {
+    if (!highQualityEnabled) return false;
+    return scale >= 0.75 && scale <= 2.0;
+  }, [highQualityEnabled, scale]);
+  
+  // Dynamic device pixel ratio based on scale
+  const dynamicDevicePixelRatio = useMemo(() => {
+    if (!highQualityEnabled) return 1;
+    if (scale > 2.0) return Math.max(1, window.devicePixelRatio / 2);
+    if (scale > 1.5) return Math.max(1, window.devicePixelRatio * 0.75);
+    return window.devicePixelRatio;
+  }, [highQualityEnabled, scale]);
+  
+  // Memoize PDF.js options to prevent unnecessary reloads
+  const pdfOptions = useMemo(() => ({
+    cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
+    cMapPacked: true,
+    standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/standard_fonts/`,
+    enableXfa: false,
+    disableAutoFetch: false,
+    disableStream: false,
+    disableFontFace: false,
+    isEvalSupported: false,
+    maxImageSize: 16777216,
+  }), []);
+  
+  // Track component mount state
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+  
+  // Enable high quality after initial render
+  useEffect(() => {
+    setHighQualityEnabled(false);
+    const timer = setTimeout(() => {
+      if (isMountedRef.current) {
+        setHighQualityEnabled(true);
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [fileUrl]);
 
-  // More robust width calculation with retries
-  const updateWidth = useCallback(() => {
-    if (!containerRef.current) return;
-    
-    const width = containerRef.current.clientWidth - 32;
-    
-    // Only update if we got a valid width
-    if (width > 0) {
-      setPageWidth(width);
-      console.log('📐 Container width:', width);
-      measureAttempts.current = 0;
-    } else if (measureAttempts.current < 10) {
-      // Retry if width is 0 (container might not be rendered yet)
-      measureAttempts.current++;
-      setTimeout(updateWidth, 100);
+  // Center the scroll container on initial load and when zoom changes
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const center = () => {
+      const x = Math.max((el.scrollWidth - el.clientWidth) / 2, 0);
+      const y = Math.max((el.scrollHeight - el.clientHeight) / 2, 0);
+      el.scrollTo({ left: x, top: y, behavior: 'auto' });
+    };
+    if (!centeredOnceRef.current && pageSize.width && pageSize.height) {
+      requestAnimationFrame(center);
+      centeredOnceRef.current = true;
+      return;
     }
+    if (pageSize.width && pageSize.height) {
+      requestAnimationFrame(center);
+    }
+  }, [scale, pageSize.width, pageSize.height]);
+
+  // Debug: log sizing to verify zoom behavior
+  useEffect(() => {
+    const el = containerRef.current;
+    const canvas = el ? el.querySelector('.react-pdf__Page__canvas') : null;
+    const container = el;
+    const info = {
+      scale,
+      pageSize,
+      viewerSize,
+      intendedWidth: pageSize.width ? Math.round(pageSize.width * scale) : null,
+      canvasClientWidth: canvas ? (canvas as HTMLElement).clientWidth : null,
+      canvasScrollWidth: canvas ? (canvas as HTMLElement).scrollWidth : null,
+      containerClientWidth: container ? container.clientWidth : null,
+      containerScrollWidth: container ? container.scrollWidth : null,
+    };
+    logger.log('[PDFCanvas][zoom-debug]', info);
+  }, [scale, pageSize.width, pageSize.height, viewerSize.width, viewerSize.height]);
+
+  const handlePageLoadSuccess = useCallback((page: any) => {
+    if (debug) {
+      logger.log('[PDFCanvas] Page load', {
+        pageNumber: page.pageNumber,
+        intrinsicRotate: page.rotate,
+        viewBox: page.view,
+        width: page.view[2] - page.view[0],
+        height: page.view[3] - page.view[1],
+      });
+    }
+
+    if (page.pageNumber === pageNumber) {
+      setPageSize({
+        width: page.view[2] - page.view[0],
+        height: page.view[3] - page.view[1]
+      });
+    }
+  }, [debug, pageNumber]);
+
+  const onDocumentLoadSuccess = useCallback(({ numPages }: { numPages: number }) => {
+    setNumPages(numPages);
+    setError(null);
+    logger.log('✅ PDF loaded:', numPages, 'pages');
   }, []);
 
-  // Measure on mount with delay to ensure container is rendered
-  useEffect(() => {
-    // Initial measurement with small delay
-    const timer = setTimeout(updateWidth, 50);
-    
-    window.addEventListener('resize', updateWidth);
-    
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('resize', updateWidth);
-    };
-  }, [updateWidth]);
-
-  // Re-measure when fileUrl changes (new PDF loaded)
-  useEffect(() => {
-    if (fileUrl) {
-      setTimeout(updateWidth, 100);
-    }
-  }, [fileUrl, updateWidth]);
+  const onDocumentLoadError = useCallback((error: any) => {
+    logger.error('❌ PDF load error:', error);
+    setError('Unable to load PDF');
+  }, []);
 
   if (!fileUrl) {
     return (
-      <div className="flex items-center justify-center h-full text-muted-foreground">
+      <div className="h-full flex items-center justify-center text-muted-foreground">
         No PDF selected
       </div>
     );
@@ -88,8 +183,8 @@ export default function SimplePDFViewer({
         </span>
         
         <button 
-          onClick={() => setPageNumber(p => Math.min(numPages, p + 1))}
-          disabled={pageNumber >= numPages}
+          onClick={() => setPageNumber(p => Math.min(numPages || 1, p + 1))}
+          disabled={pageNumber >= (numPages || 1)}
           className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-muted"
         >
           Next →
@@ -124,24 +219,6 @@ export default function SimplePDFViewer({
         {(onDownload || onShare || onMaximize) && (
           <>
             <div className="flex-1" />
-            {onDownload && (
-              <button
-                onClick={onDownload}
-                className="px-3 py-1 border rounded hover:bg-muted"
-                title="Download"
-              >
-                <Download className="h-4 w-4" />
-              </button>
-            )}
-            {onShare && (
-              <button
-                onClick={onShare}
-                className="px-3 py-1 border rounded hover:bg-muted"
-                title="Share"
-              >
-                <Share2 className="h-4 w-4" />
-              </button>
-            )}
             {onMaximize && (
               <button
                 onClick={onMaximize}
@@ -155,51 +232,112 @@ export default function SimplePDFViewer({
         )}
       </div>
 
-      {/* PDF Container */}
-      <div 
+      {/* PDF Canvas */}
+      <div
         ref={containerRef}
-        className="flex-1 overflow-auto p-4"
+        className="flex-1 min-h-0 overflow-auto pdf-viewer p-0 bg-background"
+        style={{
+          contain: 'layout style paint',
+          contentVisibility: 'auto',
+        }}
       >
-        <div className="min-h-full flex items-center justify-center">
-          <Document
-            file={fileUrl}
-            onLoadSuccess={({ numPages }) => {
-              setNumPages(numPages);
-              console.log('✅ PDF loaded:', numPages, 'pages');
-              console.log('📐 Container width:', pageWidth);
-              // Re-measure after PDF loads
-              setTimeout(updateWidth, 50);
-            }}
-            onLoadError={(error) => {
-              console.error('❌ PDF load error:', error);
-            }}
-            loading={
-              <div className="text-muted-foreground text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto mb-2" />
-                <div>Loading PDF...</div>
-              </div>
-            }
-            error={
-              <div className="text-destructive text-center">
-                <div className="text-4xl mb-2">⚠️</div>
-                <div>Failed to load PDF</div>
-                <div className="text-sm mt-2">Check console for details</div>
-              </div>
-            }
-          >
-            <Page 
-              pageNumber={pageNumber}
-              width={pageWidth * scale}
-              renderTextLayer={true}
-              renderAnnotationLayer={true}
-              loading={<div className="text-muted-foreground">Loading page...</div>}
-              className="shadow-lg"
-              onLoadSuccess={() => {
-                console.log('📄 Page rendered | Width:', pageWidth * scale, '| Zoom:', scale);
-              }}
-            />
-          </Document>
-        </div>
+        {error && (
+          <div className="flex flex-col items-center justify-center h-64 text-center">
+            <div className="text-destructive text-4xl mb-2">⚠️</div>
+            <div className="text-destructive font-medium">{error}</div>
+            <div className="text-muted-foreground text-sm mt-1">
+              Please check if the PDF file is valid and accessible.
+            </div>
+          </div>
+        )}
+
+        {!error && fileUrl && (
+          <div className="block w-full" style={{ lineHeight: 0, fontSize: 0 }}>
+            <Document
+              key={fileUrl}
+              file={fileUrl}
+              onLoadSuccess={onDocumentLoadSuccess}
+              onLoadError={onDocumentLoadError}
+              options={pdfOptions}
+              loading={
+                <div 
+                  className="flex flex-col items-center justify-center h-64 text-muted-foreground"
+                  style={{
+                    contain: 'strict',
+                    contentVisibility: 'auto',
+                  }}
+                >
+                  <div className="mb-2 animate-pulse">📄</div>
+                  <div>Loading PDF…</div>
+                </div>
+              }
+              error={
+                <div className="flex flex-col items-center justify-center h-64 text-center">
+                  <div className="text-destructive text-4xl mb-2">📄</div>
+                  <div className="text-destructive font-medium">Unable to load PDF</div>
+                  <div className="text-muted-foreground text-sm mt-1">
+                    Check console for details
+                  </div>
+                </div>
+              }
+            >
+              {(() => {
+                const hasPageSize = Boolean(pageSize.width && pageSize.height);
+                const fallbackBaseW = Math.max(viewerSize.width || 800, 200);
+                const fallbackBaseH = Math.max(viewerSize.height || 600, 200);
+                const baseW = hasPageSize ? pageSize.width : fallbackBaseW;
+                const baseH = hasPageSize ? pageSize.height : fallbackBaseH;
+                const w = baseW * scale;
+                const h = baseH * scale;
+                const wrapperStyle = { 
+                  width: '100%', 
+                  textAlign: 'center' as const, 
+                  lineHeight: 0, 
+                  fontSize: 0 
+                };
+
+                return (
+                  <div style={wrapperStyle}>
+                    <div
+                      data-page-number={pageNumber}
+                      className="pdf-page-frame"
+                      style={{
+                        display: 'inline-block',
+                        verticalAlign: 'top',
+                        width: hasPageSize ? `${w}px` : undefined,
+                        background: '#fff',
+                        borderRadius: 4,
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                        margin: 0,
+                        transform: 'translateZ(0)',
+                        backfaceVisibility: 'hidden' as const,
+                      }}
+                    >
+                      <Page
+                        key={`page-${pageNumber}-${fileUrl}`}
+                        pageNumber={pageNumber}
+                        scale={1}
+                        renderMode={renderMode}
+                        renderTextLayer={shouldRenderTextLayer}
+                        renderAnnotationLayer={shouldRenderAnnotations}
+                        loading={null}
+                        error={null}
+                        width={w}
+                        onLoadSuccess={handlePageLoadSuccess}
+                        onLoadError={(error) => {
+                          if (debug && error && !error.message?.includes('sendWithPromise')) {
+                            logger.error('[PDFCanvas] Page load error:', error);
+                          }
+                        }}
+                        devicePixelRatio={dynamicDevicePixelRatio}
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
+            </Document>
+          </div>
+        )}
       </div>
     </div>
   );
