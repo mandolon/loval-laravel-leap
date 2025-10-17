@@ -24,19 +24,19 @@ export default function SimplePDFViewer({
 
   if (!fileUrl) {
     return (
-      <div className="flex items-center justify-center h-full text-gray-500">
+      <div className="flex items-center justify-center h-full text-muted-foreground">
         No PDF selected
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col bg-gray-50">
-      <div className="flex items-center gap-2 p-2 bg-white border-b">
+    <div className="h-full flex flex-col bg-muted/30">
+      <div className="flex items-center gap-2 p-2 bg-background border-b">
         <button 
           onClick={() => setPageNumber(p => Math.max(1, p - 1))}
           disabled={pageNumber <= 1}
-          className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-100"
+          className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-muted"
         >
           ← Prev
         </button>
@@ -48,7 +48,7 @@ export default function SimplePDFViewer({
         <button 
           onClick={() => setPageNumber(p => Math.min(numPages, p + 1))}
           disabled={pageNumber >= numPages}
-          className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-100"
+          className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-muted"
         >
           Next →
         </button>
@@ -57,7 +57,7 @@ export default function SimplePDFViewer({
         
         <button 
           onClick={() => setScale(s => Math.max(0.5, s - 0.2))}
-          className="px-3 py-1 border rounded hover:bg-gray-100"
+          className="px-3 py-1 border rounded hover:bg-muted"
         >
           -
         </button>
@@ -68,13 +68,13 @@ export default function SimplePDFViewer({
         
         <button 
           onClick={() => setScale(s => Math.min(3.0, s + 0.2))}
-          className="px-3 py-1 border rounded hover:bg-gray-100"
+          className="px-3 py-1 border rounded hover:bg-muted"
         >
           +
         </button>
 
         {fileName && (
-          <span className="ml-4 text-sm text-gray-600 truncate max-w-xs">
+          <span className="ml-4 text-sm text-muted-foreground truncate max-w-xs">
             {fileName}
           </span>
         )}
@@ -86,7 +86,7 @@ export default function SimplePDFViewer({
             {onDownload && (
               <button
                 onClick={onDownload}
-                className="px-3 py-1 border rounded hover:bg-gray-100"
+                className="px-3 py-1 border rounded hover:bg-muted"
                 title="Download"
               >
                 <Download className="h-4 w-4" />
@@ -95,7 +95,7 @@ export default function SimplePDFViewer({
             {onShare && (
               <button
                 onClick={onShare}
-                className="px-3 py-1 border rounded hover:bg-gray-100"
+                className="px-3 py-1 border rounded hover:bg-muted"
                 title="Share"
               >
                 <Share2 className="h-4 w-4" />
@@ -104,7 +104,7 @@ export default function SimplePDFViewer({
             {onMaximize && (
               <button
                 onClick={onMaximize}
-                className="px-3 py-1 border rounded hover:bg-gray-100"
+                className="px-3 py-1 border rounded hover:bg-muted"
                 title="Maximize"
               >
                 <Maximize2 className="h-4 w-4" />
@@ -114,39 +114,45 @@ export default function SimplePDFViewer({
         )}
       </div>
 
-      <div className="flex-1 overflow-auto flex items-center justify-center p-4">
-        <Document
-          file={fileUrl}
-          onLoadSuccess={({ numPages }) => {
-            setNumPages(numPages);
-            console.log('✅ PDF loaded:', numPages, 'pages');
-          }}
-          onLoadError={(error) => {
-            console.error('❌ PDF load error:', error);
-          }}
-          loading={
-            <div className="text-gray-500 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-2" />
-              <div>Loading PDF...</div>
-            </div>
-          }
-          error={
-            <div className="text-red-500 text-center">
-              <div className="text-4xl mb-2">⚠️</div>
-              <div>Failed to load PDF</div>
-              <div className="text-sm mt-2">Check console for details</div>
-            </div>
-          }
-        >
-          <Page 
-            pageNumber={pageNumber}
-            scale={scale}
-            renderTextLayer={true}
-            renderAnnotationLayer={true}
-            loading={<div className="text-gray-400">Loading page...</div>}
-            className="shadow-lg"
-          />
-        </Document>
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full overflow-auto flex items-center justify-center p-4">
+          <Document
+            file={fileUrl}
+            onLoadSuccess={({ numPages }) => {
+              setNumPages(numPages);
+              console.log('✅ PDF loaded:', numPages, 'pages');
+              console.log('📄 Current scale:', scale);
+            }}
+            onLoadError={(error) => {
+              console.error('❌ PDF load error:', error);
+            }}
+            loading={
+              <div className="text-muted-foreground text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto mb-2" />
+                <div>Loading PDF...</div>
+              </div>
+            }
+            error={
+              <div className="text-destructive text-center">
+                <div className="text-4xl mb-2">⚠️</div>
+                <div>Failed to load PDF</div>
+                <div className="text-sm mt-2">Check console for details</div>
+              </div>
+            }
+          >
+            <Page 
+              pageNumber={pageNumber}
+              scale={scale}
+              renderTextLayer={true}
+              renderAnnotationLayer={true}
+              loading={<div className="text-muted-foreground">Loading page...</div>}
+              className="shadow-lg"
+              onLoadSuccess={() => {
+                console.log('📄 Page', pageNumber, 'rendered at scale', scale);
+              }}
+            />
+          </Document>
+        </div>
       </div>
     </div>
   );
