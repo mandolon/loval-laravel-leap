@@ -4,7 +4,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import * as pdfjsLib from 'pdfjs-dist';
+import SimplePDFViewer from './SimplePDFViewer';
 import {
   Download,
   Share2,
@@ -35,9 +35,6 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-
-// Set PDF.js worker - use local worker only
-pdfjsLib.GlobalWorkerOptions.workerSrc = `/node_modules/pdfjs-dist/build/pdf.worker.min.mjs`;
 
 // ============================================
 // TYPES
@@ -108,12 +105,10 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(100);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   const fileTableRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const queryClient = useQueryClient();
 
   // ============================================
@@ -279,51 +274,33 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
     }
   }, [folders, selectedFolderId]);
 
-  // Render PDF when selected file changes
+  // Load PDF URL when selected file changes
   useEffect(() => {
     const selectedFile = files.find(f => f.id === selectedFileId);
-    if (!selectedFile || selectedFile.mimetype !== 'application/pdf' || !canvasRef.current) return;
+    if (!selectedFile || selectedFile.mimetype !== 'application/pdf') {
+      setPdfUrl(null);
+      return;
+    }
 
-    const renderPdf = async () => {
+    const loadPdfUrl = async () => {
       try {
-        // Get signed URL for PDF
         const { data, error } = await supabase.storage
           .from('project-files')
-          .createSignedUrl(selectedFile.storage_path, 60);
+          .createSignedUrl(selectedFile.storage_path, 3600);
 
         if (error) throw error;
         if (!data) throw new Error('No signed URL');
 
-        // Load PDF
-        const pdf = await pdfjsLib.getDocument(data.signedUrl).promise;
-        setTotalPages(pdf.numPages);
-
-        // Render first page
-        const page = await pdf.getPage(currentPage);
-        const viewport = page.getViewport({ scale: zoomLevel / 100 });
-
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        
-        const context = canvas.getContext('2d');
-        if (!context) return;
-
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-
-        await page.render({ 
-          canvasContext: context, 
-          viewport,
-          canvas
-        }).promise;
+        setPdfUrl(data.signedUrl);
+        console.log('📄 PDF URL loaded');
       } catch (error) {
-        console.error('PDF render error:', error);
-        toast.error('Failed to render PDF');
+        console.error('Failed to load PDF URL:', error);
+        toast.error('Failed to load PDF URL');
       }
     };
 
-    renderPdf();
-  }, [selectedFileId, files, currentPage, zoomLevel]);
+    loadPdfUrl();
+  }, [selectedFileId, files]);
 
   // ============================================
   // HANDLERS
@@ -441,30 +418,6 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
           )}
         </div>
 
-        {/* Page navigation for PDF */}
-        {isPdfFile && (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-xs text-muted-foreground min-w-12 text-center">
-              {currentPage} / {totalPages}
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
 
         {/* Zoom and controls */}
         <div className="flex items-center gap-1">
@@ -533,11 +486,13 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
       </div>
 
       {/* 2. VIEWER/CANVAS - Flexible middle section */}
-      <div className="flex-1 min-h-0 bg-muted/30 flex items-center justify-center overflow-auto">
+      <div className="flex-1 min-h-0 bg-muted/30 flex items-center justify-center overflow-hidden">
         {selectedFile ? (
           <>
             {isPdfFile ? (
-              <canvas ref={canvasRef} className="max-w-full max-h-full" />
+              <div className="w-full h-full">
+                <SimplePDFViewer fileUrl={pdfUrl} fileName={selectedFile.filename} />
+              </div>
             ) : isImageFile ? (
               <img
                 src={selectedFile.storage_path}
