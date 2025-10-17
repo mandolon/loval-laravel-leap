@@ -17,7 +17,7 @@ interface NewAppSidebarProps {
 }
 
 export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
-  const { workspaceId } = useParams<{ workspaceId: string }>();
+  const { workspaceId, id: projectId } = useParams<{ workspaceId: string; id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -197,15 +197,22 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
                     No {statusFilter} projects
                   </div>
                 ) : (
-                  filteredProjects.slice(0, 5).map((project) => (
-                    <button
-                      key={project.id}
-                      onClick={() => navigate(`/workspace/${currentWorkspaceId}/project/${project.id}`)}
-                      className="w-full text-left px-2 py-1.5 rounded text-xs text-muted-foreground hover:bg-accent/30 transition-colors truncate"
-                    >
-                      {project.name}
-                    </button>
-                  ))
+                  filteredProjects.slice(0, 5).map((project) => {
+                    const isActive = projectId === project.id;
+                    return (
+                      <button
+                        key={project.id}
+                        onClick={() => navigate(`/workspace/${currentWorkspaceId}/project/${project.id}`)}
+                        className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors truncate ${
+                          isActive 
+                            ? 'bg-accent text-foreground font-medium' 
+                            : 'text-muted-foreground hover:bg-accent/30'
+                        }`}
+                      >
+                        {project.name}
+                      </button>
+                    );
+                  })
                 )}
               </div>
             </div>
