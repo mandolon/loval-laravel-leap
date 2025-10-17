@@ -46,7 +46,6 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
   const [secondaryClientPhone, setSecondaryClientPhone] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [workspaceId, setWorkspaceId] = useState("");
-  const [isNameManuallyEdited, setIsNameManuallyEdited] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -57,9 +56,9 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
     }
   }, [open]);
 
-  // Auto-fill project name based on client name and address
+  // Auto-generate project name based on client name and address
   useEffect(() => {
-    if (!isNameManuallyEdited && (clientFirstName || clientLastName || streetNumber || streetName)) {
+    if (clientFirstName || clientLastName || streetNumber || streetName) {
       let clientName = '';
       
       if (hasSecondaryClient && (clientLastName || secondaryClientLastName)) {
@@ -102,7 +101,7 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
         setName("");
       }
     }
-  }, [clientFirstName, clientLastName, streetNumber, streetName, hasSecondaryClient, secondaryClientFirstName, secondaryClientLastName, isNameManuallyEdited]);
+  }, [clientFirstName, clientLastName, streetNumber, streetName, hasSecondaryClient, secondaryClientFirstName, secondaryClientLastName]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -188,7 +187,6 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
     setSecondaryClientEmail("");
     setSecondaryClientPhone("");
     setErrors({});
-    setIsNameManuallyEdited(false);
     setOpen(false);
   };
 
@@ -363,25 +361,6 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
                 {errors.streetNumber || errors.streetName || errors.city || errors.state || errors.zipCode}
               </p>
             )}
-          </div>
-
-          {/* Row 4: Project Name (Auto-filled) */}
-          <div className="space-y-2">
-            <Label htmlFor="name">Project Name</Label>
-            <Input
-              id="name"
-              placeholder="Auto-filled from client name and address"
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                setIsNameManuallyEdited(true);
-              }}
-              className={errors.name ? "border-destructive" : ""}
-            />
-            {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
-            <p className="text-xs text-muted-foreground">
-              This field auto-fills as you enter the client name and address. You can edit it manually if needed.
-            </p>
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
