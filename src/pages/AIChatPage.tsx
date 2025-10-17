@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { Send, Bot, User, FileText } from "lucide-react";
+import { Send, Bot, User, FileText, Plus } from "lucide-react";
 import ChatSummarizer from "@/components/chat/ChatSummarizer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,6 +86,30 @@ export default function AIChatPage() {
     }
   }, [messages]);
 
+  const handleNewChat = async () => {
+    if (!workspaceId || !user) return;
+
+    // Create a new thread
+    const { data: newThread } = await supabase
+      .from("ai_chat_threads")
+      .insert({
+        workspace_id: workspaceId,
+        user_id: user.id,
+        title: "New AI Chat",
+      })
+      .select()
+      .single();
+
+    if (newThread) {
+      setThreadId(newThread.id);
+      setMessages([]);
+      toast({
+        title: "New chat started",
+        description: "You can now begin a fresh conversation.",
+      });
+    }
+  };
+
   const handleSend = async () => {
     if (!input.trim() || isLoading || !threadId || !user) return;
 
@@ -153,15 +177,26 @@ export default function AIChatPage() {
               Ask me anything about your workspace, projects, or tasks
             </p>
           </div>
-          {messages.length > 0 && threadId && workspaceId && selectedProject !== "select" && (
-            <ChatSummarizer
-              threadId={threadId}
-              workspaceId={workspaceId}
-              projectId={selectedProject === "all" ? workspaceId : selectedProject}
-              userId={user?.id || ""}
-              messages={messages}
-            />
-          )}
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handleNewChat}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              New Chat
+            </Button>
+            {messages.length > 0 && threadId && workspaceId && selectedProject !== "select" && (
+              <ChatSummarizer
+                threadId={threadId}
+                workspaceId={workspaceId}
+                projectId={selectedProject === "all" ? workspaceId : selectedProject}
+                userId={user?.id || ""}
+                messages={messages}
+              />
+            )}
+          </div>
         </div>
       </div>
 
