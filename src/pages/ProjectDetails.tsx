@@ -143,8 +143,8 @@ const ProjectDetails = () => {
       {/* Header */}
       <div className="border-b bg-background sticky top-0 z-10">
         <div className="flex items-center justify-between px-6 py-3">
-          {/* Left: Back button + Project name */}
-          <div className="flex items-center gap-3 min-w-0">
+          {/* Left: Back button */}
+          <div className="flex items-center">
             <Button 
               variant="ghost" 
               size="icon"
@@ -152,7 +152,6 @@ const ProjectDetails = () => {
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-lg font-semibold truncate">{project.name}</h1>
           </div>
 
           {/* Center: Navigation tabs */}
