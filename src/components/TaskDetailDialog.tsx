@@ -101,7 +101,7 @@ export function TaskDetailDialog({
               {statusConfig[task.status].label}
             </Badge>
             <span className="text-sm text-muted-foreground font-mono">
-              {task.id.substring(0, 8).toUpperCase()}
+              {task.shortId}
             </span>
           </div>
 
