@@ -171,8 +171,8 @@ const SidebarItem = ({ item, selected, keyboardFocused, onClick, darkMode }: {
       onClick={onClick}
       className={`w-full text-left px-2.5 h-7 flex items-center gap-2 rounded-md transition-colors focus:outline-none active:transform-none border-0 ${
         selected ? 'bg-blue-600/90 text-white' : 
-        keyboardFocused ? 'bg-slate-700 text-white' : 
-        darkMode ? 'text-slate-300 hover:bg-slate-700' : 'text-gray-700 hover:bg-gray-200'
+        keyboardFocused ? 'bg-slate-600/50 text-white' : 
+        'text-slate-300 hover:bg-slate-600/50'
       }`}
       data-selected={selected ? 'true' : 'false'}
       data-focus={keyboardFocused ? 'true' : 'false'}
@@ -427,20 +427,20 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
 
   return (
     <div 
-      className={`flex flex-col flex-1 overflow-hidden bg-slate-850 ${isExternalDragOver ? 'ring-2 ring-primary ring-opacity-50' : ''}`}
+      className={`flex flex-col flex-1 overflow-hidden bg-[#213044] ${isExternalDragOver ? 'ring-2 ring-primary ring-opacity-50' : ''}`}
       onDragEnter={handleExternalDragEnter}
       onDragOver={handleExternalDragOver}
       onDragLeave={handleExternalDragLeave}
       onDrop={handleExternalDrop}
     >
-  <div className="flex items-center h-7 border-b border-slate-700 bg-slate-800 text-[10px] text-slate-400 select-none pl-3 pr-2">
+  <div className="flex items-center h-7 border-b border-slate-600/50 bg-[#1e293b] text-[10px] text-slate-400 select-none pl-3 pr-2">
         <div className="flex-[2] pr-2">Folder</div>
         <div className="flex-[1] hidden lg:block">Modified</div>
         {phase && (
           <div className="h-5 w-5 flex items-center justify-center">
             <button
               onClick={handleCreateFolderClick}
-              className="h-5 w-5 flex items-center justify-center rounded hover:bg-slate-700 transition-colors text-slate-400"
+              className="h-5 w-5 flex items-center justify-center rounded hover:bg-slate-600/50 transition-colors text-slate-400"
               title="Create new folder"
             >
               <Plus className="h-3.5 w-3.5" />
@@ -468,7 +468,7 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
           <>
             {/* New folder input row */}
             {isCreatingFolder && (
-        <div className="flex items-center h-7 border-b border-slate-700 bg-slate-850 pl-3 pr-3">
+        <div className="flex items-center h-7 border-b border-slate-600/30 bg-[#213044] pl-3 pr-3">
                 <div className="flex-[2] pr-2 min-w-0 flex items-center">
                   <Folder className="h-3.5 w-3.5 mr-2 text-slate-400" />
                   <input
@@ -503,10 +503,10 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
             return (
               <div
                 key={f.name}
-                className={`group flex items-center h-7 border-b border-slate-700 pl-3 pr-3 cursor-pointer transition-colors ${
+                className={`group flex items-center h-7 border-b border-slate-600/30 pl-3 pr-3 cursor-pointer transition-colors ${
                   isSelected ? 'bg-blue-600/90' : 
-                  isKeyboardFocused ? 'bg-slate-700' : 
-                  'hover:bg-slate-700'
+                  isKeyboardFocused ? 'bg-slate-600/50' : 
+                  'hover:bg-slate-600/50'
                 }`}
                 onClick={() => onFolderClick(f)}
                 data-selected={isSelected ? 'true' : 'false'}
@@ -665,7 +665,7 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
   if (viewMode === "grid") {
     return (
       <div 
-        className={`flex-1 overflow-auto bg-slate-850 p-3 custom-scrollbar relative ${isDragOver ? 'ring-2 ring-primary ring-opacity-40' : ''}`}
+        className={`flex-1 overflow-auto bg-[#213044] p-3 custom-scrollbar relative ${isDragOver ? 'ring-2 ring-primary ring-opacity-40' : ''}`}
         onDragEnter={canUpload ? handleDragEnter : undefined}
         onDragLeave={canUpload ? handleDragLeave : undefined}
         onDragOver={canUpload ? handleDragOver : undefined}
@@ -712,8 +712,8 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
                   key={file.name}
                   className={`flex flex-col items-stretch p-2 rounded-md cursor-pointer transition-colors gap-1 ${
                     isSelected ? 'bg-blue-600/90' : 
-                    isKeyboardFocused ? 'bg-slate-700' : 
-                    'hover:bg-slate-700'
+                    isKeyboardFocused ? 'bg-slate-600/50' : 
+                    'hover:bg-slate-600/50'
                   }`}
                   onClick={() => onFileClick(file)}
                   draggable={true}
@@ -755,10 +755,10 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
 
   return (
     <div 
-      className="flex-1 flex flex-col bg-slate-850"
+      className="flex-1 flex flex-col bg-[#213044]"
     >
       {/* Fixed Header */}
-  <div className="flex items-center h-7 border-b border-slate-700 bg-slate-800 text-[10px] text-slate-400 select-none pl-3 pr-1 flex-shrink-0">
+  <div className="flex items-center h-7 border-b border-slate-600/50 bg-[#1e293b] text-[10px] text-slate-400 select-none pl-3 pr-1 flex-shrink-0">
         <div className="flex-1 pr-3 flex items-center min-w-0">
           <span className="inline-block w-4 h-4 mr-2" aria-hidden="true"></span>
           Name
@@ -788,7 +788,7 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
                 type="button"
                 onClick={() => document.getElementById('file-explorer-upload-input')?.click()}
                 title="Upload files"
-                className="h-5 w-5 flex items-center justify-center rounded border border-slate-600 bg-slate-700 text-slate-300 hover:bg-slate-600"
+                className="h-5 w-5 flex items-center justify-center rounded border border-slate-500/50 bg-slate-700/50 text-slate-300 hover:bg-slate-600/80"
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>
@@ -846,10 +846,10 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
             return (
               <div
                 key={file.name}
-                className={`flex items-center h-7 border-b border-slate-700 pl-3 pr-3 cursor-pointer transition-colors ${
+                className={`flex items-center h-7 border-b border-slate-600/30 pl-3 pr-3 cursor-pointer transition-colors ${
                   isSelected ? 'bg-blue-600/90 text-white' : 
-                  isKeyboardFocused ? 'bg-slate-700 text-white' : 
-                  'text-slate-300 hover:bg-slate-700'
+                  isKeyboardFocused ? 'bg-slate-600/50 text-white' : 
+                  'text-slate-300 hover:bg-slate-600/50'
                 }`}
                 onClick={() => onFileClick(file)}
                 draggable={true}
@@ -1483,7 +1483,7 @@ export default function FileExplorer({
       style={{ fontFamily: '"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif' }}
     >
       {/* Header */}
-  <div className="h-8 border-b border-slate-700 bg-slate-800 flex items-center px-2 relative text-[10px]">
+  <div className="h-8 border-b border-slate-600/50 bg-[#1a2332] flex items-center px-2 relative text-[10px]">
         <div className={`absolute left-1/2 -translate-x-1/2 w-full flex justify-center pointer-events-none ${(heightMode === 'collapsed' || heightMode === 'compact') ? 'z-[9999]' : ''}`}>
           <div
             ref={searchContainerRef}
@@ -1493,7 +1493,7 @@ export default function FileExplorer({
               margin: '0 auto'
             }}
           >
-            <div className="h-6 px-2 rounded border border-slate-600 bg-slate-700 flex items-center gap-1 relative">
+            <div className="h-6 px-2 rounded border border-slate-500/50 bg-slate-700/50 flex items-center gap-1 relative">
               <Search className="h-4 w-4 shrink-0 text-slate-400" />
               <input
                 className="flex-1 bg-transparent outline-none text-[10px] pr-5 text-slate-200 placeholder-slate-400"
@@ -1535,7 +1535,7 @@ export default function FileExplorer({
         <div className="hidden md:flex items-center gap-2 ml-auto pr-1">
           {selectedFolder && heightMode !== 'collapsed' && (
             <button
-              className={`h-6 px-2 rounded border border-slate-600 inline-flex items-center gap-1 focus:outline-none active:transform-none text-[10px] text-slate-300 ${viewMode === 'grid' ? 'bg-slate-600' : 'bg-slate-700'} hover:bg-slate-600`}
+              className={`h-6 px-2 rounded border border-slate-500/50 inline-flex items-center gap-1 focus:outline-none active:transform-none text-[10px] text-slate-300 ${viewMode === 'grid' ? 'bg-slate-600/80' : 'bg-slate-700/50'} hover:bg-slate-600/80`}
               onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
               title={viewMode === "grid" ? "Switch to List View" : "Switch to Grid View"}
             >
@@ -1546,7 +1546,7 @@ export default function FileExplorer({
             <button
               onClick={onToggleHeight}
               title={heightMode === 'collapsed' ? 'Restore Explorer' : heightMode === 'compact' ? 'Collapse to Search' : 'Make Explorer Compact'}
-              className="h-6 w-6 rounded border border-slate-600 bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-slate-300"
+              className="h-6 w-6 rounded border border-slate-500/50 bg-slate-700/50 hover:bg-slate-600/80 flex items-center justify-center text-slate-300"
             >
               <div className="relative w-3 h-3">
                 <Minus
@@ -1564,7 +1564,7 @@ export default function FileExplorer({
       {heightMode !== 'collapsed' && (
         <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* Sidebar */}
-          <aside className="w-[clamp(140px,18%,180px)] border-r border-slate-700 bg-slate-800 flex flex-col">
+          <aside className="w-[clamp(140px,18%,180px)] border-r border-slate-600/50 bg-[#1e293b] flex flex-col">
             <nav className="flex-1 overflow-y-auto px-1 py-1 custom-scrollbar">
               {phases.map((item: any, index: number) => (
                 <SidebarItem
@@ -1619,8 +1619,8 @@ export default function FileExplorer({
       )}
 
       {heightMode !== 'collapsed' && (
-        <div className="h-5 border-t border-slate-700 bg-slate-800 flex items-center justify-between px-2 text-[10px] text-slate-400">
-          <div className="truncate">
+        <div className="h-5 border-t border-slate-600/50 bg-[#1a2332] flex items-center justify-between px-2 text-[10px] text-slate-400">
+          <div className="truncate flex-1">
             {viewerStatus && viewerStatus.name ? (
               <span className="truncate">
                 {viewerStatus.name}
@@ -1639,11 +1639,17 @@ export default function FileExplorer({
               </span>
             ) : null}
           </div>
-          <div className="flex items-center gap-3 whitespace-nowrap">
-            {viewerStatus?.type === 'image' && (
+          <div className="flex items-center gap-3 whitespace-nowrap flex-shrink-0">
+            {viewerStatus?.loading && viewerStatus?.type === 'pdf' && (
+              <div className="flex items-center gap-1.5">
+                <div className="animate-spin rounded-full h-3 w-3 border border-slate-400 border-t-transparent" />
+                <span className="text-slate-400">Loading PDF...</span>
+              </div>
+            )}
+            {!viewerStatus?.loading && viewerStatus?.type === 'image' && (
               <span className="text-slate-400">Helpers: Shift+Wheel zoom • Shift+ +/- zoom • R rotate • F fullscreen</span>
             )}
-            {viewerStatus?.type === 'pdf' && (
+            {!viewerStatus?.loading && viewerStatus?.type === 'pdf' && (
               <span className="text-slate-400">Helpers: Shift+Wheel zoom • Shift+ +/- zoom • R rotate • Arrows nav • F fullscreen</span>
             )}
           </div>

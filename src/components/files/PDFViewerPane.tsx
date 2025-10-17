@@ -59,6 +59,7 @@ export default function PDFViewerPane({
   const [pageNumber, setPageNumber] = useState<number>(initialState?.pageNumber || 1);
   const [scale, setScale] = useState<number>(initialState?.scale || 1.0);
   const [pageWidth, setPageWidth] = useState<number>(800);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const measureAttempts = useRef(0);
 
@@ -88,6 +89,7 @@ export default function PDFViewerPane({
 
   useEffect(() => {
     if (fileUrl) {
+      setIsLoading(true);
       setTimeout(updateWidth, 100);
     }
   }, [fileUrl, updateWidth]);
@@ -101,10 +103,11 @@ export default function PDFViewerPane({
         modified: file?.modified,
         pageNumber, 
         numPages, 
-        scale 
+        scale,
+        loading: isLoading
       });
     }
-  }, [pageNumber, numPages, scale, onViewerStatus, fileName, file]);
+  }, [pageNumber, numPages, scale, isLoading, onViewerStatus, fileName, file]);
 
   useEffect(() => {
     if (onStateChange) {
@@ -192,10 +195,12 @@ export default function PDFViewerPane({
             file={fileUrl}
             onLoadSuccess={({ numPages }) => {
               setNumPages(numPages);
+              setIsLoading(false);
               setTimeout(updateWidth, 50);
             }}
             onLoadError={(error) => {
               console.error('❌ PDF load error:', error);
+              setIsLoading(false);
             }}
             loading={
               <div className="text-muted-foreground text-center">
