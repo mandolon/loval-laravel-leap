@@ -93,7 +93,11 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
 
     const projectInput: CreateProjectInput = {
       workspaceId,
-      name: name.trim() || `Project at ${streetNumber.trim()} ${streetName.trim()}`,
+      name: name.trim() || (() => {
+        const clientName = clientLastName.trim() || clientFirstName.trim();
+        const address = `${streetNumber.trim()} ${streetName.trim()}`;
+        return `${clientName} - ${address}`;
+      })(),
       address: {
         streetNumber: streetNumber.trim(),
         streetName: streetName.trim(),
