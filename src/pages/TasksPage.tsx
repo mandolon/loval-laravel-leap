@@ -168,7 +168,7 @@ const TasksPage = () => {
           <div className="font-medium">{task.title}</div>
           {project ? (
             <Link 
-              to={`/workspace/${project.workspaceId}/projects/${project.id}`}
+              to={`/workspace/${project.workspaceId}/project/${project.id}`}
               onClick={(e) => e.stopPropagation()}
               className="text-sm text-primary hover:underline truncate max-w-md block"
             >
