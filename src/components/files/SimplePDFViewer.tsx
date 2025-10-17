@@ -196,10 +196,14 @@ export default function SimplePDFViewer({
           <Page 
             pageNumber={pageNumber}
             width={pageWidth * scale}
+            scale={scale * (window.devicePixelRatio || 1)}
             renderTextLayer={true}
             renderAnnotationLayer={true}
             loading={<div className="text-muted-foreground">Loading page...</div>}
             className="shadow-lg max-w-full"
+            onLoadSuccess={() => {
+              console.log('📄 Page rendered | Width:', pageWidth * scale, '| Scale:', scale * (window.devicePixelRatio || 1));
+            }}
           />
         </Document>
       </div>
