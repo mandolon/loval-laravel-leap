@@ -33,7 +33,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -533,133 +532,128 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
         </div>
       </div>
 
-      {/* Main content - Resizable vertical layout */}
-      <ResizablePanelGroup direction="vertical" className="flex-1 min-h-0">
-        {/* PDF/Image Viewer Panel - Full width at top */}
-        <ResizablePanel defaultSize={50} minSize={20}>
-          {selectedFile ? (
-            <div className="h-full w-full bg-muted/30 overflow-auto flex items-center justify-center">
-              {isPdfFile ? (
-                <canvas ref={canvasRef} className="max-w-full max-h-full" />
-              ) : isImageFile ? (
-                <img
-                  src={selectedFile.storage_path}
-                  alt={selectedFile.filename}
-                  className="max-w-full max-h-full object-contain"
-                />
-              ) : (
-                <div className="text-center text-muted-foreground">
-                  <p className="text-lg font-medium">Preview Not Available</p>
-                  <p className="text-sm mt-2">{selectedFile.mimetype || 'Unknown file type'}</p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="h-full w-full bg-muted/30 flex items-center justify-center">
+      {/* 2. VIEWER/CANVAS - Middle section, takes available space */}
+      <div className="flex-1 min-h-0 bg-muted/30 border-b flex items-center justify-center overflow-auto">
+        {selectedFile ? (
+          <>
+            {isPdfFile ? (
+              <canvas ref={canvasRef} className="max-w-full max-h-full" />
+            ) : isImageFile ? (
+              <img
+                src={selectedFile.storage_path}
+                alt={selectedFile.filename}
+                className="max-w-full max-h-full object-contain"
+              />
+            ) : (
               <div className="text-center text-muted-foreground">
-                <p className="text-lg">No file selected</p>
-                <p className="text-sm">Select a file from the list below</p>
+                <p className="text-lg font-medium">Preview Not Available</p>
+                <p className="text-sm mt-2">{selectedFile.mimetype || 'Unknown file type'}</p>
               </div>
+            )}
+          </>
+        ) : (
+          <div className="text-center text-muted-foreground">
+            <p className="text-lg">No file selected</p>
+            <p className="text-sm">Select a file from the list below</p>
+          </div>
+        )}
+      </div>
+
+      {/* 3. FILE EXPLORER - Bottom section with sidebar + file table */}
+      <div className="h-80 flex-shrink-0 flex border-t bg-background">
+        {/* Left: Folder tree sidebar */}
+        <div className="w-48 border-r bg-muted/30 overflow-y-auto flex-shrink-0">
+          <div className="py-2">
+            {foldersLoading ? (
+              <div className="p-4 text-sm text-muted-foreground">Loading folders...</div>
+            ) : (
+              folders
+                .filter(f => f.is_system_folder && !f.parent_folder_id)
+                .map(folder => (
+                  <FolderTreeItem
+                    key={folder.id}
+                    folder={folder}
+                    folders={folders}
+                    selectedFolderId={selectedFolderId}
+                    onSelectFolder={setSelectedFolderId}
+                    expandedFolders={expandedFolders}
+                    onToggleExpanded={(id) => {
+                      const newExpanded = new Set(expandedFolders);
+                      if (newExpanded.has(id)) {
+                        newExpanded.delete(id);
+                      } else {
+                        newExpanded.add(id);
+                      }
+                      setExpandedFolders(newExpanded);
+                    }}
+                    depth={0}
+                  />
+                ))
+            )}
+          </div>
+        </div>
+
+        {/* Right: File table */}
+        <div className="flex-1 flex flex-col min-w-0 bg-background">
+          <div
+            ref={fileTableRef}
+            onDragEnter={() => setIsDraggingFiles(true)}
+            onDragLeave={() => setIsDraggingFiles(false)}
+            onDrop={handleFilesDrop}
+            onDragOver={(e) => e.preventDefault()}
+            className={`flex-1 overflow-auto relative transition-colors ${
+              isDraggingFiles ? 'bg-primary/5' : ''
+            }`}
+          >
+            {isDraggingFiles && (
+              <div className="absolute inset-0 flex items-center justify-center bg-primary/10 pointer-events-none z-50">
+                <div className="text-primary font-medium bg-background px-6 py-4 rounded-lg shadow-lg">
+                  Drop files here
+                </div>
+              </div>
+            )}
+
+            {filesLoading ? (
+              <div className="p-4 text-sm text-muted-foreground">Loading files...</div>
+            ) : (
+              <FileTableComponent
+                items={tableItems}
+                selectedFileId={selectedFileId}
+                onSelectFile={setSelectedFileId}
+                onSelectFolder={setSelectedFolderId}
+                onDeleteFile={(fileId) => {
+                  deleteFileMutation.mutate(fileId);
+                  toast.success('File deleted');
+                }}
+                folders={folders}
+              />
+            )}
+          </div>
+
+          {/* Upload Progress */}
+          {uploadingFiles.length > 0 && (
+            <div className="border-t bg-muted/30 px-4 py-2 space-y-2 flex-shrink-0">
+              {uploadingFiles.map(uf => (
+                <div key={uf.id} className="flex items-center gap-2">
+                  <div className="flex-shrink-0">
+                    {uf.status === 'uploading' && <Loader2 className="h-4 w-4 text-primary animate-spin" />}
+                    {uf.status === 'complete' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                    {uf.status === 'error' && <AlertCircle className="h-4 w-4 text-destructive" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-medium truncate">{uf.filename}</span>
+                      <span className="text-xs text-muted-foreground">{uf.progress}%</span>
+                    </div>
+                    <Progress value={uf.progress} className="h-1 mt-1" />
+                    {uf.error && <p className="text-xs text-destructive mt-1">{uf.error}</p>}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
-        </ResizablePanel>
-
-        <ResizableHandle withHandle />
-
-        {/* File Explorer Panel - Sidebar + File Table at bottom */}
-        <ResizablePanel defaultSize={50} minSize={30}>
-          <div className="h-full w-full flex">
-            {/* Left: Folder tree sidebar - matches file explorer height */}
-            <div className="w-48 border-r bg-muted/30 overflow-y-auto flex-shrink-0">
-              <div className="py-2">
-                {folders
-                  .filter(f => f.is_system_folder && !f.parent_folder_id)
-                  .map(folder => (
-                    <FolderTreeItem
-                      key={folder.id}
-                      folder={folder}
-                      folders={folders}
-                      selectedFolderId={selectedFolderId}
-                      onSelectFolder={setSelectedFolderId}
-                      expandedFolders={expandedFolders}
-                      onToggleExpanded={(id) => {
-                        const newExpanded = new Set(expandedFolders);
-                        if (newExpanded.has(id)) {
-                          newExpanded.delete(id);
-                        } else {
-                          newExpanded.add(id);
-                        }
-                        setExpandedFolders(newExpanded);
-                      }}
-                      depth={0}
-                    />
-                  ))}
-              </div>
-            </div>
-
-            {/* Right: File table */}
-            <div className="flex-1 flex flex-col min-w-0">
-              <div
-                ref={fileTableRef}
-                onDragEnter={() => setIsDraggingFiles(true)}
-                onDragLeave={() => setIsDraggingFiles(false)}
-                onDrop={handleFilesDrop}
-                onDragOver={(e) => e.preventDefault()}
-                className={`flex-1 overflow-auto relative transition-colors ${
-                  isDraggingFiles ? 'bg-primary/5' : ''
-                }`}
-              >
-                {isDraggingFiles && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-primary/10 pointer-events-none z-50">
-                    <div className="text-primary font-medium bg-background px-6 py-4 rounded-lg shadow-lg">
-                      Drop files here
-                    </div>
-                  </div>
-                )}
-
-                {!filesLoading && !foldersLoading ? (
-                  <FileTableComponent
-                    items={tableItems}
-                    selectedFileId={selectedFileId}
-                    onSelectFile={setSelectedFileId}
-                    onSelectFolder={setSelectedFolderId}
-                    onDeleteFile={(fileId) => {
-                      deleteFileMutation.mutate(fileId);
-                      toast.success('File deleted');
-                    }}
-                    folders={folders}
-                  />
-                ) : (
-                  <div className="p-4 text-sm text-muted-foreground">Loading files...</div>
-                )}
-              </div>
-
-              {/* Upload Progress */}
-              {uploadingFiles.length > 0 && (
-                <div className="border-t bg-muted/30 px-4 py-2 space-y-2 flex-shrink-0">
-                  {uploadingFiles.map(uf => (
-                    <div key={uf.id} className="flex items-center gap-2">
-                      <div className="flex-shrink-0">
-                        {uf.status === 'uploading' && <Loader2 className="h-4 w-4 text-primary animate-spin" />}
-                        {uf.status === 'complete' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
-                        {uf.status === 'error' && <AlertCircle className="h-4 w-4 text-destructive" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium truncate">{uf.filename}</span>
-                          <span className="text-xs text-muted-foreground">{uf.progress}%</span>
-                        </div>
-                        <Progress value={uf.progress} className="h-1 mt-1" />
-                        {uf.error && <p className="text-xs text-destructive mt-1">{uf.error}</p>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </ResizablePanel>
-      </ResizablePanelGroup>
+        </div>
+      </div>
     </div>
   );
 };
