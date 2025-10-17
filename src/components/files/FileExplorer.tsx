@@ -952,7 +952,7 @@ export default function FileExplorer({
     }
   }, [foldersData])
   
-  // Transform files into the format expected by FileExplorer
+  // Transform files into the format expected by FileExplorer (without URLs initially)
   const liveFiles = useMemo(() => {
     if (!filesData || filesData.length === 0) {
       return MOCK_FILES // Fallback to mock if no live data
@@ -968,11 +968,6 @@ export default function FileExplorer({
       const phaseName = parentFolder?.name || folder?.name || 'Uncategorized'
       const folderName = folder?.parent_folder_id ? folder.name : 'Root'
       
-      // Get public URL for the file
-      const { data: { publicUrl } } = supabase.storage
-        .from('project-files')
-        .getPublicUrl(file.storage_path)
-      
       return {
         name: file.filename,
         size: formatFileSize(file.filesize || 0),
@@ -980,7 +975,8 @@ export default function FileExplorer({
         phase: phaseName,
         folder: folderName,
         type: file.mimetype?.split('/')[0] || 'other',
-        url: publicUrl,
+        url: '', // Will be populated by useEffect
+        storage_path: file.storage_path, // Keep storage path for URL generation
         id: file.id,
       }
     })
@@ -989,6 +985,42 @@ export default function FileExplorer({
   // Core navigation state
   const [rootState, setRootState] = useState(root);
   const [files, setFiles] = useState(liveFiles);
+  
+  // Generate signed URLs for files from database
+  useEffect(() => {
+    const generateSignedUrls = async () => {
+      if (!filesData || filesData.length === 0 || !liveFiles || liveFiles.length === 0) return;
+      
+      const filesWithUrls = await Promise.all(
+        liveFiles.map(async (file: any) => {
+          if (!file.storage_path) return file;
+          
+          try {
+            const { data: signedUrlData, error } = await supabase.storage
+              .from('project-files')
+              .createSignedUrl(file.storage_path, 3600); // Valid for 1 hour
+            
+            if (error) {
+              console.error('Error generating signed URL:', error);
+              return file;
+            }
+            
+            return {
+              ...file,
+              url: signedUrlData?.signedUrl || '',
+            };
+          } catch (err) {
+            console.error('Error generating signed URL:', err);
+            return file;
+          }
+        })
+      );
+      
+      setFiles(filesWithUrls);
+    };
+    
+    generateSignedUrls();
+  }, [liveFiles, filesData]);
   
   // Only update state when data actually changes (not just reference)
   useEffect(() => {
