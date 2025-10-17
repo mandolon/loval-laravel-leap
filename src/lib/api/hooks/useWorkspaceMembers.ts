@@ -19,6 +19,9 @@ const transformDbToWorkspaceMember = (data: any): WorkspaceMember => ({
   createdAt: data.created_at,
   deletedAt: data.deleted_at,
   deletedBy: data.deleted_by,
+  userName: data.users?.name || '',
+  userEmail: data.users?.email || '',
+  userAvatarUrl: data.users?.avatar_url || null,
 })
 
 // Get all workspace members
@@ -28,7 +31,7 @@ export const useWorkspaceMembers = (workspaceId: string) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('workspace_members')
-        .select('*')
+        .select('*, users(name, email, avatar_url)')
         .eq('workspace_id', workspaceId)
         .is('deleted_at', null)
       

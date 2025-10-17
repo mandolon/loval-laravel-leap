@@ -26,6 +26,7 @@ import { EditClientDialog } from "@/components/project/EditClientDialog";
 import { EditProjectDetailsDialog } from "@/components/project/EditProjectDetailsDialog";
 import { EditProjectAddressDialog } from "@/components/project/EditProjectAddressDialog";
 import { EditAssessorParcelDialog } from "@/components/project/EditAssessorParcelDialog";
+import { ProjectMembersTable } from "@/components/project/ProjectMembersTable";
 import { supabase } from "@/integrations/supabase/client";
 
 const ProjectDetails = () => {
@@ -285,7 +286,7 @@ const ProjectDetails = () => {
                   <CardTitle>Team</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">Team members: {project.teamMemberCount || 0}</p>
+                  <ProjectMembersTable projectId={id || ''} workspaceId={workspaceId || ''} />
                 </CardContent>
               </Card>
 

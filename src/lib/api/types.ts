@@ -39,6 +39,9 @@ export interface WorkspaceMember {
   createdAt: string;
   deletedAt?: string;
   deletedBy?: string;
+  userName: string;
+  userEmail: string;
+  userAvatarUrl: string | null;
 }
 
 // Project entity (NO MORE CLIENT TABLE - clients embedded)
