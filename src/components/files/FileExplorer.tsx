@@ -980,9 +980,22 @@ export default function FileExplorer({
   
   // Core navigation state
   const [rootState, setRootState] = useState(root);
+  const [files, setFiles] = useState(liveFiles);
+  
+  // Only update state when data actually changes (not just reference)
   useEffect(() => {
-    setRootState(root)
+    const rootChanged = JSON.stringify(rootState) !== JSON.stringify(root)
+    if (rootChanged) {
+      setRootState(root)
+    }
   }, [root])
+  
+  useEffect(() => {
+    const filesChanged = JSON.stringify(files) !== JSON.stringify(liveFiles)
+    if (filesChanged) {
+      setFiles(liveFiles)
+    }
+  }, [liveFiles])
   
   const phases = rootState.children;
   const rootRef = useRef(rootState);
@@ -998,10 +1011,6 @@ export default function FileExplorer({
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
-  const [files, setFiles] = useState(liveFiles);
-  useEffect(() => {
-    setFiles(liveFiles)
-  }, [liveFiles])
   const [viewMode, setViewMode] = useState("list");
   const [focusedPanel, setFocusedPanel] = useState('phases');
   const [keyboardSelectedPhase, setKeyboardSelectedPhase] = useState(0);
