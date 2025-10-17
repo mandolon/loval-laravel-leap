@@ -139,52 +139,92 @@ const ProjectDetails = () => {
   };
 
   return (
-    <div className="flex h-[calc(100vh-4rem)]">
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        <div className="p-6 space-y-6">
+    <div className="flex flex-col h-[calc(100vh-4rem)]">
+      {/* Header */}
+      <div className="border-b bg-background sticky top-0 z-10">
+        <div className="flex items-center justify-between px-6 py-3">
+          {/* Left: Back button + Project name */}
+          <div className="flex items-center gap-3 min-w-0">
             <Button 
-            variant="ghost" 
-            onClick={() => navigate(workspaceId ? `/workspace/${workspaceId}/projects` : "/projects")}
-            size="sm"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Projects
-          </Button>
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate(workspaceId ? `/workspace/${workspaceId}/projects` : "/projects")}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-lg font-semibold truncate">{project.name}</h1>
+          </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent">
-              <TabsTrigger value="files" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
-                <FileText className="h-4 w-4 mr-2" />
+          {/* Center: Navigation tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 mx-6">
+            <TabsList className="h-auto p-0 bg-transparent border-0">
+              <TabsTrigger 
+                value="files" 
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
+              >
                 Files
               </TabsTrigger>
-              <TabsTrigger value="tasks" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
-                <CheckSquare className="h-4 w-4 mr-2" />
+              <TabsTrigger 
+                value="tasks"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
+              >
                 Tasks
               </TabsTrigger>
-              <TabsTrigger value="invoices" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
+              <TabsTrigger 
+                value="invoices"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
+              >
                 Invoices
               </TabsTrigger>
-              <TabsTrigger value="links" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
-                <LinkIcon className="h-4 w-4 mr-2" />
+              <TabsTrigger 
+                value="links"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
+              >
                 Links
               </TabsTrigger>
-              <TabsTrigger value="project" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
-                <FolderOpen className="h-4 w-4 mr-2" />
+              <TabsTrigger 
+                value="project"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
+              >
                 Project
               </TabsTrigger>
-              <TabsTrigger value="client" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
-                <User className="h-4 w-4 mr-2" />
+              <TabsTrigger 
+                value="client"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
+              >
                 Client
               </TabsTrigger>
-              <TabsTrigger value="notes" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
-                <MessageSquare className="h-4 w-4 mr-2" />
+              <TabsTrigger 
+                value="notes"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
+              >
                 Notes
               </TabsTrigger>
             </TabsList>
+          </Tabs>
 
-            <TabsContent value="files" className="mt-6">
+          {/* Right: Notification icon */}
+          <div className="relative">
+            <Button variant="ghost" size="icon">
+              <MessageSquare className="h-5 w-5" />
+            </Button>
+            {messages.length > 0 && (
+              <Badge 
+                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                variant="destructive"
+              >
+                {messages.length}
+              </Badge>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto">
+        <div className="p-6 space-y-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsContent value="files" className="mt-0">
               <Card>
                 <CardHeader>
                   <CardTitle>Files</CardTitle>
@@ -196,7 +236,7 @@ const ProjectDetails = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="tasks" className="mt-6">
+            <TabsContent value="tasks" className="mt-0">
               <div className="space-y-4 mb-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold">Tasks</h2>
@@ -276,7 +316,7 @@ const ProjectDetails = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="invoices" className="mt-6">
+            <TabsContent value="invoices" className="mt-0">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -383,7 +423,7 @@ const ProjectDetails = () => {
               />
             </TabsContent>
 
-            <TabsContent value="links" className="mt-6">
+            <TabsContent value="links" className="mt-0">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -433,7 +473,7 @@ const ProjectDetails = () => {
               />
             </TabsContent>
 
-            <TabsContent value="project" className="mt-6 space-y-6">
+            <TabsContent value="project" className="mt-0 space-y-6">
               {/* Project Name */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
@@ -626,7 +666,7 @@ const ProjectDetails = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="client" className="mt-6">
+            <TabsContent value="client" className="mt-0">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
@@ -670,7 +710,7 @@ const ProjectDetails = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="notes" className="mt-6">
+            <TabsContent value="notes" className="mt-0">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                   <div>
