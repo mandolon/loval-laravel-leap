@@ -288,11 +288,28 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
           .from('project-files')
           .createSignedUrl(selectedFile.storage_path, 3600);
 
-        if (error) throw error;
-        if (!data) throw new Error('No signed URL');
+        if (error) {
+          console.error('Supabase signed URL error:', error);
+          throw error;
+        }
 
-        setPdfUrl(data.signedUrl);
-        console.log('📄 PDF URL loaded');
+        if (!data?.signedUrl) {
+          console.error('No signed URL returned');
+          throw new Error('No signed URL');
+        }
+
+        // Clean URL - remove any trailing artifacts like :1
+        let cleanUrl = data.signedUrl.trim();
+        
+        // Remove trailing :digit pattern if present
+        cleanUrl = cleanUrl.replace(/:\d+$/, '');
+        
+        console.log('📄 PDF URL (raw):', data.signedUrl);
+        console.log('📄 PDF URL (clean):', cleanUrl);
+        console.log('📄 PDF URL type:', typeof cleanUrl);
+        console.log('📄 PDF URL length:', cleanUrl.length);
+        
+        setPdfUrl(cleanUrl);
       } catch (error) {
         console.error('Failed to load PDF URL:', error);
         toast.error('Failed to load PDF URL');
