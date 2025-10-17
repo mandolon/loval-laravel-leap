@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import type { Task, User } from "@/lib/api/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -166,7 +166,17 @@ const TasksPage = () => {
         {/* Name & Address */}
         <TableCell>
           <div className="font-medium">{task.title}</div>
-          <div className="text-sm text-muted-foreground truncate max-w-md">{addressDisplay}</div>
+          {project ? (
+            <Link 
+              to={`/workspace/${project.workspaceId}/projects/${project.id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="text-sm text-primary hover:underline truncate max-w-md block"
+            >
+              {addressDisplay}
+            </Link>
+          ) : (
+            <div className="text-sm text-muted-foreground truncate max-w-md">{addressDisplay}</div>
+          )}
         </TableCell>
 
         {/* Files */}
