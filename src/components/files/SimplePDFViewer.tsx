@@ -21,7 +21,11 @@ interface SimplePDFViewerProps {
   fileName?: string;
   onDownload?: () => void;
   onShare?: () => void;
-  onMaximize?: () => void;
+  onClose?: () => void;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
+  isFillPage?: boolean;
+  onToggleFillPage?: () => void;
 }
 
 export default function SimplePDFViewer({ 
@@ -29,7 +33,11 @@ export default function SimplePDFViewer({
   fileName,
   onDownload,
   onShare,
-  onMaximize
+  onClose,
+  isFullscreen = false,
+  onToggleFullscreen,
+  isFillPage = false,
+  onToggleFillPage
 }: SimplePDFViewerProps) {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState<number>(1);
@@ -440,7 +448,7 @@ export default function SimplePDFViewer({
   return (
     <div className="h-full flex flex-col bg-muted/30 overflow-hidden">
       {/* Toolbar (compact) */}
-      <div className="flex items-center justify-between px-3 py-1 bg-card border-b border-border flex-shrink-0">
+      <div className={`flex items-center justify-between px-3 py-1 bg-card border-b border-border flex-shrink-0`}>
         {/* Left section - Scroll Mode Toggle */}
         <div className="flex items-center gap-1 min-w-0 flex-1">
           {numPages && (
@@ -470,7 +478,7 @@ export default function SimplePDFViewer({
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
               </button>
-              <span className="px-2 text-[10px] text-muted-foreground min-w-max flex items-center">
+              <span className={`px-2 text-[10px] text-muted-foreground min-w-max flex items-center`}>
                 {`${pageNumber} / ${numPages}`}
               </span>
               <button
@@ -497,7 +505,7 @@ export default function SimplePDFViewer({
               >
                 <ZoomOut className="h-3.5 w-3.5" />
               </button>
-              <span className="px-2 text-[10px] text-muted-foreground min-w-max flex items-center">
+              <span className={`px-2 text-[10px] text-muted-foreground min-w-max flex items-center`}>
                 {Math.round(scale * 100)}%
               </span>
               <button
@@ -510,21 +518,21 @@ export default function SimplePDFViewer({
               <div className="w-px h-4 bg-border mx-1" />
               <button
                 onClick={handleZoomToFitWidth}
-                className="h-5 px-2 text-[10px] rounded hover:bg-muted text-muted-foreground"
+                className={`h-5 px-2 text-[10px] rounded hover:bg-muted text-muted-foreground`}
                 title="Fit to width"
               >
                 Width
               </button>
               <button
                 onClick={handleZoomToFitHeight}
-                className="h-5 px-2 text-[10px] rounded hover:bg-muted text-muted-foreground"
+                className={`h-5 px-2 text-[10px] rounded hover:bg-muted text-muted-foreground`}
                 title="Fit to height"
               >
                 Height
               </button>
               <button
                 onClick={handleZoomToFitPage}
-                className="h-5 px-2 text-[10px] rounded hover:bg-muted text-muted-foreground"
+                className={`h-5 px-2 text-[10px] rounded hover:bg-muted text-muted-foreground`}
                 title="Fit whole page"
               >
                 Page
@@ -538,14 +546,24 @@ export default function SimplePDFViewer({
               >
                 <RotateCw className="h-3.5 w-3.5" />
               </button>
-              {/* Maximize */}
-              {onMaximize && (
+              {/* Fill Page */}
+              {onToggleFillPage && (
                 <button
-                  onClick={onMaximize}
+                  onClick={onToggleFillPage}
                   className="h-5 w-5 flex items-center justify-center rounded hover:bg-muted text-muted-foreground"
-                  title="Maximize"
+                  title={isFillPage ? 'Exit fill page' : 'Fill page'}
                 >
-                  <Maximize2 className="h-3.5 w-3.5" />
+                  {isFillPage ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize className="h-3.5 w-3.5" />}
+                </button>
+              )}
+              {/* Fullscreen */}
+              {onToggleFullscreen && (
+                <button
+                  onClick={onToggleFullscreen}
+                  className="h-5 w-5 flex items-center justify-center rounded hover:bg-muted text-muted-foreground"
+                  title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen (F)'}
+                >
+                  {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
                 </button>
               )}
               {/* Download */}
@@ -556,6 +574,18 @@ export default function SimplePDFViewer({
               >
                 <Download className="h-3.5 w-3.5" />
               </button>
+              {onClose && (
+                <>
+                  <div className="w-px h-4 bg-border mx-1" />
+                  <button
+                    onClick={onClose}
+                    className="h-5 w-5 flex items-center justify-center rounded hover:bg-muted text-muted-foreground"
+                    title="Close (Esc)"
+                  >
+                    ×
+                  </button>
+                </>
+              )}
             </>
           )}
         </div>
