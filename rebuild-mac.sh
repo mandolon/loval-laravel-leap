@@ -15,10 +15,18 @@ echo ""
 echo "Step 2: Installing dependencies..."
 npm install
 
-# 3. Copy Tauri template files
+# 3. Copy Tauri template files (preserve custom icon)
 echo ""
 echo "Step 3: Copying Tauri configuration..."
+# Backup custom icon if it exists
+if [ -f "src-tauri/icons/icon.png" ]; then
+  cp src-tauri/icons/icon.png src-tauri/icons/icon.png.backup
+fi
 cp src-tauri-template/Cargo.toml src-tauri/Cargo.toml
+# Restore custom icon if backup exists
+if [ -f "src-tauri/icons/icon.png.backup" ]; then
+  mv src-tauri/icons/icon.png.backup src-tauri/icons/icon.png
+fi
 
 # 4. Build Vite app for desktop
 echo ""
