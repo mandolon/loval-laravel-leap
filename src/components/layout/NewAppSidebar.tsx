@@ -1,4 +1,4 @@
-import { Home, FolderKanban, CheckSquare, Bot, Plus, ChevronRight, ChevronLeft, Trash2 } from "lucide-react";
+import { Home, FolderKanban, CheckSquare, Bot, Plus, ChevronRight, ChevronLeft } from "lucide-react";
 import { NavLink, useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -142,7 +142,6 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
     { label: 'Users', path: getNavPath('/team') },
     { label: 'Invoices', path: getNavPath('/invoices') },
     { label: 'Work Records', path: getNavPath('/work-records') },
-    { label: 'Trash', path: getNavPath('/trash'), icon: Trash2 },
   ];
 
   // Render dynamic content based on active tab
@@ -160,7 +159,6 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
                   ${isActive ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/30'}
                 `}
               >
-                {link.icon && <link.icon className="h-4 w-4" />}
                 {link.label}
               </NavLink>
             ))}

@@ -1,10 +1,11 @@
-import { Search, Sun, Moon } from "lucide-react";
+import { Search, Sun, Moon, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "@/contexts/UserContext";
 import { useTheme } from "next-themes";
+import { useWorkspaces } from "@/hooks/useWorkspaces";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +17,7 @@ export function NewAppHeader() {
   const navigate = useNavigate();
   const { user, signOut } = useUser();
   const { theme, setTheme } = useTheme();
+  const { currentWorkspaceId } = useWorkspaces();
 
   if (!user) return null;
 
@@ -57,7 +59,13 @@ export function NewAppHeader() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48 bg-popover">
-            <DropdownMenuItem onClick={() => navigate('/profile')}>Profile</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/profile')}>
+              Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => currentWorkspaceId && navigate(`/workspace/${currentWorkspaceId}/trash`)}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Trash
+            </DropdownMenuItem>
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuItem onClick={signOut}>Sign out</DropdownMenuItem>
           </DropdownMenuContent>
