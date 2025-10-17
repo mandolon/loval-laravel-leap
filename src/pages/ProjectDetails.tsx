@@ -18,6 +18,7 @@ import type { UpdateProjectInput, Project } from "@/lib/api/types";
 import { AssessorParcelInfo } from "@/components/project/EditAssessorParcelDialog";
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from "@/lib/api/hooks/useTasks";
 import { useNotes, useCreateNote, useUpdateNote, useDeleteNote } from "@/lib/api/hooks/useNotes";
+import { FileExplorer } from "@/components/files/FileExplorer";
 import { useProjectMessages, useCreateMessage, useDeleteMessage, ProjectChatMessageWithUser } from "@/lib/api/hooks/useProjectChat";
 import { useInvoices, useDeleteInvoice } from "@/lib/api/hooks/useInvoices";
 import { CreateInvoiceDialog } from "@/components/invoice/CreateInvoiceDialog";
@@ -229,17 +230,9 @@ const ProjectDetails = () => {
         <div className="flex-1 overflow-auto">
           <div className="p-6 space-y-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsContent value="files" className="mt-0">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Files</CardTitle>
-                  <CardDescription>Project files and documents</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">No files uploaded yet</p>
-                </CardContent>
-              </Card>
-            </TabsContent>
+              <TabsContent value="files" className="mt-0 h-[calc(100vh-280px)]">
+                <FileExplorer projectId={id || ''} projectName={project.name} />
+              </TabsContent>
 
             <TabsContent value="tasks" className="mt-0">
               <div className="space-y-4 mb-6">
