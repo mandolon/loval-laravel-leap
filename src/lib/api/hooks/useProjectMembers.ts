@@ -26,14 +26,43 @@ export const useProjectMembers = (projectId: string) => {
   return useQuery({
     queryKey: ['project-members', projectId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First get project members
+      const { data: members, error: membersError } = await supabase
         .from('project_members')
-        .select('*, users(name, email, avatar_url)')
+        .select('*')
         .eq('project_id', projectId)
         .is('deleted_at', null);
 
-      if (error) throw error;
-      return data.map(transformDbToProjectMember);
+      if (membersError) throw membersError;
+      if (!members || members.length === 0) return [];
+
+      // Get all user IDs
+      const userIds = members.map(m => m.user_id);
+
+      // Fetch user details
+      const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('id, name, email, avatar_url')
+        .in('id', userIds);
+
+      if (usersError) throw usersError;
+
+      // Create a map of user data
+      const userMap = new Map(users?.map(u => [u.id, u]) || []);
+
+      // Combine the data
+      return members.map(member => {
+        const user = userMap.get(member.user_id);
+        return {
+          id: member.id,
+          userId: member.user_id,
+          projectId: member.project_id,
+          title: member.title,
+          userName: user?.name || 'Unknown User',
+          userEmail: user?.email || '',
+          userAvatarUrl: user?.avatar_url || null,
+        };
+      });
     },
     enabled: !!projectId,
   });

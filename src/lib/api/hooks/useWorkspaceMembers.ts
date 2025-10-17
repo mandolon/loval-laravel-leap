@@ -29,14 +29,47 @@ export const useWorkspaceMembers = (workspaceId: string) => {
   return useQuery({
     queryKey: workspaceMemberKeys.list(workspaceId),
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First get workspace members
+      const { data: members, error: membersError } = await supabase
         .from('workspace_members')
-        .select('*, users(name, email, avatar_url)')
+        .select('*')
         .eq('workspace_id', workspaceId)
         .is('deleted_at', null)
       
-      if (error) throw error
-      return (data || []).map(transformDbToWorkspaceMember)
+      if (membersError) throw membersError
+      if (!members || members.length === 0) return []
+
+      // Get all user IDs
+      const userIds = members.map(m => m.user_id)
+
+      // Fetch user details
+      const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('id, name, email, avatar_url')
+        .in('id', userIds)
+
+      if (usersError) throw usersError
+
+      // Create a map of user data
+      const userMap = new Map(users?.map(u => [u.id, u]) || [])
+
+      // Combine the data
+      return members.map(member => {
+        const user = userMap.get(member.user_id)
+        return {
+          id: member.id,
+          shortId: member.short_id,
+          workspaceId: member.workspace_id,
+          userId: member.user_id,
+          role: member.role as 'admin' | 'team' | 'consultant' | 'client',
+          createdAt: member.created_at,
+          deletedAt: member.deleted_at,
+          deletedBy: member.deleted_by,
+          userName: user?.name || 'Unknown User',
+          userEmail: user?.email || '',
+          userAvatarUrl: user?.avatar_url || null,
+        }
+      })
     },
     enabled: !!workspaceId,
   })
