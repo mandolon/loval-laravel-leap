@@ -117,7 +117,7 @@ const FloatingSearchDropdown = ({
       }}
       className="bg-popover border border-border rounded-md shadow-xl max-h-96 overflow-y-auto custom-scrollbar"
     >
-      <div className="px-3 py-1.5 text-[10px] text-muted-foreground bg-muted border-b border-border/60">
+      <div className="px-3 py-1.5 text-[11px] text-muted-foreground bg-muted border-b border-border/60">
         {results.length} result{results.length !== 1 ? 's' : ''} for "{searchQuery}"
       </div>
       {results.map((result, index) => {
@@ -135,7 +135,7 @@ const FloatingSearchDropdown = ({
               className={`h-4 w-4 mr-3 flex-shrink-0 ${darkMode ? 'text-muted-foreground' : 'text-gray-600'}`}
             />
             <div className="flex-1 min-w-0">
-              <div className={`text-[10px] truncate ${darkMode ? 'text-foreground' : 'text-gray-800'}`}>{result.name}</div>
+              <div className={`text-[11px] truncate ${darkMode ? 'text-foreground' : 'text-gray-800'}`}>{result.name}</div>
             </div>
           </div>
         );
@@ -178,7 +178,7 @@ const SidebarItem = ({ item, selected, keyboardFocused, onClick, darkMode }: {
       data-focus={keyboardFocused ? 'true' : 'false'}
     >
       <Folder className="h-3.5 w-3.5 flex-shrink-0" />
-      <span className={`truncate text-[10px] ${selected ? 'font-medium' : ''}`}>{item.name}</span>
+      <span className={`truncate text-[11px] ${selected ? 'font-medium' : ''}`}>{item.name}</span>
     </button>
   );
 };
@@ -434,7 +434,7 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
       onDragLeave={handleExternalDragLeave}
       onDrop={handleExternalDrop}
     >
-  <div className="flex items-center h-7 border-b border-slate-600/50 bg-[#1e293b] text-[10px] text-slate-400 select-none pl-3 pr-2">
+  <div className="flex items-center h-7 border-b border-slate-600/50 bg-[#1e293b] text-[11px] text-slate-400 select-none pl-3 pr-2">
         <div className="flex-[2] pr-2">Folder</div>
         <div className="flex-[1] hidden lg:block">Modified</div>
         <div className="h-5 w-5 flex items-center justify-center">
@@ -454,7 +454,7 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
         {isExternalDragOver && (
           <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary/60 flex items-center justify-center text-primary z-10 pointer-events-none">
             <div className="text-center">
-              <div className="text-[10px] font-medium leading-normal tracking-normal text-primary">
+              <div className="text-[11px] font-medium leading-normal tracking-normal text-primary">
                 Drop folders here to add them
               </div>
             </div>
@@ -462,7 +462,7 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
         )}
         
             {!phase ? (
-          <div className="flex items-center justify-center h-32 text-slate-400 text-[10px]">
+          <div className="flex items-center justify-center h-32 text-slate-400 text-[11px]">
             Select a phase
           </div>
         ) : (
@@ -479,12 +479,12 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
                     onChange={(e) => setNewFolderName(e.target.value)}
                     onBlur={handleCancelFolder}
                     onKeyDown={handleKeyDown}
-                    className="flex-1 bg-transparent outline-none text-[10px] border-none focus:ring-0 p-0 text-slate-200 placeholder-slate-500"
+                    className="flex-1 bg-transparent outline-none text-[11px] border-none focus:ring-0 p-0 text-slate-200 placeholder-slate-500"
                     placeholder="New folder name..."
                     autoFocus
                   />
                 </div>
-                <span className="flex-[1] text-[10px] text-slate-400 tabular-nums hidden lg:block">
+                <span className="flex-[1] text-[11px] text-slate-400 tabular-nums hidden lg:block">
                   —
                 </span>
                 <div className="h-5 w-5"></div>
@@ -493,7 +493,7 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
             
             {/* Existing folders */}
             {folders.length === 0 && !isCreatingFolder ? (
-              <div className="flex items-center justify-center h-32 text-slate-400 text-[10px]">
+              <div className="flex items-center justify-center h-32 text-slate-400 text-[11px]">
                 No folders found
               </div>
             ) : (
@@ -520,9 +520,9 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
                   "text-slate-300"
                 }`}>
                   <Folder className="h-3.5 w-3.5 mr-2 text-slate-400" />
-                  <span className="truncate text-[10px]">{f.name}</span>
+                  <span className="truncate text-[11px]">{f.name}</span>
                 </div>
-                <span className="flex-[1] text-[10px] text-slate-400 tabular-nums hidden lg:block">
+                <span className="flex-[1] text-[11px] text-slate-400 tabular-nums hidden lg:block">
                   {getMostRecentFileDate(phase?.name, f.name)}
                 </span>
                 <div className="h-5 w-5 flex items-center justify-center">
@@ -676,17 +676,17 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
         {isDragOver && canUpload && (
             <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary/60 flex items-center justify-center text-primary z-10 pointer-events-none">
             <div className="text-center">
-              <div className="text-[10px] font-medium leading-normal tracking-normal text-primary">
+              <div className="text-[11px] font-medium leading-normal tracking-normal text-primary">
                 Drop files here to upload
               </div>
-              <div className="text-[10px] text-primary/80 mt-1">
+              <div className="text-[11px] text-primary/80 mt-1">
                 PDF, images, and documents supported
               </div>
             </div>
           </div>
         )}
         {!folder ? (
-          <div className="flex items-center justify-center h-32 text-slate-400 text-[10px]">
+          <div className="flex items-center justify-center h-32 text-slate-400 text-[11px]">
             Select a folder
           </div>
         ) : (
@@ -741,10 +741,10 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
                       })()}
                     </div>
                   </div>
-                  <span className={`text-[10px] leading-snug text-center truncate w-full px-0.5 ${
+                  <span className={`text-[11px] leading-snug text-center truncate w-full px-0.5 ${
                     isSelected ? 'text-white font-medium' : isKeyboardFocused ? 'text-white' : 'text-slate-300'
                   }`}>{file.name}</span>
-                  <span className="text-[10px] text-slate-400">{file.size}</span>
+                  <span className="text-[11px] text-slate-400">{file.size}</span>
                 </div>
               );
             })}
@@ -759,7 +759,7 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
       className="flex-1 flex flex-col bg-[#213044]"
     >
       {/* Fixed Header */}
-  <div className="flex items-center h-7 border-b border-slate-600/50 bg-[#1e293b] text-[10px] text-slate-400 select-none pl-3 pr-1 flex-shrink-0">
+  <div className="flex items-center h-7 border-b border-slate-600/50 bg-[#1e293b] text-[11px] text-slate-400 select-none pl-3 pr-1 flex-shrink-0">
         <div className="flex-1 pr-3 flex items-center min-w-0">
           <span className="inline-block w-4 h-4 mr-2" aria-hidden="true"></span>
           Name
@@ -809,21 +809,21 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
         {isDragOver && canUpload && (
           <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary/60 flex items-center justify-center text-primary z-10 pointer-events-none">
             <div className="text-center">
-              <div className="text-[10px] font-medium leading-normal tracking-normal text-primary">
+              <div className="text-[11px] font-medium leading-normal tracking-normal text-primary">
                 Drop files here to upload
               </div>
-              <div className="text-[10px] text-primary/80 mt-1">
+              <div className="text-[11px] text-primary/80 mt-1">
                 PDF, images, and documents supported
               </div>
             </div>
           </div>
         )}
         {!folder ? (
-          <div className="flex items-center justify-center h-32 text-slate-400 text-[10px]">
-            Select a folder
+          <div className="flex items-center justify-center h-32 text-slate-400 text-[11px]">
+            No file selected
           </div>
         ) : files.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-slate-400 text-[10px]">
+          <div className="flex items-center justify-center h-32 text-slate-400 text-[11px]">
             No files found
           </div>
         ) : (
@@ -869,11 +869,11 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
                     fileName={file.name}
                     className={`h-3.5 w-3.5 mr-2 ${darkMode ? 'text-muted-foreground' : 'text-gray-500'}`}
                   />
-                  <span className="truncate text-[10px]">{file.name}</span>
+                  <span className="truncate text-[11px]">{file.name}</span>
                 </div>
-                <span className="w-20 shrink-0 text-[10px] text-gray-500 tabular-nums pr-1 hidden md:inline">{file.size}</span>
-                <span className="w-28 shrink-0 text-[10px] text-gray-500 tabular-nums pr-1 hidden lg:inline">{formatFileModified(file.modified)}</span>
-                <span className="w-16 shrink-0 text-[10px] text-gray-500 hidden xl:inline">{getFileExtension(file.name)}</span>
+                <span className="w-20 shrink-0 text-[11px] text-gray-500 tabular-nums pr-1 hidden md:inline">{file.size}</span>
+                <span className="w-28 shrink-0 text-[11px] text-gray-500 tabular-nums pr-1 hidden lg:inline">{formatFileModified(file.modified)}</span>
+                <span className="w-16 shrink-0 text-[11px] text-gray-500 hidden xl:inline">{getFileExtension(file.name)}</span>
               </div>
             );
           })
@@ -1448,7 +1448,7 @@ export default function FileExplorer({
 
   return (
     <div 
-      className={`explorer-root w-full flex flex-col text-[10px] text-gray-800 font-sans min-h-0 ${(heightMode === 'collapsed' || heightMode === 'compact') ? 'overflow-visible' : 'overflow-hidden'} ${className}`}
+      className={`explorer-root w-full flex flex-col text-[11px] text-gray-800 font-sans min-h-0 ${(heightMode === 'collapsed' || heightMode === 'compact') ? 'overflow-visible' : 'overflow-hidden'} ${className}`}
       tabIndex={0}
       onFocus={(e) => { 
         // Only reset if focusing the root container itself, not child elements
@@ -1465,11 +1465,11 @@ export default function FileExplorer({
       style={{ fontFamily: '"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif' }}
     >
       {/* Header */}
-  <div className="h-8 border-b border-slate-600/50 bg-[#1a2332] flex items-center px-2 relative text-[10px]">
+  <div className="h-8 border-b border-slate-600/50 bg-[#1a2332] flex items-center px-2 relative text-[11px]">
         <div className={`absolute left-1/2 -translate-x-1/2 w-full flex justify-center pointer-events-none ${(heightMode === 'collapsed' || heightMode === 'compact') ? 'z-[9999]' : ''}`}>
           <div
             ref={searchContainerRef}
-            className={`w-full relative pointer-events-auto text-[10px] ${(heightMode === 'collapsed' || heightMode === 'compact') ? 'z-[9999]' : ''}`}
+            className={`w-full relative pointer-events-auto text-[11px] ${(heightMode === 'collapsed' || heightMode === 'compact') ? 'z-[9999]' : ''}`}
             style={{
               maxWidth: 'min(48rem, calc(100% - 160px))',
               margin: '0 auto'
@@ -1478,7 +1478,7 @@ export default function FileExplorer({
             <div className="h-6 px-2 rounded border border-slate-500/50 bg-slate-700/50 flex items-center gap-1 relative">
               <Search className="h-4 w-4 shrink-0 text-slate-400" />
               <input
-                className="flex-1 bg-transparent outline-none text-[10px] pr-5 text-slate-200 placeholder-slate-400"
+                className="flex-1 bg-transparent outline-none text-[11px] pr-5 text-slate-200 placeholder-slate-400"
                 placeholder="Search files..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -1495,7 +1495,7 @@ export default function FileExplorer({
                   }}
                   title="Clear search"
                 >
-                  <span className="text-white text-[10px] leading-none">×</span>
+                  <span className="text-white text-[11px] leading-none">×</span>
                 </button>
               )}
             </div>
@@ -1517,7 +1517,7 @@ export default function FileExplorer({
         <div className="hidden md:flex items-center gap-2 ml-auto pr-1">
           {selectedFolder && heightMode !== 'collapsed' && (
             <button
-              className={`h-6 px-2 rounded border border-slate-500/50 inline-flex items-center gap-1 focus:outline-none active:transform-none text-[10px] text-slate-300 ${viewMode === 'grid' ? 'bg-slate-600/80' : 'bg-slate-700/50'} hover:bg-slate-600/80`}
+              className={`h-6 px-2 rounded border border-slate-500/50 inline-flex items-center gap-1 focus:outline-none active:transform-none text-[11px] text-slate-300 ${viewMode === 'grid' ? 'bg-slate-600/80' : 'bg-slate-700/50'} hover:bg-slate-600/80`}
               onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
               title={viewMode === "grid" ? "Switch to List View" : "Switch to Grid View"}
             >
@@ -1601,7 +1601,7 @@ export default function FileExplorer({
       )}
 
       {heightMode !== 'collapsed' && (
-        <div className="h-5 border-t border-slate-600/50 bg-[#1a2332] flex items-center justify-between px-2 text-[10px] text-slate-400">
+        <div className="h-5 border-t border-slate-600/50 bg-[#1a2332] flex items-center justify-between px-2 text-[11px] text-slate-400">
           <div className="truncate flex-1">
             {viewerStatus && viewerStatus.name ? (
               <span className="truncate">
