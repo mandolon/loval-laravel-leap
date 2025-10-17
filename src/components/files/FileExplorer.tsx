@@ -534,11 +534,11 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
       </div>
 
       {/* Main content - Resizable vertical layout */}
-      <ResizablePanelGroup direction="vertical" className="flex-1">
+      <ResizablePanelGroup direction="vertical" className="flex-1 min-h-0">
         {/* PDF/Image Viewer Panel - Full width at top */}
         <ResizablePanel defaultSize={50} minSize={20}>
           {selectedFile ? (
-            <div className="h-full bg-muted/30 overflow-auto flex items-center justify-center">
+            <div className="h-full w-full bg-muted/30 overflow-auto flex items-center justify-center">
               {isPdfFile ? (
                 <canvas ref={canvasRef} className="max-w-full max-h-full" />
               ) : isImageFile ? (
@@ -555,7 +555,7 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
               )}
             </div>
           ) : (
-            <div className="h-full bg-muted/30 flex items-center justify-center">
+            <div className="h-full w-full bg-muted/30 flex items-center justify-center">
               <div className="text-center text-muted-foreground">
                 <p className="text-lg">No file selected</p>
                 <p className="text-sm">Select a file from the list below</p>
@@ -568,7 +568,7 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
 
         {/* File Explorer Panel - Sidebar + File Table at bottom */}
         <ResizablePanel defaultSize={50} minSize={30}>
-          <div className="h-full flex">
+          <div className="h-full w-full flex">
             {/* Left: Folder tree sidebar - matches file explorer height */}
             <div className="w-48 border-r bg-muted/30 overflow-y-auto flex-shrink-0">
               <div className="py-2">
@@ -598,7 +598,7 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
             </div>
 
             {/* Right: File table */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col min-w-0">
               <div
                 ref={fileTableRef}
                 onDragEnter={() => setIsDraggingFiles(true)}
