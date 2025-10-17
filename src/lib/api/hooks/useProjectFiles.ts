@@ -103,7 +103,10 @@ export const useCreateFolder = (projectId: string) => {
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('Create folder error:', error)
+        throw error
+      }
       return data
     },
     onSuccess: () => {
@@ -114,6 +117,7 @@ export const useCreateFolder = (projectId: string) => {
       })
     },
     onError: (error: Error) => {
+      console.error('Create folder mutation error:', error)
       toast({
         title: 'Error',
         description: error.message,
@@ -130,12 +134,14 @@ export const useUploadProjectFiles = (projectId: string) => {
 
   return useMutation({
     mutationFn: async (input: { files: File[]; folder_id: string }) => {
+      console.log('Upload mutation started:', { fileCount: input.files.length, folderId: input.folder_id })
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
       const uploadedFiles: ProjectFile[] = []
 
       for (const file of input.files) {
+        console.log('Uploading file:', file.name)
         // Upload to storage
         const storagePath = `${projectId}/${input.folder_id}/${file.name}`
         const { error: uploadError } = await supabase.storage
@@ -145,7 +151,11 @@ export const useUploadProjectFiles = (projectId: string) => {
             upsert: false,
           })
 
-        if (uploadError) throw uploadError
+        if (uploadError) {
+          console.error('Storage upload error:', uploadError)
+          throw uploadError
+        }
+        console.log('File uploaded to storage:', storagePath)
 
         // Create file record
         const { data: fileRecord, error: dbError } = await supabase
@@ -165,13 +175,18 @@ export const useUploadProjectFiles = (projectId: string) => {
           .select()
           .single()
 
-        if (dbError) throw dbError
+        if (dbError) {
+          console.error('Database insert error:', dbError)
+          throw dbError
+        }
+        console.log('File record created:', fileRecord.id)
         uploadedFiles.push(fileRecord)
       }
 
       return uploadedFiles
     },
     onSuccess: () => {
+      console.log('Upload successful, invalidating queries')
       queryClient.invalidateQueries({ queryKey: projectFilesKeys.files(projectId) })
       toast({
         title: 'Success',
@@ -179,6 +194,7 @@ export const useUploadProjectFiles = (projectId: string) => {
       })
     },
     onError: (error: Error) => {
+      console.error('Upload mutation error:', error)
       toast({
         title: 'Error',
         description: error.message,

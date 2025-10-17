@@ -177,6 +177,7 @@ const SidebarItem = ({ item, selected, keyboardFocused, onClick, darkMode }: {
       data-selected={selected ? 'true' : 'false'}
       data-focus={keyboardFocused ? 'true' : 'false'}
     >
+      <Folder className="h-3.5 w-3.5 flex-shrink-0" />
       <span className={`truncate text-[10px] ${selected ? 'font-medium' : ''}`}>{item.name}</span>
     </button>
   );
@@ -436,17 +437,17 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
   <div className="flex items-center h-7 border-b border-slate-600/50 bg-[#1e293b] text-[10px] text-slate-400 select-none pl-3 pr-2">
         <div className="flex-[2] pr-2">Folder</div>
         <div className="flex-[1] hidden lg:block">Modified</div>
-        {phase && (
-          <div className="h-5 w-5 flex items-center justify-center">
+        <div className="h-5 w-5 flex items-center justify-center">
+          {phase && (
             <button
               onClick={handleCreateFolderClick}
-              className="h-5 w-5 flex items-center justify-center rounded hover:bg-slate-600/50 transition-colors text-slate-400"
+              className="h-5 w-5 flex items-center justify-center rounded hover:bg-slate-600/50 transition-colors text-slate-400 hover:text-slate-200"
               title="Create new folder"
             >
               <Plus className="h-3.5 w-3.5" />
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
       <div className="flex-1 overflow-y-auto custom-scrollbar relative">
         {/* External drag overlay */}
@@ -767,7 +768,7 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
         <div className="w-28 shrink-0 pr-1 hidden lg:block">Modified</div>
         <div className="w-16 shrink-0 pr-2 hidden xl:block">Type</div>
         <div className="w-6 shrink-0 flex items-center justify-end">
-          {canUpload && (
+          {canUpload && folder && (
             <>
               <input
                 type="file"
@@ -788,7 +789,7 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
                 type="button"
                 onClick={() => document.getElementById('file-explorer-upload-input')?.click()}
                 title="Upload files"
-                className="h-5 w-5 flex items-center justify-center rounded border border-slate-500/50 bg-slate-700/50 text-slate-300 hover:bg-slate-600/80"
+                className="h-5 w-5 flex items-center justify-center rounded hover:bg-slate-600/50 transition-colors text-slate-400 hover:text-slate-200"
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>
@@ -1391,19 +1392,20 @@ export default function FileExplorer({
     }
     
     // Find the folder object to get its ID
-    const phaseFolder = foldersData.find(f => f.name === phaseName && f.parent_folder_id === null);
+    const phaseFolder = foldersData?.find(f => f.name === phaseName && f.parent_folder_id === null);
     if (!phaseFolder) {
       console.warn('Cannot find phase folder:', phaseName);
       return;
     }
     
-    const targetFolder = foldersData.find(f => f.name === folderName && f.parent_folder_id === phaseFolder.id);
+    const targetFolder = foldersData?.find(f => f.name === folderName && f.parent_folder_id === phaseFolder.id);
     if (!targetFolder) {
-      console.warn('Cannot find target folder:', folderName);
+      console.warn('Cannot find target folder:', folderName, 'in phase:', phaseName);
       return;
     }
     
     // Call the upload function with the folder ID
+    console.log('Uploading files to folder:', targetFolder.name, 'with ID:', targetFolder.id);
     if (_onUploadFiles) {
       _onUploadFiles(fileList, targetFolder.id);
     }
