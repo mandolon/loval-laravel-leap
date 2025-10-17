@@ -4,6 +4,7 @@ import type { Task, User } from "@/lib/api/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, ChevronDown, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TaskDetailDialog } from "@/components/TaskDetailDialog";
@@ -153,58 +154,68 @@ const TasksPage = () => {
     if (!creator) return null;
 
     return (
-      <div 
+      <TableRow 
         onClick={() => handleTaskClick(task)}
-        className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 items-center py-3 px-4 hover:bg-muted/50 cursor-pointer border-b last:border-b-0"
+        className="cursor-pointer"
       >
-        {/* Name & Address */}
-        <div>
+        {/* Name & Description */}
+        <TableCell>
           <div className="font-medium">{task.title}</div>
           {task.description && (
-            <div className="text-sm text-muted-foreground truncate">{task.description}</div>
+            <div className="text-sm text-muted-foreground truncate max-w-md">{task.description}</div>
           )}
-        </div>
+        </TableCell>
 
         {/* Files */}
-        <div className="flex items-center justify-center">
-          {fileCount > 0 && (
+        <TableCell className="text-center w-[80px]">
+          {fileCount > 0 ? (
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
               <Plus className="h-4 w-4" />
             </Button>
+          ) : (
+            <span className="text-sm text-muted-foreground">-</span>
           )}
-        </div>
+        </TableCell>
 
         {/* Date Created */}
-        <div className="text-sm text-center min-w-[80px]">
-          {formatDate(task.createdAt)}
-        </div>
+        <TableCell className="text-center w-[120px]">
+          <span className="text-sm">{formatDate(task.createdAt)}</span>
+        </TableCell>
 
         {/* Created By */}
-        <div className="flex justify-center">
-          <Avatar className="h-8 w-8">
-            <AvatarFallback 
-              className="text-white text-xs"
-              style={{ background: creator.avatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
-            >
-              {creator.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-            </AvatarFallback>
-          </Avatar>
-        </div>
-
-        {/* Assigned To */}
-        <div className="flex justify-center gap-1">
-          {assignees.map((assignee) => (
-            <Avatar key={assignee.id} className="h-8 w-8">
+        <TableCell className="text-center w-[100px]">
+          <div className="flex justify-center">
+            <Avatar className="h-8 w-8">
               <AvatarFallback 
                 className="text-white text-xs"
-                style={{ background: assignee.avatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
+                style={{ background: creator.avatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
               >
-                {assignee.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                {creator.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
               </AvatarFallback>
             </Avatar>
-          ))}
-        </div>
-      </div>
+          </div>
+        </TableCell>
+
+        {/* Assigned To */}
+        <TableCell className="text-center w-[120px]">
+          <div className="flex justify-center gap-1">
+            {assignees.length > 0 ? (
+              assignees.map((assignee) => (
+                <Avatar key={assignee.id} className="h-8 w-8">
+                  <AvatarFallback 
+                    className="text-white text-xs"
+                    style={{ background: assignee.avatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
+                  >
+                    {assignee.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+              ))
+            ) : (
+              <span className="text-sm text-muted-foreground">-</span>
+            )}
+          </div>
+        </TableCell>
+      </TableRow>
     );
   };
 
@@ -234,24 +245,24 @@ const TasksPage = () => {
           <span className="text-sm font-medium">{config.count}</span>
         </div>
 
-        {/* Column Headers */}
+        {/* Table */}
         {!isCollapsed && sectionTasks.length > 0 && (
-          <>
-            <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 px-4 py-2 bg-muted/20 border-y text-sm font-medium text-muted-foreground">
-              <div>Name</div>
-              <div className="text-center min-w-[40px]">Files</div>
-              <div className="text-center min-w-[80px]">Date Created</div>
-              <div className="text-center min-w-[40px]">Created by</div>
-              <div className="text-center min-w-[40px]">Assigned to</div>
-            </div>
-
-            {/* Task Rows */}
-            <div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead className="text-center w-[80px]">Files</TableHead>
+                <TableHead className="text-center w-[120px]">Date Created</TableHead>
+                <TableHead className="text-center w-[100px]">Created by</TableHead>
+                <TableHead className="text-center w-[120px]">Assigned to</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {sectionTasks.map(task => (
                 <TaskRow key={task.id} task={task} />
               ))}
-            </div>
-          </>
+            </TableBody>
+          </Table>
         )}
 
         {!isCollapsed && sectionTasks.length === 0 && (
