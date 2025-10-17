@@ -525,7 +525,8 @@ export function FilesTab({ projectId: _projectId, fileToOpen, onFileOpened }: Fi
   }
 
   return (
-    <div ref={containerRef} className="flex-1 flex flex-col overflow-hidden">
+    <div ref={containerRef} className="flex-1 flex flex-col overflow-hidden border-4 border-red-500">
+      {/* DEBUG: Main container - should fill parent */}
       {/* Tab Bar */}
       <TabBar
         tabs={tabs}
@@ -537,10 +538,11 @@ export function FilesTab({ projectId: _projectId, fileToOpen, onFileOpened }: Fi
       />
       
       <div
-        className={`relative flex flex-col min-h-0 border-t-[0.5px] border-l-[1.5px] border-r-[1.5px] border-b-[1.5px] transition-[border-color,box-shadow] duration-150 ${viewerBorderClass}`}
+        className={`relative flex flex-col min-h-0 border-t-[0.5px] border-l-[1.5px] border-r-[1.5px] border-b-[1.5px] transition-[border-color,box-shadow] duration-150 border-4 border-green-500 ${viewerBorderClass}`}
         style={isFullscreen ? { flex: '1 1 auto' } : { flex: '1 1 0%', minHeight: VIEWER_MIN_HEIGHT }}
         onClick={() => !isFullscreen && setActivePane('viewer')}
       >
+        {/* DEBUG: Viewer pane - should take remaining space */}
         <div className="relative flex-1 flex flex-col min-h-0">
           {tabs.map(tab => {
             const isActiveTab = tab.id === activeTabId
@@ -572,10 +574,11 @@ export function FilesTab({ projectId: _projectId, fileToOpen, onFileOpened }: Fi
           </div>
 
           <div
-            className={`relative flex-shrink-0 border-t-[0.5px] border-l-[1.5px] border-r-[1.5px] border-b-[1.5px] transition-[border-color,box-shadow] duration-150 overflow-hidden ${explorerBorderClass}`}
+            className={`relative flex-shrink-0 border-t-[0.5px] border-l-[1.5px] border-r-[1.5px] border-b-[1.5px] transition-[border-color,box-shadow] duration-150 overflow-hidden border-4 border-blue-500 ${explorerBorderClass}`}
             style={{ height: explorerHeight, flex: '0 0 auto' }}
             onClick={() => setActivePane('explorer')}
           >
+            {/* DEBUG: Explorer pane - height: {explorerHeight}px */}
             <FileExplorer 
               onFileSelect={handleFileSelect}
               heightMode={explorerHeightMode}

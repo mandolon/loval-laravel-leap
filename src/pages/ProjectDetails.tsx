@@ -228,10 +228,14 @@ const ProjectDetails = () => {
         </div>
 
         {/* Main Content */}
-        <div className={`flex-1 min-h-0 ${activeTab === 'files' ? 'overflow-hidden' : 'overflow-auto'}`}>
-          <div className={activeTab === 'files' ? 'h-full' : 'p-6 space-y-6'}>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full">
-              <TabsContent value="files" className="mt-0 h-full">
+        <div className={`flex-1 min-h-0 border-8 border-purple-500 ${activeTab === 'files' ? 'overflow-hidden' : 'overflow-auto'}`}>
+          {/* DEBUG: Content wrapper */}
+          <div className={`border-8 border-yellow-500 ${activeTab === 'files' ? 'h-full' : 'p-6 space-y-6'}`}>
+            {/* DEBUG: Inner div */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full border-8 border-orange-500">
+              {/* DEBUG: Tabs wrapper */}
+              <TabsContent value="files" className="mt-0 h-full border-8 border-pink-500">
+                {/* DEBUG: TabsContent */}
                 <FilesTab projectId={id || ''} />
               </TabsContent>
 
