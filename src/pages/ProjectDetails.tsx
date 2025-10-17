@@ -450,6 +450,32 @@ const ProjectDetails = () => {
                 </CardContent>
               </Card>
 
+              {/* Project Address */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Project Address</CardTitle>
+                  </div>
+                  <EditProjectAddressDialog
+                    address={project.address}
+                    onUpdate={(address) => handleUpdateProject({ address })}
+                  />
+                </CardHeader>
+                <CardContent>
+                  <p className="font-medium">
+                    {typeof project.address === 'object' && project.address 
+                      ? (() => {
+                          const { streetNumber, streetName, city, state, zipCode } = project.address;
+                          const street = [streetNumber, streetName].filter(Boolean).join(' ');
+                          const cityState = [city, state].filter(Boolean).join(', ');
+                          const parts = [street, cityState, zipCode].filter(Boolean);
+                          return parts.length > 0 ? parts.join(', ') : 'No address provided';
+                        })()
+                      : 'No address provided'}
+                  </p>
+                </CardContent>
+              </Card>
+
               {/* Project Narrative */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
@@ -535,32 +561,6 @@ const ProjectDetails = () => {
                 </CardHeader>
                 <CardContent>
                   <ProjectMembersTable projectId={id || ''} workspaceId={workspaceId || ''} />
-                </CardContent>
-              </Card>
-
-              {/* Project Address */}
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Project Address</CardTitle>
-                  </div>
-                  <EditProjectAddressDialog
-                    address={project.address}
-                    onUpdate={(address) => handleUpdateProject({ address })}
-                  />
-                </CardHeader>
-                <CardContent>
-                  <p className="font-medium">
-                    {typeof project.address === 'object' && project.address 
-                      ? (() => {
-                          const { streetNumber, streetName, city, state, zipCode } = project.address;
-                          const street = [streetNumber, streetName].filter(Boolean).join(' ');
-                          const cityState = [city, state].filter(Boolean).join(', ');
-                          const parts = [street, cityState, zipCode].filter(Boolean);
-                          return parts.length > 0 ? parts.join(', ') : 'No address provided';
-                        })()
-                      : 'No address provided'}
-                  </p>
                 </CardContent>
               </Card>
 
