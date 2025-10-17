@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { MouseEvent as ReactMouseEvent } from 'react'
 import FileExplorer from './FileExplorer'
-import PDFViewerPane from './PDFViewerPane'
-import ImageViewerPane from './ImageViewerPane'
+import PDFViewer from './PDFViewer'
+import ImageViewer from './ImageViewer'
 import { TabBar } from './TabBar'
 import { generateFileId } from '@/lib/utils/uuid'
 import { useUploadProjectFiles } from '@/lib/api/hooks/useProjectFiles'
@@ -439,7 +439,7 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps)
   const renderViewerForTab = (tab: ViewerTab, isActiveTab: boolean) => {
     if (tab.viewerMode === 'pdf' && tab.file) {
       return (
-        <PDFViewerPane
+        <PDFViewer
           file={tab.file}
           onClose={isFullscreen ? handleCloseViewer : undefined}
           isFullscreen={isFullscreen}
@@ -458,7 +458,7 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps)
 
     if (tab.viewerMode === 'image' && tab.file) {
       return (
-        <ImageViewerPane
+        <ImageViewer
           file={tab.file}
           onClose={isFullscreen ? handleCloseViewer : undefined}
           isFullscreen={isFullscreen}

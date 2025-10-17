@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import PDFViewerPane from './PDFViewerPane';
-import ImageViewerPane from './ImageViewerPane';
+import PDFViewer from './PDFViewer';
+import ImageViewer from './ImageViewer';
 import { FileRecord } from './types';
 
 interface FileViewerPaneProps {
@@ -73,7 +73,7 @@ export default function FileViewerPane({
 
   if (isPdf) {
     return (
-      <PDFViewerPane
+      <PDFViewer
         file={{ url: fileUrl, name: file.filename, size: file.filesize, modified: file.updated_at }}
       />
     );
@@ -81,7 +81,7 @@ export default function FileViewerPane({
 
   if (isImage) {
     return (
-      <ImageViewerPane
+      <ImageViewer
         file={{ url: fileUrl, name: file.filename, size: file.filesize, modified: file.updated_at }}
       />
     );
