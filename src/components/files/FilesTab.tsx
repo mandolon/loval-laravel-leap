@@ -84,7 +84,7 @@ interface FilesTabProps {
   onFileOpened?: () => void
 }
 
-export function FilesTab({ projectId: _projectId, fileToOpen, onFileOpened }: FilesTabProps) {
+export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps) {
   const initialTabRef = useRef<ViewerTab | null>(null)
   if (!initialTabRef.current) {
     initialTabRef.current = createTab()
@@ -577,6 +577,7 @@ export function FilesTab({ projectId: _projectId, fileToOpen, onFileOpened }: Fi
             onClick={() => setActivePane('explorer')}
           >
             <FileExplorer 
+              projectId={projectId}
               onFileSelect={handleFileSelect}
               heightMode={explorerHeightMode}
               onToggleHeight={cycleExplorerHeight}
@@ -598,6 +599,7 @@ export function FilesTab({ projectId: _projectId, fileToOpen, onFileOpened }: Fi
           onClick={() => setActivePane('explorer')}
         >
           <FileExplorer 
+            projectId={projectId}
             onFileSelect={handleFileSelect}
             heightMode={explorerHeightMode}
             onToggleHeight={cycleExplorerHeight}
