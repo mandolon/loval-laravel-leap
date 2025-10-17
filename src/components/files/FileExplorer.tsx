@@ -1,605 +1,1637 @@
-// src/components/files/FileExplorer.tsx
-// File browser component - folder tree and file table
-// Separated from viewer for better architecture
-
-import { useState, useRef, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Loader2,
+import { useState, useMemo, useEffect, useRef, useCallback, type RefObject } from 'react';
+import { createPortal } from 'react-dom';
+import { useQuery } from '@tanstack/react-query';
+import { 
+  Folder, 
+  Search, 
+  Grid, 
+  List,
   File,
   FileText,
   Image as ImageIcon,
-  Folder as FolderIcon,
-  ChevronRight as ChevronRightIcon,
-  AlertCircle,
-  CheckCircle2,
-  MoreVertical,
+  Minus,
+  Plus,
+  ChevronUp
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Progress } from '@/components/ui/progress';
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
-import { Folder, FileRecord, TableItem, UploadingFile } from './types';
+import { MOCK_PROJECT, MOCK_FILES } from '@/data/mock';
 
-// ============================================
-// MAIN COMPONENT
-// ============================================
-interface FileExplorerProps {
-  projectId: string;
-  onFileSelect: (file: FileRecord) => void;
-  selectedFileId?: string | null;
+// Utility: format bytes to human readable (simplistic)
+function formatFileSize(bytes: number) {
+  if (!bytes && bytes !== 0) return '—';
+  const thresh = 1024;
+  if (bytes < thresh) return bytes + ' B';
+  const units = ['KB','MB','GB','TB'];
+  let u = -1; let value = bytes;
+  do { value /= thresh; ++u; } while (value >= thresh && u < units.length - 1);
+  return value.toFixed(value >= 10 ? 0 : 1) + ' ' + units[u];
 }
 
-export const FileExplorer = ({ projectId, onFileSelect, selectedFileId: externalSelectedFileId }: FileExplorerProps) => {
-  // State
-  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
-  const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
-  const [isDraggingFiles, setIsDraggingFiles] = useState(false);
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+function ensureUniqueNameInList(baseName: string, phaseName: string, folderName: string, existing: any[]) {
+  let name = baseName;
+  const extIdx = baseName.lastIndexOf('.');
+  const stem = extIdx > 0 ? baseName.slice(0, extIdx) : baseName;
+  const ext = extIdx > 0 ? baseName.slice(extIdx) : '';
+  let counter = 1;
+  const normalizedPhase = phaseName.toLowerCase();
+  const normalizedFolder = folderName.toLowerCase();
+  while (existing.some(item => item.phase?.toLowerCase() === normalizedPhase && item.folder?.toLowerCase() === normalizedFolder && item.name === name)) {
+    name = `${stem} (${counter++})${ext}`;
+  }
+  return name;
+}
 
-  const fileTableRef = useRef<HTMLDivElement>(null);
-  const queryClient = useQueryClient();
+const FileIcon = ({ fileName, className }: { fileName: string; className: string }) => {
+  const extension = fileName.split('.').pop()?.toLowerCase();
+  
+  if (extension === 'pdf') {
+    return <FileText className={className} />;
+  } else if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'].includes(extension || '')) {
+    return <ImageIcon className={className} />;
+  }
+  
+  return <File className={className} />;
+};
 
-  // ============================================
-  // QUERIES
-  // ============================================
+// Floating (portal) dropdown to escape clipping/overflow contexts
+const FloatingSearchDropdown = ({ 
+  anchorRef, 
+  results, 
+  onSelect, 
+  onClose: _onClose, 
+  searchQuery, 
+  keyboardSelectedIndex, 
+  placement = 'up', 
+  darkMode 
+}: {
+  anchorRef: RefObject<HTMLElement>;
+  results: any[];
+  onSelect: (result: any) => void;
+  onClose: () => void;
+  searchQuery: string;
+  keyboardSelectedIndex: number;
+  placement?: 'up' | 'down';
+  darkMode: boolean;
+}) => {
+  const [coords, setCoords] = useState<{left: number; width: number; top: number; placement: string} | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Query: Get all folders for project
-  const { data: folders = [], isLoading: foldersLoading } = useQuery({
-    queryKey: ['folders', projectId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('folders')
-        .select('*')
-        .eq('project_id', projectId)
-        .is('deleted_at', null)
-        .order('is_system_folder', { ascending: false })
-        .order('name', { ascending: true });
+  const recalc = useCallback(() => {
+    const anchor = anchorRef.current;
+    if (!anchor) return;
+    const r = anchor.getBoundingClientRect();
+    setCoords({
+      left: r.left,
+      width: r.width,
+      // For 'up' we anchor to the top edge then translate -100%
+      top: placement === 'up' ? r.top - 4 : r.bottom + 4,
+      placement
+    });
+  }, [anchorRef, placement]);
 
-      if (error) throw error;
-      return (data || []) as Folder[];
-    },
-    enabled: !!projectId,
-  });
-
-  // Query: Get files in selected folder
-  const { data: files = [], isLoading: filesLoading, refetch: refetchFiles } = useQuery({
-    queryKey: ['files', projectId, selectedFolderId],
-    queryFn: async () => {
-      if (!selectedFolderId) return [];
-
-      const { data, error } = await supabase
-        .from('files')
-        .select('*')
-        .eq('project_id', projectId)
-        .eq('folder_id', selectedFolderId)
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return (data || []) as FileRecord[];
-    },
-    enabled: !!projectId && !!selectedFolderId,
-  });
-
-  // ============================================
-  // MUTATIONS
-  // ============================================
-
-  // Mutation: Upload file
-  const uploadFileMutation = useMutation({
-    mutationFn: async (input: { file: File; folderId: string }) => {
-      const { file, folderId } = input;
-
-      // Get current user
-      const session = await supabase.auth.getSession();
-      const userId = session.data.session?.user.id;
-      if (!userId) throw new Error('Not authenticated');
-
-      // Generate unique storage path
-      const fileId = crypto.randomUUID();
-      const timestamp = Date.now();
-      const storagePath = `project/${projectId}/files/${folderId}/${fileId}_${timestamp}_${file.name}`;
-
-      // Upload to storage
-      const { error: uploadError } = await supabase.storage
-        .from('project-files')
-        .upload(storagePath, file);
-
-      if (uploadError) throw uploadError;
-
-      // Insert file record
-      const { data, error: insertError } = await supabase
-        .from('files')
-        .insert({
-          id: fileId,
-          short_id: `F-${Math.random().toString(36).substr(2, 4)}`,
-          project_id: projectId,
-          folder_id: folderId,
-          filename: file.name,
-          filesize: file.size,
-          mimetype: file.type,
-          storage_path: storagePath,
-          version_number: 1,
-          download_count: 0,
-          uploaded_by: userId,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (insertError) {
-        // Cleanup storage on error
-        await supabase.storage.from('project-files').remove([storagePath]);
-        throw insertError;
-      }
-
-      return data as FileRecord;
-    },
-    onSuccess: () => {
-      refetchFiles();
-      queryClient.invalidateQueries({ queryKey: ['files', projectId, selectedFolderId] });
-    },
-  });
-
-  // Mutation: Delete file
-  const deleteFileMutation = useMutation({
-    mutationFn: async (fileId: string) => {
-      const { error } = await supabase
-        .from('files')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', fileId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      refetchFiles();
-    },
-  });
-
-  // Mutation: Download file
-  const downloadFileMutation = useMutation({
-    mutationFn: async (file: FileRecord) => {
-      // Get signed URL
-      const { data, error } = await supabase.storage
-        .from('project-files')
-        .createSignedUrl(file.storage_path, 60);
-
-      if (error) throw error;
-      if (!data) throw new Error('No signed URL');
-
-      // Increment download count
-      await supabase
-        .from('files')
-        .update({ download_count: file.download_count + 1 })
-        .eq('id', file.id);
-
-      // Trigger download
-      const link = document.createElement('a');
-      link.href = data.signedUrl;
-      link.download = file.filename;
-      link.click();
-    },
-    onSuccess: () => {
-      refetchFiles();
-      toast.success('Download started');
-    },
-  });
-
-  // ============================================
-  // EFFECTS
-  // ============================================
-
-  // Auto-select first system folder
   useEffect(() => {
-    if (!selectedFolderId && folders.length > 0) {
-      const systemFolder = folders.find(f => f.is_system_folder && !f.parent_folder_id);
-      if (systemFolder) {
-        setSelectedFolderId(systemFolder.id);
-        setExpandedFolders(new Set([systemFolder.id]));
-      }
+    recalc();
+    window.addEventListener('resize', recalc);
+    window.addEventListener('scroll', recalc, true);
+    const id = setInterval(recalc, 750);
+    return () => {
+      window.removeEventListener('resize', recalc);
+      window.removeEventListener('scroll', recalc, true);
+      clearInterval(id);
+    };
+  }, [recalc]);
+
+  if (!results.length || !coords) return null;
+
+  const body = (
+    <div
+      ref={dropdownRef}
+      data-search-dropdown
+      style={{
+        position: 'fixed',
+        left: coords.left,
+        top: coords.top,
+        width: coords.width,
+        zIndex: 100000,
+        transform: coords.placement === 'up' ? 'translateY(-100%)' : 'translateY(0)'
+      }}
+      className="bg-popover border border-border rounded-md shadow-xl max-h-96 overflow-y-auto custom-scrollbar"
+    >
+      <div className="px-3 py-1.5 text-[10px] text-muted-foreground bg-muted border-b border-border/60">
+        {results.length} result{results.length !== 1 ? 's' : ''} for "{searchQuery}"
+      </div>
+      {results.map((result, index) => {
+        const isKeyboardSelected = keyboardSelectedIndex === index;
+        return (
+          <div
+            key={`${result.type}-${result.name}-${index}`}
+            className={`flex items-center px-3 py-1 cursor-pointer border-b border-border/60 last:border-b-0 ${
+              isKeyboardSelected ? 'bg-accent text-accent-foreground' : 'hover:bg-muted/60'
+            }`}
+            onClick={() => onSelect(result)}
+          >
+            <FileIcon
+              fileName={result.name}
+              className={`h-4 w-4 mr-3 flex-shrink-0 ${darkMode ? 'text-muted-foreground' : 'text-gray-600'}`}
+            />
+            <div className="flex-1 min-w-0">
+              <div className={`text-[10px] truncate ${darkMode ? 'text-foreground' : 'text-gray-800'}`}>{result.name}</div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+  return createPortal(body, document.body);
+};
+
+const SidebarItem = ({ item, selected, keyboardFocused, onClick, darkMode }: {
+  item: any;
+  selected: boolean;
+  keyboardFocused: boolean;
+  onClick: () => void;
+  darkMode: boolean;
+}) => {
+  const getTextColor = () => {
+    if (!darkMode) {
+      return selected ? "text-gray-900" : keyboardFocused ? "text-gray-800" : "text-gray-700";
     }
-  }, [folders, selectedFolderId]);
+    return "";
+  };
+  
+  const getTextStyle = () => {
+    if (!darkMode) return {};
+    if (selected) return { color: 'hsl(var(--foreground))' };
+    if (keyboardFocused) return { color: 'hsl(var(--foreground))' };
+    return { color: 'hsl(var(--muted-foreground))' };
+  };
+  
+  return (
+    <button
+      onClick={onClick}
+      className={`nav-row win-focusable win-hover-outline w-full text-left px-2.5 h-7 flex items-center gap-2 rounded-md transition-colors focus:outline-none active:transform-none border-0 ${getTextColor()}`}
+      style={getTextStyle()}
+      data-selected={selected ? 'true' : 'false'}
+      data-focus={keyboardFocused ? 'true' : 'false'}
+    >
+      <span className={`truncate text-[10px] ${selected ? 'font-medium' : ''}`}>{item.name}</span>
+    </button>
+  );
+};
 
-  // ============================================
-  // HANDLERS
-  // ============================================
+const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardSelectedIndex, onFolderClick, allFiles, darkMode, onCreateFolder, onFolderReorder, onUploadFiles }: {
+  phase: any;
+  folders: any[];
+  selectedFolder: any;
+  keyboardFocused: boolean;
+  keyboardSelectedIndex: number;
+  onFolderClick: (folder: any) => void;
+  allFiles: any[];
+  darkMode: boolean;
+  onCreateFolder?: (folderName: string) => void;
+  onFolderReorder?: (draggedFolder: any, targetFolder: any) => void;
+  onUploadFiles?: (fileList: File[], options?: { phaseName?: string; folderName?: string; selectFolder?: boolean }) => void;
+}) => {
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const handleMoveFolderUp = useCallback((folder: any) => {
+    if (!onFolderReorder || !folder) return;
+    const currentIndex = folders.findIndex(f => f.name === folder.name);
+    if (currentIndex <= 0) return;
+    const targetFolder = folders[currentIndex - 1];
+    if (targetFolder) {
+      onFolderReorder(folder, targetFolder);
+    }
+  }, [folders, onFolderReorder]);
 
-  const handleFilesDrop = async (e: React.DragEvent) => {
+  const formatFolderDate = (date: string) => {
+    if (!date) return '—';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '—';
+    const month = d.toLocaleString('en-US', { month: 'short' });
+    const day = d.getDate();
+    const year = String(d.getFullYear()).slice(-2);
+    return `${month} ${day}, ${year}`;
+  };
+
+  const getMostRecentFileDate = (phaseName: string, folderName: string) => {
+    if (!phaseName || !folderName) return '—';
+    const folderFiles = (allFiles || []).filter(f => f.phase === phaseName && f.folder === folderName);
+    if (!folderFiles.length) return '—';
+    const mostRecent = folderFiles.reduce((acc, f) => {
+      const d = new Date(f.modified);
+      return (acc && acc.getTime() > d.getTime()) ? acc : d;
+    }, null as Date | null);
+    return formatFolderDate(mostRecent?.toISOString() || '');
+  };
+
+  const handleCreateFolderClick = () => {
+    if (!phase) return;
+    setIsCreatingFolder(true);
+    setNewFolderName('');
+    // Focus input after render
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const handleSaveFolder = () => {
+    if (newFolderName.trim() && onCreateFolder) {
+      onCreateFolder(newFolderName.trim());
+      setIsCreatingFolder(false);
+      setNewFolderName('');
+    }
+  };
+
+  const handleCancelFolder = () => {
+    // Only cancel if there's no text entered
+    if (!newFolderName.trim()) {
+      setIsCreatingFolder(false);
+      setNewFolderName('');
+    } else {
+      // If text was entered, save it
+      handleSaveFolder();
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSaveFolder();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setIsCreatingFolder(false);
+      setNewFolderName('');
+    }
+  };
+
+  // External folder drop handlers (for dragging folders from desktop)
+  const [isExternalDragOver, setIsExternalDragOver] = useState(false);
+  const externalDragCounterRef = useRef(0);
+  
+  const handleExternalDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsDraggingFiles(false);
+    externalDragCounterRef.current += 1;
+    setIsExternalDragOver(true);
+  };
 
-    if (!selectedFolderId) {
-      toast.error('Please select a folder first');
+  const handleExternalDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'copy';
+    }
+  };
+
+  const handleExternalDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    externalDragCounterRef.current = Math.max(0, externalDragCounterRef.current - 1);
+    if (externalDragCounterRef.current === 0) {
+      setIsExternalDragOver(false);
+    }
+  };
+
+  const handleExternalDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    externalDragCounterRef.current = 0;
+    setIsExternalDragOver(false);
+    
+    console.log('[FileExplorer] External drop detected')
+    console.log('[FileExplorer] Phase:', phase)
+    console.log('[FileExplorer] onCreateFolder available:', !!onCreateFolder)
+    console.log('[FileExplorer] DataTransfer items:', e.dataTransfer?.items?.length)
+    console.log('[FileExplorer] DataTransfer files:', e.dataTransfer?.files?.length)
+    
+    if (!phase || !onCreateFolder) {
+      console.warn('[FileExplorer] Drop cancelled - no phase or onCreateFolder handler')
       return;
     }
+    
+    // Handle dropped items (folders and files)
+    const items = e.dataTransfer?.items;
+    const files = e.dataTransfer?.files;
+    
+    const createdFolderNames = new Set<string>();
 
-    const fileList = e.dataTransfer.files;
-    if (fileList.length === 0) return;
+    const tryCreateFolder = (folderName: string) => {
+      const normalized = folderName.trim();
+      if (!normalized) return null;
+      const lower = normalized.toLowerCase();
+      if (createdFolderNames.has(lower)) {
+        return normalized;
+      }
+      const folderExists = folders.some(f => f.name.toLowerCase() === lower);
+      if (!folderExists) {
+        onCreateFolder(normalized);
+      }
+      createdFolderNames.add(lower);
+      return normalized;
+    };
 
-    // Process each file
-    for (let i = 0; i < fileList.length; i++) {
-      const file = fileList[i];
-      const uploadId = `${file.name}-${Date.now()}`;
+    const readDirectoryFiles = async (directoryEntry: any): Promise<File[]> => {
+      const collected: File[] = [];
 
-      // Add to uploading queue
-      setUploadingFiles(prev => [...prev, {
-        id: uploadId,
-        filename: file.name,
-        progress: 0,
-        status: 'pending',
-      }]);
+      if (!directoryEntry?.createReader) {
+        return collected;
+      }
+
+      const reader = directoryEntry.createReader();
+      const readEntries = (): Promise<any[]> => new Promise((resolve, reject) => {
+        reader.readEntries((batch: any[]) => resolve(batch), reject);
+      });
 
       try {
-        // Simulate progress
-        setUploadingFiles(prev =>
-          prev.map(uf => uf.id === uploadId ? { ...uf, status: 'uploading', progress: 30 } : uf)
-        );
+        while (true) {
+          const batch = await readEntries();
+          if (!batch.length) break;
+          await Promise.all(batch.map(async (entry: any) => {
+            if (entry.isFile) {
+              const file: File = await new Promise((resolve, reject) => entry.file(resolve, reject));
+              collected.push(file);
+            } else if (entry.isDirectory) {
+              // Skip nested folders
+            }
+          }));
+        }
+      } catch (err) {
+        // Failed to read directory entries
+      }
 
-        // Upload file
-        await uploadFileMutation.mutateAsync({
-          file,
-          folderId: selectedFolderId,
-        });
+      return collected;
+    };
 
-        // Mark complete
-        setUploadingFiles(prev =>
-          prev.map(uf => uf.id === uploadId ? { ...uf, status: 'complete', progress: 100 } : uf)
-        );
+    const folderFilesMap = new Map<string, File[]>();
 
-        // Remove from queue after 2 seconds
-        setTimeout(() => {
-          setUploadingFiles(prev => prev.filter(uf => uf.id !== uploadId));
-        }, 2000);
-      } catch (error) {
-        setUploadingFiles(prev =>
-          prev.map(uf =>
-            uf.id === uploadId
-              ? { ...uf, status: 'error', error: error instanceof Error ? error.message : 'Upload failed' }
-              : uf
-          )
-        );
+    if (items) {
+      const itemArray = Array.from(items);
+      await Promise.all(itemArray.map(async (item, index) => {
+        if (item.kind === 'file') {
+          const entry = item.webkitGetAsEntry?.();
+
+          if (entry?.isDirectory) {
+            const folderName = entry.name;
+            const filesFromDir = await readDirectoryFiles(entry);
+            if (!filesFromDir.length) {
+              return;
+            }
+
+            const normalizedName = tryCreateFolder(folderName);
+            if (!normalizedName) return;
+
+            const existing = folderFilesMap.get(normalizedName) || [];
+            existing.push(...filesFromDir);
+            folderFilesMap.set(normalizedName, existing);
+          }
+        }
+      }));
+    }
+    
+    if ((!items || folderFilesMap.size === 0) && files && files.length > 0) {
+      Array.from(files).forEach((file, index) => {
+        const relativePath = (file as any).webkitRelativePath as string | undefined;
+        if (relativePath) {
+          const segments = relativePath.split(/[\\/]/).filter(Boolean);
+          if (segments.length > 2) {
+            return;
+          }
+          const folderName = segments[0] || file.name;
+          const normalizedName = tryCreateFolder(folderName);
+          if (normalizedName) {
+            const existing = folderFilesMap.get(normalizedName) || [];
+            existing.push(file);
+            folderFilesMap.set(normalizedName, existing);
+          }
+        }
+      });
+    }
+
+    if (folderFilesMap.size > 0) {
+      const folderNames = Array.from(folderFilesMap.keys());
+      folderNames.forEach((folderName, index) => {
+        const fileList = folderFilesMap.get(folderName) || [];
+        if (fileList.length && onUploadFiles) {
+          onUploadFiles(fileList, {
+            phaseName: phase.name,
+            folderName,
+            selectFolder: index === folderNames.length - 1
+          });
+        }
+      });
+    }
+  };
+
+  return (
+    <div 
+      className={`flex flex-col flex-1 overflow-hidden bg-card ${isExternalDragOver ? 'ring-2 ring-primary ring-opacity-50' : ''}`}
+      onDragEnter={handleExternalDragEnter}
+      onDragOver={handleExternalDragOver}
+      onDragLeave={handleExternalDragLeave}
+      onDrop={handleExternalDrop}
+    >
+  <div className="flex items-center h-7 border-b border-border bg-muted dark:!bg-slate-900/30 text-[10px] text-muted-foreground select-none pl-3 pr-2">
+        <div className="flex-[2] pr-2">Folder</div>
+        <div className="flex-[1] hidden lg:block">Modified</div>
+        {phase && (
+          <div className="h-5 w-5 flex items-center justify-center">
+            <button
+              onClick={handleCreateFolderClick}
+              className="h-5 w-5 flex items-center justify-center rounded hover:bg-gray-200 transition-colors"
+              style={darkMode ? { color: 'hsl(var(--muted-foreground))' } : {}}
+              title="Create new folder"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
+      <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+        {/* External drag overlay */}
+        {isExternalDragOver && (
+          <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary/60 flex items-center justify-center text-primary z-10 pointer-events-none">
+            <div className="text-center">
+              <div className="text-[10px] font-medium leading-normal tracking-normal text-primary">
+                Drop folders here to add them
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {!phase ? (
+          <div className="flex items-center justify-center h-32 text-gray-400 text-[10px]">
+            Select a phase
+          </div>
+        ) : (
+          <>
+            {/* New folder input row */}
+            {isCreatingFolder && (
+        <div className="flex items-center h-7 border-b border-border pl-3 pr-3 bg-card">
+                <div className="flex-[2] pr-2 min-w-0 flex items-center">
+                  <Folder className={`h-3.5 w-3.5 mr-2 ${darkMode ? 'text-muted-foreground' : 'text-gray-500'}`} />
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={newFolderName}
+                    onChange={(e) => setNewFolderName(e.target.value)}
+                    onBlur={handleCancelFolder}
+                    onKeyDown={handleKeyDown}
+                    className="flex-1 bg-transparent outline-none text-[10px] border-none focus:ring-0 p-0"
+                    style={darkMode ? { color: 'hsl(var(--foreground))' } : {}}
+                    placeholder="New folder name..."
+                    autoFocus
+                  />
+                </div>
+                <span className="flex-[1] text-[10px] text-gray-400 tabular-nums hidden lg:block">
+                  —
+                </span>
+                <div className="h-5 w-5"></div>
+              </div>
+            )}
+            
+            {/* Existing folders */}
+            {folders.length === 0 && !isCreatingFolder ? (
+              <div className="flex items-center justify-center h-32 text-gray-400 text-[10px]">
+                No folders found
+              </div>
+            ) : (
+              folders.map((f, index) => {
+            const isSelected = selectedFolder && selectedFolder.name === f.name;
+            const isKeyboardFocused = keyboardFocused && keyboardSelectedIndex === index;
+            const isFirstFolder = index === 0;
+            return (
+              <div
+                key={f.name}
+                className={`group nav-row win-hover-outline win-focusable flex items-center h-7 border-b border-gray-100 pl-3 pr-3 cursor-pointer transition-colors`}
+                onClick={() => onFolderClick(f)}
+                data-selected={isSelected ? 'true' : 'false'}
+                data-focus={isKeyboardFocused ? 'true' : 'false'}
+                tabIndex={0}
+                style={darkMode ? {
+                  borderColor: 'hsl(var(--border))',
+                  ...(isSelected ? { backgroundColor: 'hsl(var(--accent))' } : {}),
+                  ...(!isSelected && isKeyboardFocused ? { backgroundColor: 'hsl(var(--secondary))' } : {})
+                } : {}}
+              >
+                <div className={`flex items-center flex-[2] pr-2 min-w-0 ${
+                  isSelected ? "text-gray-900 font-medium" :
+                  isKeyboardFocused ? "text-gray-800" :
+                  "text-gray-700"
+                }`} style={darkMode ? { color: (isSelected || isKeyboardFocused) ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))' } : {}}>
+                  <Folder className="h-3.5 w-3.5 mr-2 text-gray-500" style={darkMode ? { color: 'hsl(var(--muted-foreground))' } : {}} />
+                  <span className="truncate text-[10px]">{f.name}</span>
+                </div>
+                <span className="flex-[1] text-[10px] text-gray-500 tabular-nums hidden lg:block">
+                  {getMostRecentFileDate(phase?.name, f.name)}
+                </span>
+                <div className="h-5 w-5 flex items-center justify-center">
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleMoveFolderUp(f);
+                    }}
+                    disabled={isFirstFolder}
+                    className={`h-4 w-4 flex items-center justify-center rounded transition-opacity opacity-0 group-hover:opacity-100 ${
+                      isFirstFolder ? 'cursor-not-allowed text-gray-300' : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                    style={darkMode ? {
+                      color: isFirstFolder ? 'hsl(var(--muted-foreground) / 0.4)' : 'hsl(var(--muted-foreground))'
+                    } : {}}
+                    aria-label="Move folder up"
+                    title={isFirstFolder ? 'Top folder' : 'Move folder up'}
+                  >
+                    <ChevronUp className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyboardSelectedIndex, onFileClick, onUploadFiles, canUpload, darkMode }: {
+  folder: any;
+  files: any[];
+  viewMode: string;
+  selectedFile: any;
+  keyboardFocused: boolean;
+  keyboardSelectedIndex: number;
+  onFileClick: (file: any) => void;
+  onUploadFiles?: (files: File[]) => void;
+  canUpload: boolean;
+  darkMode: boolean;
+}) => {
+  // Drag and drop state
+  const [isDragOver, setIsDragOver] = useState(false);
+  // Use a ref so increments/decrements are synchronous and not subject to stale state
+  const dragCounterRef = useRef(0);
+  
+  const formatFileModified = (dateString: string) => {
+    if (!dateString) return '—';
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    const month = d.toLocaleString('en-US', { month: 'short' });
+    const day = d.getDate();
+    const year = String(d.getFullYear()).slice(-2);
+    const hasTime = /\d{1,2}:\d{2}/.test(dateString);
+    let hours = d.getHours();
+    let minutes = d.getMinutes();
+    if (!hasTime) {
+      hours = 9; 
+      minutes = 0;
+    }
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const hr12 = hours % 12 === 0 ? 12 : hours % 12;
+    const mm = String(minutes).padStart(2,'0');
+    return `${month} ${day}, ${year} ${hr12}:${mm} ${ampm}`;
+  };
+
+  // Drag and drop handlers
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current += 1;
+
+    // Only show drag over state if files are being dragged (not text/other content)
+    if (e.dataTransfer?.items && e.dataTransfer.items.length > 0) {
+      const hasFiles = Array.from(e.dataTransfer.items).some((item) => item.kind === 'file');
+      if (hasFiles) setIsDragOver(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Decrement and clamp to zero
+    dragCounterRef.current = Math.max(0, dragCounterRef.current - 1);
+    if (dragCounterRef.current === 0) {
+      setIsDragOver(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Only allow copy effect for files
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      const hasFiles = Array.from(e.dataTransfer.items).some(item => item.kind === 'file');
+      e.dataTransfer.dropEffect = hasFiles ? 'copy' : 'none';
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    dragCounterRef.current = 0;
+    
+    if (!canUpload || !onUploadFiles) return;
+    
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      // Filter out any invalid files if needed
+      const validFiles = files.filter(file => file.size > 0);
+      if (validFiles.length > 0) {
+        onUploadFiles(validFiles);
       }
     }
   };
 
-  // ============================================
-  // DATA PROCESSING
-  // ============================================
+  // As a safety net, hide overlay if drag ends anywhere (e.g., cancelled drop)
+  useEffect(() => {
+    const onDragEnd = () => {
+      dragCounterRef.current = 0;
+      setIsDragOver(false);
+    };
+    window.addEventListener('dragend', onDragEnd);
+    window.addEventListener('drop', onDragEnd);
+    return () => {
+      window.removeEventListener('dragend', onDragEnd);
+      window.removeEventListener('drop', onDragEnd);
+    };
+  }, []);
 
-  // Build table items (folders + files)
-  const tableItems: TableItem[] = [];
+  const getFileExtension = (name: string) => {
+    if (!name || typeof name !== 'string') return '';
+    const lastDot = name.lastIndexOf('.');
+    if (lastDot === -1 || lastDot === name.length - 1) return '';
+    return name.slice(lastDot + 1).toUpperCase();
+  };
 
-  // Add subfolders
-  const subfolders = folders.filter(f => f.parent_folder_id === selectedFolderId);
-  subfolders.forEach(folder => {
-    tableItems.push({
-      type: 'folder',
-      id: folder.id,
-      name: folder.name,
-    });
-  });
-
-  // Add files
-  files.forEach(file => {
-    tableItems.push({
-      type: 'file',
-      id: file.id,
-      name: file.filename,
-      modifiedDate: file.updated_at,
-      filesize: file.filesize || 0,
-      mimetype: file.mimetype || '',
-      storagePath: file.storage_path,
-    });
-  });
-
-  // ============================================
-  // RENDER
-  // ============================================
-  return (
-    <div className="h-full flex bg-background border-t">
-      {/* Left: Folder tree sidebar */}
-      <div className="w-48 border-r bg-muted/30 overflow-y-auto flex-shrink-0">
-          <div className="py-2">
-            {foldersLoading ? (
-              <div className="p-4 text-sm text-muted-foreground">Loading folders...</div>
-            ) : (
-              folders
-                .filter(f => f.is_system_folder && !f.parent_folder_id)
-                .map(folder => (
-                  <FolderTreeItem
-                    key={folder.id}
-                    folder={folder}
-                    folders={folders}
-                    selectedFolderId={selectedFolderId}
-                    onSelectFolder={setSelectedFolderId}
-                    expandedFolders={expandedFolders}
-                    onToggleExpanded={(id) => {
-                      const newExpanded = new Set(expandedFolders);
-                      if (newExpanded.has(id)) {
-                        newExpanded.delete(id);
-                      } else {
-                        newExpanded.add(id);
-                      }
-                      setExpandedFolders(newExpanded);
-                    }}
-                    depth={0}
-                  />
-                ))
-            )}
-        </div>
-      </div>
-
-      {/* Right: File table */}
-      <div className="flex-1 flex flex-col min-w-0 bg-background">
-          <div
-            ref={fileTableRef}
-            onDragEnter={() => setIsDraggingFiles(true)}
-            onDragLeave={() => setIsDraggingFiles(false)}
-            onDrop={handleFilesDrop}
-            onDragOver={(e) => e.preventDefault()}
-            className={`flex-1 overflow-auto relative transition-colors ${
-              isDraggingFiles ? 'bg-primary/5' : ''
-            }`}
-          >
-            {isDraggingFiles && (
-              <div className="absolute inset-0 flex items-center justify-center bg-primary/10 pointer-events-none z-50">
-                <div className="text-primary font-medium bg-background px-6 py-4 rounded-lg shadow-lg">
-                  Drop files here
-                </div>
-              </div>
-            )}
-
-            {filesLoading ? (
-              <div className="p-4 text-sm text-muted-foreground">Loading files...</div>
-            ) : (
-            <FileTableComponent
-              items={tableItems}
-              selectedFileId={externalSelectedFileId || null}
-              onSelectFile={(fileId) => {
-                const file = files.find(f => f.id === fileId);
-                if (file) onFileSelect(file);
-              }}
-              onSelectFolder={setSelectedFolderId}
-              onDeleteFile={(fileId) => {
-                deleteFileMutation.mutate(fileId);
-                toast.success('File deleted');
-              }}
-              folders={folders}
-            />
-            )}
-          </div>
-
-          {/* Upload Progress */}
-          {uploadingFiles.length > 0 && (
-            <div className="border-t bg-muted/30 px-4 py-2 space-y-2 flex-shrink-0">
-              {uploadingFiles.map(uf => (
-                <div key={uf.id} className="flex items-center gap-2">
-                  <div className="flex-shrink-0">
-                    {uf.status === 'uploading' && <Loader2 className="h-4 w-4 text-primary animate-spin" />}
-                    {uf.status === 'complete' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
-                    {uf.status === 'error' && <AlertCircle className="h-4 w-4 text-destructive" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-medium truncate">{uf.filename}</span>
-                      <span className="text-xs text-muted-foreground">{uf.progress}%</span>
-                    </div>
-                    <Progress value={uf.progress} className="h-1 mt-1" />
-                    {uf.error && <p className="text-xs text-destructive mt-1">{uf.error}</p>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-      </div>
-    </div>
-  );
-};
-
-// ============================================
-// FOLDER TREE ITEM
-// ============================================
-interface FolderTreeItemProps {
-  folder: Folder;
-  folders: Folder[];
-  selectedFolderId: string | null;
-  onSelectFolder: (id: string) => void;
-  expandedFolders: Set<string>;
-  onToggleExpanded: (id: string) => void;
-  depth: number;
-}
-
-const FolderTreeItem = ({
-  folder,
-  folders,
-  selectedFolderId,
-  onSelectFolder,
-  expandedFolders,
-  onToggleExpanded,
-  depth,
-}: FolderTreeItemProps) => {
-  const children = folders.filter(f => f.parent_folder_id === folder.id && !f.deleted_at);
-  const hasChildren = children.length > 0;
-
-  return (
-    <>
-      <button
-        onClick={() => {
-          onSelectFolder(folder.id);
-          if (hasChildren) onToggleExpanded(folder.id);
-        }}
-        className={`w-full flex items-center gap-1 px-3 py-2 text-sm hover:bg-accent/50 transition-colors ${
-          selectedFolderId === folder.id ? 'bg-primary/10 text-primary font-medium' : 'text-foreground'
-        }`}
-        style={{ paddingLeft: `${depth * 12 + 12}px` }}
+  if (viewMode === "grid") {
+    return (
+      <div 
+        className={`flex-1 overflow-auto bg-card p-3 custom-scrollbar relative ${isDragOver ? 'ring-2 ring-primary ring-opacity-40' : ''}`}
+        onDragEnter={canUpload ? handleDragEnter : undefined}
+        onDragLeave={canUpload ? handleDragLeave : undefined}
+        onDragOver={canUpload ? handleDragOver : undefined}
+        onDrop={canUpload ? handleDrop : undefined}
       >
-        {hasChildren ? (
-          <ChevronRightIcon
-            className={`h-4 w-4 flex-shrink-0 transition-transform ${
-              expandedFolders.has(folder.id) ? 'rotate-90' : ''
-            }`}
-          />
-        ) : (
-          <div className="w-4" />
-        )}
-        <FolderIcon className="h-4 w-4 flex-shrink-0" />
-        <span className="truncate">{folder.name}</span>
-      </button>
-      {hasChildren && expandedFolders.has(folder.id) && (
-        <>
-          {children.map(child => (
-            <FolderTreeItem
-              key={child.id}
-              folder={child}
-              folders={folders}
-              selectedFolderId={selectedFolderId}
-              onSelectFolder={onSelectFolder}
-              expandedFolders={expandedFolders}
-              onToggleExpanded={onToggleExpanded}
-              depth={depth + 1}
-            />
-          ))}
-        </>
-      )}
-    </>
-  );
-};
-
-// ============================================
-// FILE TABLE
-// ============================================
-interface FileTableComponentProps {
-  items: TableItem[];
-  selectedFileId: string | null;
-  onSelectFile: (id: string) => void;
-  onSelectFolder: (id: string) => void;
-  onDeleteFile: (id: string) => void;
-  folders: Folder[];
-}
-
-const FileTableComponent = ({
-  items,
-  selectedFileId,
-  onSelectFile,
-  onSelectFolder,
-  onDeleteFile,
-}: FileTableComponentProps) => {
-  const formatFileSize = (bytes?: number) => {
-    if (!bytes) return '—';
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const getFileType = (mimetype?: string) => {
-    if (!mimetype) return 'File';
-    if (mimetype === 'application/pdf') return 'PDF';
-    if (mimetype.includes('word')) return 'DOCX';
-    if (mimetype.includes('sheet')) return 'XLSX';
-    if (mimetype.includes('image/jpeg')) return 'JPG';
-    if (mimetype.includes('image/png')) return 'PNG';
-    return mimetype.split('/')[1]?.toUpperCase() || 'File';
-  };
-
-  const getIcon = (item: TableItem) => {
-    if (item.type === 'folder') return <FolderIcon className="h-4 w-4 text-primary" />;
-    if (!item.mimetype) return <File className="h-4 w-4" />;
-    if (item.mimetype.includes('pdf')) return <FileText className="h-4 w-4 text-red-600" />;
-    if (item.mimetype.includes('image')) return <ImageIcon className="h-4 w-4 text-primary" />;
-    return <File className="h-4 w-4" />;
-  };
-
-  return (
-    <div className="w-full h-full flex flex-col">
-      {/* Table header */}
-      <div className="sticky top-0 grid grid-cols-12 gap-4 px-4 py-3 bg-muted/50 border-b text-xs font-semibold text-muted-foreground uppercase">
-        <div className="col-span-6">Name</div>
-        <div className="col-span-2">Size</div>
-        <div className="col-span-2">Modified</div>
-        <div className="col-span-1">Type</div>
-        <div className="col-span-1" />
-      </div>
-
-      {/* Table rows */}
-      <div className="divide-y flex-1 overflow-y-auto">
-        {items.length === 0 ? (
-          <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-            No files or folders in this directory
-          </div>
-        ) : (
-          items.map(item => (
-            <div
-              key={item.id}
-              onClick={() => (item.type === 'file' ? onSelectFile(item.id) : onSelectFolder(item.id))}
-              className={`grid grid-cols-12 gap-4 px-4 py-3 hover:bg-accent/50 cursor-pointer transition-colors ${
-                selectedFileId === item.id && item.type === 'file' ? 'bg-primary/10' : ''
-              }`}
-            >
-              <div className="col-span-6 flex items-center gap-2 truncate">
-                {getIcon(item)}
-                <span className="text-sm text-foreground truncate font-medium">{item.name}</span>
+        {/* Drag overlay for grid view */}
+        {isDragOver && canUpload && (
+            <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary/60 flex items-center justify-center text-primary z-10 pointer-events-none">
+            <div className="text-center">
+              <div className="text-[10px] font-medium leading-normal tracking-normal text-primary">
+                Drop files here to upload
               </div>
-              <div className="col-span-2 text-sm text-muted-foreground">{formatFileSize(item.filesize)}</div>
-              <div className="col-span-2 text-sm text-muted-foreground">{formatDate(item.modifiedDate)}</div>
-              <div className="col-span-1 text-sm text-muted-foreground">
-                {item.type === 'folder' ? '—' : getFileType(item.mimetype)}
-              </div>
-              <div className="col-span-1 flex justify-end">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
-                    <Button variant="ghost" size="sm">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {item.type === 'file' && <DropdownMenuItem>Download</DropdownMenuItem>}
-                    {item.type === 'file' && <DropdownMenuItem>Share</DropdownMenuItem>}
-                    <DropdownMenuItem>Move</DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="text-destructive"
-                      onClick={() => onDeleteFile(item.id)}
-                    >
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+              <div className="text-[10px] text-primary/80 mt-1">
+                PDF, images, and documents supported
               </div>
             </div>
-          ))
+          </div>
+        )}
+        {!folder ? (
+          <div className={`flex items-center justify-center h-32 text-gray-400 text-[10px]`} style={darkMode ? { color: 'hsl(var(--muted-foreground))' } : {}}>
+            Select a folder
+          </div>
+        ) : (
+          <div className="grid gap-2 grid-cols-5 sm:grid-cols-6 md:grid-cols-7 lg:grid-cols-8 xl:grid-cols-9 2xl:grid-cols-10">
+            {files.map((file, index) => {
+              const isSelected = selectedFile && selectedFile.name === file.name;
+              const isKeyboardFocused = keyboardFocused && keyboardSelectedIndex === index;
+              
+              const handleDragStart = (e: React.DragEvent) => {
+                e.dataTransfer.effectAllowed = 'copy';
+                const fileData = {
+                  name: file.name,
+                  type: file.type,
+                  url: file.remote ? file.url : undefined,
+                  phase: file.phase,
+                  folder: file.folder
+                };
+                e.dataTransfer.setData('application/json', JSON.stringify(fileData));
+                e.dataTransfer.setData('text/plain', file.name);
+              };
+              
+              return (
+                <div
+                  key={file.name}
+                  className={`nav-row nav-tile win-hover-outline win-focusable flex flex-col items-stretch p-2 rounded-md cursor-pointer transition-colors gap-1`}
+                  onClick={() => onFileClick(file)}
+                  draggable={true}
+                  onDragStart={handleDragStart}
+                  data-selected={isSelected ? 'true' : 'false'}
+                  data-focus={isKeyboardFocused ? 'true' : 'false'}
+                  tabIndex={0}
+                  title={file.name}
+                >
+                  <div
+                    className={`thumbnail-box ${'thumbnail-loading'} relative`}
+                    data-kind={/\.pdf$/i.test(file.name) ? 'pdf' : /\.(png|jpg|jpeg|gif|bmp|svg|webp)$/i.test(file.name) ? 'image' : 'file'}
+                    data-selected={isSelected ? 'true' : 'false'}
+                    data-focus={isKeyboardFocused ? 'true' : 'false'}
+                  >
+                    <FileIcon
+                      fileName={file.name}
+                      className={`thumbnail-icon file-grid-icon ${darkMode ? 'text-muted-foreground' : 'text-gray-500'}`}
+                    />
+                    <div className="thumbnail-ext-badge">
+                      {(() => {
+                        const ext = file.name.split('.').pop() || '';
+                        return ext.length > 5 ? ext.slice(0,5) : ext;
+                      })()}
+                    </div>
+                  </div>
+                  <span className={`text-[10px] leading-snug text-center truncate w-full px-0.5 ${
+                    isSelected ? 'text-gray-900 font-medium' : isKeyboardFocused ? 'text-gray-800' : 'text-gray-700'
+                  }`} style={darkMode ? { color: (isSelected || isKeyboardFocused) ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))' } : {}}>{file.name}</span>
+                  <span className={`text-[10px] text-gray-400`}>{file.size}</span>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
+    );
+  }
 
-      {/* Footer - file info */}
-      {items.length > 0 && (
-        <div className="px-4 py-2 bg-muted/50 border-t text-xs text-muted-foreground">
-          {items.filter(i => i.type === 'file').length} files •{' '}
-          {formatFileSize(
-            items.filter(i => i.type === 'file').reduce((sum, f) => sum + (f.filesize || 0), 0)
-          )}{' '}
-          total
+  return (
+    <div 
+      className="flex-1 flex flex-col bg-card"
+    >
+      {/* Fixed Header */}
+  <div className="flex items-center h-7 border-b border-border bg-muted dark:!bg-slate-900/30 text-[10px] text-muted-foreground select-none pl-3 pr-1 flex-shrink-0">
+        <div className="flex-1 pr-3 flex items-center min-w-0">
+          <span className="inline-block w-4 h-4 mr-2" aria-hidden="true"></span>
+          Name
         </div>
-      )}
+        <div className="w-20 shrink-0 pr-1 hidden md:block">Size</div>
+        <div className="w-28 shrink-0 pr-1 hidden lg:block">Modified</div>
+        <div className="w-16 shrink-0 pr-2 hidden xl:block">Type</div>
+        <div className="w-6 shrink-0 flex items-center justify-end">
+          {canUpload && (
+            <>
+              <input
+                type="file"
+                multiple
+                className="hidden"
+                id="file-explorer-upload-input"
+                onChange={(e) => {
+                  const list = e.target.files;
+                  if (list && list.length) {
+                    onUploadFiles?.(Array.from(list));
+                    // reset so selecting same files again re-triggers
+                    e.target.value = '';
+                  }
+                }}
+                accept=".pdf,.png,.jpg,.jpeg,.gif,.bmp,.svg,.webp,.txt,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+              />
+              <button
+                type="button"
+                onClick={() => document.getElementById('file-explorer-upload-input')?.click()}
+                title="Upload files"
+                className={`h-5 w-5 flex items-center justify-center rounded border border-border bg-card text-muted-foreground hover:bg-muted`}
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+      {/* Scrollable Content (drag target) */}
+      <div 
+        className={`flex-1 overflow-y-auto custom-scrollbar relative ${isDragOver ? 'ring-2 ring-primary ring-opacity-40' : ''}`}
+        onDragEnter={canUpload ? handleDragEnter : undefined}
+        onDragLeave={canUpload ? handleDragLeave : undefined}
+        onDragOver={canUpload ? handleDragOver : undefined}
+        onDrop={canUpload ? handleDrop : undefined}
+      >
+        {/* Drag overlay (scoped to scrollable region only) */}
+        {isDragOver && canUpload && (
+          <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary/60 flex items-center justify-center text-primary z-10 pointer-events-none">
+            <div className="text-center">
+              <div className="text-[10px] font-medium leading-normal tracking-normal text-primary">
+                Drop files here to upload
+              </div>
+              <div className="text-[10px] text-primary/80 mt-1">
+                PDF, images, and documents supported
+              </div>
+            </div>
+          </div>
+        )}
+        {!folder ? (
+          <div className="flex items-center justify-center h-32 text-gray-400 text-[10px]" style={darkMode ? { color: 'hsl(var(--muted-foreground))' } : {}}>
+            Select a folder
+          </div>
+        ) : files.length === 0 ? (
+          <div className="flex items-center justify-center h-32 text-gray-400 text-[10px]" style={darkMode ? { color: 'hsl(var(--muted-foreground))' } : {}}>
+            No files found
+          </div>
+        ) : (
+          files.map((file, index) => {
+            const isSelected = selectedFile && selectedFile.name === file.name;
+            const isKeyboardFocused = keyboardFocused && keyboardSelectedIndex === index;
+            
+            const handleDragStart = (e: React.DragEvent) => {
+              e.dataTransfer.effectAllowed = 'copy';
+              const fileData = {
+                name: file.name,
+                type: file.type,
+                url: file.remote ? file.url : undefined,
+                phase: file.phase,
+                folder: file.folder
+              };
+              e.dataTransfer.setData('application/json', JSON.stringify(fileData));
+              e.dataTransfer.setData('text/plain', file.name);
+            };
+            
+            return (
+              <div
+                key={file.name}
+                className={`nav-row win-hover-outline win-focusable flex items-center h-7 border-b border-gray-100 pl-3 pr-3 cursor-pointer transition-colors`}
+                onClick={() => onFileClick(file)}
+                draggable={true}
+                onDragStart={handleDragStart}
+                data-selected={isSelected ? 'true' : 'false'}
+                data-focus={isKeyboardFocused ? 'true' : 'false'}
+                tabIndex={0}
+                style={darkMode ? { borderColor: 'hsl(var(--border))' } : {}}
+              >
+                <div className={`flex-1 flex items-center pr-3 min-w-0 ${
+                  isSelected ? "text-gray-900 font-medium" :
+                  isKeyboardFocused ? "text-gray-800" :
+                  "text-gray-700"
+                }`} style={darkMode ? { color: (isSelected || isKeyboardFocused) ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))' } : {}}>
+                  <FileIcon
+                    fileName={file.name}
+                    className={`h-3.5 w-3.5 mr-2 ${darkMode ? 'text-muted-foreground' : 'text-gray-500'}`}
+                  />
+                  <span className="truncate text-[10px]">{file.name}</span>
+                </div>
+                <span className="w-20 shrink-0 text-[10px] text-gray-500 tabular-nums pr-1 hidden md:inline">{file.size}</span>
+                <span className="w-28 shrink-0 text-[10px] text-gray-500 tabular-nums pr-1 hidden lg:inline">{formatFileModified(file.modified)}</span>
+                <span className="w-16 shrink-0 text-[10px] text-gray-500 hidden xl:inline">{getFileExtension(file.name)}</span>
+              </div>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 };
 
-export default FileExplorer;
+interface FileExplorerProps {
+  projectId?: string;
+  className?: string;
+  onFileSelect?: (file: any) => void;
+  heightMode?: 'compact' | 'tall' | 'collapsed' | 'custom';
+  onToggleHeight?: () => void;
+  darkMode?: boolean;
+  viewerStatus?: any;
+  canUpload?: boolean;
+  onUploadFiles?: (files: File[]) => void;
+  isActive?: boolean;
+  onClick?: () => void;
+}
+
+export default function FileExplorer({ 
+  projectId,
+  className = "h-full", 
+  onFileSelect, 
+  heightMode = 'compact', 
+  onToggleHeight, 
+  darkMode = false, 
+  viewerStatus,
+  canUpload: _canUpload = true,
+  onUploadFiles: _onUploadFiles,
+  isActive = true,
+  onClick
+}: FileExplorerProps) {
+  
+  // Fetch live data from MSW if projectId is provided
+  const { data: liveData } = useQuery({
+    queryKey: ['files', projectId],
+    enabled: !!projectId,
+    queryFn: async () => {
+      const r = await fetch(`/api/files?project_id=${projectId}`)
+      if (!r.ok) throw new Error('Failed to load files')
+      const json = await r.json()
+      return json.data // { files: [], folders: [] }
+    },
+    staleTime: 300000,
+  })
+  
+  // Transform MSW folders into the tree structure expected by FileExplorer
+  const root = useMemo(() => {
+    if (!liveData?.folders || liveData.folders.length === 0) {
+      return MOCK_PROJECT // Fallback to mock if no live data
+    }
+    
+    // Group folders by phase
+    const phaseMap = new Map<string, any[]>()
+    liveData.folders.forEach((folder: any) => {
+      const phase = folder.phase || folder.name
+      if (!phaseMap.has(phase)) {
+        phaseMap.set(phase, [])
+      }
+      phaseMap.get(phase)!.push({
+        id: folder.id,
+        name: folder.name,
+        type: 'folder',
+      })
+    })
+    
+    // Build root structure
+    return {
+      name: 'Project Files',
+      type: 'project',
+      children: Array.from(phaseMap.entries()).map(([phaseName, folders]) => ({
+        name: phaseName,
+        type: 'phase',
+        children: folders,
+      })),
+    }
+  }, [liveData])
+  
+  // Transform MSW files into the format expected by FileExplorer
+  const liveFiles = useMemo(() => {
+    if (!liveData?.files || liveData.files.length === 0) {
+      return MOCK_FILES // Fallback to mock if no live data
+    }
+    
+    return liveData.files.map((file: any) => {
+      // Find the folder and phase for this file
+      const folder = liveData.folders.find((f: any) => f.id === file.folder_id)
+      const phase = folder?.phase || folder?.name || 'Uncategorized'
+      const folderName = folder?.name || 'Root'
+      
+      return {
+        name: file.name,
+        size: formatFileSize(file.size_bytes),
+        modified: new Date(file.created_at).toLocaleDateString(),
+        phase: phase,
+        folder: folderName,
+        type: file.kind || 'other',
+        url: file.storage_url,
+        id: file.id,
+      }
+    })
+  }, [liveData])
+  
+  // Core navigation state
+  const [rootState, setRootState] = useState(root);
+  useEffect(() => {
+    setRootState(root)
+  }, [root])
+  
+  const phases = rootState.children;
+  const rootRef = useRef(rootState);
+  useEffect(() => {
+    rootRef.current = rootState;
+  }, [rootState]);
+  
+  // Track blob URLs for cleanup
+  const blobUrlsRef = useRef<Set<string>>(new Set());
+  
+  const [selectedPhase, setSelectedPhase] = useState<any>(phases[0] || null);
+  const [selectedFolder, setSelectedFolder] = useState<any>(null);
+  const [selectedFile, setSelectedFile] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [files, setFiles] = useState(liveFiles);
+  useEffect(() => {
+    setFiles(liveFiles)
+  }, [liveFiles])
+  const [viewMode, setViewMode] = useState("list");
+  const [focusedPanel, setFocusedPanel] = useState('phases');
+  const [keyboardSelectedPhase, setKeyboardSelectedPhase] = useState(0);
+  const [keyboardSelectedFolder, setKeyboardSelectedFolder] = useState(0);
+  const [keyboardSelectedFile, setKeyboardSelectedFile] = useState(0);
+  const [keyboardSelectedSearchResult, setKeyboardSelectedSearchResult] = useState(0);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  const currentFiles = useMemo(() => {
+    if (!selectedFolder || !selectedPhase) return [];
+    return files.filter(file => 
+      file.phase === selectedPhase.name && file.folder === selectedFolder.name
+    );
+  }, [selectedPhase, selectedFolder, files]);
+
+  const performSearch = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    
+    const query = searchQuery.toLowerCase();
+    const results: Array<{
+      type: 'file';
+      name: string;
+      phase: string;
+      folder: string;
+      size: string;
+      modified: string;
+      data: (typeof files)[number];
+    }> = [];
+    
+    files.forEach(file => {
+      if (file.name.toLowerCase().includes(query)) {
+        results.push({
+          type: 'file',
+          name: file.name,
+          phase: file.phase,
+          folder: file.folder,
+          size: file.size,
+          modified: file.modified,
+          data: file
+        });
+      }
+    });
+    
+    return results.slice(0, 20);
+  }, [searchQuery, phases, files]);
+
+  useEffect(() => {
+    const shouldShow = searchQuery.trim().length > 0 && performSearch.length > 0;
+    if (showSearchDropdown !== shouldShow) {
+      setShowSearchDropdown(shouldShow);
+    }
+    setKeyboardSelectedSearchResult(0);
+  }, [performSearch, searchQuery, showSearchDropdown]);
+
+  useEffect(() => {
+    if (!showSearchDropdown) {
+      setKeyboardSelectedSearchResult(0);
+    }
+  }, [showSearchDropdown]);
+
+  const filteredFolders = useMemo(() => {
+    return selectedPhase?.children || [];
+  }, [selectedPhase]);
+
+  const handleSearchResultSelect = (result: any) => {
+    setShowSearchDropdown(false);
+    
+    if (result.type === 'file') {
+      const phase = phases.find((p: any) => p.name === result.phase);
+      const folder = phase?.children?.find((f: any) => f.name === result.folder);
+      
+      if (phase && folder) {
+        setSelectedPhase(phase);
+        setSelectedFolder(folder);
+        setSelectedFile(null);
+        
+        const phaseIndex = phases.findIndex((p: any) => p.name === result.phase);
+        const folderIndex = phase.children?.findIndex((f: any) => f.name === result.folder) || 0;
+        
+        setKeyboardSelectedPhase(phaseIndex);
+        setKeyboardSelectedFolder(folderIndex);
+        
+        const folderFiles = files.filter(file => 
+          file.phase === result.phase && file.folder === result.folder
+        );
+        const fileIndex = folderFiles.findIndex(f => f.name === result.name);
+        setKeyboardSelectedFile(fileIndex >= 0 ? fileIndex : 0);
+        setFocusedPanel('files');
+        setSearchQuery("");
+
+        // Select/open the file directly so viewer updates immediately
+        const fileObj = folderFiles[fileIndex >= 0 ? fileIndex : 0];
+        if (fileObj) {
+          setSelectedFile(fileObj);
+          if (onFileSelect) onFileSelect(fileObj);
+        }
+        
+        requestAnimationFrame(() => {
+          const activeElement = document.activeElement;
+          if (activeElement instanceof HTMLElement) {
+            activeElement.blur();
+          }
+        });
+      }
+    }
+  };
+
+  const handleFileClick = (file: any) => {
+    setSelectedFile(file);
+    if (onFileSelect) {
+      onFileSelect(file);
+    }
+  };
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only respond when this explorer is active
+      if (!isActive) return;
+      
+      // Reserve Shift + Up/Down for App-level pane switching
+      if (e.shiftKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        return;
+      }
+      if (e.key.startsWith('Arrow')) {
+
+      }
+      // In collapsed mode, limit navigation to search dropdown only
+    // (panels are hidden, so we don't process panel navigation)
+    // The dropdown handling block below will manage ArrowUp/Down/Enter/Escape.
+    // Handle search dropdown navigation
+    if (showSearchDropdown && performSearch.length > 0) {
+      if (keyboardSelectedSearchResult >= performSearch.length) {
+        setKeyboardSelectedSearchResult(0);
+      }
+      switch (e.key) {
+        case 'ArrowUp':
+          e.preventDefault();
+          setKeyboardSelectedSearchResult(prev => Math.max(0, prev - 1));
+          return;
+        case 'ArrowDown':
+          e.preventDefault();
+          setKeyboardSelectedSearchResult(prev => Math.min(performSearch.length - 1, prev + 1));
+          return;
+        case 'Enter': {
+          e.preventDefault();
+          const currentResults = performSearch;
+          const clampedIndex = Math.min(keyboardSelectedSearchResult, currentResults.length - 1);
+          const selectedResult = currentResults[clampedIndex];
+          if (selectedResult) {
+            handleSearchResultSelect(selectedResult);
+            // Set focus back to the explorer for continued keyboard navigation
+            setTimeout(() => {
+              const explorerElement = document.querySelector('[data-explorer-root]');
+              if (explorerElement) {
+                (explorerElement as HTMLElement).focus();
+              }
+            }, 100);
+          }
+          return;
+        }
+        case 'Escape':
+          e.preventDefault();
+          setShowSearchDropdown(false);
+          setSearchQuery("");
+          return;
+      }
+    }
+    
+    // Don't handle navigation when typing in search input
+    if ((e.target as HTMLElement).tagName === 'INPUT') return;
+    
+    // Handle main navigation
+    switch (e.key) {
+      case 'ArrowUp':
+        e.preventDefault();
+
+        if (focusedPanel === 'phases') {
+          setKeyboardSelectedPhase(prev => Math.max(0, prev - 1));
+        } else if (focusedPanel === 'folders') {
+          setKeyboardSelectedFolder(prev => Math.max(0, prev - 1));
+        } else if (focusedPanel === 'files') {
+          setKeyboardSelectedFile(prev => Math.max(0, prev - 1));
+        }
+
+        break;
+        
+      case 'ArrowDown':
+        e.preventDefault();
+
+        if (focusedPanel === 'phases') {
+          setKeyboardSelectedPhase(prev => Math.min(phases.length - 1, prev + 1));
+        } else if (focusedPanel === 'folders') {
+          setKeyboardSelectedFolder(prev => Math.min(filteredFolders.length - 1, prev + 1));
+        } else if (focusedPanel === 'files') {
+          setKeyboardSelectedFile(prev => Math.min(currentFiles.length - 1, prev + 1));
+        }
+
+        break;
+        
+      case 'ArrowRight':
+        e.preventDefault();
+
+        if (focusedPanel === 'phases') {
+          const phase = phases[keyboardSelectedPhase];
+          if (phase && (!selectedPhase || selectedPhase.name !== phase.name)) {
+            setSelectedPhase(phase);
+
+          }
+          setFocusedPanel('folders');
+          // If we just changed phase, reset folder index
+          setKeyboardSelectedFolder(0);
+
+        } else if (focusedPanel === 'folders') {
+          const folder = filteredFolders[keyboardSelectedFolder];
+          if (folder) {
+            if (!selectedFolder || selectedFolder.name !== folder.name) {
+              setSelectedFolder(folder);
+
+            }
+            setFocusedPanel('files');
+            setKeyboardSelectedFile(0);
+
+          }
+        }
+        break;
+        
+      case 'ArrowLeft':
+        e.preventDefault();
+
+        if (focusedPanel === 'files') {
+          setFocusedPanel('folders');
+          setKeyboardSelectedFolder(0); // reset to top when moving back
+
+        } else if (focusedPanel === 'folders') {
+          setFocusedPanel('phases');
+          setKeyboardSelectedPhase(0); // reset to top when moving back
+
+        }
+        break;
+        
+      case 'Enter':
+        e.preventDefault();
+
+        if (focusedPanel === 'phases') {
+          const phase = phases[keyboardSelectedPhase];
+          if (phase) {
+            setSelectedPhase(phase);
+            setFocusedPanel('folders');
+            setKeyboardSelectedFolder(0);
+
+          }
+        } else if (focusedPanel === 'folders') {
+          const folder = filteredFolders[keyboardSelectedFolder];
+          if (folder) {
+            setSelectedFolder(folder);
+            setFocusedPanel('files');
+            setKeyboardSelectedFile(0);
+
+          }
+        } else if (focusedPanel === 'files') {
+          const file = currentFiles[keyboardSelectedFile];
+          if (file) {
+            handleFileClick(file);
+
+          }
+        }
+        break;
+    }
+  };
+
+  window.addEventListener('keydown', handleKeyDown);
+  return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    isActive,
+    showSearchDropdown, performSearch, keyboardSelectedSearchResult, handleSearchResultSelect,
+    focusedPanel, keyboardSelectedPhase, keyboardSelectedFolder, keyboardSelectedFile,
+    phases, filteredFolders, currentFiles, selectedFolder, handleFileClick,
+    searchQuery
+  ]);
+
+  // Create folder handler
+  const handleCreateFolder = useCallback((folderName: string) => {
+    if (!selectedPhase || !folderName.trim()) return;
+    
+    // Check if folder already exists
+    const folderExists = selectedPhase.children?.some((f: any) => 
+      f.name.toLowerCase() === folderName.trim().toLowerCase()
+    );
+    
+    if (folderExists) {
+      // Could add a toast notification here
+      return;
+    }
+    
+    // Update the root structure with the new folder
+    setRootState(prevRoot => {
+      const newRoot = { ...prevRoot };
+      newRoot.children = newRoot.children.map((phase: any) => {
+        if (phase.name === selectedPhase.name) {
+          const updatedPhase = {
+            ...phase,
+            children: [
+              ...(phase.children || []),
+              { name: folderName.trim(), type: 'folder' }
+            ]
+          };
+          // Update selectedPhase reference to point to the new phase object
+          setSelectedPhase(updatedPhase);
+          return updatedPhase;
+        }
+        return phase;
+      });
+      return newRoot;
+    });
+  }, [selectedPhase]);
+
+  // Reorder folders via drag and drop
+  const handleFolderReorder = useCallback((draggedFolder: any, targetFolder: any) => {
+    if (!selectedPhase || !draggedFolder || !targetFolder || draggedFolder.name === targetFolder.name) return;
+
+    setRootState(prevRoot => {
+      const newRoot = { ...prevRoot };
+      newRoot.children = newRoot.children.map((phase: any) => {
+        if (phase.name === selectedPhase.name) {
+          const folders = phase.children || [];
+          const draggedIndex = folders.findIndex((f: any) => f.name === draggedFolder.name);
+          const targetIndex = folders.findIndex((f: any) => f.name === targetFolder.name);
+          
+          if (draggedIndex === -1 || targetIndex === -1) return phase;
+          
+          // Create new array with reordered folders
+          const newFolders = [...folders];
+          const [removed] = newFolders.splice(draggedIndex, 1);
+          newFolders.splice(targetIndex, 0, removed);
+          
+          const updatedPhase = {
+            ...phase,
+            children: newFolders
+          };
+          
+          // Update selectedPhase reference
+          setSelectedPhase(updatedPhase);
+          return updatedPhase;
+        }
+        return phase;
+      });
+      return newRoot;
+    });
+  }, [selectedPhase]);
+
+  // Upload handling
+  const ensureUniqueName = useCallback((baseName: string, phaseName: string, folderName: string, existingList?: any[]) => {
+    return ensureUniqueNameInList(baseName, phaseName, folderName, existingList || files);
+  }, [files]);
+
+  const filesRef = useRef(files);
+  useEffect(() => {
+    filesRef.current = files;
+  }, [files]);
+
+  const handleUploadFiles = useCallback((fileList: File[], options?: { phaseName?: string; folderName?: string; selectFolder?: boolean }) => {
+    if (!fileList || !fileList.length) return;
+    const currentRoot = rootRef.current;
+    const currentPhases = currentRoot?.children || phases;
+    const phaseName = options?.phaseName || selectedPhase?.name || currentPhases[0]?.name;
+    if (!phaseName) return;
+    const fallbackFolder = currentPhases.find((p: any) => p.name === phaseName)?.children?.[0]?.name || 'Misc';
+    const folderName = options?.folderName || selectedFolder?.name || fallbackFolder;
+    const selectFolder = options?.selectFolder ?? true;
+
+    const newItems: any[] = [];
+    setFiles(prev => {
+      const updated = [...prev];
+      const working = [...updated];
+      fileList.forEach(file => {
+        const uniqueName = ensureUniqueName(file.name, phaseName, folderName, working);
+        const objectUrl = URL.createObjectURL(file);
+        // Track blob URL for cleanup
+        blobUrlsRef.current.add(objectUrl);
+        const modified = new Date(file.lastModified || Date.now());
+        const modifiedStr = modified.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const newItem = {
+          name: uniqueName,
+          type: 'file',
+          size: formatFileSize(file.size),
+          modified: modifiedStr,
+          phase: phaseName,
+          folder: folderName,
+          remote: true,
+          url: objectUrl,
+          objectUrl,
+          local: true
+        };
+        working.push(newItem);
+        newItems.push(newItem);
+      });
+      return working;
+    });
+
+    if (newItems.length) {
+      filesRef.current = [...filesRef.current, ...newItems];
+    }
+
+    if (selectFolder && newItems.length) {
+      requestAnimationFrame(() => {
+        const latestRoot = rootRef.current;
+        const latestPhases = latestRoot?.children || currentPhases;
+        const combinedFiles = filesRef.current;
+        const phaseIdx = latestPhases.findIndex((p: any) => p.name === phaseName);
+        const phaseObj = latestPhases[phaseIdx];
+        if (phaseObj) {
+          setSelectedPhase(phaseObj);
+          const folderIdx = phaseObj.children?.findIndex((f: any) => f.name === folderName) ?? -1;
+          if (folderIdx >= 0) {
+            const folderObj = phaseObj.children[folderIdx];
+            setSelectedFolder(folderObj);
+            setKeyboardSelectedPhase(phaseIdx);
+            setKeyboardSelectedFolder(folderIdx);
+            const filtered = combinedFiles.filter(f => f.phase === phaseName && f.folder === folderName);
+            const last = newItems[newItems.length - 1];
+            const fileIdx = filtered.findIndex(f => f.name === last.name);
+            setKeyboardSelectedFile(fileIdx >= 0 ? fileIdx : 0);
+            setFocusedPanel('files');
+            setSelectedFile(last);
+            onFileSelect && onFileSelect(last);
+          }
+        }
+      });
+    }
+  }, [ensureUniqueName, selectedPhase, selectedFolder, phases, onFileSelect]);
+
+  // Revoke object URLs on unmount to avoid memory leaks
+  useEffect(() => {
+    return () => {
+      // Clean up all tracked blob URLs on component unmount
+      blobUrlsRef.current.forEach(url => {
+        try {
+          URL.revokeObjectURL(url);
+        } catch (e) {
+          // Ignore errors if URL was already revoked
+        }
+      });
+      blobUrlsRef.current.clear();
+    };
+  }, []); // Empty deps - only run on unmount
+
+  return (
+    <div 
+      className={`explorer-root w-full flex flex-col text-[10px] text-gray-800 font-sans min-h-0 ${(heightMode === 'collapsed' || heightMode === 'compact') ? 'overflow-visible' : 'overflow-hidden'} ${className}`}
+      tabIndex={0}
+      onFocus={(e) => { 
+        // Only reset if focusing the root container itself, not child elements
+        if (e.target === e.currentTarget) {
+          setFocusedPanel('phases'); 
+          setKeyboardSelectedPhase(0); 
+          setKeyboardSelectedFolder(0); 
+          setKeyboardSelectedFile(0); 
+
+        }
+      }}
+      onClick={onClick}
+      data-explorer-root
+      style={{ fontFamily: '"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif' }}
+    >
+      {/* Header */}
+  <div className="h-8 border-b border-border bg-card dark:!bg-slate-900/30 flex items-center px-2 relative text-[10px]">
+        <div className={`absolute left-1/2 -translate-x-1/2 w-full flex justify-center pointer-events-none ${(heightMode === 'collapsed' || heightMode === 'compact') ? 'z-[9999]' : ''}`}>
+          <div
+            ref={searchContainerRef}
+            className={`w-full relative pointer-events-auto text-[10px] ${(heightMode === 'collapsed' || heightMode === 'compact') ? 'z-[9999]' : ''}`}
+            style={{
+              maxWidth: 'min(48rem, calc(100% - 160px))',
+              margin: '0 auto'
+            }}
+          >
+            <div className="h-6 px-2 rounded border border-border bg-muted dark:!bg-slate-900/30 flex items-center gap-1 relative">
+              <Search className={`h-4 w-4 shrink-0 ${darkMode ? 'text-muted-foreground' : 'text-gray-400'}`} />
+              <input
+                className="flex-1 bg-transparent outline-none text-[10px] pr-5"
+                style={darkMode ? { color: 'hsl(var(--foreground))', caretColor: 'hsl(var(--foreground))' } : {}}
+                placeholder="Search files..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setShowSearchDropdown(searchQuery.trim().length > 0 && performSearch.length > 0)}
+                ref={searchInputRef}
+              />
+              {searchQuery && (
+                <button
+                  className="absolute right-1 h-4 w-4 rounded-full bg-gray-400 hover:bg-gray-500 flex items-center justify-center focus:outline-none active:transform-none"
+                  style={{ ...(darkMode ? { backgroundColor: 'hsl(var(--muted-foreground))' } : {}), transform: 'none' }}
+                  onClick={() => {
+                    setSearchQuery("");
+                    setShowSearchDropdown(false);
+                  }}
+                  title="Clear search"
+                >
+                  <span className="text-white text-[10px] leading-none">×</span>
+                </button>
+              )}
+            </div>
+            {showSearchDropdown && (
+              <FloatingSearchDropdown
+                anchorRef={searchContainerRef as unknown as RefObject<HTMLElement>}
+                results={performSearch}
+                searchQuery={searchQuery}
+                keyboardSelectedIndex={keyboardSelectedSearchResult}
+                onSelect={handleSearchResultSelect}
+                onClose={() => setShowSearchDropdown(false)}
+                placement="up"
+                darkMode={darkMode}
+              />
+            )}
+          </div>
+        </div>
+        
+        <div className="hidden md:flex items-center gap-2 ml-auto pr-1">
+          {selectedFolder && heightMode !== 'collapsed' && (
+            <button
+              className={`h-6 px-2 rounded border border-border inline-flex items-center gap-1 focus:outline-none active:transform-none text-[10px] text-muted-foreground ${viewMode === 'grid' ? 'bg-secondary' : 'bg-muted dark:!bg-slate-900/30'} hover:bg-muted/80`}
+              onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
+              title={viewMode === "grid" ? "Switch to List View" : "Switch to Grid View"}
+            >
+              {viewMode === "grid" ? <List className="h-4 w-4" /> : <Grid className="h-4 w-4" />}
+            </button>
+          )}
+          {onToggleHeight && (
+            <button
+              onClick={onToggleHeight}
+              title={heightMode === 'collapsed' ? 'Restore Explorer' : heightMode === 'compact' ? 'Collapse to Search' : 'Make Explorer Compact'}
+              className="h-6 w-6 rounded border border-border bg-muted dark:!bg-slate-900/30 hover:bg-muted/80 flex items-center justify-center text-muted-foreground"
+            >
+              <div className="relative w-3 h-3">
+                <Minus
+                  className={`absolute h-3 w-3 transition-transform ${
+                    heightMode === 'tall' || heightMode === 'custom' ? 'translate-y-[-2px]' :
+                    heightMode === 'compact' ? 'translate-y-0' :
+                    'translate-y-[2px]'
+                  }`}
+                />
+              </div>
+            </button>
+          )}
+        </div>
+      </div>
+      {heightMode !== 'collapsed' && (
+        <div className="flex flex-1 min-h-0 overflow-hidden">
+          {/* Sidebar */}
+          <aside className="w-[clamp(140px,18%,180px)] border-r border-border bg-muted dark:!bg-slate-900/30 flex flex-col">
+            <nav className="flex-1 overflow-y-auto px-1 py-1 custom-scrollbar">
+              {phases.map((item: any, index: number) => (
+                <SidebarItem
+                  key={item.name}
+                  item={item}
+                  selected={selectedPhase?.name === item.name}
+                  keyboardFocused={focusedPanel === 'phases' && keyboardSelectedPhase === index}
+                  darkMode={darkMode}
+                  onClick={() => {
+                    setSelectedPhase(item);
+                    setSelectedFolder(null);
+                    setSelectedFile(null);
+                    setKeyboardSelectedPhase(index);
+                  }}
+                />
+              ))}
+            </nav>
+          </aside>
+          {/* Folder List View */}
+          <div className="w-[260px] border-r border-border">
+            <FolderList 
+              phase={selectedPhase} 
+              folders={filteredFolders} 
+              selectedFolder={selectedFolder}
+              keyboardFocused={focusedPanel === 'folders'}
+              keyboardSelectedIndex={keyboardSelectedFolder}
+              onFolderClick={(folder) => {
+                setSelectedFolder(folder);
+                setSelectedFile(null);
+              }}
+              allFiles={files}
+              darkMode={darkMode}
+              onCreateFolder={handleCreateFolder}
+              onFolderReorder={handleFolderReorder}
+              onUploadFiles={handleUploadFiles}
+            />
+          </div>
+          {/* File List View */}
+          <FileList 
+            folder={selectedFolder} 
+            files={currentFiles} 
+            viewMode={viewMode}
+            selectedFile={selectedFile}
+            keyboardFocused={focusedPanel === 'files'}
+            keyboardSelectedIndex={keyboardSelectedFile}
+            onFileClick={handleFileClick}
+            onUploadFiles={handleUploadFiles}
+            canUpload={!!selectedPhase && !!selectedFolder}
+            darkMode={darkMode}
+          />
+        </div>
+      )}
+
+      {heightMode !== 'collapsed' && (
+        <div className="h-5 border-t border-gray-200 bg-[#f9fafb] flex items-center justify-between px-2 text-[10px] text-gray-500" style={darkMode ? { borderColor: 'hsl(var(--border))', backgroundColor: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' } : {}}>
+          <div className="truncate">
+            {viewerStatus && viewerStatus.name ? (
+              <span className="truncate">
+                {viewerStatus.name}
+                {viewerStatus.size ? ` • ${viewerStatus.size}` : ''}
+                {viewerStatus.modified ? ` • Modified ${viewerStatus.modified}` : ''}
+                {viewerStatus.pixels && (typeof viewerStatus.pixels.width === 'number') ? ` • ${viewerStatus.pixels.width}×${viewerStatus.pixels.height}px` : ''}
+                {viewerStatus.type === 'pdf' && viewerStatus.pageNumber && viewerStatus.numPages ? ` • Page ${viewerStatus.pageNumber}/${viewerStatus.numPages}` : ''}
+              </span>
+            ) : selectedFolder ? (
+              <span>
+                {currentFiles.length} {currentFiles.length === 1 ? 'file' : 'files'} in {selectedFolder.name}
+              </span>
+            ) : selectedPhase ? (
+              <span>
+                {filteredFolders.length} {filteredFolders.length === 1 ? 'folder' : 'folders'}
+              </span>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-3 whitespace-nowrap">
+            {viewerStatus?.type === 'image' && (
+              <span className="text-gray-500" style={darkMode ? { color: 'hsl(var(--muted-foreground))' } : {}}>Helpers: Shift+Wheel zoom • Shift+ +/- zoom • R rotate • F fullscreen</span>
+            )}
+            {viewerStatus?.type === 'pdf' && (
+              <span className="text-gray-500" style={darkMode ? { color: 'hsl(var(--muted-foreground))' } : {}}>Helpers: Shift+Wheel zoom • Shift+ +/- zoom • R rotate • Arrows nav • F fullscreen</span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -4,25 +4,60 @@ import { Download, Share2, Maximize2 } from 'lucide-react';
 import '../../lib/pdf-config';
 
 interface PDFViewerPaneProps {
-  fileUrl: string;
-  fileName: string;
-  onDownload?: () => void;
-  onShare?: () => void;
-  onMaximize?: () => void;
-  onStatusChange?: (status: { pageNumber: number; numPages: number; scale: number }) => void;
+  file: any;
+  onClose?: () => void;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
+  isFillPage?: boolean;
+  onToggleFillPage?: () => void;
+  isActive?: boolean;
+  onViewerStatus?: (status: any) => void;
+  darkMode?: boolean;
+  onClick?: () => void;
+  className?: string;
+  initialState?: {
+    pageNumber?: number;
+    scale?: number;
+    rotation?: number;
+    scrollMode?: 'centered' | 'continuous';
+    fitMode?: 'width' | 'height' | 'page';
+    numPages?: number | null;
+    pageSize?: { width: number; height: number };
+    scrollPosition?: { left: number; top: number };
+  };
+  onStateChange?: (state: {
+    pageNumber: number;
+    scale: number;
+    rotation: number;
+    scrollMode: 'centered' | 'continuous';
+    fitMode: 'width' | 'height' | 'page';
+    numPages: number | null;
+    pageSize: { width: number; height: number };
+    scrollPosition: { left: number; top: number };
+  }) => void;
 }
 
 export default function PDFViewerPane({ 
-  fileUrl, 
-  fileName,
-  onDownload,
-  onShare,
-  onMaximize,
-  onStatusChange
+  file,
+  onClose,
+  isFullscreen = false,
+  onToggleFullscreen,
+  isFillPage = false,
+  onToggleFillPage,
+  isActive = false,
+  onViewerStatus,
+  darkMode = false,
+  onClick,
+  className = '',
+  initialState,
+  onStateChange
 }: PDFViewerPaneProps) {
-  const [numPages, setNumPages] = useState<number>(0);
-  const [pageNumber, setPageNumber] = useState<number>(1);
-  const [scale, setScale] = useState<number>(1.0);
+  const fileUrl = file?.url || '';
+  const fileName = file?.name || 'document.pdf';
+  
+  const [numPages, setNumPages] = useState<number>(initialState?.numPages || 0);
+  const [pageNumber, setPageNumber] = useState<number>(initialState?.pageNumber || 1);
+  const [scale, setScale] = useState<number>(initialState?.scale || 1.0);
   const [pageWidth, setPageWidth] = useState<number>(800);
   const containerRef = useRef<HTMLDivElement>(null);
   const measureAttempts = useRef(0);
@@ -34,7 +69,6 @@ export default function PDFViewerPane({
     
     if (width > 0) {
       setPageWidth(width);
-      console.log('📐 Container width:', width);
       measureAttempts.current = 0;
     } else if (measureAttempts.current < 10) {
       measureAttempts.current++;
@@ -59,13 +93,36 @@ export default function PDFViewerPane({
   }, [fileUrl, updateWidth]);
 
   useEffect(() => {
-    if (onStatusChange) {
-      onStatusChange({ pageNumber, numPages, scale });
+    if (onViewerStatus) {
+      onViewerStatus({ 
+        type: 'pdf',
+        name: fileName,
+        size: file?.size,
+        modified: file?.modified,
+        pageNumber, 
+        numPages, 
+        scale 
+      });
     }
-  }, [pageNumber, numPages, scale, onStatusChange]);
+  }, [pageNumber, numPages, scale, onViewerStatus, fileName, file]);
+
+  useEffect(() => {
+    if (onStateChange) {
+      onStateChange({
+        pageNumber,
+        scale,
+        rotation: 0,
+        scrollMode: 'centered',
+        fitMode: 'width',
+        numPages,
+        pageSize: { width: pageWidth, height: 0 },
+        scrollPosition: { left: 0, top: 0 }
+      });
+    }
+  }, [pageNumber, scale, numPages, pageWidth, onStateChange]);
 
   return (
-    <div className="h-full flex flex-col bg-muted/30 overflow-hidden">
+    <div className={`h-full flex flex-col bg-muted/30 overflow-hidden ${className}`} onClick={onClick}>
       {/* Toolbar */}
       <div className="flex items-center gap-2 p-2 bg-background border-b flex-shrink-0">
         <button 
@@ -114,37 +171,14 @@ export default function PDFViewerPane({
           </span>
         )}
 
-        {(onDownload || onShare || onMaximize) && (
-          <>
-            <div className="flex-1" />
-            {onDownload && (
-              <button
-                onClick={onDownload}
-                className="px-3 py-1 border rounded hover:bg-muted"
-                title="Download"
-              >
-                <Download className="h-4 w-4" />
-              </button>
-            )}
-            {onShare && (
-              <button
-                onClick={onShare}
-                className="px-3 py-1 border rounded hover:bg-muted"
-                title="Share"
-              >
-                <Share2 className="h-4 w-4" />
-              </button>
-            )}
-            {onMaximize && (
-              <button
-                onClick={onMaximize}
-                className="px-3 py-1 border rounded hover:bg-muted"
-                title="Maximize"
-              >
-                <Maximize2 className="h-4 w-4" />
-              </button>
-            )}
-          </>
+        {onToggleFillPage && (
+          <button
+            onClick={onToggleFillPage}
+            className="px-3 py-1 border rounded hover:bg-muted"
+            title="Toggle Fill Page"
+          >
+            <Maximize2 className="h-4 w-4" />
+          </button>
         )}
       </div>
 
@@ -158,7 +192,6 @@ export default function PDFViewerPane({
             file={fileUrl}
             onLoadSuccess={({ numPages }) => {
               setNumPages(numPages);
-              console.log('✅ PDF loaded:', numPages, 'pages');
               setTimeout(updateWidth, 50);
             }}
             onLoadError={(error) => {

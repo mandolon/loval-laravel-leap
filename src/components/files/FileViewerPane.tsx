@@ -74,11 +74,7 @@ export default function FileViewerPane({
   if (isPdf) {
     return (
       <PDFViewerPane
-        fileUrl={fileUrl}
-        fileName={file.filename}
-        onDownload={() => onDownload?.(file)}
-        onShare={() => onShare?.(file)}
-        onMaximize={() => onMaximize?.(file)}
+        file={{ url: fileUrl, name: file.filename, size: file.filesize, modified: file.updated_at }}
       />
     );
   }
@@ -86,11 +82,7 @@ export default function FileViewerPane({
   if (isImage) {
     return (
       <ImageViewerPane
-        imageUrl={fileUrl}
-        fileName={file.filename}
-        onDownload={() => onDownload?.(file)}
-        onShare={() => onShare?.(file)}
-        onMaximize={() => onMaximize?.(file)}
+        file={{ url: fileUrl, name: file.filename, size: file.filesize, modified: file.updated_at }}
       />
     );
   }
