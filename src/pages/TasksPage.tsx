@@ -151,8 +151,10 @@ const TasksPage = () => {
     
     const fileCount = task.attachedFiles?.length || 0;
     const project = projects.find(p => p.id === task.projectId);
-    const projectAddress = project?.address as { street?: string; city?: string; state?: string; zip?: string } | undefined;
-    const addressDisplay = projectAddress?.street || '-';
+    const projectAddress = project?.address as { streetNumber?: string; streetName?: string; city?: string; state?: string; zipCode?: string } | undefined;
+    const addressDisplay = projectAddress?.streetNumber && projectAddress?.streetName 
+      ? `${projectAddress.streetNumber} ${projectAddress.streetName}`
+      : '-';
 
     if (!creator) return null;
 
