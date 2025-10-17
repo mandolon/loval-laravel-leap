@@ -552,8 +552,14 @@ const ProjectDetails = () => {
                 <CardContent>
                   <p className="font-medium">
                     {typeof project.address === 'object' && project.address 
-                      ? `${project.address.streetNumber || ''} ${project.address.streetName || ''}, ${project.address.city || ''}, ${project.address.state || ''} ${project.address.zipCode || ''}`.trim() 
-                      : '—'}
+                      ? (() => {
+                          const { streetNumber, streetName, city, state, zipCode } = project.address;
+                          const street = [streetNumber, streetName].filter(Boolean).join(' ');
+                          const cityState = [city, state].filter(Boolean).join(', ');
+                          const parts = [street, cityState, zipCode].filter(Boolean);
+                          return parts.length > 0 ? parts.join(', ') : 'No address provided';
+                        })()
+                      : 'No address provided'}
                   </p>
                 </CardContent>
               </Card>
