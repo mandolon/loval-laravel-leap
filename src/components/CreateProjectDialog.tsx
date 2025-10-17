@@ -46,6 +46,7 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
   const [secondaryClientPhone, setSecondaryClientPhone] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [workspaceId, setWorkspaceId] = useState("");
+  const [isNameManuallyEdited, setIsNameManuallyEdited] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -55,6 +56,24 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
       }
     }
   }, [open]);
+
+  // Auto-fill project name based on client name and address
+  useEffect(() => {
+    if (!isNameManuallyEdited && (clientFirstName || clientLastName || streetNumber || streetName)) {
+      const clientName = clientLastName.trim() || clientFirstName.trim();
+      const address = `${streetNumber.trim()} ${streetName.trim()}`.trim();
+      
+      if (clientName && address) {
+        setName(`${clientName} - ${address}`);
+      } else if (clientName) {
+        setName(clientName);
+      } else if (address) {
+        setName(address);
+      } else {
+        setName("");
+      }
+    }
+  }, [clientFirstName, clientLastName, streetNumber, streetName, isNameManuallyEdited]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,6 +159,7 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
     setSecondaryClientEmail("");
     setSecondaryClientPhone("");
     setErrors({});
+    setIsNameManuallyEdited(false);
     setOpen(false);
   };
 
@@ -167,60 +187,7 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
             </div>
           )}
 
-          {/* Row 1: Project Address - All fields in one row */}
-          <div className="space-y-2">
-            <Label>Project Address *</Label>
-            <div className="grid grid-cols-12 gap-2">
-              <div className="col-span-2">
-                <Input
-                  placeholder="Street #"
-                  value={streetNumber}
-                  onChange={(e) => setStreetNumber(e.target.value)}
-                  className={errors.streetNumber ? "border-destructive" : ""}
-                />
-              </div>
-              <div className="col-span-4">
-                <Input
-                  placeholder="Street Name"
-                  value={streetName}
-                  onChange={(e) => setStreetName(e.target.value)}
-                  className={errors.streetName ? "border-destructive" : ""}
-                />
-              </div>
-              <div className="col-span-3">
-                <Input
-                  placeholder="City"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  className={errors.city ? "border-destructive" : ""}
-                />
-              </div>
-              <div className="col-span-1">
-                <Input
-                  placeholder="ST"
-                  value={state}
-                  onChange={(e) => setState(e.target.value.toUpperCase())}
-                  maxLength={2}
-                  className={errors.state ? "border-destructive" : ""}
-                />
-              </div>
-              <div className="col-span-2">
-                <Input
-                  placeholder="Zip"
-                  value={zipCode}
-                  onChange={(e) => setZipCode(e.target.value)}
-                  className={errors.zipCode ? "border-destructive" : ""}
-                />
-              </div>
-            </div>
-            {(errors.streetNumber || errors.streetName || errors.city || errors.state || errors.zipCode) && (
-              <p className="text-xs text-destructive">
-                {errors.streetNumber || errors.streetName || errors.city || errors.state || errors.zipCode}
-              </p>
-            )}
-          </div>
-
-          {/* Row 2: Primary Client - All fields in one row */}
+          {/* Row 1: Primary Client - All fields in one row */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>Primary Client (First Name Required) *</Label>
@@ -277,7 +244,7 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
             )}
           </div>
 
-          {/* Row 3: Optional Secondary Client */}
+          {/* Row 2: Optional Secondary Client */}
           {hasSecondaryClient && (
             <div className="space-y-2">
               <Label>Secondary Client</Label>
@@ -316,17 +283,76 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
             </div>
           )}
 
-          {/* Row 4: Project Name (Last) */}
+          {/* Row 3: Project Address - All fields in one row */}
+          <div className="space-y-2">
+            <Label>Project Address *</Label>
+            <div className="grid grid-cols-12 gap-2">
+              <div className="col-span-2">
+                <Input
+                  placeholder="Street #"
+                  value={streetNumber}
+                  onChange={(e) => setStreetNumber(e.target.value)}
+                  className={errors.streetNumber ? "border-destructive" : ""}
+                />
+              </div>
+              <div className="col-span-4">
+                <Input
+                  placeholder="Street Name"
+                  value={streetName}
+                  onChange={(e) => setStreetName(e.target.value)}
+                  className={errors.streetName ? "border-destructive" : ""}
+                />
+              </div>
+              <div className="col-span-3">
+                <Input
+                  placeholder="City"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  className={errors.city ? "border-destructive" : ""}
+                />
+              </div>
+              <div className="col-span-1">
+                <Input
+                  placeholder="ST"
+                  value={state}
+                  onChange={(e) => setState(e.target.value.toUpperCase())}
+                  maxLength={2}
+                  className={errors.state ? "border-destructive" : ""}
+                />
+              </div>
+              <div className="col-span-2">
+                <Input
+                  placeholder="Zip"
+                  value={zipCode}
+                  onChange={(e) => setZipCode(e.target.value)}
+                  className={errors.zipCode ? "border-destructive" : ""}
+                />
+              </div>
+            </div>
+            {(errors.streetNumber || errors.streetName || errors.city || errors.state || errors.zipCode) && (
+              <p className="text-xs text-destructive">
+                {errors.streetNumber || errors.streetName || errors.city || errors.state || errors.zipCode}
+              </p>
+            )}
+          </div>
+
+          {/* Row 4: Project Name (Auto-filled) */}
           <div className="space-y-2">
             <Label htmlFor="name">Project Name</Label>
             <Input
               id="name"
-              placeholder="e.g., Modern Family Home (optional - defaults to [Client Name] - [Address])"
+              placeholder="Auto-filled from client name and address"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                setIsNameManuallyEdited(true);
+              }}
               className={errors.name ? "border-destructive" : ""}
             />
             {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+            <p className="text-xs text-muted-foreground">
+              This field auto-fills as you enter the client name and address. You can edit it manually if needed.
+            </p>
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
