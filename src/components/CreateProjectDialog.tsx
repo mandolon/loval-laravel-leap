@@ -2,9 +2,7 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus } from "lucide-react";
 import { api } from "@/lib/api/client";
@@ -13,7 +11,6 @@ import { z } from "zod";
 
 const projectSchema = z.object({
   name: z.string().trim().min(1, "Project name is required").max(100),
-  description: z.string().trim().max(500),
   streetNumber: z.string().trim().min(1, "Street number is required").max(20),
   streetName: z.string().trim().min(1, "Street name is required").max(100),
   city: z.string().trim().min(1, "City is required").max(100),
@@ -23,8 +20,6 @@ const projectSchema = z.object({
   clientLastName: z.string().trim().min(1, "Last name is required").max(50),
   clientEmail: z.string().trim().email("Invalid email").max(255),
   clientPhone: z.string().trim().optional(),
-  status: z.enum(['pending', 'active', 'completed', 'archived']),
-  phase: z.enum(['Pre-Design', 'Design', 'Permit', 'Build']),
 });
 
 interface CreateProjectDialogProps {
@@ -35,7 +30,6 @@ interface CreateProjectDialogProps {
 export const CreateProjectDialog = ({ onCreateProject, children }: CreateProjectDialogProps) => {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
   const [streetNumber, setStreetNumber] = useState("");
   const [streetName, setStreetName] = useState("");
   const [city, setCity] = useState("");
@@ -50,9 +44,6 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
   const [secondaryClientLastName, setSecondaryClientLastName] = useState("");
   const [secondaryClientEmail, setSecondaryClientEmail] = useState("");
   const [secondaryClientPhone, setSecondaryClientPhone] = useState("");
-  const [estimatedAmount, setEstimatedAmount] = useState("");
-  const [status, setStatus] = useState<'pending' | 'active' | 'completed' | 'archived'>('pending');
-  const [phase, setPhase] = useState<'Pre-Design' | 'Design' | 'Permit' | 'Build'>('Pre-Design');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [workspaceId, setWorkspaceId] = useState("");
 
@@ -71,7 +62,6 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
     
     const formData = {
       name,
-      description,
       streetNumber,
       streetName,
       city,
@@ -81,8 +71,6 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
       clientLastName,
       clientEmail,
       clientPhone,
-      status,
-      phase,
     };
 
     const result = projectSchema.safeParse(formData);
@@ -106,7 +94,6 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
     const projectInput: CreateProjectInput = {
       workspaceId,
       name: name.trim(),
-      description: description.trim(),
       address: {
         streetNumber: streetNumber.trim(),
         streetName: streetName.trim(),
@@ -126,16 +113,14 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
         email: secondaryClientEmail.trim(),
         phone: secondaryClientPhone.trim() || undefined,
       } : undefined,
-      estimatedAmount: estimatedAmount ? parseFloat(estimatedAmount) : undefined,
-      status,
-      phase,
+      status: 'active',
+      phase: 'Pre-Design',
     };
 
     onCreateProject(projectInput);
 
     // Reset form
     setName("");
-    setDescription("");
     setStreetNumber("");
     setStreetName("");
     setCity("");
@@ -150,9 +135,6 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
     setSecondaryClientLastName("");
     setSecondaryClientEmail("");
     setSecondaryClientPhone("");
-    setEstimatedAmount("");
-    setStatus('pending');
-    setPhase('Pre-Design');
     setErrors({});
     setOpen(false);
   };
@@ -171,7 +153,7 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
         <DialogHeader>
           <DialogTitle>Create New Project</DialogTitle>
           <DialogDescription>
-            Add a new architecture project with client and address details
+            Enter the essential project information to get started
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6 mt-4">
@@ -181,86 +163,26 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
             </div>
           )}
 
-          {/* Project Details */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold">Project Details</h3>
-            
-            <div className="space-y-2">
-              <Label htmlFor="name">Project Name *</Label>
-              <Input
-                id="name"
-                placeholder="e.g., Modern Family Home"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className={errors.name ? "border-destructive" : ""}
-              />
-              {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                placeholder="Brief description of the project"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                className={errors.description ? "border-destructive" : ""}
-              />
-              {errors.description && <p className="text-xs text-destructive">{errors.description}</p>}
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="estimatedAmount">Design Fee</Label>
-                <Input
-                  id="estimatedAmount"
-                  type="number"
-                  placeholder="45000"
-                  value={estimatedAmount}
-                  onChange={(e) => setEstimatedAmount(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="status">Initial Status *</Label>
-                <Select value={status} onValueChange={(value: any) => setStatus(value)}>
-                  <SelectTrigger id="status">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="active">In Progress</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phase">Initial Phase *</Label>
-                <Select value={phase} onValueChange={(value: any) => setPhase(value)}>
-                  <SelectTrigger id="phase">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Pre-Design">Pre-Design</SelectItem>
-                    <SelectItem value="Design">Design</SelectItem>
-                    <SelectItem value="Permit">Permit</SelectItem>
-                    <SelectItem value="Build">Build</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+          {/* Row 1: Project Name */}
+          <div className="space-y-2">
+            <Label htmlFor="name">Project Name *</Label>
+            <Input
+              id="name"
+              placeholder="e.g., Modern Family Home"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={errors.name ? "border-destructive" : ""}
+            />
+            {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
           </div>
 
-          {/* Address Fields */}
-          <div className="space-y-4">
+          {/* Row 2: Project Address */}
+          <div className="space-y-3">
             <h3 className="text-sm font-semibold">Project Address</h3>
             
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="streetNumber">Street Number *</Label>
+                <Label htmlFor="streetNumber">Street # *</Label>
                 <Input
                   id="streetNumber"
                   placeholder="123"
@@ -271,7 +193,7 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
                 {errors.streetNumber && <p className="text-xs text-destructive">{errors.streetNumber}</p>}
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 col-span-2">
                 <Label htmlFor="streetName">Street Name *</Label>
                 <Input
                   id="streetName"
@@ -284,7 +206,7 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-4 gap-3">
               <div className="space-y-2 col-span-2">
                 <Label htmlFor="city">City *</Label>
                 <Input
@@ -309,23 +231,23 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
                 />
                 {errors.state && <p className="text-xs text-destructive">{errors.state}</p>}
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="zipCode">Zip Code *</Label>
-              <Input
-                id="zipCode"
-                placeholder="97201"
-                value={zipCode}
-                onChange={(e) => setZipCode(e.target.value)}
-                className={errors.zipCode ? "border-destructive" : ""}
-              />
-              {errors.zipCode && <p className="text-xs text-destructive">{errors.zipCode}</p>}
+              <div className="space-y-2">
+                <Label htmlFor="zipCode">Zip *</Label>
+                <Input
+                  id="zipCode"
+                  placeholder="97201"
+                  value={zipCode}
+                  onChange={(e) => setZipCode(e.target.value)}
+                  className={errors.zipCode ? "border-destructive" : ""}
+                />
+                {errors.zipCode && <p className="text-xs text-destructive">{errors.zipCode}</p>}
+              </div>
             </div>
           </div>
 
-          {/* Primary Client Information */}
-          <div className="space-y-4">
+          {/* Row 3: Primary Client */}
+          <div className="space-y-3">
             <h3 className="text-sm font-semibold">Primary Client</h3>
             
             <div className="grid grid-cols-2 gap-3">
@@ -382,20 +304,20 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
           </div>
 
           {/* Optional Secondary Client */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Checkbox
                 id="hasSecondaryClient"
                 checked={hasSecondaryClient}
                 onCheckedChange={(checked) => setHasSecondaryClient(checked as boolean)}
               />
-              <Label htmlFor="hasSecondaryClient" className="font-semibold cursor-pointer">
+              <Label htmlFor="hasSecondaryClient" className="text-sm font-medium cursor-pointer">
                 Add Secondary Client
               </Label>
             </div>
 
             {hasSecondaryClient && (
-              <div className="space-y-4 pl-6 border-l-2">
+              <div className="space-y-3 pl-6 border-l-2 border-border">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label htmlFor="secondaryClientFirstName">First Name</Label>
