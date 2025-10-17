@@ -41,6 +41,7 @@ import { EditAssessorParcelDialog } from "@/components/project/EditAssessorParce
 import { EditProjectStatusDialog } from "@/components/project/EditProjectStatusDialog";
 import { EditProjectPhaseDialog } from "@/components/project/EditProjectPhaseDialog";
 import { EditProjectEstimatedAmountDialog } from "@/components/project/EditProjectEstimatedAmountDialog";
+import { EditProjectNameDialog } from "@/components/project/EditProjectNameDialog";
 import { ProjectMembersTable } from "@/components/project/ProjectMembersTable";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -433,11 +434,27 @@ const ProjectDetails = () => {
             </TabsContent>
 
             <TabsContent value="project" className="mt-6 space-y-6">
+              {/* Project Name */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Project Name</CardTitle>
+                  </div>
+                  <EditProjectNameDialog
+                    name={project.name}
+                    onUpdate={(name) => handleUpdateProject({ name })}
+                  />
+                </CardHeader>
+                <CardContent>
+                  <p className="font-medium text-lg">{project.name}</p>
+                </CardContent>
+              </Card>
+
               {/* Project Narrative */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
-                    <CardTitle>Project Narrative</CardTitle>
+                    <CardTitle>Project Description</CardTitle>
                   </div>
                   <EditProjectDetailsDialog
                     description={project.description}
@@ -445,7 +462,7 @@ const ProjectDetails = () => {
                   />
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">{project.description || "Select a project to view its details. Once project data is available, this tab will display key information, status updates, permits, and team members for the selected project."}</p>
+                  <p className="text-muted-foreground">{project.description || "No description provided yet. Click edit to add project details."}</p>
                 </CardContent>
               </Card>
 
