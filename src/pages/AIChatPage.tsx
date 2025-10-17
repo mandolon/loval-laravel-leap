@@ -4,10 +4,12 @@ import { Send, Bot, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAIChat } from "@/hooks/useAIChat";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/contexts/UserContext";
+import { useProjects } from "@/lib/api/hooks/useProjects";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -18,9 +20,11 @@ export default function AIChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [threadId, setThreadId] = useState<string>("");
+  const [selectedProject, setSelectedProject] = useState<string>("select");
   const scrollRef = useRef<HTMLDivElement>(null);
   
   const { sendMessage, isLoading } = useAIChat(threadId, workspaceId || "");
+  const { data: projects = [] } = useProjects(workspaceId || "");
 
   // Load or create thread
   useEffect(() => {
@@ -145,6 +149,25 @@ export default function AIChatPage() {
         <p className="text-sm text-muted-foreground">
           Ask me anything about your workspace, projects, or tasks
         </p>
+      </div>
+
+      <div className="border-b p-4">
+        <div className="max-w-3xl mx-auto">
+          <Select value={selectedProject} onValueChange={setSelectedProject}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select Project" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="select">Select Project</SelectItem>
+              <SelectItem value="all">All Projects</SelectItem>
+              {projects.map((project) => (
+                <SelectItem key={project.id} value={project.id}>
+                  {project.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <ScrollArea ref={scrollRef} className="flex-1 p-4">
