@@ -227,8 +227,8 @@ const ProjectDetails = () => {
         </div>
 
         {/* Main Content */}
-        <div className={`flex-1 ${activeTab === 'files' ? 'overflow-hidden' : 'overflow-auto'}`}>
-          <div className={activeTab === 'files' ? '' : 'p-6 space-y-6'}>
+        <div className={`flex-1 min-h-0 ${activeTab === 'files' ? 'overflow-hidden' : 'overflow-auto'}`}>
+          <div className={activeTab === 'files' ? 'h-full' : 'p-6 space-y-6'}>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full">
               <TabsContent value="files" className="mt-0 h-full">
                 <FileExplorer projectId={id || ''} projectName={project.name} />
