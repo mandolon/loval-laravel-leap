@@ -143,7 +143,7 @@ const ProjectDetails = () => {
       <div className="flex flex-col flex-1">
         {/* Header */}
         <div className="border-b bg-background">
-          <div className="flex items-center px-6 py-3">
+          <div className="flex items-center px-6 py-2">
             {/* Left: Back button */}
             <div className="flex-1 flex items-center">
               <Button 
