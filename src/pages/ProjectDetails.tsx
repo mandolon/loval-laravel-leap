@@ -202,12 +202,15 @@ const ProjectDetails = () => {
             </TabsList>
           </Tabs>
 
-          {/* Right: Notification icon */}
+          {/* Right: Chat toggle button */}
           <div className="flex-1 flex items-center justify-end">
-            <div className="relative">
-              <Button variant="ghost" size="icon">
-                <MessageSquare className="h-5 w-5" />
-              </Button>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => setChatOpen(!chatOpen)}
+              className="relative"
+            >
+              <MessageSquare className="h-5 w-5" />
               {messages.length > 0 && (
                 <Badge 
                   className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
@@ -216,16 +219,18 @@ const ProjectDetails = () => {
                   {messages.length}
                 </Badge>
               )}
-            </div>
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        <div className="p-6 space-y-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsContent value="files" className="mt-0">
+      {/* Main Content + Chat Panel */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Main Content */}
+        <div className="flex-1 overflow-auto">
+          <div className="p-6 space-y-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsContent value="files" className="mt-0">
               <Card>
                 <CardHeader>
                   <CardTitle>Files</CardTitle>
@@ -742,25 +747,22 @@ const ProjectDetails = () => {
         </div>
       </div>
 
-      {/* Project Chat Sidebar */}
-      <Collapsible open={chatOpen} onOpenChange={setChatOpen}>
-        <div className="relative">
-          <CollapsibleTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute -left-10 top-4 z-10 h-8 w-8"
-            >
-              {chatOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-            </Button>
-          </CollapsibleTrigger>
-          
-          <CollapsibleContent className="w-80 border-l bg-background overflow-hidden data-[state=closed]:w-0 transition-all flex flex-col h-full">
-            <div className="p-6 border-b">
-              <h3 className="font-semibold text-lg">Project Chat</h3>
+        {/* Project Chat Sidebar */}
+        {chatOpen && (
+          <div className="w-80 border-l bg-background flex flex-col h-full">
+            <div className="p-4 border-b flex items-center justify-between">
+              <h3 className="font-semibold">Project Chat</h3>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setChatOpen(false)}
+                className="h-8 w-8"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
             
-            <ScrollArea className="flex-1 p-6">
+            <ScrollArea className="flex-1 p-4">
               <div className="space-y-4">
                 {chatLoading ? (
                   <p className="text-sm text-muted-foreground text-center py-8">Loading messages...</p>
@@ -779,7 +781,7 @@ const ProjectDetails = () => {
               </div>
             </ScrollArea>
 
-            <div className="p-6 border-t">
+            <div className="p-4 border-t">
               <ChatInput
                 onSendMessage={handleSendMessage}
                 replyingTo={replyingTo}
@@ -787,9 +789,9 @@ const ProjectDetails = () => {
                 disabled={sendChatMutation.isPending}
               />
             </div>
-          </CollapsibleContent>
-        </div>
-      </Collapsible>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
