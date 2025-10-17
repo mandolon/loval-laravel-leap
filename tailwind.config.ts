@@ -14,6 +14,9 @@ export default {
     },
     extend: {
       colors: {
+        slate: {
+          850: '#172032',
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
