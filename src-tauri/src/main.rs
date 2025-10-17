@@ -12,12 +12,14 @@ fn main() {
             {
                 let handle = app.handle().clone();
                 tauri::async_runtime::spawn(async move {
-                    match handle.updater().check().await {
-                        Ok(Some(update)) => {
-                            let _ = update.download_and_install().await;
+                    if let Ok(updater) = handle.updater() {
+                        match updater.check().await {
+                            Ok(Some(update)) => {
+                                let _ = update.download_and_install().await;
+                            }
+                            Ok(None) => {}
+                            Err(_) => {}
                         }
-                        Ok(None) => {}
-                        Err(_) => {}
                     }
                 });
             }
