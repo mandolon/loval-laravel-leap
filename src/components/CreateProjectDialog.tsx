@@ -10,15 +10,15 @@ import type { CreateProjectInput } from "@/lib/api/types";
 import { z } from "zod";
 
 const projectSchema = z.object({
-  name: z.string().trim().min(1, "Project name is required").max(100),
+  name: z.string().trim().max(100).optional(),
   streetNumber: z.string().trim().min(1, "Street number is required").max(20),
   streetName: z.string().trim().min(1, "Street name is required").max(100),
   city: z.string().trim().min(1, "City is required").max(100),
   state: z.string().trim().min(2, "State is required").max(2).toUpperCase(),
   zipCode: z.string().trim().regex(/^\d{5}(-\d{4})?$/, "Invalid zip code"),
   clientFirstName: z.string().trim().min(1, "First name is required").max(50),
-  clientLastName: z.string().trim().min(1, "Last name is required").max(50),
-  clientEmail: z.string().trim().email("Invalid email").max(255),
+  clientLastName: z.string().trim().max(50).optional(),
+  clientEmail: z.string().trim().email("Invalid email").max(255).optional().or(z.literal('')),
   clientPhone: z.string().trim().optional(),
 });
 
@@ -93,7 +93,7 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
 
     const projectInput: CreateProjectInput = {
       workspaceId,
-      name: name.trim(),
+      name: name.trim() || `Project at ${streetNumber.trim()} ${streetName.trim()}`,
       address: {
         streetNumber: streetNumber.trim(),
         streetName: streetName.trim(),
@@ -103,8 +103,8 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
       },
       primaryClient: {
         firstName: clientFirstName.trim(),
-        lastName: clientLastName.trim(),
-        email: clientEmail.trim(),
+        lastName: clientLastName.trim() || '',
+        email: clientEmail.trim() || undefined,
         phone: clientPhone.trim() || undefined,
       },
       secondaryClient: hasSecondaryClient ? {
@@ -165,10 +165,10 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
 
           {/* Row 1: Project Name */}
           <div className="space-y-2">
-            <Label htmlFor="name">Project Name *</Label>
+            <Label htmlFor="name">Project Name</Label>
             <Input
               id="name"
-              placeholder="e.g., Modern Family Home"
+              placeholder="e.g., Modern Family Home (optional - defaults to address)"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className={errors.name ? "border-destructive" : ""}
@@ -231,11 +231,11 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
 
           {/* Row 3: Primary Client - All fields in one row */}
           <div className="space-y-2">
-            <Label>Primary Client *</Label>
+            <Label>Primary Client (First Name Required) *</Label>
             <div className="grid grid-cols-4 gap-2">
               <div>
                 <Input
-                  placeholder="First Name"
+                  placeholder="First Name *"
                   value={clientFirstName}
                   onChange={(e) => setClientFirstName(e.target.value)}
                   className={errors.clientFirstName ? "border-destructive" : ""}
@@ -261,7 +261,7 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
               <div>
                 <Input
                   type="tel"
-                  placeholder="Phone (optional)"
+                  placeholder="Phone"
                   value={clientPhone}
                   onChange={(e) => setClientPhone(e.target.value)}
                 />
