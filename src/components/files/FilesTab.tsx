@@ -5,6 +5,8 @@ import PDFViewerPane from './PDFViewerPane'
 import ImageViewerPane from './ImageViewerPane'
 import { TabBar } from './TabBar'
 import { generateFileId } from '@/lib/utils/uuid'
+import { useUploadProjectFiles } from '@/lib/api/hooks/useProjectFiles'
+import { useToast } from '@/hooks/use-toast'
 
 const VIEWER_MIN_HEIGHT = 200
 const EXPLORER_MIN_HEIGHT = 140
@@ -85,6 +87,9 @@ interface FilesTabProps {
 }
 
 export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps) {
+  const { toast } = useToast()
+  const uploadFilesMutation = useUploadProjectFiles(projectId)
+  
   const initialTabRef = useRef<ViewerTab | null>(null)
   if (!initialTabRef.current) {
     initialTabRef.current = createTab()
@@ -245,12 +250,24 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps)
     setIsFullscreen(prev => !prev)
   }
 
-  const handleUploadFiles = (files: File[]) => {
-    // TODO: Upload files to backend
-    files.forEach(file => {
-      // Process uploaded file
-      void file // Placeholder to avoid unused variable warning
-    })
+  const handleUploadFiles = async (files: File[], folderId?: string) => {
+    if (!folderId) {
+      toast({
+        title: 'Error',
+        description: 'Please select a folder first',
+        variant: 'destructive'
+      })
+      return
+    }
+    
+    try {
+      await uploadFilesMutation.mutateAsync({
+        files,
+        folder_id: folderId
+      })
+    } catch (error) {
+      console.error('Upload error:', error)
+    }
   }
 
   // Handle file open requests from chat

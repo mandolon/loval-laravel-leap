@@ -560,7 +560,7 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
   keyboardFocused: boolean;
   keyboardSelectedIndex: number;
   onFileClick: (file: any) => void;
-  onUploadFiles?: (files: File[]) => void;
+  onUploadFiles?: (files: File[], options?: { phaseName?: string; folderName?: string; selectFolder?: boolean }) => void;
   canUpload: boolean;
   darkMode: boolean;
 }) => {
@@ -636,7 +636,7 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
       // Filter out any invalid files if needed
       const validFiles = files.filter(file => file.size > 0);
       if (validFiles.length > 0) {
-        onUploadFiles(validFiles);
+        onUploadFiles(validFiles, { phaseName: folder?.phase, folderName: folder?.name });
       }
     }
   };
@@ -777,7 +777,7 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
                 onChange={(e) => {
                   const list = e.target.files;
                   if (list && list.length) {
-                    onUploadFiles?.(Array.from(list));
+                    onUploadFiles?.(Array.from(list), { phaseName: folder?.phase, folderName: folder?.name });
                     // reset so selecting same files again re-triggers
                     e.target.value = '';
                   }
@@ -891,7 +891,7 @@ interface FileExplorerProps {
   darkMode?: boolean;
   viewerStatus?: any;
   canUpload?: boolean;
-  onUploadFiles?: (files: File[]) => void;
+  onUploadFiles?: (files: File[], folderId?: string) => void;
   isActive?: boolean;
   onClick?: () => void;
 }
@@ -1380,74 +1380,34 @@ export default function FileExplorer({
 
   const handleUploadFiles = useCallback((fileList: File[], options?: { phaseName?: string; folderName?: string; selectFolder?: boolean }) => {
     if (!fileList || !fileList.length) return;
-    const currentRoot = rootRef.current;
-    const currentPhases = currentRoot?.children || phases;
-    const phaseName = options?.phaseName || selectedPhase?.name || currentPhases[0]?.name;
-    if (!phaseName) return;
-    const fallbackFolder = currentPhases.find((p: any) => p.name === phaseName)?.children?.[0]?.name || 'Misc';
-    const folderName = options?.folderName || selectedFolder?.name || fallbackFolder;
-    const selectFolder = options?.selectFolder ?? true;
-
-    const newItems: any[] = [];
-    setFiles(prev => {
-      const updated = [...prev];
-      const working = [...updated];
-      fileList.forEach(file => {
-        const uniqueName = ensureUniqueName(file.name, phaseName, folderName, working);
-        const objectUrl = URL.createObjectURL(file);
-        // Track blob URL for cleanup
-        blobUrlsRef.current.add(objectUrl);
-        const modified = new Date(file.lastModified || Date.now());
-        const modifiedStr = modified.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        const newItem = {
-          name: uniqueName,
-          type: 'file',
-          size: formatFileSize(file.size),
-          modified: modifiedStr,
-          phase: phaseName,
-          folder: folderName,
-          remote: true,
-          url: objectUrl,
-          objectUrl,
-          local: true
-        };
-        working.push(newItem);
-        newItems.push(newItem);
-      });
-      return working;
-    });
-
-    if (newItems.length) {
-      filesRef.current = [...filesRef.current, ...newItems];
+    
+    // Find the folder ID based on phase and folder names
+    const phaseName = options?.phaseName || selectedPhase?.name;
+    const folderName = options?.folderName || selectedFolder?.name;
+    
+    if (!phaseName || !folderName) {
+      console.warn('Cannot upload files: missing phase or folder');
+      return;
     }
-
-    if (selectFolder && newItems.length) {
-      requestAnimationFrame(() => {
-        const latestRoot = rootRef.current;
-        const latestPhases = latestRoot?.children || currentPhases;
-        const combinedFiles = filesRef.current;
-        const phaseIdx = latestPhases.findIndex((p: any) => p.name === phaseName);
-        const phaseObj = latestPhases[phaseIdx];
-        if (phaseObj) {
-          setSelectedPhase(phaseObj);
-          const folderIdx = phaseObj.children?.findIndex((f: any) => f.name === folderName) ?? -1;
-          if (folderIdx >= 0) {
-            const folderObj = phaseObj.children[folderIdx];
-            setSelectedFolder(folderObj);
-            setKeyboardSelectedPhase(phaseIdx);
-            setKeyboardSelectedFolder(folderIdx);
-            const filtered = combinedFiles.filter(f => f.phase === phaseName && f.folder === folderName);
-            const last = newItems[newItems.length - 1];
-            const fileIdx = filtered.findIndex(f => f.name === last.name);
-            setKeyboardSelectedFile(fileIdx >= 0 ? fileIdx : 0);
-            setFocusedPanel('files');
-            setSelectedFile(last);
-            onFileSelect && onFileSelect(last);
-          }
-        }
-      });
+    
+    // Find the folder object to get its ID
+    const phaseFolder = foldersData.find(f => f.name === phaseName && f.parent_folder_id === null);
+    if (!phaseFolder) {
+      console.warn('Cannot find phase folder:', phaseName);
+      return;
     }
-  }, [ensureUniqueName, selectedPhase, selectedFolder, phases, onFileSelect]);
+    
+    const targetFolder = foldersData.find(f => f.name === folderName && f.parent_folder_id === phaseFolder.id);
+    if (!targetFolder) {
+      console.warn('Cannot find target folder:', folderName);
+      return;
+    }
+    
+    // Call the upload function with the folder ID
+    if (_onUploadFiles) {
+      _onUploadFiles(fileList, targetFolder.id);
+    }
+  }, [selectedPhase, selectedFolder, foldersData, _onUploadFiles]);
 
   // Revoke object URLs on unmount to avoid memory leaks
   useEffect(() => {
