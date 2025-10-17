@@ -41,13 +41,7 @@
       "providerShortName": null,
       "files": {}
     },
-    "icon": [
-      "../src-tauri-template/icons/32x32.png",
-      "../src-tauri-template/icons/128x128.png",
-      "../src-tauri-template/icons/128x128@2x.png",
-      "../src-tauri-template/icons/icon.icns",
-      "../src-tauri-template/icons/icon.ico"
-    ],
+    "icon": [],
     "resources": [],
     "copyright": "",
     "category": "Productivity",
