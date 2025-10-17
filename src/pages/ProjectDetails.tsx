@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import type { Task } from "@/lib/api/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FileText, CheckSquare, FileSpreadsheet, Link as LinkIcon, FolderOpen, User, MessageSquare, Edit, ChevronRight, ChevronLeft } from "lucide-react";
+import { ArrowLeft, FileText, CheckSquare, FileSpreadsheet, Link as LinkIcon, FolderOpen, User, MessageSquare, Edit, ChevronRight, ChevronLeft, LayoutGrid, List } from "lucide-react";
 import { TaskItem } from "@/components/TaskItem";
 import { CreateTaskDialog } from "@/components/CreateTaskDialog";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -21,6 +21,7 @@ import { useProjectMessages, useCreateMessage, useDeleteMessage, ProjectChatMess
 import { useInvoices, useDeleteInvoice } from "@/lib/api/hooks/useInvoices";
 import { CreateInvoiceDialog } from "@/components/invoice/CreateInvoiceDialog";
 import { InvoiceCard } from "@/components/invoice/InvoiceCard";
+import { InvoiceListItem } from "@/components/invoice/InvoiceListItem";
 import { ViewInvoiceDialog } from "@/components/invoice/ViewInvoiceDialog";
 import { EditInvoiceDialog } from "@/components/invoice/EditInvoiceDialog";
 import { NoteCard } from "@/components/notes/NoteCard";
@@ -44,6 +45,7 @@ const ProjectDetails = () => {
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [viewInvoiceOpen, setViewInvoiceOpen] = useState(false);
   const [editInvoiceOpen, setEditInvoiceOpen] = useState(false);
+  const [invoiceViewMode, setInvoiceViewMode] = useState<'card' | 'list'>('card');
   
   const { data: project, isLoading: projectLoading } = useProject(id || "");
   const { data: tasks = [], isLoading: tasksLoading } = useTasks(id || "");
@@ -257,7 +259,27 @@ const ProjectDetails = () => {
                     <h2 className="text-2xl font-bold">Invoices</h2>
                     <p className="text-muted-foreground">Manage project invoices and billing</p>
                   </div>
-                  <CreateInvoiceDialog projectId={id || ''} />
+                  <div className="flex gap-2">
+                    <div className="flex border rounded-md">
+                      <Button
+                        variant={invoiceViewMode === 'card' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setInvoiceViewMode('card')}
+                        className="rounded-r-none"
+                      >
+                        <LayoutGrid className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant={invoiceViewMode === 'list' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setInvoiceViewMode('list')}
+                        className="rounded-l-none"
+                      >
+                        <List className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <CreateInvoiceDialog projectId={id || ''} />
+                  </div>
                 </div>
 
                 {invoicesLoading ? (
@@ -270,10 +292,36 @@ const ProjectDetails = () => {
                       <p className="text-center text-muted-foreground">No invoices yet. Create your first invoice to get started.</p>
                     </CardContent>
                   </Card>
-                ) : (
+                ) : invoiceViewMode === 'card' ? (
                   <div className="grid gap-4 md:grid-cols-2">
                     {invoices.map((invoice) => (
                       <InvoiceCard
+                        key={invoice.id}
+                        invoice={invoice}
+                        onView={(inv) => {
+                          setSelectedInvoice(inv);
+                          setViewInvoiceOpen(true);
+                        }}
+                        onEdit={(inv) => {
+                          setSelectedInvoice(inv);
+                          setEditInvoiceOpen(true);
+                        }}
+                        onDelete={(invoiceId) => {
+                          if (confirm('Are you sure you want to delete this invoice?')) {
+                            deleteInvoiceMutation.mutate(invoiceId);
+                          }
+                        }}
+                        onDownloadPDF={(inv) => {
+                          // TODO: Implement PDF generation
+                          console.log('Download PDF for invoice:', inv.invoiceNumber);
+                        }}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {invoices.map((invoice) => (
+                      <InvoiceListItem
                         key={invoice.id}
                         invoice={invoice}
                         onView={(inv) => {
