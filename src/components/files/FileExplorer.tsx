@@ -13,7 +13,7 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { MOCK_FILES } from '@/data/mock';
-import { useProjectFolders, useProjectFiles as useProjectFilesApi } from '@/lib/api/hooks/useProjectFiles';
+import { useProjectFolders, useProjectFiles as useProjectFilesApi, useCreateFolder } from '@/lib/api/hooks/useProjectFiles';
 import { supabase } from '@/integrations/supabase/client';
 
 // Utility: format bytes to human readable (simplistic)
@@ -914,6 +914,7 @@ export default function FileExplorer({
   // Fetch real folders and files from Supabase
   const { data: foldersData = [] } = useProjectFolders(projectId || '')
   const { data: filesData = [] } = useProjectFilesApi(projectId || '')
+  const createFolderMutation = useCreateFolder(projectId || '')
   
   // Transform folders into tree structure
   const root = useMemo(() => {
@@ -1301,8 +1302,8 @@ export default function FileExplorer({
   ]);
 
   // Create folder handler
-  const handleCreateFolder = useCallback((folderName: string) => {
-    if (!selectedPhase || !folderName.trim()) return;
+  const handleCreateFolder = useCallback(async (folderName: string) => {
+    if (!selectedPhase || !folderName.trim() || !projectId) return;
     
     // Check if folder already exists
     const folderExists = selectedPhase.children?.some((f: any) => 
@@ -1314,27 +1315,45 @@ export default function FileExplorer({
       return;
     }
     
-    // Update the root structure with the new folder
-    setRootState(prevRoot => {
-      const newRoot = { ...prevRoot };
-      newRoot.children = newRoot.children.map((phase: any) => {
-        if (phase.name === selectedPhase.name) {
-          const updatedPhase = {
-            ...phase,
-            children: [
-              ...(phase.children || []),
-              { name: folderName.trim(), type: 'folder', phase: phase.name }
-            ]
-          };
-          // Update selectedPhase reference to point to the new phase object
-          setSelectedPhase(updatedPhase);
-          return updatedPhase;
-        }
-        return phase;
+    // Find the actual parent folder ID from foldersData
+    const parentFolder = foldersData.find((f: any) => f.name === selectedPhase.name && f.is_system_folder);
+    
+    try {
+      // Actually create the folder in the database
+      const newFolder = await createFolderMutation.mutateAsync({
+        name: folderName.trim(),
+        parent_folder_id: parentFolder?.id || null
       });
-      return newRoot;
-    });
-  }, [selectedPhase]);
+      
+      // Update the local state with the real folder data
+      setRootState(prevRoot => {
+        const newRoot = { ...prevRoot };
+        newRoot.children = newRoot.children.map((phase: any) => {
+          if (phase.name === selectedPhase.name) {
+            const updatedPhase = {
+              ...phase,
+              children: [
+                ...(phase.children || []),
+                { 
+                  id: newFolder.id,
+                  name: newFolder.name, 
+                  type: 'folder', 
+                  phase: phase.name 
+                }
+              ]
+            };
+            // Update selectedPhase reference to point to the new phase object
+            setSelectedPhase(updatedPhase);
+            return updatedPhase;
+          }
+          return phase;
+        });
+        return newRoot;
+      });
+    } catch (error) {
+      console.error('Failed to create folder:', error);
+    }
+  }, [selectedPhase, projectId, foldersData, createFolderMutation]);
 
   // Reorder folders via drag and drop
   const handleFolderReorder = useCallback((draggedFolder: any, targetFolder: any) => {
