@@ -176,6 +176,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
         );
 
       case 'workspace':
+        const filteredProjects = projects.filter(project => project.status === statusFilter);
         return (
           <>
             <div className="p-3">
@@ -191,12 +192,12 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
               </div>
               
               <div className="space-y-1 max-h-[200px] overflow-y-auto">
-                {projects.length === 0 ? (
+                {filteredProjects.length === 0 ? (
                   <div className="text-xs text-muted-foreground py-2">
-                    No projects yet
+                    No {statusFilter} projects
                   </div>
                 ) : (
-                  projects.slice(0, 5).map((project) => (
+                  filteredProjects.slice(0, 5).map((project) => (
                     <button
                       key={project.id}
                       onClick={() => navigate(`/workspace/${currentWorkspaceId}/project/${project.id}`)}
