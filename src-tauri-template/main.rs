@@ -10,7 +10,13 @@ fn main() {
             {
                 let handle = app.handle().clone();
                 tauri::async_runtime::spawn(async move {
-                    let _ = tauri_plugin_updater::check_update(&handle).await;
+                    match handle.updater().check().await {
+                        Ok(Some(update)) => {
+                            let _ = update.download_and_install().await;
+                        }
+                        Ok(None) => {}
+                        Err(_) => {}
+                    }
                 });
             }
             Ok(())

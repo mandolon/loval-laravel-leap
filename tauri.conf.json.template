@@ -42,11 +42,11 @@
       "files": {}
     },
     "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
+      "../src-tauri-template/icons/32x32.png",
+      "../src-tauri-template/icons/128x128.png",
+      "../src-tauri-template/icons/128x128@2x.png",
+      "../src-tauri-template/icons/icon.icns",
+      "../src-tauri-template/icons/icon.ico"
     ],
     "resources": [],
     "copyright": "",
