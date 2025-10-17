@@ -19,6 +19,7 @@ import { AssessorParcelInfo } from "@/components/project/EditAssessorParcelDialo
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from "@/lib/api/hooks/useTasks";
 import { useNotes, useCreateNote, useUpdateNote, useDeleteNote } from "@/lib/api/hooks/useNotes";
 import { FileExplorer } from "@/components/files/FileExplorer";
+import FilesLayout from "@/components/files/FilesLayout";
 import { useProjectMessages, useCreateMessage, useDeleteMessage, ProjectChatMessageWithUser } from "@/lib/api/hooks/useProjectChat";
 import { useInvoices, useDeleteInvoice } from "@/lib/api/hooks/useInvoices";
 import { CreateInvoiceDialog } from "@/components/invoice/CreateInvoiceDialog";
@@ -231,7 +232,7 @@ const ProjectDetails = () => {
           <div className={activeTab === 'files' ? 'h-full' : 'p-6 space-y-6'}>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full">
               <TabsContent value="files" className="mt-0 h-full">
-                <FileExplorer projectId={id || ''} projectName={project.name} />
+                <FilesLayout projectId={id || ''} projectName={project.name} />
               </TabsContent>
 
             <TabsContent value="tasks" className="mt-0">

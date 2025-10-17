@@ -1,10 +1,9 @@
-// src/components/FileExplorer.tsx
-// Unified file explorer for Web, Windows, Mac (Tauri)
-// Fully integrated with Supabase - storage, database, auth
+// src/components/files/FileExplorer.tsx
+// File browser component - folder tree and file table
+// Separated from viewer for better architecture
 
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import SimplePDFViewer from './SimplePDFViewer';
 import {
   Loader2,
   File,
@@ -26,77 +25,23 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-
-// ============================================
-// TYPES
-// ============================================
-interface Folder {
-  id: string;
-  short_id: string;
-  project_id: string;
-  parent_folder_id: string | null;
-  name: string;
-  is_system_folder: boolean;
-  path: string | null;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-}
-
-interface FileRecord {
-  id: string;
-  short_id: string;
-  project_id: string;
-  folder_id: string;
-  task_id: string | null;
-  parent_file_id: string | null;
-  filename: string;
-  version_number: number;
-  filesize: number | null;
-  mimetype: string | null;
-  storage_path: string;
-  download_count: number;
-  uploaded_by: string;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-}
-
-interface TableItem {
-  type: 'folder' | 'file';
-  id: string;
-  name: string;
-  modifiedDate?: string;
-  filesize?: number;
-  mimetype?: string;
-  storagePath?: string;
-}
-
-interface UploadingFile {
-  id: string;
-  filename: string;
-  progress: number;
-  status: 'pending' | 'uploading' | 'complete' | 'error';
-  error?: string;
-}
+import { Folder, FileRecord, TableItem, UploadingFile } from './types';
 
 // ============================================
 // MAIN COMPONENT
 // ============================================
 interface FileExplorerProps {
   projectId: string;
-  projectName: string;
+  onFileSelect: (file: FileRecord) => void;
+  selectedFileId?: string | null;
 }
 
-export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
+export const FileExplorer = ({ projectId, onFileSelect, selectedFileId: externalSelectedFileId }: FileExplorerProps) => {
   // State
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
-  const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   const fileTableRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
@@ -215,7 +160,6 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
       if (error) throw error;
     },
     onSuccess: () => {
-      setSelectedFileId(null);
       refetchFiles();
     },
   });
@@ -263,51 +207,6 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
       }
     }
   }, [folders, selectedFolderId]);
-
-  // Load PDF URL when selected file changes
-  useEffect(() => {
-    const selectedFile = files.find(f => f.id === selectedFileId);
-    if (!selectedFile || selectedFile.mimetype !== 'application/pdf') {
-      setPdfUrl(null);
-      return;
-    }
-
-    const loadPdfUrl = async () => {
-      try {
-        const { data, error } = await supabase.storage
-          .from('project-files')
-          .createSignedUrl(selectedFile.storage_path, 3600);
-
-        if (error) {
-          console.error('Supabase signed URL error:', error);
-          throw error;
-        }
-
-        if (!data?.signedUrl) {
-          console.error('No signed URL returned');
-          throw new Error('No signed URL');
-        }
-
-        // Clean URL - remove any trailing artifacts like :1
-        let cleanUrl = data.signedUrl.trim();
-        
-        // Remove trailing :digit pattern if present
-        cleanUrl = cleanUrl.replace(/:\d+$/, '');
-        
-        console.log('📄 PDF URL (raw):', data.signedUrl);
-        console.log('📄 PDF URL (clean):', cleanUrl);
-        console.log('📄 PDF URL type:', typeof cleanUrl);
-        console.log('📄 PDF URL length:', cleanUrl.length);
-        
-        setPdfUrl(cleanUrl);
-      } catch (error) {
-        console.error('Failed to load PDF URL:', error);
-        toast.error('Failed to load PDF URL');
-      }
-    };
-
-    loadPdfUrl();
-  }, [selectedFileId, files]);
 
   // ============================================
   // HANDLERS
@@ -402,54 +301,13 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
     });
   });
 
-  const selectedFile = files.find(f => f.id === selectedFileId);
-  const isImageFile = selectedFile?.mimetype?.startsWith('image/');
-  const isPdfFile = selectedFile?.mimetype === 'application/pdf';
-
   // ============================================
   // RENDER
   // ============================================
   return (
-    <div className="flex flex-col w-full h-full bg-background">
-      {/* VIEWER - Contained with fixed height */}
-      <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden">
-        {selectedFile ? (
-          <>
-            {isPdfFile ? (
-              <div className="w-full h-full">
-                <SimplePDFViewer 
-                  fileUrl={pdfUrl} 
-                  fileName={selectedFile.filename}
-                  onDownload={() => downloadFileMutation.mutate(selectedFile)}
-                  onShare={() => {/* TODO: implement share */}}
-                  onMaximize={() => {/* TODO: implement maximize */}}
-                />
-              </div>
-            ) : isImageFile ? (
-              <img
-                src={selectedFile.storage_path}
-                alt={selectedFile.filename}
-                className="max-w-full max-h-full object-contain"
-              />
-            ) : (
-              <div className="text-center text-muted-foreground">
-                <p className="text-lg font-medium">Preview Not Available</p>
-                <p className="text-sm mt-2">{selectedFile.mimetype || 'Unknown file type'}</p>
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="text-center text-muted-foreground">
-            <p className="text-lg">No file selected</p>
-            <p className="text-sm">Select a file from the list below</p>
-          </div>
-        )}
-      </div>
-
-      {/* 3. FILE EXPLORER - Fixed at bottom, aligned to page bottom */}
-      <div className="h-[320px] flex-shrink-0 flex border-t bg-background">
-        {/* Left: Folder tree sidebar */}
-        <div className="w-48 border-r bg-muted/30 overflow-y-auto flex-shrink-0">
+    <div className="h-full flex bg-background border-t">
+      {/* Left: Folder tree sidebar */}
+      <div className="w-48 border-r bg-muted/30 overflow-y-auto flex-shrink-0">
           <div className="py-2">
             {foldersLoading ? (
               <div className="p-4 text-sm text-muted-foreground">Loading folders...</div>
@@ -477,11 +335,11 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
                   />
                 ))
             )}
-          </div>
         </div>
+      </div>
 
-        {/* Right: File table */}
-        <div className="flex-1 flex flex-col min-w-0 bg-background">
+      {/* Right: File table */}
+      <div className="flex-1 flex flex-col min-w-0 bg-background">
           <div
             ref={fileTableRef}
             onDragEnter={() => setIsDraggingFiles(true)}
@@ -503,17 +361,20 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
             {filesLoading ? (
               <div className="p-4 text-sm text-muted-foreground">Loading files...</div>
             ) : (
-              <FileTableComponent
-                items={tableItems}
-                selectedFileId={selectedFileId}
-                onSelectFile={setSelectedFileId}
-                onSelectFolder={setSelectedFolderId}
-                onDeleteFile={(fileId) => {
-                  deleteFileMutation.mutate(fileId);
-                  toast.success('File deleted');
-                }}
-                folders={folders}
-              />
+            <FileTableComponent
+              items={tableItems}
+              selectedFileId={externalSelectedFileId || null}
+              onSelectFile={(fileId) => {
+                const file = files.find(f => f.id === fileId);
+                if (file) onFileSelect(file);
+              }}
+              onSelectFolder={setSelectedFolderId}
+              onDeleteFile={(fileId) => {
+                deleteFileMutation.mutate(fileId);
+                toast.success('File deleted');
+              }}
+              folders={folders}
+            />
             )}
           </div>
 
@@ -539,7 +400,6 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
               ))}
             </div>
           )}
-        </div>
       </div>
     </div>
   );
