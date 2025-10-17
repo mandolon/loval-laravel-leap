@@ -7,6 +7,7 @@ import { UserProvider } from "./contexts/UserContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { NewAppLayout } from "./components/layout/NewAppLayout";
 import { ThemeProvider } from "./components/ThemeProvider";
+import { UpdateChecker } from "./components/UpdateChecker";
 import HomePage from "./pages/HomePage";
 import ProjectsPage from "./pages/Index";
 import TasksPage from "./pages/TasksPage";
@@ -27,6 +28,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <UpdateChecker />
         <BrowserRouter>
           <UserProvider>
           <Routes>
