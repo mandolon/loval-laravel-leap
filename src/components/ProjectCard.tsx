@@ -1,15 +1,29 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Trash2, MapPin, Users } from "lucide-react";
+import { MoreVertical, Trash2, MapPin, Users, Archive } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from "@/components/ui/alert-dialog";
 import type { Project } from "@/lib/api/types";
 
 interface ProjectCardProps {
   project: Project;
   onClick: () => void;
   onDelete?: (id: string) => void;
+  onHardDelete?: (id: string) => void;
 }
 
 const phaseColors = {
@@ -33,7 +47,10 @@ const statusLabels = {
   archived: 'Archived',
 } as const;
 
-export const ProjectCard = ({ project, onDelete, onClick }: ProjectCardProps) => {
+export const ProjectCard = ({ project, onDelete, onHardDelete, onClick }: ProjectCardProps) => {
+  const [hardDeleteDialogOpen, setHardDeleteDialogOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  
   const formatAddress = () => {
     const addr = project.address;
     if (!addr.streetNumber && !addr.streetName && !addr.city) return 'No address';
@@ -67,7 +84,7 @@ export const ProjectCard = ({ project, onDelete, onClick }: ProjectCardProps) =>
             {project.description}
           </CardDescription>
         </div>
-        {onDelete && (
+        {(onDelete || onHardDelete) && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
               <Button 
@@ -79,16 +96,29 @@ export const ProjectCard = ({ project, onDelete, onClick }: ProjectCardProps) =>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(project.id);
-                }}
-                className="text-destructive"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete Project
-              </DropdownMenuItem>
+              {onDelete && (
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(project.id);
+                  }}
+                >
+                  <Archive className="mr-2 h-4 w-4" />
+                  Move to Trash
+                </DropdownMenuItem>
+              )}
+              {onHardDelete && (
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setHardDeleteDialogOpen(true);
+                  }}
+                  className="text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Permanently
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}
@@ -126,6 +156,61 @@ export const ProjectCard = ({ project, onDelete, onClick }: ProjectCardProps) =>
           </div>
         </div>
       </CardContent>
+
+      {/* Hard Delete Confirmation Dialog */}
+      <AlertDialog open={hardDeleteDialogOpen} onOpenChange={setHardDeleteDialogOpen}>
+        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Permanently Delete Project?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <div className="text-destructive font-medium">
+                ⚠️ This will permanently delete:
+              </div>
+              <ul className="list-disc list-inside space-y-1 text-sm">
+                <li>Project: "{project.name}"</li>
+                <li>{project.totalTasks} tasks</li>
+                <li>All files (including from storage)</li>
+                <li>All notes and invoices</li>
+              </ul>
+              <p className="text-sm font-medium">
+                This action cannot be undone. Use "Move to Trash" for recoverable deletion.
+              </p>
+              <div className="space-y-2">
+                <Label htmlFor="project-delete-confirm">
+                  Type the project name to confirm:
+                </Label>
+                <Input
+                  id="project-delete-confirm"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder={project.name}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={(e) => {
+              e.stopPropagation();
+              setDeleteConfirmText("");
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteConfirmText !== project.name}
+              onClick={(e) => {
+                e.stopPropagation();
+                onHardDelete?.(project.id);
+                setHardDeleteDialogOpen(false);
+                setDeleteConfirmText("");
+              }}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Delete Forever
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

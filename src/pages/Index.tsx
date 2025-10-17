@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useProjects } from "@/lib/api/hooks/useProjects";
+import { useProjects, useDeleteProject, useHardDeleteProject } from "@/lib/api/hooks/useProjects";
 
 const ProjectsPage = () => {
   const navigate = useNavigate();
@@ -19,6 +19,16 @@ const ProjectsPage = () => {
   const statusFilter = searchParams.get('status') || 'all';
   
   const { data: projects = [], isLoading } = useProjects(workspaceId || '');
+  const deleteProjectMutation = useDeleteProject(workspaceId || '');
+  const hardDeleteProjectMutation = useHardDeleteProject(workspaceId || '');
+
+  const handleDeleteProject = (id: string) => {
+    deleteProjectMutation.mutate(id);
+  };
+
+  const handleHardDeleteProject = (id: string) => {
+    hardDeleteProjectMutation.mutate(id);
+  };
 
   useEffect(() => {
     if (!workspaceId) {
@@ -136,6 +146,8 @@ const ProjectsPage = () => {
                 key={project.id}
                 project={project}
                 onClick={() => navigate(`/workspace/${workspaceId}/project/${project.id}`)}
+                onDelete={handleDeleteProject}
+                onHardDelete={handleHardDeleteProject}
               />
             ))}
           </div>

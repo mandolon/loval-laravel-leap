@@ -205,7 +205,7 @@ export const useUpdateProject = (workspaceId: string) => {
   })
 }
 
-// Delete project mutation
+// Delete project mutation (soft delete)
 export const useDeleteProject = (workspaceId: string) => {
   const queryClient = useQueryClient()
   const { toast } = useToast()
@@ -227,8 +227,54 @@ export const useDeleteProject = (workspaceId: string) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: projectKeys.list(workspaceId) })
       toast({
-        title: 'Project deleted',
-        description: 'Project has been removed',
+        title: 'Project moved to trash',
+        description: 'You can restore it from the Trash page',
+      })
+    },
+    onError: (error) => {
+      toast({
+        title: 'Failed to delete project',
+        description: handleApiError(error),
+        variant: 'destructive',
+      })
+    },
+  })
+}
+
+// Hard delete project mutation (permanent deletion)
+export const useHardDeleteProject = (workspaceId: string) => {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      // 1. Get files associated with project
+      const { data: files } = await supabase
+        .from('files')
+        .select('storage_path')
+        .eq('project_id', id);
+      
+      // 2. Delete files from storage
+      if (files && files.length > 0) {
+        const filePaths = files.map(f => f.storage_path);
+        await supabase.storage
+          .from('task-files')
+          .remove(filePaths);
+      }
+      
+      // 3. Hard delete project (cascades via foreign keys)
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.list(workspaceId) })
+      toast({
+        title: 'Project permanently deleted',
+        description: 'Project and all related data have been removed',
       })
     },
     onError: (error) => {

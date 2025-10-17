@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Building2, Plus, Check, Settings } from "lucide-react";
+import { Building2, Plus, Check, Settings, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,9 +15,19 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { useToast } from "@/hooks/use-toast";
-import { useUpdateWorkspace } from "@/lib/api/hooks/useWorkspaces";
+import { useUpdateWorkspace, useDeleteWorkspace } from "@/lib/api/hooks/useWorkspaces";
 import { WorkspaceMembersTable } from "@/components/workspace/WorkspaceMembersTable";
 import { DialogFooter } from "@/components/ui/dialog";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from "@/components/ui/alert-dialog";
 
 interface WorkspaceSwitcherProps {
   onWorkspaceChange?: (workspaceId: string) => void;
@@ -36,12 +46,15 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
   
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [newWorkspaceDescription, setNewWorkspaceDescription] = useState("");
   const [editWorkspaceName, setEditWorkspaceName] = useState("");
   const [editWorkspaceDescription, setEditWorkspaceDescription] = useState("");
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
   
   const updateWorkspaceMutation = useUpdateWorkspace();
+  const deleteWorkspaceMutation = useDeleteWorkspace();
 
   const handleWorkspaceChange = (newWorkspaceId: string) => {
     switchWorkspace(newWorkspaceId);
@@ -103,6 +116,27 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
         },
       }
     );
+  };
+
+  const handleDeleteWorkspace = async () => {
+    if (!currentWorkspaceId || deleteConfirmText !== "DELETE") return;
+    
+    deleteWorkspaceMutation.mutate(currentWorkspaceId, {
+      onSuccess: () => {
+        const remainingWorkspaces = workspaces.filter(w => w.id !== currentWorkspaceId);
+        
+        if (remainingWorkspaces.length > 0) {
+          switchWorkspace(remainingWorkspaces[0].id);
+          navigate(`/workspace/${remainingWorkspaces[0].id}/projects`);
+        } else {
+          setCreateDialogOpen(true);
+        }
+        
+        setDeleteDialogOpen(false);
+        setDeleteConfirmText("");
+        setSettingsDialogOpen(false);
+      },
+    });
   };
 
   return (
@@ -234,6 +268,36 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
               )}
             </div>
             
+            <div className="space-y-4 pt-4 border-t border-destructive/20">
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-destructive flex items-center gap-2">
+                  <Trash2 className="h-4 w-4" />
+                  Danger Zone
+                </h3>
+                <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">Delete Workspace</p>
+                      <p className="text-xs text-muted-foreground">
+                        Permanently delete this workspace and all projects within it. This action cannot be undone.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setDeleteDialogOpen(true);
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setSettingsDialogOpen(false)}>
                 Cancel
@@ -245,6 +309,51 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Workspace Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Workspace?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <div className="text-destructive font-medium">
+                ⚠️ This will permanently delete:
+              </div>
+              <ul className="list-disc list-inside space-y-1 text-sm">
+                <li>Workspace: "{currentWorkspace?.name}"</li>
+                <li>All projects in this workspace</li>
+                <li>All tasks, files, notes, and invoices</li>
+              </ul>
+              <p className="text-sm font-medium">
+                This action cannot be undone.
+              </p>
+              <div className="space-y-2">
+                <Label htmlFor="delete-confirm">
+                  Type "DELETE" to confirm:
+                </Label>
+                <Input
+                  id="delete-confirm"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="DELETE"
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteConfirmText("")}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteConfirmText !== "DELETE" || deleteWorkspaceMutation.isPending}
+              onClick={handleDeleteWorkspace}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deleteWorkspaceMutation.isPending ? "Deleting..." : "Delete Workspace"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
