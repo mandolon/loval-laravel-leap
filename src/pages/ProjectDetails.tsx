@@ -38,6 +38,9 @@ import { EditClientDialog } from "@/components/project/EditClientDialog";
 import { EditProjectDetailsDialog } from "@/components/project/EditProjectDetailsDialog";
 import { EditProjectAddressDialog } from "@/components/project/EditProjectAddressDialog";
 import { EditAssessorParcelDialog } from "@/components/project/EditAssessorParcelDialog";
+import { EditProjectStatusDialog } from "@/components/project/EditProjectStatusDialog";
+import { EditProjectPhaseDialog } from "@/components/project/EditProjectPhaseDialog";
+import { EditProjectEstimatedAmountDialog } from "@/components/project/EditProjectEstimatedAmountDialog";
 import { ProjectMembersTable } from "@/components/project/ProjectMembersTable";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -445,6 +448,68 @@ const ProjectDetails = () => {
                   <p className="text-muted-foreground">{project.description || "Select a project to view its details. Once project data is available, this tab will display key information, status updates, permits, and team members for the selected project."}</p>
                 </CardContent>
               </Card>
+
+              {/* Project Status, Phase, and Design Fee in a row */}
+              <div className="grid grid-cols-3 gap-6">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle>Status</CardTitle>
+                    </div>
+                    <EditProjectStatusDialog
+                      status={project.status}
+                      onUpdate={(status) => handleUpdateProject({ status: status as any })}
+                    />
+                  </CardHeader>
+                  <CardContent>
+                    <Badge variant={
+                      project.status === 'active' ? 'default' : 
+                      project.status === 'completed' ? 'secondary' : 
+                      project.status === 'archived' ? 'outline' : 
+                      'outline'
+                    }>
+                      {project.status === 'active' ? 'In Progress' : 
+                       project.status === 'pending' ? 'Pending' :
+                       project.status === 'completed' ? 'Completed' : 
+                       'Archived'}
+                    </Badge>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle>Phase</CardTitle>
+                    </div>
+                    <EditProjectPhaseDialog
+                      phase={project.phase}
+                      onUpdate={(phase) => handleUpdateProject({ phase: phase as any })}
+                    />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="font-medium">{project.phase}</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle>Design Fee</CardTitle>
+                    </div>
+                    <EditProjectEstimatedAmountDialog
+                      estimatedAmount={project.estimatedAmount}
+                      onUpdate={(estimatedAmount) => handleUpdateProject({ estimatedAmount })}
+                    />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="font-medium text-lg">
+                      {project.estimatedAmount 
+                        ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(project.estimatedAmount)
+                        : '—'}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
 
               {/* Team Section */}
               <Card>
