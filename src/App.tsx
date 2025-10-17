@@ -16,6 +16,7 @@ import ProjectDetails from "./pages/ProjectDetails";
 import ProfilePage from "./pages/ProfilePage";
 import AuthPage from "./pages/AuthPage";
 import AIChatPage from "./pages/AIChatPage";
+import TrashPage from "./pages/TrashPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -106,6 +107,16 @@ const App = () => (
                 <ProtectedRoute>
                   <NewAppLayout>
                     <AIChatPage />
+                  </NewAppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/workspace/:workspaceId/trash"
+              element={
+                <ProtectedRoute>
+                  <NewAppLayout>
+                    <TrashPage />
                   </NewAppLayout>
                 </ProtectedRoute>
               }

@@ -241,6 +241,40 @@ export const useDeleteProject = (workspaceId: string) => {
   })
 }
 
+// Restore project mutation (undo soft delete)
+export const useRestoreProject = (workspaceId: string) => {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('projects')
+        .update({ 
+          deleted_at: null,
+          deleted_by: null 
+        })
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.list(workspaceId) })
+      toast({
+        title: 'Project restored',
+        description: 'Project has been restored successfully',
+      })
+    },
+    onError: (error) => {
+      toast({
+        title: 'Failed to restore project',
+        description: handleApiError(error),
+        variant: 'destructive',
+      })
+    },
+  })
+}
+
 // Hard delete project mutation (permanent deletion)
 export const useHardDeleteProject = (workspaceId: string) => {
   const queryClient = useQueryClient()
