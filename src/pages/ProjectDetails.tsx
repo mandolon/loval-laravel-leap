@@ -139,93 +139,92 @@ const ProjectDetails = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)]">
-      {/* Header */}
-      <div className="border-b bg-background sticky top-0 z-10">
-        <div className="flex items-center px-6 py-3">
-          {/* Left: Back button */}
-          <div className="flex-1 flex items-center">
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => navigate(workspaceId ? `/workspace/${workspaceId}/projects` : "/projects")}
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </div>
+    <div className="flex h-[calc(100vh-4rem)]">
+      <div className="flex flex-col flex-1">
+        {/* Header */}
+        <div className="border-b bg-background">
+          <div className="flex items-center px-6 py-3">
+            {/* Left: Back button */}
+            <div className="flex-1 flex items-center">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => navigate(workspaceId ? `/workspace/${workspaceId}/projects` : "/projects")}
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </div>
 
-          {/* Center: Navigation tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-shrink-0">
-            <TabsList className="h-auto p-0 bg-transparent border-0">
-              <TabsTrigger 
-                value="files" 
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
-              >
-                Files
-              </TabsTrigger>
-              <TabsTrigger 
-                value="tasks"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
-              >
-                Tasks
-              </TabsTrigger>
-              <TabsTrigger 
-                value="invoices"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
-              >
-                Invoices
-              </TabsTrigger>
-              <TabsTrigger 
-                value="links"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
-              >
-                Links
-              </TabsTrigger>
-              <TabsTrigger 
-                value="project"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
-              >
-                Project
-              </TabsTrigger>
-              <TabsTrigger 
-                value="client"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
-              >
-                Client
-              </TabsTrigger>
-              <TabsTrigger 
-                value="notes"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
-              >
-                Notes
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          {/* Right: Chat toggle button */}
-          <div className="flex-1 flex items-center justify-end">
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => setChatOpen(!chatOpen)}
-              className="relative"
-            >
-              <MessageSquare className="h-5 w-5" />
-              {messages.length > 0 && (
-                <Badge 
-                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-                  variant="destructive"
+            {/* Center: Navigation tabs */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-shrink-0">
+              <TabsList className="h-auto p-0 bg-transparent border-0">
+                <TabsTrigger 
+                  value="files" 
+                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
                 >
-                  {messages.length}
-                </Badge>
-              )}
-            </Button>
+                  Files
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="tasks"
+                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
+                >
+                  Tasks
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="invoices"
+                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
+                >
+                  Invoices
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="links"
+                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
+                >
+                  Links
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="project"
+                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
+                >
+                  Project
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="client"
+                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
+                >
+                  Client
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="notes"
+                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
+                >
+                  Notes
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            {/* Right: Chat toggle button */}
+            <div className="flex-1 flex items-center justify-end">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setChatOpen(!chatOpen)}
+                className="relative"
+              >
+                <MessageSquare className="h-5 w-5" />
+                {messages.length > 0 && (
+                  <Badge 
+                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                    variant="destructive"
+                  >
+                    {messages.length}
+                  </Badge>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Main Content + Chat Panel */}
-      <div className="flex flex-1 overflow-hidden">
         {/* Main Content */}
         <div className="flex-1 overflow-auto">
           <div className="p-6 space-y-6">
@@ -746,52 +745,52 @@ const ProjectDetails = () => {
           </Tabs>
         </div>
       </div>
-
-        {/* Project Chat Sidebar */}
-        {chatOpen && (
-          <div className="w-80 border-l bg-background flex flex-col h-full">
-            <div className="p-4 border-b flex items-center justify-between">
-              <h3 className="font-semibold">Project Chat</h3>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => setChatOpen(false)}
-                className="h-8 w-8"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-4">
-                {chatLoading ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">Loading messages...</p>
-                ) : messages.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">No messages yet. Start a conversation!</p>
-                ) : (
-                  messages.map((message) => (
-                    <ChatMessage
-                      key={message.id}
-                      message={message}
-                      onDelete={handleDeleteMessage}
-                      onReply={setReplyingTo}
-                    />
-                  ))
-                )}
-              </div>
-            </ScrollArea>
-
-            <div className="p-4 border-t">
-              <ChatInput
-                onSendMessage={handleSendMessage}
-                replyingTo={replyingTo}
-                onCancelReply={() => setReplyingTo(null)}
-                disabled={sendChatMutation.isPending}
-              />
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Project Chat Sidebar - Full height */}
+      {chatOpen && (
+        <div className="w-80 border-l bg-background flex flex-col">
+          <div className="p-4 border-b flex items-center justify-between">
+            <h3 className="font-semibold">Project Chat</h3>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => setChatOpen(false)}
+              className="h-8 w-8"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <ScrollArea className="flex-1 p-4">
+            <div className="space-y-4">
+              {chatLoading ? (
+                <p className="text-sm text-muted-foreground text-center py-8">Loading messages...</p>
+              ) : messages.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">No messages yet. Start a conversation!</p>
+              ) : (
+                messages.map((message) => (
+                  <ChatMessage
+                    key={message.id}
+                    message={message}
+                    onDelete={handleDeleteMessage}
+                    onReply={setReplyingTo}
+                  />
+                ))
+              )}
+            </div>
+          </ScrollArea>
+
+          <div className="p-4 border-t">
+            <ChatInput
+              onSendMessage={handleSendMessage}
+              replyingTo={replyingTo}
+              onCancelReply={() => setReplyingTo(null)}
+              disabled={sendChatMutation.isPending}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
