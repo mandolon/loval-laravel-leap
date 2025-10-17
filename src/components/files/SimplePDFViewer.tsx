@@ -2,7 +2,17 @@ import { useRef, useEffect, useCallback, useState, useMemo } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import { Maximize2 } from 'lucide-react';
+import { 
+  ZoomIn, 
+  ZoomOut, 
+  RotateCw, 
+  Download, 
+  ChevronLeft, 
+  ChevronRight,
+  Maximize2,
+  Minimize2,
+  Maximize
+} from 'lucide-react';
 import { logger } from '@/utils/logger';
 import '../../lib/pdf-config';
 
@@ -24,13 +34,26 @@ export default function SimplePDFViewer({
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [scale, setScale] = useState<number>(1.0);
+  const [rotation, setRotation] = useState<number>(0);
   const [pageSize, setPageSize] = useState({ width: 0, height: 0 });
   const [viewerSize, setViewerSize] = useState({ width: 0, height: 0 });
   const [error, setError] = useState<string | null>(null);
+  const [scrollMode, setScrollMode] = useState<'centered' | 'continuous'>('centered');
+  const [fitMode, setFitMode] = useState<'width' | 'height' | 'page'>('height');
+  
+  const [fitWidthScale, setFitWidthScale] = useState(1.0);
+  const [fitHeightScale, setFitHeightScale] = useState(1.0);
+  const [fitPageScale, setFitPageScale] = useState(1.0);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const centeredOnceRef = useRef(false);
+  const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const [renderRange, setRenderRange] = useState({ start: 1, end: 1 });
+  const initialContinuousPageMeasuredRef = useRef(false);
   const isMountedRef = useRef(true);
+  const prevFitScaleRef = useRef(1.0);
+  const skipAutoFitRef = useRef(false);
+  const suppressFitAdjustRef = useRef(false);
   
   const debug = true;
   
@@ -91,8 +114,176 @@ export default function SimplePDFViewer({
     return () => clearTimeout(timer);
   }, [fileUrl]);
 
-  // Center the scroll container on initial load and when zoom changes
+  // Track viewer container size
   useEffect(() => {
+    if (!containerRef.current) return;
+    
+    let resizeTimeout: ReturnType<typeof setTimeout>;
+    let rafId: number;
+    
+    const resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) {
+        const { width, height } = entry.contentRect;
+        
+        clearTimeout(resizeTimeout);
+        if (rafId) cancelAnimationFrame(rafId);
+        
+        resizeTimeout = setTimeout(() => {
+          rafId = requestAnimationFrame(() => {
+            setViewerSize((prev) => {
+              if (Math.abs(prev.width - width) > 5 || Math.abs(prev.height - height) > 5) {
+                return { width, height };
+              }
+              return prev;
+            });
+          });
+        }, 150);
+      }
+    });
+    
+    resizeObserver.observe(containerRef.current);
+    return () => {
+      resizeObserver.disconnect();
+      clearTimeout(resizeTimeout);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, []);
+
+  // Fit scaling
+  useEffect(() => {
+    if (!viewerSize.width || !pageSize.width || !pageSize.height) return;
+    
+    const PADDING_X = 0;
+    const PADDING_Y = 0;
+
+    const availableWidth = Math.max(viewerSize.width - PADDING_X, 100);
+    const availableHeight = Math.max(viewerSize.height - PADDING_Y, 100);
+
+    const pageW = (rotation % 180 === 0) ? pageSize.width : pageSize.height;
+    const pageH = (rotation % 180 === 0) ? pageSize.height : pageSize.width;
+
+    const widthFit = availableWidth / Math.max(pageW, 1);
+    const heightFit = availableHeight / Math.max(pageH, 1);
+    const pageFit = Math.min(widthFit, heightFit);
+
+    setFitWidthScale(widthFit);
+    setFitHeightScale(heightFit);
+    setFitPageScale(pageFit);
+
+    const activeFit = fitMode === 'page' ? pageFit : (fitMode === 'width' ? widthFit : heightFit);
+    const prevFit = prevFitScaleRef.current || activeFit;
+
+    if (suppressFitAdjustRef.current) {
+      prevFitScaleRef.current = activeFit;
+      suppressFitAdjustRef.current = false;
+      return;
+    }
+
+    if (skipAutoFitRef.current) {
+      prevFitScaleRef.current = activeFit;
+      return;
+    }
+
+    setScale(prev => {
+      const next = (prev === 1.0 && prevFit === 1.0)
+        ? activeFit
+        : prev * (activeFit / prevFit);
+      return Math.max(next, 0.1);
+    });
+    prevFitScaleRef.current = activeFit;
+  }, [viewerSize, pageSize, rotation, fitMode]);
+
+  const clamp = useCallback((value: number, min: number, max: number) => {
+    return Math.min(Math.max(value, min), max);
+  }, []);
+
+  const getRenderBuffer = useCallback(() => {
+    if (scrollMode !== 'continuous') return 0;
+    if (scale >= 2.5) return 0;
+    if (scale >= 1.8) return 1;
+    if (scale >= 1.1) return 1;
+    return 2;
+  }, [scrollMode, scale]);
+
+  const updateRenderWindow = useCallback((el: HTMLDivElement) => {
+    if (scrollMode !== 'continuous') return;
+    if (!numPages || numPages <= 0) return;
+    if (!pageSize.width || !pageSize.height) return;
+
+    const rotated = (rotation % 180) !== 0;
+    const baseH = rotated ? pageSize.width : pageSize.height;
+    const pageHeightPx = baseH * scale;
+    if (!pageHeightPx) return;
+
+    const gapPx = 24;
+    const paddingPx = 12;
+    const totalSpacing = pageHeightPx + gapPx;
+    const rawScrollTop = el.scrollTop - paddingPx;
+    const viewportHeight = el.clientHeight;
+
+    const approxTop = Math.floor(Math.max(rawScrollTop, 0) / Math.max(totalSpacing, 1)) + 1;
+    const approxBottom = Math.ceil(Math.max(rawScrollTop + viewportHeight, 0) / Math.max(totalSpacing, 1)) + 1;
+    const buffer = Math.max(getRenderBuffer(), 0);
+    const start = clamp(approxTop - buffer, 1, numPages);
+    const end = clamp(approxBottom + buffer, 1, numPages);
+
+    setRenderRange(prev => (prev.start === start && prev.end === end) ? prev : { start, end });
+  }, [scrollMode, numPages, pageSize.width, pageSize.height, scale, rotation, clamp, getRenderBuffer]);
+
+  useEffect(() => {
+    if (scrollMode !== 'continuous') {
+      setRenderRange({ start: pageNumber, end: pageNumber });
+      return;
+    }
+    const total = Math.max(numPages ?? pageNumber ?? 1, 1);
+    const buffer = Math.max(getRenderBuffer(), 0);
+    const start = clamp(pageNumber - buffer, 1, total);
+    const end = clamp(pageNumber + buffer, 1, total);
+    setRenderRange({ start, end });
+  }, [scrollMode, pageNumber, numPages, clamp, getRenderBuffer]);
+
+  useEffect(() => {
+    if (scrollMode !== 'continuous') return;
+    const el = containerRef.current;
+    if (!el) return;
+
+    let ticking = false;
+    let lastUpdateTime = 0;
+    const throttleDelay = 16;
+    
+    const handleScroll = () => {
+      const now = Date.now();
+      if (ticking || (now - lastUpdateTime < throttleDelay)) return;
+      
+      ticking = true;
+      requestAnimationFrame(() => {
+        updateRenderWindow(el);
+        lastUpdateTime = Date.now();
+        ticking = false;
+      });
+    };
+    
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    requestAnimationFrame(handleScroll);
+    
+    return () => {
+      el.removeEventListener('scroll', handleScroll);
+      ticking = false;
+    };
+  }, [scrollMode, updateRenderWindow]);
+
+  useEffect(() => {
+    pageRefs.current.clear();
+    initialContinuousPageMeasuredRef.current = false;
+    if (scrollMode === 'centered') {
+      centeredOnceRef.current = false;
+    }
+  }, [scrollMode, numPages]);
+
+  // Center the scroll container
+  useEffect(() => {
+    if (scrollMode !== 'centered') return;
     const el = containerRef.current;
     if (!el) return;
     const center = () => {
@@ -108,25 +299,34 @@ export default function SimplePDFViewer({
     if (pageSize.width && pageSize.height) {
       requestAnimationFrame(center);
     }
-  }, [scale, pageSize.width, pageSize.height]);
+  }, [scale, pageSize.width, pageSize.height, scrollMode]);
 
-  // Debug: log sizing to verify zoom behavior
   useEffect(() => {
+    if (scrollMode !== 'continuous') return;
     const el = containerRef.current;
-    const canvas = el ? el.querySelector('.react-pdf__Page__canvas') : null;
-    const container = el;
-    const info = {
-      scale,
-      pageSize,
-      viewerSize,
-      intendedWidth: pageSize.width ? Math.round(pageSize.width * scale) : null,
-      canvasClientWidth: canvas ? (canvas as HTMLElement).clientWidth : null,
-      canvasScrollWidth: canvas ? (canvas as HTMLElement).scrollWidth : null,
-      containerClientWidth: container ? container.clientWidth : null,
-      containerScrollWidth: container ? container.scrollWidth : null,
+    if (!el) return;
+
+    let cancelled = false;
+    const attemptScroll = (tries = 0) => {
+      if (cancelled) return;
+      const pageEl = pageRefs.current.get(pageNumber);
+      if (!pageEl) {
+        if (tries < 6) {
+          requestAnimationFrame(() => attemptScroll(tries + 1));
+        }
+        return;
+      }
+      const containerRect = el.getBoundingClientRect();
+      const pageRect = pageEl.getBoundingClientRect();
+      const targetTop = pageRect.top - containerRect.top + el.scrollTop;
+      el.scrollTo({ top: targetTop, behavior: 'smooth' });
     };
-    logger.log('[PDFCanvas][zoom-debug]', info);
-  }, [scale, pageSize.width, pageSize.height, viewerSize.width, viewerSize.height]);
+
+    requestAnimationFrame(() => attemptScroll());
+    return () => {
+      cancelled = true;
+    };
+  }, [pageNumber, scrollMode, numPages]);
 
   const handlePageLoadSuccess = useCallback((page: any) => {
     if (debug) {
@@ -139,13 +339,21 @@ export default function SimplePDFViewer({
       });
     }
 
-    if (page.pageNumber === pageNumber) {
-      setPageSize({
-        width: page.view[2] - page.view[0],
-        height: page.view[3] - page.view[1]
-      });
+    const intrinsic = typeof page.rotate === 'number' ? page.rotate : 0;
+    const viewport = page.getViewport({ scale: 1, rotation: intrinsic });
+    
+    if (scrollMode === 'continuous') {
+      if (!initialContinuousPageMeasuredRef.current) {
+        initialContinuousPageMeasuredRef.current = true;
+        setPageSize({ width: viewport.width, height: viewport.height });
+      }
+      return;
     }
-  }, [debug, pageNumber]);
+
+    if (page.pageNumber === pageNumber) {
+      setPageSize({ width: viewport.width, height: viewport.height });
+    }
+  }, [debug, scrollMode, pageNumber]);
 
   const onDocumentLoadSuccess = useCallback(({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -158,6 +366,69 @@ export default function SimplePDFViewer({
     setError('Unable to load PDF');
   }, []);
 
+  // Handlers
+  const handlePrevPage = useCallback(() => {
+    setPageNumber(prev => Math.max(1, prev - 1));
+  }, []);
+
+  const handleNextPage = useCallback(() => {
+    setPageNumber(prev => Math.min(numPages || 1, prev + 1));
+  }, [numPages]);
+
+  const handleZoomIn = useCallback(() => {
+    skipAutoFitRef.current = false;
+    suppressFitAdjustRef.current = true;
+    setScale(prev => Math.min(prev * 1.2, 6.0));
+    requestAnimationFrame(() => { suppressFitAdjustRef.current = false; });
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    skipAutoFitRef.current = false;
+    suppressFitAdjustRef.current = true;
+    setScale(prev => {
+      const activeFit = fitMode === 'page' ? fitPageScale : (fitMode === 'width' ? fitWidthScale : fitHeightScale);
+      const newScale = prev / 1.2;
+      return Math.max(newScale, activeFit * 0.5);
+    });
+    requestAnimationFrame(() => { suppressFitAdjustRef.current = false; });
+  }, [fitMode, fitPageScale, fitWidthScale, fitHeightScale]);
+
+  const handleZoomToFitWidth = useCallback(() => {
+    skipAutoFitRef.current = false;
+    setFitMode('width');
+    setScale(fitWidthScale);
+    prevFitScaleRef.current = fitWidthScale;
+  }, [fitWidthScale]);
+
+  const handleZoomToFitHeight = useCallback(() => {
+    skipAutoFitRef.current = false;
+    setFitMode('height');
+    setScale(fitHeightScale);
+    prevFitScaleRef.current = fitHeightScale;
+  }, [fitHeightScale]);
+
+  const handleZoomToFitPage = useCallback(() => {
+    skipAutoFitRef.current = false;
+    setFitMode('page');
+    setScale(fitPageScale);
+    prevFitScaleRef.current = fitPageScale;
+  }, [fitPageScale]);
+
+  const handleRotate = useCallback(() => {
+    setRotation(prev => (prev + 90) % 360);
+  }, []);
+
+  const handleDownload = useCallback(() => {
+    if (onDownload) {
+      onDownload();
+    } else if (fileUrl) {
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.download = fileName || 'document.pdf';
+      link.click();
+    }
+  }, [fileUrl, fileName, onDownload]);
+
   if (!fileUrl) {
     return (
       <div className="h-full flex items-center justify-center text-muted-foreground">
@@ -168,68 +439,126 @@ export default function SimplePDFViewer({
 
   return (
     <div className="h-full flex flex-col bg-muted/30 overflow-hidden">
-      {/* Toolbar */}
-      <div className="flex items-center gap-2 p-2 bg-background border-b flex-shrink-0">
-        <button 
-          onClick={() => setPageNumber(p => Math.max(1, p - 1))}
-          disabled={pageNumber <= 1}
-          className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-muted"
-        >
-          ← Prev
-        </button>
-        
-        <span className="text-sm font-medium">
-          Page {pageNumber} / {numPages || '?'}
-        </span>
-        
-        <button 
-          onClick={() => setPageNumber(p => Math.min(numPages || 1, p + 1))}
-          disabled={pageNumber >= (numPages || 1)}
-          className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-muted"
-        >
-          Next →
-        </button>
-        
-        <div className="flex-1" />
-        
-        <button 
-          onClick={() => setScale(s => Math.max(0.5, s - 0.2))}
-          className="px-3 py-1 border rounded hover:bg-muted"
-        >
-          -
-        </button>
-        
-        <span className="text-sm min-w-[60px] text-center">
-          {Math.round(scale * 100)}%
-        </span>
-        
-        <button 
-          onClick={() => setScale(s => Math.min(3.0, s + 0.2))}
-          className="px-3 py-1 border rounded hover:bg-muted"
-        >
-          +
-        </button>
-
-        {fileName && (
-          <span className="ml-4 text-sm text-muted-foreground truncate max-w-xs">
-            {fileName}
-          </span>
-        )}
-
-        {(onDownload || onShare || onMaximize) && (
-          <>
-            <div className="flex-1" />
-            {onMaximize && (
+      {/* Toolbar (compact) */}
+      <div className="flex items-center justify-between px-3 py-1 bg-card border-b border-border flex-shrink-0">
+        {/* Left section - Scroll Mode Toggle */}
+        <div className="flex items-center gap-1 min-w-0 flex-1">
+          {numPages && (
+            <>
+              {/* Scroll Mode Toggle */}
               <button
-                onClick={onMaximize}
-                className="px-3 py-1 border rounded hover:bg-muted"
-                title="Maximize"
+                onClick={() => setScrollMode(prev => prev === 'centered' ? 'continuous' : 'centered')}
+                className={`h-5 px-2 text-[10px] rounded hover:bg-muted ${scrollMode === 'continuous' ? 'bg-muted text-foreground' : 'text-muted-foreground'}`}
+                title={scrollMode === 'centered' ? 'Switch to continuous scrolling' : 'Switch to single-page mode'}
               >
-                <Maximize2 className="h-4 w-4" />
+                {scrollMode === 'centered' ? 'Single' : 'Continuous'}
               </button>
-            )}
-          </>
-        )}
+            </>
+          )}
+        </div>
+        
+        {/* Center section - Page navigation */}
+        <div className="flex items-center gap-1">
+          {numPages && (
+            <>
+              {/* Navigation */}
+              <button
+                onClick={handlePrevPage}
+                disabled={pageNumber <= 1}
+                className="h-5 w-5 flex items-center justify-center rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed text-muted-foreground"
+                title="Previous page (Shift+←)"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
+              <span className="px-2 text-[10px] text-muted-foreground min-w-max flex items-center">
+                {`${pageNumber} / ${numPages}`}
+              </span>
+              <button
+                onClick={handleNextPage}
+                disabled={pageNumber >= (numPages || 1)}
+                className="h-5 w-5 flex items-center justify-center rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed text-muted-foreground"
+                title="Next page (Shift+→)"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </>
+          )}
+        </div>
+        
+        {/* Right section - Fill buttons and other controls */}
+        <div className="flex items-center gap-1 flex-1 justify-end">
+          {numPages && (
+            <>
+              {/* Zoom Controls */}
+              <button
+                onClick={handleZoomOut}
+                className="h-5 w-5 flex items-center justify-center rounded hover:bg-muted text-muted-foreground"
+                title="Zoom out (-)"
+              >
+                <ZoomOut className="h-3.5 w-3.5" />
+              </button>
+              <span className="px-2 text-[10px] text-muted-foreground min-w-max flex items-center">
+                {Math.round(scale * 100)}%
+              </span>
+              <button
+                onClick={handleZoomIn}
+                className="h-5 w-5 flex items-center justify-center rounded hover:bg-muted text-muted-foreground"
+                title="Zoom in (+)"
+              >
+                <ZoomIn className="h-3.5 w-3.5" />
+              </button>
+              <div className="w-px h-4 bg-border mx-1" />
+              <button
+                onClick={handleZoomToFitWidth}
+                className="h-5 px-2 text-[10px] rounded hover:bg-muted text-muted-foreground"
+                title="Fit to width"
+              >
+                Width
+              </button>
+              <button
+                onClick={handleZoomToFitHeight}
+                className="h-5 px-2 text-[10px] rounded hover:bg-muted text-muted-foreground"
+                title="Fit to height"
+              >
+                Height
+              </button>
+              <button
+                onClick={handleZoomToFitPage}
+                className="h-5 px-2 text-[10px] rounded hover:bg-muted text-muted-foreground"
+                title="Fit whole page"
+              >
+                Page
+              </button>
+              <div className="w-px h-4 bg-border mx-1" />
+              {/* Rotate */}
+              <button
+                onClick={handleRotate}
+                className="h-5 w-5 flex items-center justify-center rounded hover:bg-muted text-muted-foreground"
+                title="Rotate (R)"
+              >
+                <RotateCw className="h-3.5 w-3.5" />
+              </button>
+              {/* Maximize */}
+              {onMaximize && (
+                <button
+                  onClick={onMaximize}
+                  className="h-5 w-5 flex items-center justify-center rounded hover:bg-muted text-muted-foreground"
+                  title="Maximize"
+                >
+                  <Maximize2 className="h-3.5 w-3.5" />
+                </button>
+              )}
+              {/* Download */}
+              <button
+                onClick={handleDownload}
+                className="h-5 w-5 flex items-center justify-center rounded hover:bg-muted text-muted-foreground"
+                title="Download PDF"
+              >
+                <Download className="h-3.5 w-3.5" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* PDF Canvas */}
@@ -282,56 +611,103 @@ export default function SimplePDFViewer({
               }
             >
               {(() => {
+                const rotated = (rotation % 180) !== 0;
                 const hasPageSize = Boolean(pageSize.width && pageSize.height);
                 const fallbackBaseW = Math.max(viewerSize.width || 800, 200);
                 const fallbackBaseH = Math.max(viewerSize.height || 600, 200);
-                const baseW = hasPageSize ? pageSize.width : fallbackBaseW;
-                const baseH = hasPageSize ? pageSize.height : fallbackBaseH;
+                const baseW = hasPageSize
+                  ? (rotated ? pageSize.height : pageSize.width)
+                  : fallbackBaseW;
+                const baseH = hasPageSize
+                  ? (rotated ? pageSize.width : pageSize.height)
+                  : fallbackBaseH;
                 const w = baseW * scale;
                 const h = baseH * scale;
-                const wrapperStyle = { 
-                  width: '100%', 
-                  textAlign: 'center' as const, 
-                  lineHeight: 0, 
-                  fontSize: 0 
-                };
+                const totalPages = Math.max(numPages ?? pageNumber ?? 1, 1);
+                const rangeStart = Math.max(renderRange.start, 1);
+                const rangeEnd = Math.min(renderRange.end, totalPages);
+                const visiblePages = scrollMode === 'continuous'
+                  ? Array.from({ length: Math.max(rangeEnd - rangeStart + 1, 0) }, (_, idx) => rangeStart + idx)
+                  : [pageNumber];
+                const estimatedHeight = h || Math.max(viewerSize.height || 600, 200);
+                const spacing = estimatedHeight + 24;
+                const topSpacerHeight = scrollMode === 'continuous'
+                  ? Math.max((rangeStart - 1) * spacing, 0)
+                  : 0;
+                const bottomSpacerHeight = scrollMode === 'continuous'
+                  ? Math.max((totalPages - rangeEnd) * spacing, 0)
+                  : 0;
+                const wrapperStyle = scrollMode === 'continuous'
+                  ? {
+                      width: '100%',
+                      lineHeight: 0,
+                      fontSize: 0,
+                      padding: '12px 0',
+                    }
+                  : { width: '100%', textAlign: 'center' as const, lineHeight: 0, fontSize: 0 };
 
                 return (
                   <div style={wrapperStyle}>
-                    <div
-                      data-page-number={pageNumber}
-                      className="pdf-page-frame"
-                      style={{
-                        display: 'inline-block',
-                        verticalAlign: 'top',
-                        width: hasPageSize ? `${w}px` : undefined,
-                        background: '#fff',
-                        borderRadius: 4,
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                        margin: 0,
-                        transform: 'translateZ(0)',
-                        backfaceVisibility: 'hidden' as const,
-                      }}
-                    >
-                      <Page
-                        key={`page-${pageNumber}-${fileUrl}`}
-                        pageNumber={pageNumber}
-                        scale={1}
-                        renderMode={renderMode}
-                        renderTextLayer={shouldRenderTextLayer}
-                        renderAnnotationLayer={shouldRenderAnnotations}
-                        loading={null}
-                        error={null}
-                        width={w}
-                        onLoadSuccess={handlePageLoadSuccess}
-                        onLoadError={(error) => {
-                          if (debug && error && !error.message?.includes('sendWithPromise')) {
-                            logger.error('[PDFCanvas] Page load error:', error);
-                          }
-                        }}
-                        devicePixelRatio={dynamicDevicePixelRatio}
-                      />
-                    </div>
+                    {scrollMode === 'continuous' && topSpacerHeight > 0 && (
+                      <div style={{ height: `${Math.round(topSpacerHeight)}px` }} />
+                    )}
+                    {visiblePages.map((pageNo, index) => {
+                      const isLastRendered = index === visiblePages.length - 1;
+                      return (
+                        <div
+                          key={pageNo}
+                          data-page-number={pageNo}
+                          className="pdf-page-frame"
+                          ref={(el) => {
+                            if (el) {
+                              pageRefs.current.set(pageNo, el);
+                            } else {
+                              pageRefs.current.delete(pageNo);
+                            }
+                          }}
+                          style={{
+                            display: scrollMode === 'continuous' ? 'block' : 'inline-block',
+                            verticalAlign: 'top',
+                            width: hasPageSize ? `${w}px` : undefined,
+                            background: '#fff',
+                            borderRadius: 4,
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                            margin: scrollMode === 'continuous'
+                              ? `0 auto ${isLastRendered ? 0 : 24}px`
+                              : 0,
+                            minHeight: scrollMode === 'continuous'
+                              ? `${Math.max(Math.round(estimatedHeight), 1)}px`
+                              : undefined,
+                            willChange: scrollMode === 'continuous' ? 'transform' : undefined,
+                            transform: 'translateZ(0)',
+                            backfaceVisibility: 'hidden' as const,
+                          }}
+                        >
+                          <Page
+                            key={`page-${pageNo}-${fileUrl}`}
+                            pageNumber={pageNo}
+                            scale={1}
+                            rotate={rotation}
+                            renderMode={renderMode}
+                            renderTextLayer={shouldRenderTextLayer}
+                            renderAnnotationLayer={shouldRenderAnnotations}
+                            loading={null}
+                            error={null}
+                            width={w}
+                            onLoadSuccess={handlePageLoadSuccess}
+                            onLoadError={(error) => {
+                              if (debug && error && !error.message?.includes('sendWithPromise')) {
+                                logger.error('[PDFCanvas] Page load error:', error);
+                              }
+                            }}
+                            devicePixelRatio={dynamicDevicePixelRatio}
+                          />
+                        </div>
+                      );
+                    })}
+                    {scrollMode === 'continuous' && bottomSpacerHeight > 0 && (
+                      <div style={{ height: `${Math.round(bottomSpacerHeight)}px` }} />
+                    )}
                   </div>
                 );
               })()}

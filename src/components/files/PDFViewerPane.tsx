@@ -122,7 +122,7 @@ export default function PDFViewerPane({
         scrollPosition: { left: 0, top: 0 }
       });
     }
-  }, [pageNumber, scale, numPages, pageWidth, onStateChange]);
+  }, [pageNumber, scale, numPages, pageWidth]); // Removed onStateChange from deps to prevent infinite loop
 
   return (
     <div className={`h-full flex flex-col bg-muted/30 overflow-hidden ${className}`} onClick={onClick}>
