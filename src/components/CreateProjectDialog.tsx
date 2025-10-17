@@ -275,7 +275,7 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
           </div>
 
           {/* Optional Secondary Client */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Checkbox
                 id="hasSecondaryClient"
@@ -288,47 +288,34 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
             </div>
 
             {hasSecondaryClient && (
-              <div className="space-y-3 pl-6 border-l-2 border-border">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="secondaryClientFirstName">First Name</Label>
+              <div className="pl-6">
+                <div className="grid grid-cols-4 gap-2">
+                  <div>
                     <Input
-                      id="secondaryClientFirstName"
-                      placeholder="Jane"
+                      placeholder="First Name"
                       value={secondaryClientFirstName}
                       onChange={(e) => setSecondaryClientFirstName(e.target.value)}
                     />
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="secondaryClientLastName">Last Name</Label>
+                  <div>
                     <Input
-                      id="secondaryClientLastName"
-                      placeholder="Smith"
+                      placeholder="Last Name"
                       value={secondaryClientLastName}
                       onChange={(e) => setSecondaryClientLastName(e.target.value)}
                     />
                   </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="secondaryClientEmail">Email</Label>
+                  <div>
                     <Input
-                      id="secondaryClientEmail"
                       type="email"
-                      placeholder="jane.smith@example.com"
+                      placeholder="Email"
                       value={secondaryClientEmail}
                       onChange={(e) => setSecondaryClientEmail(e.target.value)}
                     />
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="secondaryClientPhone">Phone</Label>
+                  <div>
                     <Input
-                      id="secondaryClientPhone"
                       type="tel"
-                      placeholder="(503) 555-0124"
+                      placeholder="Phone (optional)"
                       value={secondaryClientPhone}
                       onChange={(e) => setSecondaryClientPhone(e.target.value)}
                     />
