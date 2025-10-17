@@ -60,7 +60,36 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
   // Auto-fill project name based on client name and address
   useEffect(() => {
     if (!isNameManuallyEdited && (clientFirstName || clientLastName || streetNumber || streetName)) {
-      const clientName = clientLastName.trim() || clientFirstName.trim();
+      let clientName = '';
+      
+      if (hasSecondaryClient && (clientLastName || secondaryClientLastName)) {
+        const primaryLast = clientLastName.trim();
+        const secondaryLast = secondaryClientLastName.trim();
+        
+        if (primaryLast && secondaryLast) {
+          // Both have last names
+          if (primaryLast === secondaryLast) {
+            // Same last name, use once
+            clientName = primaryLast;
+          } else {
+            // Different last names, combine with dash
+            clientName = `${primaryLast}-${secondaryLast}`;
+          }
+        } else if (primaryLast) {
+          // Only primary has last name
+          clientName = primaryLast;
+        } else if (secondaryLast) {
+          // Only secondary has last name
+          clientName = secondaryLast;
+        } else {
+          // No last names, use first name
+          clientName = clientFirstName.trim() || secondaryClientFirstName.trim();
+        }
+      } else {
+        // No secondary client
+        clientName = clientLastName.trim() || clientFirstName.trim();
+      }
+      
       const address = `${streetNumber.trim()} ${streetName.trim()}`.trim();
       
       if (clientName && address) {
@@ -73,7 +102,7 @@ export const CreateProjectDialog = ({ onCreateProject, children }: CreateProject
         setName("");
       }
     }
-  }, [clientFirstName, clientLastName, streetNumber, streetName, isNameManuallyEdited]);
+  }, [clientFirstName, clientLastName, streetNumber, streetName, hasSecondaryClient, secondaryClientFirstName, secondaryClientLastName, isNameManuallyEdited]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
