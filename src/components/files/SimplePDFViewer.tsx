@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Document, Page } from 'react-pdf';
 import { Download, Share2, Maximize2 } from 'lucide-react';
 import '../../lib/pdf-config';
@@ -21,6 +21,24 @@ export default function SimplePDFViewer({
   const [numPages, setNumPages] = useState<number>(0);
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [scale, setScale] = useState<number>(1.0);
+  const [pageWidth, setPageWidth] = useState<number>(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Calculate container width on mount and resize
+  useEffect(() => {
+    const updateWidth = () => {
+      if (containerRef.current) {
+        // Get container width minus padding (16px * 2 = 32px)
+        const width = containerRef.current.clientWidth - 32;
+        setPageWidth(width);
+        console.log('📐 Container width updated:', width);
+      }
+    };
+
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
 
   if (!fileUrl) {
     return (
@@ -31,8 +49,8 @@ export default function SimplePDFViewer({
   }
 
   return (
-    <div className="h-full flex flex-col bg-muted/30">
-      <div className="flex items-center gap-2 p-2 bg-background border-b">
+    <div className="h-full flex flex-col bg-muted/30 overflow-hidden">
+      <div className="flex items-center gap-2 p-2 bg-background border-b flex-shrink-0">
         <button 
           onClick={() => setPageNumber(p => Math.max(1, p - 1))}
           disabled={pageNumber <= 1}
@@ -114,14 +132,20 @@ export default function SimplePDFViewer({
         )}
       </div>
 
-      <div className="flex-1 overflow-hidden">
-        <div className="h-full overflow-auto flex items-center justify-center p-4">
-          <Document
+      <div 
+        ref={containerRef}
+        className="flex-1 overflow-auto flex items-center justify-center p-4"
+        style={{ 
+          maxWidth: '100%',
+          overflowX: 'auto'
+        }}
+      >
+        <Document
             file={fileUrl}
             onLoadSuccess={({ numPages }) => {
               setNumPages(numPages);
               console.log('✅ PDF loaded:', numPages, 'pages');
-              console.log('📄 Current scale:', scale);
+              console.log('📄 Scale:', scale, '| Container width:', pageWidth);
             }}
             onLoadError={(error) => {
               console.error('❌ PDF load error:', error);
@@ -142,17 +166,16 @@ export default function SimplePDFViewer({
           >
             <Page 
               pageNumber={pageNumber}
-              scale={scale}
+              width={pageWidth > 0 ? pageWidth * scale : undefined}
               renderTextLayer={true}
               renderAnnotationLayer={true}
               loading={<div className="text-muted-foreground">Loading page...</div>}
               className="shadow-lg"
               onLoadSuccess={() => {
-                console.log('📄 Page', pageNumber, 'rendered at scale', scale);
+                console.log('📄 Page', pageNumber, 'rendered | Width:', pageWidth * scale);
               }}
             />
           </Document>
-        </div>
       </div>
     </div>
   );
