@@ -18,6 +18,11 @@ import { AssessorParcelInfo } from "@/components/project/EditAssessorParcelDialo
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from "@/lib/api/hooks/useTasks";
 import { useNotes, useCreateNote, useUpdateNote, useDeleteNote } from "@/lib/api/hooks/useNotes";
 import { useProjectMessages, useCreateMessage, useDeleteMessage, ProjectChatMessageWithUser } from "@/lib/api/hooks/useProjectChat";
+import { useInvoices, useDeleteInvoice } from "@/lib/api/hooks/useInvoices";
+import { CreateInvoiceDialog } from "@/components/invoice/CreateInvoiceDialog";
+import { InvoiceCard } from "@/components/invoice/InvoiceCard";
+import { ViewInvoiceDialog } from "@/components/invoice/ViewInvoiceDialog";
+import { EditInvoiceDialog } from "@/components/invoice/EditInvoiceDialog";
 import { NoteCard } from "@/components/notes/NoteCard";
 import { CreateNoteDialog } from "@/components/notes/CreateNoteDialog";
 import { ChatMessage } from "@/components/chat/ChatMessage";
@@ -36,6 +41,9 @@ const ProjectDetails = () => {
   const [activeTab, setActiveTab] = useState("project");
   const [chatOpen, setChatOpen] = useState(true);
   const [replyingTo, setReplyingTo] = useState<ProjectChatMessageWithUser | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [viewInvoiceOpen, setViewInvoiceOpen] = useState(false);
+  const [editInvoiceOpen, setEditInvoiceOpen] = useState(false);
   
   const { data: project, isLoading: projectLoading } = useProject(id || "");
   const { data: tasks = [], isLoading: tasksLoading } = useTasks(id || "");
@@ -52,6 +60,9 @@ const ProjectDetails = () => {
   const { data: messages = [], isLoading: chatLoading } = useProjectMessages(id || "");
   const sendChatMutation = useCreateMessage();
   const deleteMessageMutation = useDeleteMessage();
+
+  const { data: invoices = [], isLoading: invoicesLoading } = useInvoices(id || "");
+  const deleteInvoiceMutation = useDeleteInvoice(id || "");
 
   const handleSendMessage = (content: string, replyToId?: string) => {
     if (!id) return;
@@ -240,15 +251,66 @@ const ProjectDetails = () => {
             </TabsContent>
 
             <TabsContent value="invoices" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Invoices</CardTitle>
-                  <CardDescription>Project invoices and billing</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">No invoices yet</p>
-                </CardContent>
-              </Card>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold">Invoices</h2>
+                    <p className="text-muted-foreground">Manage project invoices and billing</p>
+                  </div>
+                  <CreateInvoiceDialog projectId={id || ''} />
+                </div>
+
+                {invoicesLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <p className="text-muted-foreground">Loading invoices...</p>
+                  </div>
+                ) : invoices.length === 0 ? (
+                  <Card>
+                    <CardContent className="py-12">
+                      <p className="text-center text-muted-foreground">No invoices yet. Create your first invoice to get started.</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {invoices.map((invoice) => (
+                      <InvoiceCard
+                        key={invoice.id}
+                        invoice={invoice}
+                        onView={(inv) => {
+                          setSelectedInvoice(inv);
+                          setViewInvoiceOpen(true);
+                        }}
+                        onEdit={(inv) => {
+                          setSelectedInvoice(inv);
+                          setEditInvoiceOpen(true);
+                        }}
+                        onDelete={(invoiceId) => {
+                          if (confirm('Are you sure you want to delete this invoice?')) {
+                            deleteInvoiceMutation.mutate(invoiceId);
+                          }
+                        }}
+                        onDownloadPDF={(inv) => {
+                          // TODO: Implement PDF generation
+                          console.log('Download PDF for invoice:', inv.invoiceNumber);
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <ViewInvoiceDialog
+                invoice={selectedInvoice}
+                open={viewInvoiceOpen}
+                onOpenChange={setViewInvoiceOpen}
+              />
+
+              <EditInvoiceDialog
+                invoice={selectedInvoice}
+                open={editInvoiceOpen}
+                onOpenChange={setEditInvoiceOpen}
+                projectId={id || ''}
+              />
             </TabsContent>
 
             <TabsContent value="links" className="mt-6">
