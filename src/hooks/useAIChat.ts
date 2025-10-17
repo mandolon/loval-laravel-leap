@@ -16,12 +16,14 @@ export function useAIChat(threadId: string, workspaceId: string, projectId?: str
     setIsLoading(true);
 
     try {
-      // Build AI context if project is selected
+      // Build AI context - always load at least workspace context
       let projectContext = "";
       if (projectId && projectId !== "select" && projectId !== "all") {
+        // Specific project selected - load detailed project context
         const context = await buildAIContext(workspaceId, projectId, userMessage);
         projectContext = context.contextString;
-      } else if (projectId === "all") {
+      } else {
+        // No specific project or "All Projects" - load workspace overview
         const context = await buildWorkspaceContext(workspaceId, userMessage);
         projectContext = context.contextString;
       }
