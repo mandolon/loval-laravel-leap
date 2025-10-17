@@ -1,13 +1,23 @@
 import { useState } from 'react';
 import { Document, Page } from 'react-pdf';
+import { Download, Share2, Maximize2 } from 'lucide-react';
 import '../../lib/pdf-config';
 
 interface SimplePDFViewerProps {
   fileUrl: string | null;
   fileName?: string;
+  onDownload?: () => void;
+  onShare?: () => void;
+  onMaximize?: () => void;
 }
 
-export default function SimplePDFViewer({ fileUrl, fileName }: SimplePDFViewerProps) {
+export default function SimplePDFViewer({ 
+  fileUrl, 
+  fileName,
+  onDownload,
+  onShare,
+  onMaximize 
+}: SimplePDFViewerProps) {
   const [numPages, setNumPages] = useState<number>(0);
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [scale, setScale] = useState<number>(1.0);
@@ -67,6 +77,40 @@ export default function SimplePDFViewer({ fileUrl, fileName }: SimplePDFViewerPr
           <span className="ml-4 text-sm text-gray-600 truncate max-w-xs">
             {fileName}
           </span>
+        )}
+
+        <div className="flex-1" />
+
+        {(onDownload || onShare || onMaximize) && (
+          <>
+            {onDownload && (
+              <button
+                onClick={onDownload}
+                className="px-3 py-1 border rounded hover:bg-gray-100"
+                title="Download"
+              >
+                <Download className="h-4 w-4" />
+              </button>
+            )}
+            {onShare && (
+              <button
+                onClick={onShare}
+                className="px-3 py-1 border rounded hover:bg-gray-100"
+                title="Share"
+              >
+                <Share2 className="h-4 w-4" />
+              </button>
+            )}
+            {onMaximize && (
+              <button
+                onClick={onMaximize}
+                className="px-3 py-1 border rounded hover:bg-gray-100"
+                title="Maximize"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </button>
+            )}
+          </>
         )}
       </div>
 

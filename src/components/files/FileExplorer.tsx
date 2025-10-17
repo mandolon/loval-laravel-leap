@@ -6,16 +6,6 @@ import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import SimplePDFViewer from './SimplePDFViewer';
 import {
-  Download,
-  Share2,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-  Upload,
-  ChevronLeft,
-  ChevronRight,
-  RefreshCw,
-  MoreVertical,
   Loader2,
   File,
   FileText,
@@ -24,6 +14,7 @@ import {
   ChevronRight as ChevronRightIcon,
   AlertCircle,
   CheckCircle2,
+  MoreVertical,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -104,7 +95,6 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(100);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
@@ -421,94 +411,19 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
   // ============================================
   return (
     <div className="flex flex-col w-full h-full bg-background">
-      {/* 1. TOOLBAR - Fixed height at top */}
-      <div className="flex items-center justify-between p-3 bg-background border-b gap-4 flex-shrink-0 h-14">
-        <div className="flex items-center gap-2 min-w-0">
-          {selectedFile ? (
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-sm font-medium truncate">{selectedFile.filename}</span>
-              <span className="text-xs text-muted-foreground">•</span>
-              <span className="text-xs text-muted-foreground">Single</span>
-            </div>
-          ) : (
-            <span className="text-sm text-muted-foreground">No file selected</span>
-          )}
-        </div>
-
-
-        {/* Zoom and controls */}
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setZoomLevel(Math.max(50, zoomLevel - 10))}
-          >
-            <ZoomOut className="h-4 w-4" />
-          </Button>
-          <span className="text-xs text-muted-foreground min-w-12 text-center">{zoomLevel}%</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setZoomLevel(Math.min(200, zoomLevel + 10))}
-          >
-            <ZoomIn className="h-4 w-4" />
-          </Button>
-
-          <div className="w-px h-6 bg-border mx-1" />
-
-          <Button variant="ghost" size="sm" title="Fit to width">
-            <span className="text-xs">Width</span>
-          </Button>
-          <Button variant="ghost" size="sm" title="Fit to height">
-            <span className="text-xs">Height</span>
-          </Button>
-          <Button variant="ghost" size="sm" title="Fit to page">
-            <span className="text-xs">Page</span>
-          </Button>
-
-          <div className="w-px h-6 bg-border mx-1" />
-
-          {selectedFile && (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => downloadFileMutation.mutate(selectedFile)}
-              >
-                <Download className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Share2 className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Maximize2 className="h-4 w-4" />
-              </Button>
-            </>
-          )}
-
-          <div className="w-px h-6 bg-border mx-1" />
-
-          <Button variant="ghost" size="sm" title="Upload file">
-            <Upload className="h-4 w-4" />
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => refetchFiles()}
-          >
-            <RefreshCw className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      {/* 2. VIEWER/CANVAS - Flexible middle section */}
-      <div className="flex-1 min-h-0 bg-muted/30 flex items-center justify-center overflow-hidden">
+      {/* VIEWER - Contained with fixed height */}
+      <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden">
         {selectedFile ? (
           <>
             {isPdfFile ? (
               <div className="w-full h-full">
-                <SimplePDFViewer fileUrl={pdfUrl} fileName={selectedFile.filename} />
+                <SimplePDFViewer 
+                  fileUrl={pdfUrl} 
+                  fileName={selectedFile.filename}
+                  onDownload={() => downloadFileMutation.mutate(selectedFile)}
+                  onShare={() => {/* TODO: implement share */}}
+                  onMaximize={() => {/* TODO: implement maximize */}}
+                />
               </div>
             ) : isImageFile ? (
               <img
