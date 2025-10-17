@@ -15,7 +15,7 @@ fn main() {
                     if let Ok(updater) = handle.updater() {
                         match updater.check().await {
                             Ok(Some(update)) => {
-                                let _ = update.download_and_install().await;
+                                let _ = update.download_and_install(|_, _| {}, || {}).await;
                             }
                             Ok(None) => {}
                             Err(_) => {}
