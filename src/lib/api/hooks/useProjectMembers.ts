@@ -73,6 +73,34 @@ export const useAssignProjectMember = () => {
 
   return useMutation({
     mutationFn: async ({ projectId, userId, title }: { projectId: string; userId: string; title?: string }) => {
+      // First check if there's an existing soft-deleted record
+      const { data: existing, error: checkError } = await supabase
+        .from('project_members')
+        .select('*')
+        .eq('project_id', projectId)
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      if (checkError) throw checkError;
+
+      // If there's a soft-deleted record, restore it
+      if (existing?.deleted_at) {
+        const { data, error } = await supabase
+          .from('project_members')
+          .update({
+            deleted_at: null,
+            deleted_by: null,
+            title,
+          })
+          .eq('id', existing.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      }
+
+      // Otherwise, insert a new record
       const { data, error } = await supabase
         .from('project_members')
         .insert({

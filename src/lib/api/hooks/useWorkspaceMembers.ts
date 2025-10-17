@@ -90,6 +90,47 @@ export const useAssignMember = () => {
       userId: string;
       role: 'admin' | 'team' | 'consultant' | 'client';
     }) => {
+      // First check if there's an existing soft-deleted record
+      const { data: existing, error: checkError } = await supabase
+        .from('workspace_members')
+        .select('*')
+        .eq('workspace_id', workspaceId)
+        .eq('user_id', userId)
+        .maybeSingle()
+      
+      if (checkError) throw checkError
+
+      // If there's a soft-deleted record, restore it
+      if (existing?.deleted_at) {
+        const { data, error } = await supabase
+          .from('workspace_members')
+          .update({
+            deleted_at: null,
+            deleted_by: null,
+            role,
+          })
+          .eq('id', existing.id)
+          .select()
+          .single()
+        
+        if (error) throw error
+        
+        // Fetch user data separately
+        const { data: userData } = await supabase
+          .from('users')
+          .select('name, email, avatar_url')
+          .eq('id', userId)
+          .single()
+        
+        return {
+          ...data,
+          userName: userData?.name || 'Unknown User',
+          userEmail: userData?.email || '',
+          userAvatarUrl: userData?.avatar_url || null,
+        }
+      }
+
+      // Otherwise, insert a new record
       const { data, error } = await supabase
         .from('workspace_members')
         .insert({
@@ -101,7 +142,27 @@ export const useAssignMember = () => {
         .single()
       
       if (error) throw error
-      return transformDbToWorkspaceMember(data)
+      
+      // Fetch user data separately
+      const { data: userData } = await supabase
+        .from('users')
+        .select('name, email, avatar_url')
+        .eq('id', userId)
+        .single()
+      
+      return {
+        id: data.id,
+        shortId: data.short_id,
+        workspaceId: data.workspace_id,
+        userId: data.user_id,
+        role: data.role,
+        createdAt: data.created_at,
+        deletedAt: data.deleted_at,
+        deletedBy: data.deleted_by,
+        userName: userData?.name || 'Unknown User',
+        userEmail: userData?.email || '',
+        userAvatarUrl: userData?.avatar_url || null,
+      }
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: workspaceMemberKeys.list(data.workspaceId) })
