@@ -5,13 +5,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, ChevronDown, ChevronRight } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, UserPlus, ChevronDown, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TaskDetailDialog } from "@/components/TaskDetailDialog";
 import { CreateTaskDialog } from "@/components/CreateTaskDialog";
 import type { CreateTaskInput } from "@/lib/api/types";
 import { useWorkspaceTasks, useCreateTask, useUpdateTask, useDeleteTask } from "@/lib/api/hooks/useTasks";
 import { useProjects } from "@/lib/api/hooks/useProjects";
+import { useProjectMembers } from "@/lib/api/hooks/useProjectMembers";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/contexts/UserContext";
 
@@ -151,6 +154,7 @@ const TasksPage = () => {
   const TaskRow = ({ task }: { task: Task }) => {
     const [assignees, setAssignees] = useState<User[]>([]);
     const [creator, setCreator] = useState<User | null>(null);
+    const [isAssignPopoverOpen, setIsAssignPopoverOpen] = useState(false);
     
     useEffect(() => {
       getTaskAssignees(task.assignees).then(setAssignees);
@@ -163,6 +167,18 @@ const TasksPage = () => {
     const addressDisplay = projectAddress?.streetNumber && projectAddress?.streetName 
       ? `${projectAddress.streetNumber} ${projectAddress.streetName}`
       : '-';
+
+    // Fetch project members for assignment
+    const { data: projectMembers = [] } = useProjectMembers(task.projectId);
+
+    const handleToggleAssignee = (userId: string) => {
+      const currentAssignees = task.assignees || [];
+      const newAssignees = currentAssignees.includes(userId)
+        ? currentAssignees.filter(id => id !== userId)
+        : [...currentAssignees, userId];
+      
+      handleTaskUpdate(task.id, { assignees: newAssignees });
+    };
 
     if (!creator) return null;
 
@@ -218,22 +234,75 @@ const TasksPage = () => {
         </TableCell>
 
         {/* Assigned To */}
-        <TableCell className="text-center w-[120px]">
-          <div className="flex justify-center gap-1">
-            {assignees.length > 0 ? (
-              assignees.map((assignee) => (
-                <Avatar key={assignee.id} className="h-8 w-8">
-                  <AvatarFallback 
-                    className="text-white text-xs"
-                    style={{ background: assignee.avatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
-                  >
-                    {assignee.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                  </AvatarFallback>
-                </Avatar>
-              ))
-            ) : (
-              <span className="text-sm text-muted-foreground">-</span>
-            )}
+        <TableCell className="text-center w-[140px]">
+          <div className="flex justify-center items-center gap-2">
+            <div className="flex gap-1">
+              {assignees.length > 0 ? (
+                assignees.slice(0, 3).map((assignee) => (
+                  <Avatar key={assignee.id} className="h-8 w-8">
+                    <AvatarFallback 
+                      className="text-white text-xs"
+                      style={{ background: assignee.avatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
+                    >
+                      {assignee.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
+                ))
+              ) : null}
+            </div>
+            <Popover open={isAssignPopoverOpen} onOpenChange={setIsAssignPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <UserPlus className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent 
+                className="w-64 p-3" 
+                align="end"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="space-y-3">
+                  <h4 className="font-medium text-sm">Assign Team Members</h4>
+                  {projectMembers.length > 0 ? (
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {projectMembers.map((member) => (
+                        <div 
+                          key={member.userId}
+                          className="flex items-center space-x-2"
+                        >
+                          <Checkbox
+                            id={`assign-${task.id}-${member.userId}`}
+                            checked={task.assignees.includes(member.userId)}
+                            onCheckedChange={() => handleToggleAssignee(member.userId)}
+                          />
+                          <label
+                            htmlFor={`assign-${task.id}-${member.userId}`}
+                            className="flex items-center gap-2 cursor-pointer flex-1"
+                          >
+                            <Avatar className="h-6 w-6">
+                              <AvatarFallback 
+                                className="text-white text-xs"
+                                style={{ background: member.userAvatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
+                              >
+                                {member.userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm">{member.userName}</span>
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No team members in this project</p>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </TableCell>
       </TableRow>
@@ -275,7 +344,7 @@ const TasksPage = () => {
                 <TableHead className="text-center w-[80px]">Files</TableHead>
                 <TableHead className="text-center w-[120px]">Date Created</TableHead>
                 <TableHead className="text-center w-[100px]">Created by</TableHead>
-                <TableHead className="text-center w-[120px]">Assigned to</TableHead>
+                <TableHead className="text-center w-[140px]">Assigned to</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
