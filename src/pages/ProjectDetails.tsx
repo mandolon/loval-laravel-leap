@@ -142,9 +142,9 @@ const ProjectDetails = () => {
     <div className="flex flex-col h-[calc(100vh-4rem)]">
       {/* Header */}
       <div className="border-b bg-background sticky top-0 z-10">
-        <div className="flex items-center justify-between px-6 py-3">
+        <div className="flex items-center px-6 py-3">
           {/* Left: Back button */}
-          <div className="flex items-center">
+          <div className="flex-1 flex items-center">
             <Button 
               variant="ghost" 
               size="icon"
@@ -155,7 +155,7 @@ const ProjectDetails = () => {
           </div>
 
           {/* Center: Navigation tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 mx-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-shrink-0">
             <TabsList className="h-auto p-0 bg-transparent border-0">
               <TabsTrigger 
                 value="files" 
@@ -203,18 +203,20 @@ const ProjectDetails = () => {
           </Tabs>
 
           {/* Right: Notification icon */}
-          <div className="relative">
-            <Button variant="ghost" size="icon">
-              <MessageSquare className="h-5 w-5" />
-            </Button>
-            {messages.length > 0 && (
-              <Badge 
-                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-                variant="destructive"
-              >
-                {messages.length}
-              </Badge>
-            )}
+          <div className="flex-1 flex items-center justify-end">
+            <div className="relative">
+              <Button variant="ghost" size="icon">
+                <MessageSquare className="h-5 w-5" />
+              </Button>
+              {messages.length > 0 && (
+                <Badge 
+                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                  variant="destructive"
+                >
+                  {messages.length}
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
       </div>
