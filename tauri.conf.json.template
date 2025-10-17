@@ -54,5 +54,15 @@
     "license": "",
     "licenseFile": ""
   },
-  "plugins": {}
+  "plugins": {
+    "updater": {
+      "pubkey": "YOUR_UPDATER_PUBLIC_KEY_HERE",
+      "endpoints": [
+        "https://releases.myapp.com/{{target}}/{{current_version}}"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
 }
