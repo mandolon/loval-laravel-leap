@@ -533,72 +533,72 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
         </div>
       </div>
 
-      {/* Main content - Full width layout with sidebar and resizable panels */}
-      <div className="flex flex-1 overflow-hidden w-full">
-        {/* Left: Folder tree sidebar - full height */}
-        <div className="w-48 border-r bg-muted/30 overflow-y-auto flex-shrink-0">
-          <div className="py-2">
-            {folders
-              .filter(f => f.is_system_folder && !f.parent_folder_id)
-              .map(folder => (
-                <FolderTreeItem
-                  key={folder.id}
-                  folder={folder}
-                  folders={folders}
-                  selectedFolderId={selectedFolderId}
-                  onSelectFolder={setSelectedFolderId}
-                  expandedFolders={expandedFolders}
-                  onToggleExpanded={(id) => {
-                    const newExpanded = new Set(expandedFolders);
-                    if (newExpanded.has(id)) {
-                      newExpanded.delete(id);
-                    } else {
-                      newExpanded.add(id);
-                    }
-                    setExpandedFolders(newExpanded);
-                  }}
-                  depth={0}
+      {/* Main content - Resizable vertical layout */}
+      <ResizablePanelGroup direction="vertical" className="flex-1">
+        {/* PDF/Image Viewer Panel - Full width at top */}
+        <ResizablePanel defaultSize={50} minSize={20}>
+          {selectedFile ? (
+            <div className="h-full bg-muted/30 overflow-auto flex items-center justify-center">
+              {isPdfFile ? (
+                <canvas ref={canvasRef} className="max-w-full max-h-full" />
+              ) : isImageFile ? (
+                <img
+                  src={selectedFile.storage_path}
+                  alt={selectedFile.filename}
+                  className="max-w-full max-h-full object-contain"
                 />
-              ))}
-          </div>
-        </div>
-
-        {/* Right: Resizable Viewer (top) + File Table (bottom) */}
-        <ResizablePanelGroup direction="vertical" className="flex-1">
-          {/* PDF/Image Viewer Panel */}
-          <ResizablePanel defaultSize={50} minSize={20}>
-            {selectedFile ? (
-              <div className="h-full bg-muted/30 overflow-auto flex items-center justify-center">
-                {isPdfFile ? (
-                  <canvas ref={canvasRef} className="max-w-full max-h-full" />
-                ) : isImageFile ? (
-                  <img
-                    src={selectedFile.storage_path}
-                    alt={selectedFile.filename}
-                    className="max-w-full max-h-full object-contain"
-                  />
-                ) : (
-                  <div className="text-center text-muted-foreground">
-                    <p className="text-lg font-medium">Preview Not Available</p>
-                    <p className="text-sm mt-2">{selectedFile.mimetype || 'Unknown file type'}</p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="h-full bg-muted/30 flex items-center justify-center">
+              ) : (
                 <div className="text-center text-muted-foreground">
-                  <p className="text-lg">No file selected</p>
-                  <p className="text-sm">Select a file from the list below</p>
+                  <p className="text-lg font-medium">Preview Not Available</p>
+                  <p className="text-sm mt-2">{selectedFile.mimetype || 'Unknown file type'}</p>
                 </div>
+              )}
+            </div>
+          ) : (
+            <div className="h-full bg-muted/30 flex items-center justify-center">
+              <div className="text-center text-muted-foreground">
+                <p className="text-lg">No file selected</p>
+                <p className="text-sm">Select a file from the list below</p>
               </div>
-            )}
-          </ResizablePanel>
+            </div>
+          )}
+        </ResizablePanel>
 
-          <ResizableHandle withHandle />
+        <ResizableHandle withHandle />
 
-          {/* File Table Panel */}
-          <ResizablePanel defaultSize={50} minSize={30}>
-            <div className="h-full flex flex-col">
+        {/* File Explorer Panel - Sidebar + File Table at bottom */}
+        <ResizablePanel defaultSize={50} minSize={30}>
+          <div className="h-full flex">
+            {/* Left: Folder tree sidebar - matches file explorer height */}
+            <div className="w-48 border-r bg-muted/30 overflow-y-auto flex-shrink-0">
+              <div className="py-2">
+                {folders
+                  .filter(f => f.is_system_folder && !f.parent_folder_id)
+                  .map(folder => (
+                    <FolderTreeItem
+                      key={folder.id}
+                      folder={folder}
+                      folders={folders}
+                      selectedFolderId={selectedFolderId}
+                      onSelectFolder={setSelectedFolderId}
+                      expandedFolders={expandedFolders}
+                      onToggleExpanded={(id) => {
+                        const newExpanded = new Set(expandedFolders);
+                        if (newExpanded.has(id)) {
+                          newExpanded.delete(id);
+                        } else {
+                          newExpanded.add(id);
+                        }
+                        setExpandedFolders(newExpanded);
+                      }}
+                      depth={0}
+                    />
+                  ))}
+              </div>
+            </div>
+
+            {/* Right: File table */}
+            <div className="flex-1 flex flex-col">
               <div
                 ref={fileTableRef}
                 onDragEnter={() => setIsDraggingFiles(true)}
@@ -657,9 +657,9 @@ export const FileExplorer = ({ projectId, projectName }: FileExplorerProps) => {
                 </div>
               )}
             </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      </div>
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </div>
   );
 };
