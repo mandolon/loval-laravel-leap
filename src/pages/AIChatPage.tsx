@@ -11,6 +11,8 @@ import { useAIChat } from "@/hooks/useAIChat";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/contexts/UserContext";
 import { useProjects } from "@/lib/api/hooks/useProjects";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { PageSubhead } from "@/components/layout/PageSubhead";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -164,35 +166,33 @@ export default function AIChatPage() {
 
   return (
     <div className="h-full flex flex-col bg-background">
-      <div className="border-b p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">AI Assistant</h1>
-            <p className="text-muted-foreground">
-              Ask me anything about your workspace, projects, or tasks
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={handleNewChat}
-              variant="outline"
-              size="sm"
-              className="gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              New Chat
-            </Button>
-            {messages.length > 0 && threadId && workspaceId && selectedProject !== "select" && (
-              <ChatSummarizer
-                threadId={threadId}
-                workspaceId={workspaceId}
-                projectId={selectedProject === "all" ? workspaceId : selectedProject}
-                userId={user?.id || ""}
-                messages={messages}
-              />
-            )}
-          </div>
-        </div>
+      <div className="border-b p-6">
+        <PageHeader title="AI Assistant" />
+        <PageSubhead 
+          description="Ask me anything about your workspace, projects, or tasks"
+          actions={
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handleNewChat}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                New Chat
+              </Button>
+              {messages.length > 0 && threadId && workspaceId && selectedProject !== "select" && (
+                <ChatSummarizer
+                  threadId={threadId}
+                  workspaceId={workspaceId}
+                  projectId={selectedProject === "all" ? workspaceId : selectedProject}
+                  userId={user?.id || ""}
+                  messages={messages}
+                />
+              )}
+            </div>
+          }
+        />
       </div>
 
       <ScrollArea ref={scrollRef} className="flex-1 p-4">
