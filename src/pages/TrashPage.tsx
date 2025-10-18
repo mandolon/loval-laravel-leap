@@ -238,9 +238,9 @@ export default function TrashPage() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="p-6 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="border-b border-border bg-card p-6">
+      <div>
         <PageHeader 
           title="Trash"
           icon={<Trash2 className="h-5 w-5 text-destructive" />}
@@ -249,8 +249,7 @@ export default function TrashPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-6">
-        <Tabs defaultValue="projects" className="w-full">
+      <Tabs defaultValue="projects" className="w-full">
           <TabsList className="mb-6">
             <TabsTrigger value="projects">Projects</TabsTrigger>
             <TabsTrigger value="ai-chats">AI Chats</TabsTrigger>
@@ -258,19 +257,19 @@ export default function TrashPage() {
 
           <TabsContent value="projects">
             {deletedProjects.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Trash2 className="h-12 w-12 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-medium mb-2">Trash is empty</h3>
-              <p className="text-sm text-muted-foreground text-center max-w-sm">
-                Deleted projects will appear here. They will be automatically removed after 30 days.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {deletedProjects.map((project) => (
-              <Card key={project.id} className="hover:shadow-md transition-shadow">
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <Trash2 className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Trash is empty</h3>
+                  <p className="text-sm text-muted-foreground text-center max-w-sm">
+                    Deleted projects will appear here. They will be automatically removed after 30 days.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {deletedProjects.map((project) => (
+                  <Card key={project.id} className="hover:shadow-md transition-shadow">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -322,9 +321,9 @@ export default function TrashPage() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        )}
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="ai-chats">
@@ -385,7 +384,6 @@ export default function TrashPage() {
             )}
           </TabsContent>
         </Tabs>
-      </div>
 
       {/* Permanent Delete Project Dialog */}
       <AlertDialog open={permanentDeleteDialogOpen} onOpenChange={setPermanentDeleteDialogOpen}>
