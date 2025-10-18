@@ -259,7 +259,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
   };
 
   return (
-    <aside className={`${isCollapsed ? 'w-14' : 'w-[220px]'} bg-card border-r border-border flex flex-col h-full transition-all duration-300`}>
+    <aside className={`${isCollapsed ? 'w-14' : 'w-[200px]'} bg-card border-r border-border flex flex-col h-full transition-all duration-300`}>
       {/* 1. User Profile Section */}
       <div className="pt-3 pr-3 pb-3 border-b border-border flex-shrink-0">
         <div className="flex items-center justify-between">

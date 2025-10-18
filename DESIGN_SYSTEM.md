@@ -178,8 +178,8 @@ bg-sidebar text-sidebar-foreground
 
 ### Sidebar Navigation
 ```tsx
-// Sidebar container (220px)
-<aside className="w-[220px] bg-card border-r">
+// Sidebar container (200px)
+<aside className="w-[200px] bg-card border-r">
   
 // Section headers (uppercase labels)
 <span className="text-base font-semibold text-muted-foreground uppercase tracking-wide">
