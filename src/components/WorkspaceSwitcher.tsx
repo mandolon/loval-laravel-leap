@@ -147,7 +147,6 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
             variant="ghost" 
             className="w-full justify-start gap-2 h-auto py-2 px-3 hover:bg-accent/30"
           >
-            <Building2 className="h-4 w-4 flex-shrink-0" />
             <span className="truncate text-sm">{currentWorkspace?.name || 'Select Workspace'}</span>
           </Button>
         </DropdownMenuTrigger>
