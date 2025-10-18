@@ -12,13 +12,13 @@ export function PageHeader({
   className,
 }: PageHeaderProps) {
   return (
-    <div className={cn("flex items-center gap-3", className)}>
+    <div className={cn("flex items-center gap-2", className)}>
       {icon && (
-        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+        <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center shrink-0">
           {icon}
         </div>
       )}
-      <h1 className="text-3xl font-bold">{title}</h1>
+      <h1 className="text-lg font-semibold">{title}</h1>
     </div>
   );
 }

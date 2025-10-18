@@ -14,7 +14,7 @@ export function PageSubhead({
   if (!description && !actions) return null;
 
   return (
-    <div className={cn("flex items-center justify-between gap-4 mt-2", className)}>
+    <div className={cn("flex items-center justify-between gap-3 mt-1", className)}>
       {description && (
         <p className="text-muted-foreground flex-1">
           {description}

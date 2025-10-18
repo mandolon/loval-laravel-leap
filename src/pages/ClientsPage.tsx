@@ -5,7 +5,8 @@ import { PageSubhead } from "@/components/layout/PageSubhead";
 
 const ClientsPage = () => {
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-4 space-y-4 max-w-7xl mx-auto">
+      {/* Header */}
       <div>
         <PageHeader title="Clients" />
         <PageSubhead description="Client information is now embedded in projects" />

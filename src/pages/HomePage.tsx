@@ -179,7 +179,7 @@ const HomePage = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat) => (
           <Card key={stat.title}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -206,8 +206,8 @@ const HomePage = () => {
 
       {/* Quick Actions */}
       <div>
-        <h2 className="text-2xl font-bold mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <h2 className="text-lg font-semibold mb-3">Quick Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {quickActions.map((action) => (
             <Card 
               key={action.title} 
@@ -231,7 +231,7 @@ const HomePage = () => {
 
       {/* Get Started */}
       <div>
-        <h2 className="text-2xl font-bold mb-4">Get Started</h2>
+        <h2 className="text-lg font-semibold mb-3">Get Started</h2>
         <Card>
           <CardContent className="pt-6">
             {currentWorkspace ? (

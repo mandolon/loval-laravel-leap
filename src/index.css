@@ -115,6 +115,16 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground text-base antialiased;
+  }
+  
+  /* Compact headings - only 2 sizes */
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-lg font-semibold tracking-tight;
+  }
+  
+  /* All text defaults to base size */
+  p, span, div, a, button, input, textarea, select {
+    @apply text-base;
   }
 }
