@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { useProject, useUpdateProject } from "@/lib/api/hooks/useProjects";
 import type { UpdateProjectInput, Project } from "@/lib/api/types";
 import { AssessorParcelInfo } from "@/components/project/EditAssessorParcelDialog";
@@ -142,7 +143,9 @@ const ProjectDetails = () => {
 
   return (
     <div className="flex h-[calc(100vh-4rem)]">
-      <div className="flex flex-col flex-1">
+      <ResizablePanelGroup direction="horizontal">
+        <ResizablePanel defaultSize={chatOpen ? 75 : 100} minSize={50}>
+          <div className="flex flex-col h-full">
         {/* Header */}
         <div className="border-b bg-background">
           <div className="flex items-center px-6 py-2">
@@ -740,10 +743,14 @@ const ProjectDetails = () => {
         </div>
       </div>
       </div>
+        </ResizablePanel>
 
-      {/* Project Chat Sidebar - Full height */}
+      {/* Project Chat Sidebar - Resizable */}
       {chatOpen && (
-        <div className="w-80 border-l bg-background flex flex-col">
+        <>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
+            <div className="h-full border-l bg-background flex flex-col">
           <div className="p-4 border-b">
             <h3 className="font-semibold">Project Chat</h3>
           </div>
@@ -776,7 +783,10 @@ const ProjectDetails = () => {
             />
           </div>
         </div>
+          </ResizablePanel>
+        </>
       )}
+      </ResizablePanelGroup>
     </div>
   );
 };
