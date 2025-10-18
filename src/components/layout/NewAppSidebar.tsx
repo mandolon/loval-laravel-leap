@@ -22,7 +22,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
   const location = useLocation();
   const { toast } = useToast();
   const { user } = useUser();
-  const { currentWorkspace, currentWorkspaceId } = useWorkspaces();
+  const { currentWorkspace, currentWorkspaceId, refetch: refetchWorkspaces } = useWorkspaces();
   const [activeTab, setActiveTab] = useState<'home' | 'workspace' | 'tasks' | 'ai'>('workspace');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [projects, setProjects] = useState<any[]>([]);
@@ -79,8 +79,9 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
     }
   };
 
-  const handleWorkspaceChange = (newWorkspaceId: string) => {
+  const handleWorkspaceChange = async (newWorkspaceId: string) => {
     localStorage.setItem("current_workspace_id", newWorkspaceId);
+    await refetchWorkspaces();
     loadProjects();
     onWorkspaceChange?.(newWorkspaceId);
     
