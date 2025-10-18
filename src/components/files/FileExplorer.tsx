@@ -132,10 +132,10 @@ const FloatingSearchDropdown = ({
           >
             <FileIcon
               fileName={result.name}
-              className={`h-4 w-4 mr-3 flex-shrink-0 ${darkMode ? 'text-muted-foreground' : 'text-gray-600'}`}
+              className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground"
             />
             <div className="flex-1 min-w-0">
-              <div className={`text-[11px] truncate ${darkMode ? 'text-foreground' : 'text-gray-800'}`}>{result.name}</div>
+              <div className="text-[11px] truncate text-foreground">{result.name}</div>
             </div>
           </div>
         );
@@ -152,27 +152,13 @@ const SidebarItem = ({ item, selected, keyboardFocused, onClick, darkMode }: {
   onClick: () => void;
   darkMode: boolean;
 }) => {
-  const getTextColor = () => {
-    if (!darkMode) {
-      return selected ? "text-gray-900" : keyboardFocused ? "text-gray-800" : "text-gray-700";
-    }
-    return "";
-  };
-  
-  const getTextStyle = () => {
-    if (!darkMode) return {};
-    if (selected) return { color: 'hsl(var(--foreground))' };
-    if (keyboardFocused) return { color: 'hsl(var(--foreground))' };
-    return { color: 'hsl(var(--muted-foreground))' };
-  };
-  
   return (
     <button
       onClick={onClick}
       className={`w-full text-left px-2.5 h-7 flex items-center gap-2 rounded-md transition-colors focus:outline-none active:transform-none border-0 ${
-        selected ? 'bg-blue-600/90 text-white' : 
-        keyboardFocused ? 'bg-slate-600/50 text-white' : 
-        'text-slate-300 hover:bg-slate-600/50'
+        selected ? 'bg-primary text-primary-foreground' : 
+        keyboardFocused ? 'bg-accent/50 text-foreground' : 
+        'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
       }`}
       data-selected={selected ? 'true' : 'false'}
       data-focus={keyboardFocused ? 'true' : 'false'}
@@ -428,20 +414,20 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
 
   return (
     <div 
-      className={`flex flex-col flex-1 overflow-hidden bg-[#213044] ${isExternalDragOver ? 'ring-2 ring-primary ring-opacity-50' : ''}`}
+      className={`flex flex-col flex-1 overflow-hidden bg-card ${isExternalDragOver ? 'ring-2 ring-primary ring-opacity-50' : ''}`}
       onDragEnter={handleExternalDragEnter}
       onDragOver={handleExternalDragOver}
       onDragLeave={handleExternalDragLeave}
       onDrop={handleExternalDrop}
     >
-  <div className="flex items-center h-7 border-b border-slate-600/50 bg-[#1e293b] text-[11px] text-slate-400 select-none pl-3 pr-2">
+  <div className="flex items-center h-7 border-b border-border bg-muted text-[11px] text-muted-foreground select-none pl-3 pr-2">
         <div className="flex-[2] pr-2">Folder</div>
         <div className="flex-[1] hidden lg:block">Modified</div>
         <div className="h-5 w-5 flex items-center justify-center">
           {phase && (
             <button
               onClick={handleCreateFolderClick}
-              className="h-5 w-5 flex items-center justify-center rounded hover:bg-slate-600/50 transition-colors text-slate-400 hover:text-slate-200"
+              className="h-5 w-5 flex items-center justify-center rounded hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground"
               title="Create new folder"
             >
               <Plus className="h-3.5 w-3.5" />
@@ -462,16 +448,16 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
         )}
         
             {!phase ? (
-          <div className="flex items-center justify-center h-32 text-slate-400 text-[11px]">
+          <div className="flex items-center justify-center h-32 text-muted-foreground text-[11px]">
             Select a phase
           </div>
         ) : (
           <>
             {/* New folder input row */}
             {isCreatingFolder && (
-        <div className="flex items-center h-7 border-b border-slate-600/30 bg-[#213044] pl-3 pr-3">
+        <div className="flex items-center h-7 border-b border-border/50 bg-card pl-3 pr-3">
                 <div className="flex-[2] pr-2 min-w-0 flex items-center">
-                  <Folder className="h-3.5 w-3.5 mr-2 text-slate-400" />
+                  <Folder className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
                   <input
                     ref={inputRef}
                     type="text"
@@ -479,12 +465,12 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
                     onChange={(e) => setNewFolderName(e.target.value)}
                     onBlur={handleCancelFolder}
                     onKeyDown={handleKeyDown}
-                    className="flex-1 bg-transparent outline-none text-[11px] border-none focus:ring-0 p-0 text-slate-200 placeholder-slate-500"
+                    className="flex-1 bg-transparent outline-none text-[11px] border-none focus:ring-0 p-0 text-foreground placeholder:text-muted-foreground"
                     placeholder="New folder name..."
                     autoFocus
                   />
                 </div>
-                <span className="flex-[1] text-[11px] text-slate-400 tabular-nums hidden lg:block">
+                <span className="flex-[1] text-[11px] text-muted-foreground tabular-nums hidden lg:block">
                   —
                 </span>
                 <div className="h-5 w-5"></div>
@@ -493,7 +479,7 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
             
             {/* Existing folders */}
             {folders.length === 0 && !isCreatingFolder ? (
-              <div className="flex items-center justify-center h-32 text-slate-400 text-[11px]">
+              <div className="flex items-center justify-center h-32 text-muted-foreground text-[11px]">
                 No folders found
               </div>
             ) : (
@@ -504,10 +490,10 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
             return (
               <div
                 key={f.name}
-                className={`group flex items-center h-7 border-b border-slate-600/30 pl-3 pr-3 cursor-pointer transition-colors ${
-                  isSelected ? 'bg-blue-600/90' : 
-                  isKeyboardFocused ? 'bg-slate-600/50' : 
-                  'hover:bg-slate-600/50'
+                className={`group flex items-center h-7 border-b border-border/50 pl-3 pr-3 cursor-pointer transition-colors ${
+                  isSelected ? 'bg-primary' : 
+                  isKeyboardFocused ? 'bg-accent/50' : 
+                  'hover:bg-accent/50'
                 }`}
                 onClick={() => onFolderClick(f)}
                 data-selected={isSelected ? 'true' : 'false'}
@@ -515,14 +501,14 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
                 tabIndex={0}
               >
                 <div className={`flex items-center flex-[2] pr-2 min-w-0 ${
-                  isSelected ? "text-white font-medium" :
-                  isKeyboardFocused ? "text-white" :
-                  "text-slate-300"
+                  isSelected ? "text-primary-foreground font-medium" :
+                  isKeyboardFocused ? "text-foreground" :
+                  "text-foreground/80"
                 }`}>
-                  <Folder className="h-3.5 w-3.5 mr-2 text-slate-400" />
+                  <Folder className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
                   <span className="truncate text-[11px]">{f.name}</span>
                 </div>
-                <span className="flex-[1] text-[11px] text-slate-400 tabular-nums hidden lg:block">
+                <span className="flex-[1] text-[11px] text-muted-foreground tabular-nums hidden lg:block">
                   {getMostRecentFileDate(phase?.name, f.name)}
                 </span>
                 <div className="h-5 w-5 flex items-center justify-center">
@@ -534,7 +520,7 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
                     }}
                     disabled={isFirstFolder}
                     className={`h-4 w-4 flex items-center justify-center rounded transition-opacity opacity-0 group-hover:opacity-100 ${
-                      isFirstFolder ? 'cursor-not-allowed text-slate-500' : 'text-slate-400 hover:text-slate-200'
+                      isFirstFolder ? 'cursor-not-allowed text-muted-foreground/60' : 'text-muted-foreground hover:text-foreground'
                     }`}
                     aria-label="Move folder up"
                     title={isFirstFolder ? 'Top folder' : 'Move folder up'}
@@ -666,7 +652,7 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
   if (viewMode === "grid") {
     return (
       <div 
-        className={`flex-1 overflow-auto bg-[#213044] p-3 custom-scrollbar relative ${isDragOver ? 'ring-2 ring-primary ring-opacity-40' : ''}`}
+        className={`flex-1 overflow-auto bg-card p-3 custom-scrollbar relative ${isDragOver ? 'ring-2 ring-primary ring-opacity-40' : ''}`}
         onDragEnter={canUpload ? handleDragEnter : undefined}
         onDragLeave={canUpload ? handleDragLeave : undefined}
         onDragOver={canUpload ? handleDragOver : undefined}
@@ -686,7 +672,7 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
           </div>
         )}
         {!folder ? (
-          <div className="flex items-center justify-center h-32 text-slate-400 text-[11px]">
+          <div className="flex items-center justify-center h-32 text-muted-foreground text-[11px]">
             Select a folder
           </div>
         ) : (
@@ -712,9 +698,9 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
                 <div
                   key={file.name}
                   className={`flex flex-col items-stretch p-2 rounded-md cursor-pointer transition-colors gap-1 ${
-                    isSelected ? 'bg-blue-600/90' : 
-                    isKeyboardFocused ? 'bg-slate-600/50' : 
-                    'hover:bg-slate-600/50'
+                    isSelected ? 'bg-primary' : 
+                    isKeyboardFocused ? 'bg-accent/50' : 
+                    'hover:bg-accent/50'
                   }`}
                   onClick={() => onFileClick(file)}
                   draggable={true}
@@ -732,7 +718,7 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
                   >
                     <FileIcon
                       fileName={file.name}
-                      className="thumbnail-icon file-grid-icon text-slate-400"
+                      className="thumbnail-icon file-grid-icon text-muted-foreground"
                     />
                     <div className="thumbnail-ext-badge">
                       {(() => {
@@ -742,9 +728,9 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
                     </div>
                   </div>
                   <span className={`text-[11px] leading-snug text-center truncate w-full px-0.5 ${
-                    isSelected ? 'text-white font-medium' : isKeyboardFocused ? 'text-white' : 'text-slate-300'
+                    isSelected ? 'text-primary-foreground font-medium' : isKeyboardFocused ? 'text-foreground' : 'text-foreground/80'
                   }`}>{file.name}</span>
-                  <span className="text-[11px] text-slate-400">{file.size}</span>
+                  <span className="text-[11px] text-muted-foreground">{file.size}</span>
                 </div>
               );
             })}
@@ -756,10 +742,10 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
 
   return (
     <div 
-      className="flex-1 flex flex-col bg-[#213044]"
+      className="flex-1 flex flex-col bg-card"
     >
       {/* Fixed Header */}
-  <div className="flex items-center h-7 border-b border-slate-600/50 bg-[#1e293b] text-[11px] text-slate-400 select-none pl-3 pr-1 flex-shrink-0">
+  <div className="flex items-center h-7 border-b border-border bg-muted text-[11px] text-muted-foreground select-none pl-3 pr-1 flex-shrink-0">
         <div className="flex-1 pr-3 flex items-center min-w-0">
           <span className="inline-block w-4 h-4 mr-2" aria-hidden="true"></span>
           Name
@@ -789,7 +775,7 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
                 type="button"
                 onClick={() => document.getElementById('file-explorer-upload-input')?.click()}
                 title="Upload files"
-                className="h-5 w-5 flex items-center justify-center rounded hover:bg-slate-600/50 transition-colors text-slate-400 hover:text-slate-200"
+                className="h-5 w-5 flex items-center justify-center rounded hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground"
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>
@@ -819,11 +805,11 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
           </div>
         )}
         {!folder ? (
-          <div className="flex items-center justify-center h-32 text-slate-400 text-[11px]">
+          <div className="flex items-center justify-center h-32 text-muted-foreground text-[11px]">
             No file selected
           </div>
         ) : files.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-slate-400 text-[11px]">
+          <div className="flex items-center justify-center h-32 text-muted-foreground text-[11px]">
             No files found
           </div>
         ) : (
@@ -847,10 +833,10 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
             return (
               <div
                 key={file.name}
-                className={`flex items-center h-7 border-b border-slate-600/30 pl-3 pr-3 cursor-pointer transition-colors ${
-                  isSelected ? 'bg-blue-600/90 text-white' : 
-                  isKeyboardFocused ? 'bg-slate-600/50 text-white' : 
-                  'text-slate-300 hover:bg-slate-600/50'
+                className={`flex items-center h-7 border-b border-border/50 pl-3 pr-3 cursor-pointer transition-colors ${
+                  isSelected ? 'bg-primary text-primary-foreground' : 
+                  isKeyboardFocused ? 'bg-accent/50 text-foreground' : 
+                  'text-foreground/80 hover:bg-accent/50'
                 }`}
                 onClick={() => onFileClick(file)}
                 draggable={true}
@@ -1497,7 +1483,7 @@ export default function FileExplorer({
       style={{ fontFamily: '"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif' }}
     >
       {/* Header */}
-  <div className="h-8 border-b border-slate-600/50 bg-[#1a2332] flex items-center px-2 relative text-[11px]">
+  <div className="h-8 border-b border-border bg-muted/80 flex items-center px-2 relative text-[11px]">
         <div className={`absolute left-1/2 -translate-x-1/2 w-full flex justify-center pointer-events-none ${(heightMode === 'collapsed' || heightMode === 'compact') ? 'z-[9999]' : ''}`}>
           <div
             ref={searchContainerRef}
@@ -1507,10 +1493,10 @@ export default function FileExplorer({
               margin: '0 auto'
             }}
           >
-            <div className="h-6 px-2 rounded border border-slate-500/50 bg-slate-700/50 flex items-center gap-1 relative">
-              <Search className="h-4 w-4 shrink-0 text-slate-400" />
+            <div className="h-6 px-2 rounded border border-border bg-muted/50 flex items-center gap-1 relative">
+              <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
               <input
-                className="flex-1 bg-transparent outline-none text-[11px] pr-5 text-slate-200 placeholder-slate-400"
+                className="flex-1 bg-transparent outline-none text-[11px] pr-5 text-foreground placeholder:text-muted-foreground"
                 placeholder="Search files..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -1549,7 +1535,7 @@ export default function FileExplorer({
         <div className="hidden md:flex items-center gap-2 ml-auto pr-1">
           {selectedFolder && heightMode !== 'collapsed' && (
             <button
-              className={`h-6 px-2 rounded border border-slate-500/50 inline-flex items-center gap-1 focus:outline-none active:transform-none text-[11px] text-slate-300 ${viewMode === 'grid' ? 'bg-slate-600/80' : 'bg-slate-700/50'} hover:bg-slate-600/80`}
+              className={`h-6 px-2 rounded border border-border inline-flex items-center gap-1 focus:outline-none active:transform-none text-[11px] text-foreground ${viewMode === 'grid' ? 'bg-accent' : 'bg-muted/50'} hover:bg-accent`}
               onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
               title={viewMode === "grid" ? "Switch to List View" : "Switch to Grid View"}
             >
@@ -1560,7 +1546,7 @@ export default function FileExplorer({
             <button
               onClick={onToggleHeight}
               title={heightMode === 'collapsed' ? 'Restore Explorer' : heightMode === 'compact' ? 'Collapse to Search' : 'Make Explorer Compact'}
-              className="h-6 w-6 rounded border border-slate-500/50 bg-slate-700/50 hover:bg-slate-600/80 flex items-center justify-center text-slate-300"
+              className="h-6 w-6 rounded border border-border bg-muted/50 hover:bg-accent flex items-center justify-center text-foreground"
             >
               <div className="relative w-3 h-3">
                 <Minus
@@ -1578,7 +1564,7 @@ export default function FileExplorer({
       {heightMode !== 'collapsed' && (
         <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* Sidebar */}
-          <aside className="w-[clamp(140px,18%,180px)] border-r border-slate-600/50 bg-[#1e293b] flex flex-col">
+          <aside className="w-[clamp(140px,18%,180px)] border-r border-border bg-muted flex flex-col">
             <nav className="flex-1 overflow-y-auto px-1 py-1 custom-scrollbar">
               {phases.map((item: any, index: number) => (
                 <SidebarItem
@@ -1633,7 +1619,7 @@ export default function FileExplorer({
       )}
 
       {heightMode !== 'collapsed' && (
-        <div className="h-5 border-t border-slate-600/50 bg-[#1a2332] flex items-center justify-between px-2 text-[11px] text-slate-400">
+        <div className="h-5 border-t border-border bg-muted/80 flex items-center justify-between px-2 text-[11px] text-muted-foreground">
           <div className="truncate flex-1">
             {viewerStatus && viewerStatus.name ? (
               <span className="truncate">
@@ -1656,15 +1642,15 @@ export default function FileExplorer({
           <div className="flex items-center gap-3 whitespace-nowrap flex-shrink-0">
             {viewerStatus?.loading && viewerStatus?.type === 'pdf' && (
               <div className="flex items-center gap-1.5">
-                <div className="animate-spin rounded-full h-3 w-3 border border-slate-400 border-t-transparent" />
-                <span className="text-slate-400">Loading PDF...</span>
+                <div className="animate-spin rounded-full h-3 w-3 border border-muted-foreground border-t-transparent" />
+                <span className="text-muted-foreground">Loading PDF...</span>
               </div>
             )}
             {!viewerStatus?.loading && viewerStatus?.type === 'image' && (
-              <span className="text-slate-400">Helpers: Shift+Wheel zoom • Shift+ +/- zoom • R rotate • F fullscreen</span>
+              <span className="text-muted-foreground">Helpers: Shift+Wheel zoom • Shift+ +/- zoom • R rotate • F fullscreen</span>
             )}
             {!viewerStatus?.loading && viewerStatus?.type === 'pdf' && (
-              <span className="text-slate-400">Helpers: Shift+Wheel zoom • Shift+ +/- zoom • R rotate • Arrows nav • F fullscreen</span>
+              <span className="text-muted-foreground">Helpers: Shift+Wheel zoom • Shift+ +/- zoom • R rotate • Arrows nav • F fullscreen</span>
             )}
           </div>
         </div>
