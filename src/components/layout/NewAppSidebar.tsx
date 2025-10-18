@@ -34,6 +34,32 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
     }
   }, [currentWorkspaceId, workspaceId, location.pathname]);
 
+  // Realtime subscription for projects in sidebar
+  useEffect(() => {
+    const wsId = workspaceId || currentWorkspaceId;
+    if (!wsId) return;
+
+    const channel = supabase
+      .channel('sidebar-projects-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'projects',
+          filter: `workspace_id=eq.${wsId}`
+        },
+        () => {
+          loadProjects();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentWorkspaceId, workspaceId]);
+
   const loadProjects = async () => {
     const wsId = workspaceId || currentWorkspaceId;
     if (!wsId) return;

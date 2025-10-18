@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useEffect } from "react";
 
 interface AIChatThreadsListProps {
   workspaceId: string;
@@ -30,6 +31,31 @@ export function AIChatThreadsList({ workspaceId }: AIChatThreadsListProps) {
     },
     enabled: !!workspaceId,
   });
+
+  // Realtime subscription for AI chat threads
+  useEffect(() => {
+    if (!workspaceId) return;
+
+    const channel = supabase
+      .channel('ai-threads-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'ai_chat_threads',
+          filter: `workspace_id=eq.${workspaceId}`
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["ai-chat-threads", workspaceId] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [workspaceId, queryClient]);
 
   const deleteThread = useMutation({
     mutationFn: async (threadId: string) => {

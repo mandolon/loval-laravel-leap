@@ -39,6 +39,30 @@ const TasksPage = () => {
   const updateTaskMutation = useUpdateTask();
   const deleteTaskMutation = useDeleteTask();
 
+  // Realtime subscription for tasks
+  useEffect(() => {
+    if (!workspaceId) return;
+
+    const channel = supabase
+      .channel('tasks-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks'
+        },
+        () => {
+          // Refetch will be handled by React Query invalidation
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [workspaceId]);
+
   useEffect(() => {
     if (!workspaceId) {
       navigate('/');

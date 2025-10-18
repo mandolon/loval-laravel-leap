@@ -87,6 +87,31 @@ const ProjectsPage = () => {
     }
   };
 
+  // Realtime subscription for projects
+  useEffect(() => {
+    if (!workspaceId) return;
+
+    const channel = supabase
+      .channel('projects-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'projects',
+          filter: `workspace_id=eq.${workspaceId}`
+        },
+        () => {
+          refetch();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [workspaceId, refetch]);
+
   useEffect(() => {
     if (!workspaceId) {
       const storedWorkspaceId = localStorage.getItem("current_workspace_id");

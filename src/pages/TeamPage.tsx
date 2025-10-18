@@ -70,6 +70,28 @@ const TeamPage = () => {
     loadUsers();
   }, []);
 
+  // Realtime subscription for users
+  useEffect(() => {
+    const channel = supabase
+      .channel('users-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'users'
+        },
+        () => {
+          loadUsers();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const loadUsers = async () => {
     try {
       const { data: users, error: usersError } = await supabase

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import type { Task } from "@/lib/api/types";
 import { Button } from "@/components/ui/button";
@@ -47,11 +47,13 @@ import { EditProjectEstimatedAmountDialog } from "@/components/project/EditProje
 import { EditProjectNameDialog } from "@/components/project/EditProjectNameDialog";
 import { ProjectMembersTable } from "@/components/project/ProjectMembersTable";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 const ProjectDetails = () => {
   const { id, workspaceId } = useParams<{ id: string; workspaceId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("project");
   const [chatOpen, setChatOpen] = useState(true);
   const [replyingTo, setReplyingTo] = useState<ProjectChatMessageWithUser | null>(null);
@@ -83,6 +85,140 @@ const ProjectDetails = () => {
 
   const { data: links = [], isLoading: linksLoading } = useLinks(id || "");
   const deleteLinkMutation = useDeleteLink();
+
+  // Realtime subscriptions for all project data
+  useEffect(() => {
+    if (!id) return;
+
+    // Subscribe to project changes
+    const projectChannel = supabase
+      .channel(`project-${id}-changes`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'projects',
+          filter: `id=eq.${id}`
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['project', id] });
+        }
+      )
+      .subscribe();
+
+    // Subscribe to tasks changes
+    const tasksChannel = supabase
+      .channel(`tasks-${id}-changes`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks',
+          filter: `project_id=eq.${id}`
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['tasks', id] });
+        }
+      )
+      .subscribe();
+
+    // Subscribe to notes changes
+    const notesChannel = supabase
+      .channel(`notes-${id}-changes`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notes',
+          filter: `project_id=eq.${id}`
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['notes', id] });
+        }
+      )
+      .subscribe();
+
+    // Subscribe to chat messages
+    const messagesChannel = supabase
+      .channel(`messages-${id}-changes`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'project_chat_messages',
+          filter: `project_id=eq.${id}`
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['project-messages', id] });
+        }
+      )
+      .subscribe();
+
+    // Subscribe to invoices
+    const invoicesChannel = supabase
+      .channel(`invoices-${id}-changes`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'invoices',
+          filter: `project_id=eq.${id}`
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['invoices', id] });
+        }
+      )
+      .subscribe();
+
+    // Subscribe to links
+    const linksChannel = supabase
+      .channel(`links-${id}-changes`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'links',
+          filter: `project_id=eq.${id}`
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['links', id] });
+        }
+      )
+      .subscribe();
+
+    // Subscribe to files
+    const filesChannel = supabase
+      .channel(`files-${id}-changes`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'files',
+          filter: `project_id=eq.${id}`
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['files', id] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(projectChannel);
+      supabase.removeChannel(tasksChannel);
+      supabase.removeChannel(notesChannel);
+      supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(invoicesChannel);
+      supabase.removeChannel(linksChannel);
+      supabase.removeChannel(filesChannel);
+    };
+  }, [id, queryClient]);
 
   const handleSendMessage = (content: string, replyToId?: string) => {
     if (!id) return;
