@@ -40,6 +40,7 @@ interface SystemUser {
   name: string;
   email: string;
   phone?: string;
+  title?: string;
   is_admin: boolean;
   is_active: boolean;
 }
@@ -48,7 +49,7 @@ const TeamPage = () => {
   const [users, setUsers] = useState<SystemUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState({ name: '' });
+  const [editValues, setEditValues] = useState({ name: '', title: '' });
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const { toast } = useToast();
   const { user: currentUser } = useUser();
@@ -85,6 +86,7 @@ const TeamPage = () => {
         name: user.name,
         email: user.email,
         phone: user.phone,
+        title: user.title,
         is_admin: user.is_admin || false,
         is_active: !user.deleted_at,
       })));
@@ -133,12 +135,13 @@ const TeamPage = () => {
     setEditingId(user.id);
     setEditValues({
       name: user.name,
+      title: user.title || '',
     });
   };
 
   const cancelEditing = () => {
     setEditingId(null);
-    setEditValues({ name: '' });
+    setEditValues({ name: '', title: '' });
   };
 
   const saveEdit = async (userId: string) => {
@@ -156,6 +159,7 @@ const TeamPage = () => {
         .from('users')
         .update({
           name: editValues.name.trim(),
+          title: editValues.title.trim() || null,
         })
         .eq('id', userId);
 
@@ -163,21 +167,21 @@ const TeamPage = () => {
 
       setUsers(users.map(u => 
         u.id === userId 
-          ? { ...u, name: editValues.name.trim() }
+          ? { ...u, name: editValues.name.trim(), title: editValues.title.trim() || undefined }
           : u
       ));
 
       setEditingId(null);
       
       toast({
-        title: "Name updated",
-        description: "User name has been changed successfully",
+        title: "User updated",
+        description: "User information has been changed successfully",
       });
     } catch (error) {
-      console.error('Error updating name:', error);
+      console.error('Error updating user:', error);
       toast({
-        title: "Error updating name",
-        description: "Failed to change user name",
+        title: "Error updating user",
+        description: "Failed to change user information",
         variant: "destructive",
       });
     }
@@ -266,6 +270,7 @@ const TeamPage = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Title</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Admin Status</TableHead>
                 <TableHead>Status</TableHead>
@@ -278,11 +283,37 @@ const TeamPage = () => {
                   {/* Name Cell - Editable */}
                   <TableCell>
                     {editingId === user.id ? (
+                      <Input
+                        value={editValues.name}
+                        onChange={(e) => setEditValues({ ...editValues, name: e.target.value })}
+                        placeholder="Full Name"
+                        className="h-8"
+                      />
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">
+                          {user.name}
+                        </span>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6"
+                          onClick={() => startEditing(user)}
+                        >
+                          <Pencil className="h-3 w-3 text-muted-foreground" />
+                        </Button>
+                      </div>
+                    )}
+                  </TableCell>
+
+                  {/* Title Cell - Editable */}
+                  <TableCell>
+                    {editingId === user.id ? (
                       <div className="flex gap-2 items-center">
                         <Input
-                          value={editValues.name}
-                          onChange={(e) => setEditValues({ name: e.target.value })}
-                          placeholder="Full Name"
+                          value={editValues.title}
+                          onChange={(e) => setEditValues({ ...editValues, title: e.target.value })}
+                          placeholder="Title"
                           className="h-8"
                         />
                         <Button
@@ -303,19 +334,9 @@ const TeamPage = () => {
                         </Button>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">
-                          {user.name}
-                        </span>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-6 w-6"
-                          onClick={() => startEditing(user)}
-                        >
-                          <Pencil className="h-3 w-3 text-muted-foreground" />
-                        </Button>
-                      </div>
+                      <span className="text-muted-foreground">
+                        {user.title || '—'}
+                      </span>
                     )}
                   </TableCell>
 

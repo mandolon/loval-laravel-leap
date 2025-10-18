@@ -26,6 +26,7 @@ import { z } from "zod";
 const userSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(200),
   email: z.string().trim().email("Invalid email address").max(255),
+  title: z.string().trim().max(100).optional(),
   is_admin: z.boolean(),
 });
 
@@ -41,6 +42,7 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    title: '',
     is_admin: false,
   });
 
@@ -97,11 +99,15 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
 
       if (userError) throw userError;
 
-      // Set admin flag if checked
-      if (formData.is_admin) {
+      // Update user with title and admin flag if needed
+      const updates: any = {};
+      if (formData.title) updates.title = formData.title;
+      if (formData.is_admin) updates.is_admin = true;
+      
+      if (Object.keys(updates).length > 0) {
         await supabase
           .from('users')
-          .update({ is_admin: true })
+          .update(updates)
           .eq('id', userRecord.id);
       }
 
@@ -128,6 +134,7 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
       setFormData({
         name: '',
         email: '',
+        title: '',
         is_admin: false,
       });
       
@@ -203,6 +210,21 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
               />
               {errors.email && (
                 <p className="text-sm text-destructive">{errors.email}</p>
+              )}
+            </div>
+
+            {/* Title */}
+            <div className="grid gap-2">
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="e.g., Project Manager"
+                disabled={loading}
+              />
+              {errors.title && (
+                <p className="text-sm text-destructive">{errors.title}</p>
               )}
             </div>
 
