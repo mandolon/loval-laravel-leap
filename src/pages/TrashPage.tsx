@@ -242,7 +242,6 @@ export default function TrashPage() {
       {/* Header */}
       <div>
         <PageHeader title="Trash" />
-        <PageSubhead description="Deleted projects are stored here for 30 days" />
       </div>
 
       {/* Content */}

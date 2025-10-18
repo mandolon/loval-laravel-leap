@@ -101,17 +101,12 @@ export default function ProfilePage() {
   return (
     <div className="p-4 space-y-4 max-w-7xl mx-auto">
       {/* Header */}
-      <div>
+      <div className="flex items-center justify-between">
         <PageHeader title="Profile Settings" />
-        <PageSubhead 
-          description="Manage your account settings and profile information"
-          actions={
-            <Button variant="outline" onClick={handleSignOut} className="gap-2">
-              <LogOut className="h-4 w-4" />
-              Sign Out
-            </Button>
-          }
-        />
+        <Button variant="outline" onClick={handleSignOut} className="gap-2">
+          <LogOut className="h-4 w-4" />
+          Sign Out
+        </Button>
       </div>
 
       {/* Avatar Section */}

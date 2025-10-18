@@ -54,7 +54,6 @@ const ProjectsPage = () => {
       {/* Page Header */}
       <div>
         <PageHeader title="Projects" />
-        <PageSubhead description="Manage all your projects in one place" />
       </div>
 
       {/* Filters */}

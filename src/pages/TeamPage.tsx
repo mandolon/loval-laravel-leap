@@ -244,12 +244,9 @@ const TeamPage = () => {
   return (
     <div className="p-4 space-y-4 max-w-7xl mx-auto">
       {/* Header */}
-      <div>
+      <div className="flex items-center justify-between">
         <PageHeader title="User Management" />
-        <PageSubhead 
-          description="Global admin panel - manage all system users"
-          actions={<AddUserDialog onUserAdded={loadUsers} />}
-        />
+        <AddUserDialog onUserAdded={loadUsers} />
       </div>
 
       {/* Users Table */}

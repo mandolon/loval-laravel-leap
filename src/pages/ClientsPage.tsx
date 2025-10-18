@@ -9,7 +9,6 @@ const ClientsPage = () => {
       {/* Header */}
       <div>
         <PageHeader title="Clients" />
-        <PageSubhead description="Client information is now embedded in projects" />
       </div>
 
       <Card>

@@ -98,15 +98,35 @@ bg-sidebar text-sidebar-foreground
 
 ### Page Structure
 ```tsx
-// Standard page layout
+// Standard page layout - Header with NO description
 <div className="p-4 space-y-4 max-w-7xl mx-auto">
+  {/* Header only - no description */}
   <div>
     <PageHeader title="Page Title" />
-    <PageSubhead description="Description" actions={<Button />} />
+  </div>
+  
+  {/* OR Header with actions */}
+  <div className="flex items-center justify-between">
+    <PageHeader title="Page Title" />
+    <Button>Action</Button>
   </div>
   
   {/* Content */}
 </div>
+```
+
+### Page Headers
+```tsx
+// Simple header
+<PageHeader title="Dashboard" />
+
+// Header with actions (use flex wrapper)
+<div className="flex items-center justify-between">
+  <PageHeader title="Profile Settings" />
+  <Button variant="outline">Sign Out</Button>
+</div>
+
+// NEVER use PageSubhead - descriptions removed from all headers
 ```
 
 ### Cards

@@ -166,33 +166,30 @@ export default function AIChatPage() {
 
   return (
     <div className="h-full flex flex-col bg-background">
-      <div className="border-b p-6">
-        <PageHeader title="AI Assistant" />
-        <PageSubhead 
-          description="Ask me anything about your workspace, projects, or tasks"
-          actions={
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={handleNewChat}
-                variant="outline"
-                size="sm"
-                className="gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                New Chat
-              </Button>
-              {messages.length > 0 && threadId && workspaceId && selectedProject !== "select" && (
-                <ChatSummarizer
-                  threadId={threadId}
-                  workspaceId={workspaceId}
-                  projectId={selectedProject === "all" ? workspaceId : selectedProject}
-                  userId={user?.id || ""}
-                  messages={messages}
-                />
-              )}
-            </div>
-          }
-        />
+      <div className="border-b p-4">
+        <div className="flex items-center justify-between">
+          <PageHeader title="AI Assistant" />
+          <div className="flex gap-2">
+            <Button
+              onClick={handleNewChat}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              New Chat
+            </Button>
+            {messages.length > 0 && threadId && workspaceId && selectedProject !== "select" && (
+              <ChatSummarizer
+                threadId={threadId}
+                workspaceId={workspaceId}
+                projectId={selectedProject === "all" ? workspaceId : selectedProject}
+                userId={user?.id || ""}
+                messages={messages}
+              />
+            )}
+          </div>
+        </div>
       </div>
 
       <ScrollArea ref={scrollRef} className="flex-1 p-4">

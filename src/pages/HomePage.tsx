@@ -170,12 +170,6 @@ const HomePage = () => {
       {/* Header */}
       <div>
         <PageHeader title="Dashboard" />
-        <PageSubhead 
-          description={currentWorkspace 
-            ? `Welcome back! Here's an overview of ${currentWorkspace.name}.`
-            : "Welcome back! Select a workspace to get started."
-          }
-        />
       </div>
 
       {/* Stats Grid */}
