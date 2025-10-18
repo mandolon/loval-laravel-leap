@@ -1,4 +1,4 @@
-import { Home, FolderKanban, CheckSquare, Bot, Plus, ChevronRight, ChevronLeft, Folder } from "lucide-react";
+import { Home, FolderKanban, CheckSquare, Bot, Plus, ChevronRight, ChevronLeft } from "lucide-react";
 import { NavLink, useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -180,17 +180,6 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
         return (
           <>
             <div className="p-3">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-base font-semibold text-muted-foreground uppercase tracking-wide">
-                  Projects
-                </span>
-                <CreateProjectDialog onCreateProject={handleCreateProject}>
-                  <Button variant="ghost" size="icon" className="h-6 w-6">
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </CreateProjectDialog>
-              </div>
-              
               <div className="space-y-1 max-h-[200px] overflow-y-auto">
                 {filteredProjects.length === 0 ? (
                   <div className="text-base text-muted-foreground py-2 px-3">
@@ -209,7 +198,6 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
                             : 'text-muted-foreground hover:bg-accent/50'
                         }`}
                       >
-                        <Folder className="h-4 w-4 flex-shrink-0" />
                         <span className="truncate">{project.name}</span>
                       </button>
                     );

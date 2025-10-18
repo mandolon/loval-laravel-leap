@@ -181,14 +181,8 @@ bg-sidebar text-sidebar-foreground
 // Sidebar container (200px)
 <aside className="w-[200px] bg-card border-r">
   
-// Section headers (uppercase labels)
-<span className="text-base font-semibold text-muted-foreground uppercase tracking-wide">
-  Projects
-</span>
-
-// Navigation items with icons
+// Navigation items (no section title, no icons)
 <button className="flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium">
-  <Folder className="h-4 w-4" />
   <span>Project Name</span>
 </button>
 

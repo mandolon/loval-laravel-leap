@@ -5,14 +5,19 @@ import { ProjectCard } from "@/components/ProjectCard";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useProjects, useDeleteProject, useHardDeleteProject } from "@/lib/api/hooks/useProjects";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { PageSubhead } from "@/components/layout/PageSubhead";
+import { CreateProjectDialog } from "@/components/CreateProjectDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useUser } from "@/contexts/UserContext";
 
 const ProjectsPage = () => {
   const navigate = useNavigate();
   const { workspaceId } = useParams<{ workspaceId: string }>();
+  const { toast } = useToast();
+  const { user } = useUser();
   const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [phaseFilter, setPhaseFilter] = useState<string>("all");
@@ -20,7 +25,7 @@ const ProjectsPage = () => {
   // Get status filter from URL or default to 'all'
   const statusFilter = searchParams.get('status') || 'all';
   
-  const { data: projects = [], isLoading } = useProjects(workspaceId || '');
+  const { data: projects = [], isLoading, refetch } = useProjects(workspaceId || '');
   const deleteProjectMutation = useDeleteProject(workspaceId || '');
   const hardDeleteProjectMutation = useHardDeleteProject(workspaceId || '');
 
@@ -30,6 +35,56 @@ const ProjectsPage = () => {
 
   const handleHardDeleteProject = (id: string) => {
     hardDeleteProjectMutation.mutate(id);
+  };
+
+  const handleCreateProject = async (input: any) => {
+    if (!workspaceId || !user?.id) {
+      toast({
+        title: "No workspace selected",
+        description: "Please select a workspace first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data: newProject, error } = await supabase
+        .from("projects")
+        .insert({
+          workspace_id: workspaceId,
+          name: input.name,
+          description: input.description || null,
+          status: input.status || "active",
+          phase: input.phase || "Pre-Design",
+          address: input.address || {},
+          primary_client_first_name: input.primaryClient?.firstName || null,
+          primary_client_last_name: input.primaryClient?.lastName || null,
+          primary_client_email: input.primaryClient?.email || null,
+          primary_client_phone: input.primaryClient?.phone || null,
+          secondary_client_first_name: input.secondaryClient?.firstName || null,
+          secondary_client_last_name: input.secondaryClient?.lastName || null,
+          secondary_client_email: input.secondaryClient?.email || null,
+          secondary_client_phone: input.secondaryClient?.phone || null,
+          created_by: user.id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await refetch();
+      toast({
+        title: "Project created",
+        description: `${newProject.name} has been created successfully`,
+      });
+    } catch (error) {
+      console.error("Error creating project:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create project",
+        variant: "destructive",
+      });
+    }
   };
 
   useEffect(() => {
@@ -52,8 +107,14 @@ const ProjectsPage = () => {
   return (
     <div className="p-4 space-y-4 max-w-7xl mx-auto">
       {/* Page Header */}
-      <div>
+      <div className="flex items-center justify-between">
         <PageHeader title="Projects" />
+        <CreateProjectDialog onCreateProject={handleCreateProject}>
+          <Button className="gap-2">
+            <Plus className="h-4 w-4" />
+            New Project
+          </Button>
+        </CreateProjectDialog>
       </div>
 
       {/* Filters */}
