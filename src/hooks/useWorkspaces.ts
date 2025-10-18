@@ -93,13 +93,13 @@ export function useWorkspaces() {
 
       if (workspaceError) throw workspaceError;
 
-      // Add user as workspace member
+      // Add user as workspace member with 'team' role (workspace creator)
       const { error: memberError } = await supabase
         .from("workspace_members")
         .insert({
           workspace_id: workspace.id,
           user_id: user.id,
-          role: "admin",
+          role: "team",
         });
 
       if (memberError) throw memberError;
