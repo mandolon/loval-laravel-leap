@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { FolderKanban, CheckSquare, Users, TrendingUp, ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageSubhead } from "@/components/layout/PageSubhead";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -167,13 +168,15 @@ const HomePage = () => {
   return (
     <div className="p-6 space-y-8 max-w-7xl mx-auto">
       {/* Header */}
-      <PageHeader
-        title="Dashboard"
-        subtitle={currentWorkspace 
-          ? `Welcome back! Here's an overview of ${currentWorkspace.name}.`
-          : "Welcome back! Select a workspace to get started."
-        }
-      />
+      <div>
+        <PageHeader title="Dashboard" />
+        <PageSubhead 
+          description={currentWorkspace 
+            ? `Welcome back! Here's an overview of ${currentWorkspace.name}.`
+            : "Welcome back! Select a workspace to get started."
+          }
+        />
+      </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

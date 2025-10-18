@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/UserContext";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageSubhead } from "@/components/layout/PageSubhead";
 
 export default function ProfilePage() {
   const { toast } = useToast();
@@ -100,16 +101,18 @@ export default function ProfilePage() {
   return (
     <div className="container max-w-4xl py-8 space-y-6">
       {/* Header */}
-      <PageHeader
-        title="Profile Settings"
-        subtitle="Manage your account settings and profile information"
-        actions={
-          <Button variant="outline" onClick={handleSignOut} className="gap-2">
-            <LogOut className="h-4 w-4" />
-            Sign Out
-          </Button>
-        }
-      />
+      <div>
+        <PageHeader title="Profile Settings" />
+        <PageSubhead 
+          description="Manage your account settings and profile information"
+          actions={
+            <Button variant="outline" onClick={handleSignOut} className="gap-2">
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </Button>
+          }
+        />
+      </div>
 
       {/* Avatar Section */}
       <Card>

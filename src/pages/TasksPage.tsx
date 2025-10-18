@@ -19,6 +19,7 @@ import { useProjectMembers } from "@/lib/api/hooks/useProjectMembers";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/contexts/UserContext";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageSubhead } from "@/components/layout/PageSubhead";
 
 const TasksPage = () => {
   const { toast } = useToast();
@@ -412,23 +413,27 @@ const TasksPage = () => {
       {/* Main Content */}
       <div className="flex-1 p-6 space-y-6 overflow-auto">
         {/* Header */}
-        <PageHeader
-          title={view === 'completed' ? 'Completed Tasks' : view === 'my-tasks' ? 'My Tasks' : 'All Tasks'}
-          subtitle={workspaceId 
-            ? view === 'completed' 
-              ? 'View all completed tasks'
-              : view === 'my-tasks'
-              ? 'Tasks assigned to you'
-              : 'Active tasks (Task Redline & Progress Update)'
-            : "Select a workspace to view tasks"
-          }
-          actions={workspaceId && projects.length > 0 ? (
-            <CreateTaskDialog 
-              projects={projects} 
-              onCreateTask={handleCreateTask}
-            />
-          ) : undefined}
-        />
+        <div>
+          <PageHeader 
+            title={view === 'completed' ? 'Completed Tasks' : view === 'my-tasks' ? 'My Tasks' : 'All Tasks'}
+          />
+          <PageSubhead
+            description={workspaceId 
+              ? view === 'completed' 
+                ? 'View all completed tasks'
+                : view === 'my-tasks'
+                ? 'Tasks assigned to you'
+                : 'Active tasks (Task Redline & Progress Update)'
+              : "Select a workspace to view tasks"
+            }
+            actions={workspaceId && projects.length > 0 ? (
+              <CreateTaskDialog 
+                projects={projects} 
+                onCreateTask={handleCreateTask}
+              />
+            ) : undefined}
+          />
+        </div>
 
         {/* Filters */}
         <div className="flex items-center gap-4">

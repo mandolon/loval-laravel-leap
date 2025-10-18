@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageSubhead } from "@/components/layout/PageSubhead";
 import {
   Select,
   SelectContent,
@@ -243,11 +244,13 @@ const TeamPage = () => {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
-      <PageHeader
-        title="User Management"
-        subtitle="Global admin panel - manage all system users"
-        actions={<AddUserDialog onUserAdded={loadUsers} />}
-      />
+      <div>
+        <PageHeader title="User Management" />
+        <PageSubhead 
+          description="Global admin panel - manage all system users"
+          actions={<AddUserDialog onUserAdded={loadUsers} />}
+        />
+      </div>
 
       {/* Users Table */}
       {users.length === 0 ? (
