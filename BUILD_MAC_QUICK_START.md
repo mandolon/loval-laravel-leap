@@ -49,7 +49,7 @@ lipo -info src-tauri/target/universal-apple-darwin/release/loval-laravel-leap
 ## Configuration Summary
 
 - ✅ **Architecture**: Universal (Intel + Apple Silicon)
-- ✅ **Minimum macOS**: 10.13 High Sierra (2017)
+- ✅ **Minimum macOS**: 11.0 Big Sur (2020)
 - ✅ **Signing**: None (unsigned/not notarized)
 - ✅ **Size**: ~8-12 MB
 - ✅ **Distribution**: Direct .dmg download
