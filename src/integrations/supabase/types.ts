@@ -1404,6 +1404,18 @@ export type Database = {
         Args: { prefix: string }
         Returns: string
       }
+      is_workspace_member: {
+        Args: { _user_id: string; _workspace_id: string }
+        Returns: boolean
+      }
+      is_workspace_team_member: {
+        Args: { _user_id: string; _workspace_id: string }
+        Returns: boolean
+      }
+      workspace_has_no_members: {
+        Args: { _workspace_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
