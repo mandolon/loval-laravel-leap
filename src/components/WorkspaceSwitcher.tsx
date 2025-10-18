@@ -380,12 +380,25 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteConfirmText("")}>
+            <AlertDialogCancel 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setDeleteConfirmText("");
+                setDeleteDialogOpen(false);
+              }}
+            >
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               disabled={deleteConfirmText !== "DELETE" || isDeleting}
-              onClick={handleDeleteWorkspace}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (deleteConfirmText === "DELETE" && !isDeleting) {
+                  handleDeleteWorkspace();
+                }
+              }}
               className="bg-destructive hover:bg-destructive/90"
             >
               {isDeleting ? "Deleting..." : "Delete Workspace"}

@@ -21,11 +21,6 @@ const HomePage = () => {
     teamMembers: 0,
   });
 
-  // Show no workspace page if there are no workspaces
-  if (!loading && workspaces.length === 0) {
-    return <NoWorkspacePage />;
-  }
-
   // Redirect to current workspace if no workspace in URL
   useEffect(() => {
     if (!loading && !workspaceId && currentWorkspaceId) {
@@ -38,6 +33,11 @@ const HomePage = () => {
       loadStats();
     }
   }, [workspaceId]);
+
+  // Show no workspace page if there are no workspaces (after hooks)
+  if (!loading && workspaces.length === 0) {
+    return <NoWorkspacePage />;
+  }
 
   const loadStats = async () => {
     if (!workspaceId) return;
