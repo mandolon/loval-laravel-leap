@@ -129,7 +129,8 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
           switchWorkspace(remainingWorkspaces[0].id);
           navigate(`/workspace/${remainingWorkspaces[0].id}/projects`);
         } else {
-          setCreateDialogOpen(true);
+          // Navigate to no workspace page
+          navigate('/');
         }
         
         setDeleteDialogOpen(false);

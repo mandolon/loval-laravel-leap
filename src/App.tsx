@@ -19,6 +19,7 @@ import AuthPage from "./pages/AuthPage";
 import AIChatPage from "./pages/AIChatPage";
 import TrashPage from "./pages/TrashPage";
 import NotFound from "./pages/NotFound";
+import NoWorkspacePage from "./pages/NoWorkspacePage";
 
 const queryClient = new QueryClient();
 

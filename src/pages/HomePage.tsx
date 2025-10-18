@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { FolderKanban, CheckSquare, Users, TrendingUp, ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageSubhead } from "@/components/layout/PageSubhead";
+import NoWorkspacePage from "./NoWorkspacePage";
 
 const HomePage = () => {
   const navigate = useNavigate();
   const { workspaceId } = useParams<{ workspaceId: string }>();
-  const { currentWorkspace, currentWorkspaceId, loading } = useWorkspaces();
+  const { workspaces, currentWorkspace, currentWorkspaceId, loading } = useWorkspaces();
   const [stats, setStats] = useState({
     totalProjects: 0,
     activeProjects: 0,
@@ -19,6 +20,11 @@ const HomePage = () => {
     completedTasks: 0,
     teamMembers: 0,
   });
+
+  // Show no workspace page if there are no workspaces
+  if (!loading && workspaces.length === 0) {
+    return <NoWorkspacePage />;
+  }
 
   // Redirect to current workspace if no workspace in URL
   useEffect(() => {
