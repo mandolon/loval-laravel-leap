@@ -42,6 +42,7 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
     currentWorkspaceId,
     createWorkspace,
     switchWorkspace,
+    refetch,
   } = useWorkspaces();
   
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -122,7 +123,10 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
     if (!currentWorkspaceId || deleteConfirmText !== "DELETE") return;
     
     deleteWorkspaceMutation.mutate(currentWorkspaceId, {
-      onSuccess: () => {
+      onSuccess: async () => {
+        // Refetch workspaces from Supabase
+        await refetch();
+        
         const remainingWorkspaces = workspaces.filter(w => w.id !== currentWorkspaceId);
         
         if (remainingWorkspaces.length > 0) {
