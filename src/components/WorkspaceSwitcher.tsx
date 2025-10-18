@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { useToast } from "@/hooks/use-toast";
-import { useUpdateWorkspace, useDeleteWorkspace } from "@/lib/api/hooks/useWorkspaces";
+import { supabase } from "@/integrations/supabase/client";
 import { WorkspaceMembersTable } from "@/components/workspace/WorkspaceMembersTable";
 import { DialogFooter } from "@/components/ui/dialog";
 import { 
@@ -54,8 +54,8 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
   const [editWorkspaceDescription, setEditWorkspaceDescription] = useState("");
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   
-  const updateWorkspaceMutation = useUpdateWorkspace();
-  const deleteWorkspaceMutation = useDeleteWorkspace();
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleWorkspaceChange = (newWorkspaceId: string) => {
     switchWorkspace(newWorkspaceId);
@@ -103,45 +103,83 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
     
     if (!editWorkspaceName.trim() || !currentWorkspaceId) return;
 
-    updateWorkspaceMutation.mutate(
-      {
-        id: currentWorkspaceId,
-        input: {
+    setIsUpdating(true);
+    
+    try {
+      const { error } = await supabase
+        .from('workspaces')
+        .update({
           name: editWorkspaceName.trim(),
           description: editWorkspaceDescription.trim(),
-        },
-      },
-      {
-        onSuccess: () => {
-          setSettingsDialogOpen(false);
-        },
-      }
-    );
+        })
+        .eq('id', currentWorkspaceId);
+
+      if (error) throw error;
+
+      await refetch();
+      toast({
+        title: "Workspace updated",
+        description: "Changes have been saved",
+      });
+      setSettingsDialogOpen(false);
+    } catch (error) {
+      console.error('Error updating workspace:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update workspace",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const handleDeleteWorkspace = async () => {
     if (!currentWorkspaceId || deleteConfirmText !== "DELETE") return;
     
-    deleteWorkspaceMutation.mutate(currentWorkspaceId, {
-      onSuccess: async () => {
-        // Refetch workspaces from Supabase
-        await refetch();
-        
-        const remainingWorkspaces = workspaces.filter(w => w.id !== currentWorkspaceId);
-        
-        if (remainingWorkspaces.length > 0) {
-          switchWorkspace(remainingWorkspaces[0].id);
-          navigate(`/workspace/${remainingWorkspaces[0].id}/projects`);
-        } else {
-          // Navigate to no workspace page
-          navigate('/');
-        }
-        
-        setDeleteDialogOpen(false);
-        setDeleteConfirmText("");
-        setSettingsDialogOpen(false);
-      },
-    });
+    setIsDeleting(true);
+    
+    try {
+      // Soft delete the workspace
+      const { error } = await supabase
+        .from('workspaces')
+        .delete()
+        .eq('id', currentWorkspaceId);
+
+      if (error) throw error;
+
+      // Refetch workspaces
+      await refetch();
+      
+      const remainingWorkspaces = workspaces.filter(w => w.id !== currentWorkspaceId);
+      
+      if (remainingWorkspaces.length > 0) {
+        switchWorkspace(remainingWorkspaces[0].id);
+        navigate(`/workspace/${remainingWorkspaces[0].id}/projects`);
+      } else {
+        // Navigate to no workspace page
+        localStorage.removeItem('current_workspace_id');
+        navigate('/');
+      }
+      
+      toast({
+        title: "Workspace deleted",
+        description: "Workspace has been removed",
+      });
+      
+      setDeleteDialogOpen(false);
+      setDeleteConfirmText("");
+      setSettingsDialogOpen(false);
+    } catch (error) {
+      console.error('Error deleting workspace:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete workspace",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -303,8 +341,8 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
               <Button type="button" variant="outline" onClick={() => setSettingsDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={updateWorkspaceMutation.isPending}>
-                {updateWorkspaceMutation.isPending ? 'Saving...' : 'Save Changes'}
+              <Button type="submit" disabled={isUpdating}>
+                {isUpdating ? 'Saving...' : 'Save Changes'}
               </Button>
             </DialogFooter>
           </form>
@@ -346,11 +384,11 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              disabled={deleteConfirmText !== "DELETE" || deleteWorkspaceMutation.isPending}
+              disabled={deleteConfirmText !== "DELETE" || isDeleting}
               onClick={handleDeleteWorkspace}
               className="bg-destructive hover:bg-destructive/90"
             >
-              {deleteWorkspaceMutation.isPending ? "Deleting..." : "Delete Workspace"}
+              {isDeleting ? "Deleting..." : "Delete Workspace"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
