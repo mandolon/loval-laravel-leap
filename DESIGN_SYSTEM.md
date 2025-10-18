@@ -20,9 +20,11 @@ text-lg    // 14px / 1.25rem line-height
 <h1 className="text-lg font-semibold">Page Title</h1>
 <h2 className="text-lg font-semibold">Section</h2>
 
-// All body text uses base
+// All body text, buttons, inputs, labels use base
 <p className="text-base">Body text</p>
 <button className="text-base">Button</button>
+<input className="text-base" />
+<label className="text-base">Label</label>
 ```
 
 ## Spacing (4px Base Unit)
@@ -42,17 +44,23 @@ gap-12 // 48px
 
 ### Common Patterns
 ```tsx
-// Page wrapper
+// Page wrapper - compact
 <div className="p-4 space-y-4 max-w-7xl mx-auto">
 
-// Card spacing
+// Card spacing - compact
 <Card className="p-4">
 
-// Grid gaps
+// Grid gaps - compact
 <div className="grid grid-cols-3 gap-4">
 
 // Button spacing
 <Button className="px-4 py-2 gap-2">
+
+// Form fields
+<div className="space-y-3">
+  <Label>Label</Label>
+  <Input className="h-9" />
+</div>
 ```
 
 ## Colors (HSL Only)
@@ -116,7 +124,7 @@ bg-sidebar text-sidebar-foreground
 
 ### Buttons
 ```tsx
-// Standard sizes
+// Standard sizes (all use text-base)
 <Button size="sm">Small</Button>     // h-8 px-3
 <Button>Default</Button>              // h-9 px-4
 <Button size="lg">Large</Button>      // h-10 px-8
@@ -131,10 +139,44 @@ bg-sidebar text-sidebar-foreground
 ### Forms
 ```tsx
 <div className="space-y-3">
-  <Label>Label</Label>
-  <Input className="h-9" />
-  <p className="text-muted-foreground">Helper text</p>
+  <Label className="text-base">Label</Label>
+  <Input className="h-9 text-base" />
+  <p className="text-base text-muted-foreground">Helper text</p>
 </div>
+
+<Select>
+  <SelectTrigger className="h-9 text-base">
+    <SelectValue />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="1" className="text-base">Option</SelectItem>
+  </SelectContent>
+</Select>
+
+<Textarea className="text-base" />
+```
+
+### Tables
+```tsx
+<Table className="text-base">
+  <TableHeader>
+    <TableRow>
+      <TableHead className="h-10 px-3">Header</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    <TableRow>
+      <TableCell className="p-3">Cell</TableCell>
+    </TableRow>
+  </TableBody>
+</Table>
+```
+
+### Badges
+```tsx
+<Badge className="text-base">Default</Badge>
+<Badge variant="secondary" className="text-base">Secondary</Badge>
+<Badge variant="outline" className="text-base">Outline</Badge>
 ```
 
 ## Border Radius
@@ -162,18 +204,22 @@ All components use Radix UI primitives:
 ## Rules
 
 ### DO
-✅ Use only `text-base` and `text-lg`
+✅ Use only `text-base` (12px) and `text-lg` (14px)
 ✅ Use 4px spacing multiples (1-12)
-✅ Use semantic color tokens
-✅ Keep layouts compact (p-4, gap-4)
+✅ Use semantic color tokens (never direct colors)
+✅ Keep layouts compact (p-4, gap-3, gap-4)
 ✅ Use Radix components for all interactions
+✅ All form elements use h-9 for consistency
+✅ All table cells use p-3 for consistency
+✅ All cards use p-4 for consistency
 
 ### DON'T
-❌ Create custom font sizes
+❌ Create custom font sizes (text-sm, text-xs, text-xl, etc.)
 ❌ Use arbitrary spacing values
-❌ Use direct color values
-❌ Add excessive padding/margins
-❌ Build custom accessible components
+❌ Use direct color values (bg-blue-500, text-white)
+❌ Add excessive padding/margins (p-6, p-8)
+❌ Build custom accessible components (use Radix)
+❌ Mix font sizes within components
 
 ## Examples
 
@@ -242,27 +288,56 @@ All components use Radix UI primitives:
 
 ### From old sizes:
 ```tsx
-// Old → New
-text-xs     → text-base
-text-sm     → text-base
-text-md     → text-base
-text-xl     → text-lg
-text-2xl    → text-lg
-text-3xl    → text-lg
-text-4xl    → text-lg
+// Font sizes → New
+text-xs     → text-base (12px)
+text-sm     → text-base (12px)
+text-md     → text-base (12px)
+text-xl     → text-lg (14px)
+text-2xl    → text-lg (14px)
+text-3xl    → text-lg (14px)
+text-4xl    → text-lg (14px)
 
-// Old → New
+// Spacing → New (more compact)
 p-6    → p-4
-p-8    → p-6
+p-8    → p-4
 gap-6  → gap-4
 space-y-6 → space-y-4
 mb-4   → mb-3
+px-4   → px-3 (for table cells)
+
+// Heights → New (more compact)
+h-10   → h-9 (inputs, selects, buttons)
+h-12   → h-10 (table headers)
+h-11   → h-10 (large buttons)
 ```
 
 ## Single Source of Truth
 
 All design tokens live in:
-1. `tailwind.config.ts` - Spacing, font sizes, colors
-2. `src/index.css` - CSS variables for colors
+1. `tailwind.config.ts` - Spacing (4px base), font sizes (12px/14px), colors (HSL)
+2. `src/index.css` - CSS variables for colors (all HSL)
+
+### Key Values
+```tsx
+// Typography
+text-base: 12px / 1rem line-height
+text-lg: 14px / 1.25rem line-height
+
+// Spacing
+1 unit = 4px
+Available: 1, 2, 3, 4, 5, 6, 8, 10, 12
+
+// Component Heights
+h-8: Compact buttons
+h-9: Standard (buttons, inputs, selects)
+h-10: Large buttons, table headers
+
+// Component Padding
+p-3: Table cells
+p-4: Cards, dialogs, most containers
+px-3: Inputs, selects, buttons
+px-4: Default buttons
+px-8: Large buttons
+```
 
 Never define styles outside these files. Always use Tailwind classes that reference the design system.
