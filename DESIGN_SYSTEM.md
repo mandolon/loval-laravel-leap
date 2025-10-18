@@ -156,6 +156,35 @@ bg-sidebar text-sidebar-foreground
 <Textarea className="text-base" />
 ```
 
+### Sidebar Navigation
+```tsx
+// Sidebar container (220px)
+<aside className="w-[220px] bg-card border-r">
+  
+// Section headers (uppercase labels)
+<span className="text-base font-semibold text-muted-foreground uppercase tracking-wide">
+  Projects
+</span>
+
+// Navigation items with icons
+<button className="flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium">
+  <Folder className="h-4 w-4" />
+  <span>Project Name</span>
+</button>
+
+// Active state
+className="bg-accent text-accent-foreground font-medium"
+
+// Hover state  
+className="hover:bg-accent/50"
+
+// Compact filters (no section title)
+<button className="flex items-center gap-2 px-3 py-2">
+  <ChevronRight className="h-3 w-3" />
+  <span>Filter Name</span>
+</button>
+```
+
 ### Tables
 ```tsx
 <Table className="text-base">

@@ -1,4 +1,4 @@
-import { Home, FolderKanban, CheckSquare, Bot, Plus, ChevronRight, ChevronLeft } from "lucide-react";
+import { Home, FolderKanban, CheckSquare, Bot, Plus, ChevronRight, ChevronLeft, Folder } from "lucide-react";
 import { NavLink, useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -159,14 +159,14 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
     switch (activeTab) {
       case 'home':
         return (
-          <div className="p-2 space-y-1">
+          <div className="p-3 space-y-1">
             {homeLinks.map((link) => (
               <NavLink
                 key={link.label}
                 to={link.path}
                 className={({ isActive }) => `
-                  w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-base transition-colors
-                  ${isActive ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/30'}
+                  w-full flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium transition-colors
+                  ${isActive ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/50'}
                 `}
               >
                 {link.label}
@@ -179,8 +179,8 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
         const filteredProjects = projects.filter(project => project.status === statusFilter);
         return (
           <>
-            <div className="p-2">
-              <div className="flex items-center justify-between mb-2">
+            <div className="p-3">
+              <div className="flex items-center justify-between mb-3">
                 <span className="text-base font-semibold text-muted-foreground uppercase tracking-wide">
                   Projects
                 </span>
@@ -193,7 +193,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
               
               <div className="space-y-1 max-h-[200px] overflow-y-auto">
                 {filteredProjects.length === 0 ? (
-                  <div className="text-base text-muted-foreground py-2">
+                  <div className="text-base text-muted-foreground py-2 px-3">
                     No {statusFilter} projects
                   </div>
                 ) : (
@@ -203,13 +203,14 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
                       <button
                         key={project.id}
                         onClick={() => navigate(`/workspace/${currentWorkspaceId}/project/${project.id}`)}
-                        className={`w-full text-left px-2 py-1.5 rounded text-base transition-colors truncate ${
+                        className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium transition-colors truncate ${
                           isActive 
-                            ? 'bg-accent text-foreground font-medium' 
-                            : 'text-muted-foreground hover:bg-accent/30'
+                            ? 'bg-accent text-accent-foreground' 
+                            : 'text-muted-foreground hover:bg-accent/50'
                         }`}
                       >
-                        {project.name}
+                        <Folder className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">{project.name}</span>
                       </button>
                     );
                   })
@@ -221,12 +222,12 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
 
       case 'tasks':
         return (
-          <div className="p-2 space-y-1">
+          <div className="p-3 space-y-1">
             <NavLink
               to={getNavPath('/tasks')}
               className={({ isActive }) => `
-                w-full flex items-center justify-between px-2 py-1.5 rounded-md text-base transition-colors
-                ${isActive && !location.search ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/30'}
+                w-full flex items-center justify-between px-3 py-2 rounded-md text-base font-medium transition-colors
+                ${isActive && !location.search ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/50'}
               `}
             >
               <span>All Tasks</span>
@@ -234,8 +235,8 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
             <NavLink
               to={getNavPath('/tasks?view=my-tasks')}
               className={({ isActive }) => `
-                w-full flex items-center justify-between px-2 py-1.5 rounded-md text-base transition-colors
-                ${location.search.includes('my-tasks') ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/30'}
+                w-full flex items-center justify-between px-3 py-2 rounded-md text-base font-medium transition-colors
+                ${location.search.includes('my-tasks') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/50'}
               `}
             >
               <span>My Tasks</span>
@@ -243,8 +244,8 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
             <NavLink
               to={getNavPath('/tasks?view=completed')}
               className={({ isActive }) => `
-                w-full flex items-center justify-between px-2 py-1.5 rounded-md text-base transition-colors
-                ${location.search.includes('completed') ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/30'}
+                w-full flex items-center justify-between px-3 py-2 rounded-md text-base font-medium transition-colors
+                ${location.search.includes('completed') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/50'}
               `}
             >
               <span>Completed</span>
@@ -258,14 +259,14 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
   };
 
   return (
-    <aside className={`${isCollapsed ? 'w-14' : 'w-[180px]'} bg-card border-r border-border flex flex-col h-full transition-all duration-300`}>
+    <aside className={`${isCollapsed ? 'w-14' : 'w-[220px]'} bg-card border-r border-border flex flex-col h-full transition-all duration-300`}>
       {/* 1. User Profile Section */}
       <div className="p-3 border-b border-border flex-shrink-0">
         <div className="flex items-center justify-between">
           {!isCollapsed && user && (
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <div className="flex-1 min-w-0">
-                <p className="text-base font-medium truncate">
+                <p className="text-base font-semibold truncate">
                   {user.name}
                 </p>
                 <p className="text-base text-muted-foreground truncate">
@@ -286,7 +287,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
       </div>
 
       {/* 2. Navigation Icons */}
-      <div className={`p-2 border-b border-border flex-shrink-0 ${isCollapsed ? 'flex-col space-y-1' : 'flex items-center justify-around'}`}>
+      <div className={`p-3 border-b border-border flex-shrink-0 ${isCollapsed ? 'flex-col space-y-1' : 'flex items-center justify-around'}`}>
         {navIcons.map((item) => (
           <NavLink
             key={item.id}
@@ -315,26 +316,21 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
       {/* 4. Project Status Filters */}
       {!isCollapsed && activeTab === 'workspace' && (
         <div className="border-t border-border flex-shrink-0">
-          <div className="p-3">
-            <span className="text-base font-semibold text-muted-foreground uppercase tracking-wide mb-2 block">
-              Filter by Status
-            </span>
-            <div className="space-y-1">
-              {statusFilters.map((filter) => (
-                <button
-                  key={filter.label}
-                  onClick={() => handleStatusFilterClick(filter)}
-                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-base transition-colors ${
-                    statusFilter === filter.value
-                      ? 'bg-accent/50 text-foreground'
-                      : 'text-muted-foreground hover:bg-accent/30'
-                  }`}
-                >
-                  <ChevronRight className="h-3 w-3" />
-                  {filter.label}
-                </button>
-              ))}
-            </div>
+          <div className="p-3 space-y-1">
+            {statusFilters.map((filter) => (
+              <button
+                key={filter.label}
+                onClick={() => handleStatusFilterClick(filter)}
+                className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-base transition-colors ${
+                  statusFilter === filter.value
+                    ? 'bg-accent text-accent-foreground font-medium'
+                    : 'text-muted-foreground hover:bg-accent/50'
+                }`}
+              >
+                <ChevronRight className="h-3 w-3" />
+                {filter.label}
+              </button>
+            ))}
           </div>
         </div>
       )}
