@@ -5,6 +5,7 @@ import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FolderKanban, CheckSquare, Users, TrendingUp, ArrowRight } from "lucide-react";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -166,15 +167,13 @@ const HomePage = () => {
   return (
     <div className="p-6 space-y-8 max-w-7xl mx-auto">
       {/* Header */}
-      <div>
-        <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
-        <p className="text-muted-foreground text-lg">
-          {currentWorkspace 
-            ? `Welcome back! Here's an overview of ${currentWorkspace.name}.`
-            : "Welcome back! Select a workspace to get started."
-          }
-        </p>
-      </div>
+      <PageHeader
+        title="Dashboard"
+        subtitle={currentWorkspace 
+          ? `Welcome back! Here's an overview of ${currentWorkspace.name}.`
+          : "Welcome back! Select a workspace to get started."
+        }
+      />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

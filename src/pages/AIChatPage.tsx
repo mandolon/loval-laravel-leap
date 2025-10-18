@@ -167,8 +167,8 @@ export default function AIChatPage() {
       <div className="border-b p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">AI Assistant</h1>
-            <p className="text-sm text-muted-foreground">
+            <h1 className="text-3xl font-bold">AI Assistant</h1>
+            <p className="text-muted-foreground">
               Ask me anything about your workspace, projects, or tasks
             </p>
           </div>

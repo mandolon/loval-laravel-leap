@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useProjects, useDeleteProject, useHardDeleteProject } from "@/lib/api/hooks/useProjects";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 const ProjectsPage = () => {
   const navigate = useNavigate();
@@ -52,7 +53,11 @@ const ProjectsPage = () => {
       {/* Page Header */}
       <div className="border-b border-border bg-card">
         <div className="px-6 py-4">
-          <h1 className="text-2xl font-semibold mb-4">Projects</h1>
+          <PageHeader
+            title="Projects"
+            subtitle="Manage all your projects in one place"
+            className="mb-4"
+          />
           
           {/* Filters */}
           <div className="flex items-center justify-between">

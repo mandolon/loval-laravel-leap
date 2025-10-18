@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PageHeader } from "@/components/layout/PageHeader";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -238,21 +239,12 @@ export default function TrashPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="border-b border-border bg-card">
-        <div className="p-6">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center">
-              <Trash2 className="h-5 w-5 text-destructive" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-semibold">Trash</h1>
-              <p className="text-sm text-muted-foreground">
-                Deleted projects are stored here for 30 days
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        variant="elevated"
+        title="Trash"
+        subtitle="Deleted projects are stored here for 30 days"
+        icon={<Trash2 className="h-5 w-5 text-destructive" />}
+      />
 
       {/* Content */}
       <div className="flex-1 overflow-auto p-6">

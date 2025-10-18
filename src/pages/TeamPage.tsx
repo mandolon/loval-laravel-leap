@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/layout/PageHeader";
 import {
   Select,
   SelectContent,
@@ -242,15 +243,11 @@ const TeamPage = () => {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold mb-2">User Management</h1>
-          <p className="text-muted-foreground text-lg">
-            Global admin panel - manage all system users
-          </p>
-        </div>
-        <AddUserDialog onUserAdded={loadUsers} />
-      </div>
+      <PageHeader
+        title="User Management"
+        subtitle="Global admin panel - manage all system users"
+        actions={<AddUserDialog onUserAdded={loadUsers} />}
+      />
 
       {/* Users Table */}
       {users.length === 0 ? (

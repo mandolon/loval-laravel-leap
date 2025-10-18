@@ -18,6 +18,7 @@ import { useProjects } from "@/lib/api/hooks/useProjects";
 import { useProjectMembers } from "@/lib/api/hooks/useProjectMembers";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/contexts/UserContext";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 const TasksPage = () => {
   const { toast } = useToast();
@@ -411,29 +412,23 @@ const TasksPage = () => {
       {/* Main Content */}
       <div className="flex-1 p-6 space-y-6 overflow-auto">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">
-              {view === 'completed' ? 'Completed Tasks' : view === 'my-tasks' ? 'My Tasks' : 'All Tasks'}
-            </h1>
-            <p className="text-muted-foreground">
-              {workspaceId 
-                ? view === 'completed' 
-                  ? 'View all completed tasks'
-                  : view === 'my-tasks'
-                  ? 'Tasks assigned to you'
-                  : 'Active tasks (Task Redline & Progress Update)'
-                : "Select a workspace to view tasks"
-              }
-            </p>
-          </div>
-          {workspaceId && projects.length > 0 && (
+        <PageHeader
+          title={view === 'completed' ? 'Completed Tasks' : view === 'my-tasks' ? 'My Tasks' : 'All Tasks'}
+          subtitle={workspaceId 
+            ? view === 'completed' 
+              ? 'View all completed tasks'
+              : view === 'my-tasks'
+              ? 'Tasks assigned to you'
+              : 'Active tasks (Task Redline & Progress Update)'
+            : "Select a workspace to view tasks"
+          }
+          actions={workspaceId && projects.length > 0 ? (
             <CreateTaskDialog 
               projects={projects} 
               onCreateTask={handleCreateTask}
             />
-          )}
-        </div>
+          ) : undefined}
+        />
 
         {/* Filters */}
         <div className="flex items-center gap-4">
