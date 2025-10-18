@@ -162,10 +162,7 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
               className="cursor-pointer"
             >
               <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{workspace.icon}</span>
-                  <span className="text-sm">{workspace.name}</span>
-                </div>
+                <span className="text-sm">{workspace.name}</span>
                 {currentWorkspaceId === workspace.id && (
                   <Check className="h-4 w-4 text-primary" />
                 )}
