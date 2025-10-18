@@ -8,10 +8,10 @@ A compact, consistent design system with minimal complexity. Two font sizes, pre
 ### Font Sizes (Only 2)
 ```tsx
 // Default text - use everywhere
-text-base  // 14px / 1.25rem line-height
+text-base  // 12px / 1rem line-height
 
 // Headings only
-text-lg    // 16px / 1.5rem line-height
+text-lg    // 14px / 1.25rem line-height
 ```
 
 ### Usage
