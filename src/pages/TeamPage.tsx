@@ -57,7 +57,7 @@ const TeamPage = () => {
   // Only admins can access this page
   if (!currentUser?.is_admin) {
     return (
-      <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      <div className="p-4 space-y-4 max-w-7xl mx-auto">
         <div className="text-center py-16">
           <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
           <p className="text-muted-foreground">Only administrators can access this page.</p>
@@ -259,7 +259,7 @@ const TeamPage = () => {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      <div className="p-4 space-y-4 max-w-7xl mx-auto">
         <div className="text-center py-16">
           <div className="text-muted-foreground">Loading team members...</div>
         </div>

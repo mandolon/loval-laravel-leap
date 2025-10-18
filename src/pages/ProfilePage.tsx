@@ -25,7 +25,7 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      <div className="p-4 space-y-4 max-w-7xl mx-auto">
         <p>Loading...</p>
       </div>
     );

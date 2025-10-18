@@ -368,7 +368,7 @@ const ProjectDetails = () => {
 
         {/* Main Content */}
         <div className={`flex-1 min-h-0 ${activeTab === 'files' ? 'overflow-hidden' : 'overflow-auto'}`}>
-          <div className={activeTab === 'files' ? 'h-full' : 'p-6 space-y-6'}>
+          <div className={activeTab === 'files' ? 'h-full' : 'p-4 space-y-4'}>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full">
               <TabsContent value="files" className="mt-0 h-full p-0 data-[state=active]:flex data-[state=active]:flex-col">
                 <FilesTab projectId={id || ''} />

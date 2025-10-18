@@ -435,7 +435,7 @@ const TasksPage = () => {
   return (
     <div className="flex h-full">
       {/* Main Content */}
-      <div className="flex-1 p-6 space-y-6 overflow-auto">
+      <div className="flex-1 p-4 space-y-4 overflow-auto">
         {/* Header */}
         <div className="flex items-center justify-between">
           <PageHeader 
