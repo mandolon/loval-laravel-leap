@@ -41,14 +41,14 @@ export const InvoiceCard = ({ invoice, onView, onEdit, onDelete, onDownloadPDF, 
 
   return (
     <Card className="hover:shadow-md transition-shadow">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
             <FileText className="h-5 w-5 text-primary" />
           </div>
           <div>
             <h3 className="font-semibold text-lg">{invoice.invoiceNumber}</h3>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-base text-muted-foreground">
               {invoice.submittedToNames.length > 0 ? invoice.submittedToNames.join(', ') : 'No recipient'}
             </p>
           </div>
@@ -59,7 +59,7 @@ export const InvoiceCard = ({ invoice, onView, onEdit, onDelete, onDownloadPDF, 
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-2 gap-4 text-base">
             <div>
               <p className="text-muted-foreground">Invoice Date</p>
               <p className="font-medium">{format(new Date(invoice.invoiceDate), 'MMM dd, yyyy')}</p>
@@ -72,14 +72,14 @@ export const InvoiceCard = ({ invoice, onView, onEdit, onDelete, onDownloadPDF, 
 
           <div className="border-t pt-3">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-muted-foreground">Subtotal</span>
-              <span className="text-sm font-medium">${invoice.subtotal.toFixed(2)}</span>
+              <span className="text-base text-muted-foreground">Subtotal</span>
+              <span className="text-base font-medium">${invoice.subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-muted-foreground">
+              <span className="text-base text-muted-foreground">
                 Processing Fee ({invoice.processingFeePercent}%)
               </span>
-              <span className="text-sm font-medium">
+              <span className="text-base font-medium">
                 ${(invoice.processingFeeAmount || 0).toFixed(2)}
               </span>
             </div>
@@ -91,7 +91,7 @@ export const InvoiceCard = ({ invoice, onView, onEdit, onDelete, onDownloadPDF, 
 
           {invoice.lineItems.length > 0 && (
             <div className="border-t pt-3">
-              <p className="text-sm text-muted-foreground mb-2">{invoice.lineItems.length} line items</p>
+              <p className="text-base text-muted-foreground mb-2">{invoice.lineItems.length} line items</p>
             </div>
           )}
 

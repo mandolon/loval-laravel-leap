@@ -55,7 +55,7 @@ export const NoteCard = ({ note, onUpdate, onDelete }: NoteCardProps) => {
         ) : (
           <div className="space-y-3">
             <div className="flex items-start justify-between gap-3">
-              <p className="text-sm whitespace-pre-wrap flex-1">{note.content}</p>
+              <p className="text-base whitespace-pre-wrap flex-1">{note.content}</p>
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -83,12 +83,12 @@ export const NoteCard = ({ note, onUpdate, onDelete }: NoteCardProps) => {
               </DropdownMenu>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex items-center justify-between text-base text-muted-foreground">
               <span>
                 {format(new Date(note.createdAt), 'MMM d, yyyy')}
                 {note.updatedAt !== note.createdAt && ' (edited)'}
               </span>
-              <span className="font-mono text-[10px]">{note.shortId}</span>
+              <span className="font-mono">{note.shortId}</span>
             </div>
           </div>
         )}

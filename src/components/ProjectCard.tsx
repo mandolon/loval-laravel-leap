@@ -70,13 +70,13 @@ export const ProjectCard = ({ project, onDelete, onHardDelete, onClick }: Projec
         <div className="space-y-1 flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <CardTitle className="text-lg truncate">{project.name}</CardTitle>
-            <Badge variant="outline" className="text-xs font-mono">
+            <Badge variant="outline" className="font-mono">
               {project.shortId}
             </Badge>
-            <Badge variant={phaseColors[project.phase]} className="text-xs">
+            <Badge variant={phaseColors[project.phase]}>
               {project.phase}
             </Badge>
-            <Badge variant={statusColors[project.status]} className="text-xs">
+            <Badge variant={statusColors[project.status]}>
               {statusLabels[project.status]}
             </Badge>
           </div>
@@ -123,10 +123,10 @@ export const ProjectCard = ({ project, onDelete, onHardDelete, onClick }: Projec
           </DropdownMenu>
         )}
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
         {/* Progress */}
         <div className="space-y-2">
-          <div className="flex justify-between text-xs text-muted-foreground">
+          <div className="flex justify-between text-base text-muted-foreground">
             <span>Progress</span>
             <span>{project.progress}%</span>
           </div>
@@ -134,19 +134,19 @@ export const ProjectCard = ({ project, onDelete, onHardDelete, onClick }: Projec
         </div>
 
         {/* Address */}
-        <div className="flex items-start gap-2 text-sm text-muted-foreground">
+        <div className="flex items-start gap-2 text-base text-muted-foreground">
           <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
           <span className="line-clamp-1">{formatAddress()}</span>
         </div>
 
         {/* Client */}
-        <div className="text-sm">
+        <div className="text-base">
           <span className="text-muted-foreground">Client: </span>
           <span className="font-medium">{clientName}</span>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-2 border-t text-sm text-muted-foreground">
+        <div className="flex items-center justify-between pt-2 border-t text-base text-muted-foreground">
           <div>
             {project.completedTasks}/{project.totalTasks} tasks
           </div>

@@ -133,7 +133,7 @@ export default function ProfilePage() {
             </Avatar>
             <div>
               <h3 className="font-semibold text-lg">{user.name}</h3>
-              <p className="text-sm text-muted-foreground">{user.email}</p>
+              <p className="text-base text-muted-foreground">{user.email}</p>
               {user.is_admin && (
                 <Badge className="mt-2 bg-primary">
                   Admin
@@ -144,7 +144,7 @@ export default function ProfilePage() {
 
           {/* Avatar Selector */}
           <div>
-            <Label className="text-sm font-medium mb-3 block">Choose Avatar Color</Label>
+            <Label className="font-medium mb-3 block">Choose Avatar Color</Label>
             <div className="grid grid-cols-6 gap-3">
               {avatarGradients.map((gradient, index) => (
                 <button
@@ -157,7 +157,7 @@ export default function ProfilePage() {
                   }`}
                   style={{ background: gradient }}
                 >
-                  <div className="absolute inset-0 flex items-center justify-center text-white font-semibold text-sm">
+                  <div className="absolute inset-0 flex items-center justify-center text-white font-semibold text-base">
                     {user.initials}
                   </div>
                   {user.avatar_url === gradient && (
@@ -239,7 +239,7 @@ export default function ProfilePage() {
               ) : (
                 <Badge variant="outline">User</Badge>
               )}
-              <span className="text-sm text-muted-foreground">
+              <span className="text-base text-muted-foreground">
                 Contact an admin to change your status
               </span>
             </div>

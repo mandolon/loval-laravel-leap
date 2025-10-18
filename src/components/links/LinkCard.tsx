@@ -37,7 +37,7 @@ export const LinkCard = ({ link, onEdit, onDelete }: LinkCardProps) => {
       </CardHeader>
       <CardContent className="pt-0">
         <div className="space-y-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 text-base text-muted-foreground">
             <ExternalLink className="h-3 w-3 flex-shrink-0" />
             <a
               href={link.url}
@@ -50,7 +50,7 @@ export const LinkCard = ({ link, onEdit, onDelete }: LinkCardProps) => {
           </div>
 
           <div className="flex items-center justify-between pt-2 border-t">
-            <span className="text-xs text-muted-foreground">
+            <span className="text-base text-muted-foreground">
               Added {format(new Date(link.createdAt), 'MMM dd, yyyy')}
             </span>
             <div className="flex gap-1">

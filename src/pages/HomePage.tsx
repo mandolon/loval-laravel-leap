@@ -182,8 +182,8 @@ const HomePage = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat) => (
           <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="text-base font-medium text-muted-foreground">
                 {stat.title}
               </CardTitle>
               <div className={`p-2 rounded-lg ${stat.bgColor}`}>
@@ -191,10 +191,10 @@ const HomePage = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">
+              <div className="text-lg font-bold">
                 {stat.value}{stat.suffix || ''}
                 {stat.total !== null && (
-                  <span className="text-lg text-muted-foreground ml-1">
+                  <span className="text-base text-muted-foreground ml-1">
                     / {stat.total}
                   </span>
                 )}
@@ -221,7 +221,7 @@ const HomePage = () => {
                   </div>
                   <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                 </div>
-                <CardTitle className="text-xl">{action.title}</CardTitle>
+                <CardTitle className="text-lg">{action.title}</CardTitle>
                 <CardDescription>{action.description}</CardDescription>
               </CardHeader>
             </Card>
@@ -233,10 +233,10 @@ const HomePage = () => {
       <div>
         <h2 className="text-lg font-semibold mb-3">Get Started</h2>
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-4">
             {currentWorkspace ? (
               <div className="space-y-4">
-                <p className="text-muted-foreground">
+                <p className="text-base text-muted-foreground">
                   Start managing your construction projects efficiently in <strong>{currentWorkspace.name}</strong>. 
                   View projects, track tasks, and collaborate with your team all in one place.
                 </p>
@@ -251,7 +251,7 @@ const HomePage = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                <p className="text-muted-foreground">
+                <p className="text-base text-muted-foreground">
                   Please select a workspace from the sidebar to start managing your projects.
                 </p>
               </div>
