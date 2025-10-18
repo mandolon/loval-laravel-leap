@@ -159,13 +159,13 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
     switch (activeTab) {
       case 'home':
         return (
-          <div className="p-3 space-y-1">
+          <div className="p-2 space-y-1">
             {homeLinks.map((link) => (
               <NavLink
                 key={link.label}
                 to={link.path}
                 className={({ isActive }) => `
-                  w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors
+                  w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-base transition-colors
                   ${isActive ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/30'}
                 `}
               >
@@ -179,13 +179,13 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
         const filteredProjects = projects.filter(project => project.status === statusFilter);
         return (
           <>
-            <div className="p-3">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            <div className="p-2">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-base font-semibold text-muted-foreground uppercase tracking-wide">
                   Projects
                 </span>
                 <CreateProjectDialog onCreateProject={handleCreateProject}>
-                  <Button variant="ghost" size="icon" className="h-5 w-5">
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
                     <Plus className="h-3 w-3" />
                   </Button>
                 </CreateProjectDialog>
@@ -193,7 +193,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
               
               <div className="space-y-1 max-h-[200px] overflow-y-auto">
                 {filteredProjects.length === 0 ? (
-                  <div className="text-xs text-muted-foreground py-2">
+                  <div className="text-base text-muted-foreground py-2">
                     No {statusFilter} projects
                   </div>
                 ) : (
@@ -203,7 +203,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
                       <button
                         key={project.id}
                         onClick={() => navigate(`/workspace/${currentWorkspaceId}/project/${project.id}`)}
-                        className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors truncate ${
+                        className={`w-full text-left px-2 py-1.5 rounded text-base transition-colors truncate ${
                           isActive 
                             ? 'bg-accent text-foreground font-medium' 
                             : 'text-muted-foreground hover:bg-accent/30'
@@ -221,11 +221,11 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
 
       case 'tasks':
         return (
-          <div className="p-3 space-y-1">
+          <div className="p-2 space-y-1">
             <NavLink
               to={getNavPath('/tasks')}
               className={({ isActive }) => `
-                w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors
+                w-full flex items-center justify-between px-2 py-1.5 rounded-md text-base transition-colors
                 ${isActive && !location.search ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/30'}
               `}
             >
@@ -234,7 +234,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
             <NavLink
               to={getNavPath('/tasks?view=my-tasks')}
               className={({ isActive }) => `
-                w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors
+                w-full flex items-center justify-between px-2 py-1.5 rounded-md text-base transition-colors
                 ${location.search.includes('my-tasks') ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/30'}
               `}
             >
@@ -243,7 +243,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
             <NavLink
               to={getNavPath('/tasks?view=completed')}
               className={({ isActive }) => `
-                w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors
+                w-full flex items-center justify-between px-2 py-1.5 rounded-md text-base transition-colors
                 ${location.search.includes('completed') ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/30'}
               `}
             >
@@ -258,17 +258,17 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
   };
 
   return (
-    <aside className={`${isCollapsed ? 'w-16' : 'w-[240px]'} bg-card border-r border-border flex flex-col h-full transition-all duration-300`}>
+    <aside className={`${isCollapsed ? 'w-14' : 'w-[180px]'} bg-card border-r border-border flex flex-col h-full transition-all duration-300`}>
       {/* 1. User Profile Section */}
       <div className="p-3 border-b border-border flex-shrink-0">
         <div className="flex items-center justify-between">
           {!isCollapsed && user && (
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">
+                <p className="text-base font-medium truncate">
                   {user.name}
                 </p>
-                <p className="text-xs text-muted-foreground truncate">
+                <p className="text-base text-muted-foreground truncate">
                   {user.is_admin ? 'Admin' : user.email}
                 </p>
               </div>
@@ -286,7 +286,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
       </div>
 
       {/* 2. Navigation Icons */}
-      <div className={`p-3 border-b border-border flex-shrink-0 ${isCollapsed ? 'flex-col space-y-2' : 'flex items-center justify-around'}`}>
+      <div className={`p-2 border-b border-border flex-shrink-0 ${isCollapsed ? 'flex-col space-y-1' : 'flex items-center justify-around'}`}>
         {navIcons.map((item) => (
           <NavLink
             key={item.id}
@@ -297,7 +297,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
             <Button
               variant="ghost"
               size="icon"
-              className={`h-9 w-9 ${activeTab === item.id ? 'bg-accent text-accent-foreground' : ''}`}
+              className={`h-8 w-8 ${activeTab === item.id ? 'bg-accent text-accent-foreground' : ''}`}
             >
               <item.icon className="h-4 w-4" />
             </Button>
@@ -316,7 +316,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
       {!isCollapsed && activeTab === 'workspace' && (
         <div className="border-t border-border flex-shrink-0">
           <div className="p-3">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 block">
+            <span className="text-base font-semibold text-muted-foreground uppercase tracking-wide mb-2 block">
               Filter by Status
             </span>
             <div className="space-y-1">
@@ -324,7 +324,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
                 <button
                   key={filter.label}
                   onClick={() => handleStatusFilterClick(filter)}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-base transition-colors ${
                     statusFilter === filter.value
                       ? 'bg-accent/50 text-foreground'
                       : 'text-muted-foreground hover:bg-accent/30'
