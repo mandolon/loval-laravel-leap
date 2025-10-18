@@ -241,10 +241,7 @@ export default function TrashPage() {
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div>
-        <PageHeader 
-          title="Trash"
-          icon={<Trash2 className="h-5 w-5 text-destructive" />}
-        />
+        <PageHeader title="Trash" />
         <PageSubhead description="Deleted projects are stored here for 30 days" />
       </div>
 
