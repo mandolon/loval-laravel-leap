@@ -338,7 +338,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
               size="icon"
               className={`h-8 w-8 ${activeTab === item.id ? 'bg-accent text-accent-foreground' : ''}`}
             >
-              <item.icon className="h-4 w-4" />
+              <item.icon className="h-5 w-5" />
             </Button>
           </NavLink>
         ))}
