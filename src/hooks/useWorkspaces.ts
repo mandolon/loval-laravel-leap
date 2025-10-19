@@ -78,20 +78,9 @@ export function useWorkspaces() {
   };
 
   const createWorkspace = async (input: { name: string; description?: string; icon?: string }) => {
-    if (!user?.id) {
-      console.error('❌ No user.id available');
-      return null;
-    }
-
-    console.log('🔵 Starting workspace creation:', {
-      userId: user.id,
-      userAuthId: user.auth_id,
-      userIsAdmin: user.is_admin,
-      workspaceName: input.name
-    });
+    if (!user?.id) return null;
 
     try {
-      // Create workspace
       const { data: workspace, error: workspaceError } = await supabase
         .from("workspaces")
         .insert({
@@ -102,42 +91,17 @@ export function useWorkspaces() {
         .select()
         .single();
 
-      if (workspaceError) {
-        console.error('❌ Workspace creation failed:', workspaceError);
-        throw workspaceError;
-      }
+      if (workspaceError) throw workspaceError;
 
-      console.log('✅ Workspace created:', workspace);
-
-      // Add user as workspace member
-      console.log('🔵 Adding workspace member:', {
-        workspace_id: workspace.id,
-        user_id: user.id,
-        role: 'team'
-      });
-
-      const { data: member, error: memberError } = await supabase
+      const { error: memberError } = await supabase
         .from("workspace_members")
         .insert({
           workspace_id: workspace.id,
           user_id: user.id,
           role: "team",
-        })
-        .select()
-        .single();
-
-      if (memberError) {
-        console.error('❌ Member creation failed:', {
-          message: memberError.message,
-          details: memberError.details,
-          hint: memberError.hint,
-          code: memberError.code,
-          fullError: memberError
         });
-        throw memberError;
-      }
 
-      console.log('✅ Member created:', member);
+      if (memberError) throw memberError;
 
       await loadWorkspaces();
       setCurrentWorkspaceId(workspace.id);
@@ -145,7 +109,7 @@ export function useWorkspaces() {
 
       return workspace;
     } catch (error: any) {
-      console.error("❌ Full error creating workspace:", error);
+      console.error("Error creating workspace:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to create workspace",

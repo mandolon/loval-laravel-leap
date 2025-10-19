@@ -68,8 +68,6 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
     
     if (!newWorkspaceName.trim()) return;
 
-    console.log('🟢 User requested workspace creation:', newWorkspaceName.trim());
-
     const newWorkspace = await createWorkspace({
       name: newWorkspaceName.trim(),
       description: newWorkspaceDescription.trim(),
@@ -77,7 +75,6 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
     });
 
     if (newWorkspace) {
-      console.log('🟢 Workspace creation successful:', newWorkspace.id);
       toast({
         title: "Workspace created",
         description: `${newWorkspace.name} has been created successfully`,
@@ -88,10 +85,7 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
       setCreateDialogOpen(false);
       onWorkspaceChange?.(newWorkspace.id);
       
-      // Navigate to new workspace
       navigate(`/workspace/${newWorkspace.id}/projects`);
-    } else {
-      console.log('🔴 Workspace creation returned null - check error logs above');
     }
   };
 
