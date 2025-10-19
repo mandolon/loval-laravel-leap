@@ -20,6 +20,7 @@ import AIChatPage from "./pages/AIChatPage";
 import TrashPage from "./pages/TrashPage";
 import NotFound from "./pages/NotFound";
 import NoWorkspacePage from "./pages/NoWorkspacePage";
+import SandboxPage from "./pages/SandboxPage";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,14 @@ const App = () => (
                   <NewAppLayout>
                     <HomePage />
                   </NewAppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/workspace/:workspaceId/sandbox"
+              element={
+                <ProtectedRoute>
+                  <SandboxPage />
                 </ProtectedRoute>
               }
             />
@@ -182,6 +191,14 @@ const App = () => (
                   <NewAppLayout>
                     <ProjectDetails />
                   </NewAppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sandbox"
+              element={
+                <ProtectedRoute>
+                  <SandboxPage />
                 </ProtectedRoute>
               }
             />

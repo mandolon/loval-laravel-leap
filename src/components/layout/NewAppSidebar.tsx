@@ -189,6 +189,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
     { label: 'Users', path: getNavPath('/team') },
     { label: 'Invoices', path: getNavPath('/invoices') },
     { label: 'Work Records', path: getNavPath('/work-records') },
+    { label: 'Sandbox', path: getNavPath('/sandbox') },
   ];
 
   // Render dynamic content based on active tab
