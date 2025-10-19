@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Building2, Plus, Check, Settings, Trash2 } from "lucide-react";
+import { Building2, Plus, Check, Settings, Trash2, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -188,9 +188,10 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
         <DropdownMenuTrigger asChild>
           <Button 
             variant="ghost" 
-            className="w-full justify-start gap-2 h-auto py-2 px-3 hover:bg-accent/30"
+            className="w-full justify-between gap-2 h-auto py-2 px-3 hover:bg-accent/30"
           >
             <span className="truncate text-xs">{currentWorkspace?.name || 'Select Workspace'}</span>
+            <ChevronDown className="h-3 w-3 opacity-50 flex-shrink-0" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56 bg-popover z-50">
