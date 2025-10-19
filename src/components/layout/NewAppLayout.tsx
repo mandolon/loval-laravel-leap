@@ -1,4 +1,3 @@
-import { NewAppHeader } from "./NewAppHeader";
 import { NewAppSidebar } from "./NewAppSidebar";
 import { useState } from "react";
 
@@ -17,12 +16,9 @@ export function NewAppLayout({ children }: NewAppLayoutProps) {
   return (
     <div className="h-screen flex bg-background w-full">
       <NewAppSidebar onWorkspaceChange={handleWorkspaceChange} />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <NewAppHeader />
-        <main key={workspaceKey} className="flex-1 overflow-auto">
-          {children}
-        </main>
-      </div>
+      <main key={workspaceKey} className="flex-1 overflow-auto">
+        {children}
+      </main>
     </div>
   );
 }

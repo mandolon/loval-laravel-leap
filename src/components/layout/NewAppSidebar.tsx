@@ -1,4 +1,4 @@
-import { Home, FolderKanban, CheckSquare, Bot, Plus, ChevronRight, ChevronLeft } from "lucide-react";
+import { Home, FolderKanban, CheckSquare, Bot, Plus, ChevronRight, ChevronLeft, Sun, Moon, Trash2 } from "lucide-react";
 import { NavLink, useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -11,6 +11,15 @@ import { useWorkspaces } from "@/hooks/useWorkspaces";
 import type { Project } from "@/lib/api/types";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/UserContext";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useTheme } from "next-themes";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 interface NewAppSidebarProps {
   onWorkspaceChange?: (workspaceId: string) => void;
@@ -21,7 +30,8 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { user } = useUser();
+  const { user, signOut } = useUser();
+  const { theme, setTheme } = useTheme();
   const { currentWorkspace, currentWorkspaceId, refetch: refetchWorkspaces } = useWorkspaces();
   const [activeTab, setActiveTab] = useState<'home' | 'workspace' | 'tasks' | 'ai'>('workspace');
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -274,22 +284,10 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
   };
 
   return (
-    <aside className={`${isCollapsed ? 'w-14' : 'w-[200px]'} bg-card border-r border-border flex flex-col h-full transition-all duration-300`}>
-      {/* 1. User Profile Section */}
+    <aside className={`${isCollapsed ? 'w-16' : 'w-[200px]'} bg-card border-r border-border flex flex-col h-full transition-all duration-300`}>
+      {/* 1. Collapse Toggle */}
       <div className="pt-3 pr-3 pb-3 border-b border-border flex-shrink-0">
-        <div className="flex items-center justify-between">
-          {!isCollapsed && user && (
-            <div className="flex items-center gap-2 flex-1 min-w-0 pl-6">
-              <div className="flex-1 min-w-0">
-                <p className="text-base font-semibold truncate">
-                  {user.name}
-                </p>
-                <p className="text-base text-muted-foreground truncate">
-                  {user.is_admin ? 'Admin' : user.email}
-                </p>
-              </div>
-            </div>
-          )}
+        <div className="flex items-center justify-end">
           <Button
             variant="ghost"
             size="icon"
@@ -350,12 +348,46 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
         </div>
       )}
 
-      {/* 5. Footer with Workspace Selector */}
-      {!isCollapsed && (
-        <div className="p-3 border-t border-border flex-shrink-0">
+      {/* 5. Footer with Workspace Selector or Avatar */}
+      <div className="p-3 border-t border-border flex-shrink-0">
+        {!isCollapsed ? (
           <WorkspaceSwitcher onWorkspaceChange={handleWorkspaceChange} />
-        </div>
-      )}
+        ) : (
+          user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-10 w-10 rounded-full p-0 mx-auto block">
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback 
+                      className="text-white text-sm font-semibold"
+                      style={{ background: user.avatar_url || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
+                    >
+                      {user.initials}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-popover">
+                <DropdownMenuItem onClick={() => navigate('/profile')}>
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => currentWorkspaceId && navigate(`/workspace/${currentWorkspaceId}/trash`)}>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Trash
+                </DropdownMenuItem>
+                <DropdownMenuItem>Settings</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+                  {theme === 'dark' ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
+                  {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={signOut}>Sign out</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        )}
+      </div>
     </aside>
   );
 }
