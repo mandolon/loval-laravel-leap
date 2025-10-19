@@ -3,6 +3,7 @@ import { api } from '../client'
 import type { CreateWorkspaceInput, UpdateWorkspaceInput } from '../types'
 import { useToast } from '@/hooks/use-toast'
 import { handleApiError } from '../errors'
+import { supabase } from '@/integrations/supabase/client'
 
 // Query key factory for workspaces
 export const workspaceKeys = {
@@ -127,3 +128,19 @@ export const useSetCurrentWorkspace = () => {
     },
   })
 }
+
+// Fetch all workspaces (for admin assignment UI)
+export const useAllWorkspaces = () => {
+  return useQuery({
+    queryKey: ['workspaces', 'all'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('workspaces')
+        .select('id, name')
+        .order('name');
+
+      if (error) throw error;
+      return data;
+    },
+  });
+};

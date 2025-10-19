@@ -33,6 +33,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Trash2, Users, Check, X, Pencil, Filter } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import { AddUserDialog } from "@/components/AddUserDialog";
+import { useUsers, useAllWorkspaces } from "@/lib/api/hooks";
 
 interface SystemUser {
   id: string;
@@ -53,6 +54,40 @@ const TeamPage = () => {
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const { toast } = useToast();
   const { user: currentUser } = useUser();
+
+  // Phase 1: Data fetching with new hooks
+  const { data: usersWithWorkspaces } = useUsers();
+  const { data: allWorkspaces } = useAllWorkspaces();
+
+  // Temporary console logging for Phase 1 verification
+  useEffect(() => {
+    if (usersWithWorkspaces) {
+      console.log('👥 Phase 1: Users with workspaces:', usersWithWorkspaces);
+      console.log('📊 User count:', usersWithWorkspaces.length);
+      console.log('🔍 Sample user:', usersWithWorkspaces[0]);
+      
+      // Check for users with workspace assignments
+      const usersWithAssignments = usersWithWorkspaces.filter(u => u.workspaces.length > 0);
+      console.log('✅ Users with workspace assignments:', usersWithAssignments.length);
+      if (usersWithAssignments.length > 0) {
+        console.log('🏢 Sample assigned user:', usersWithAssignments[0]);
+      }
+      
+      // Check for users without workspace assignments
+      const usersWithoutAssignments = usersWithWorkspaces.filter(u => u.workspaces.length === 0);
+      console.log('⚠️ Users without workspace assignments:', usersWithoutAssignments.length);
+      if (usersWithoutAssignments.length > 0) {
+        console.log('📝 Sample unassigned user:', usersWithoutAssignments[0]);
+      }
+    }
+  }, [usersWithWorkspaces]);
+
+  useEffect(() => {
+    if (allWorkspaces) {
+      console.log('🏢 Phase 1: All workspaces:', allWorkspaces);
+      console.log('📊 Workspace count:', allWorkspaces.length);
+    }
+  }, [allWorkspaces]);
 
   // Only admins can access this page
   if (!currentUser?.is_admin) {

@@ -18,6 +18,21 @@ export interface User {
   deletedBy?: string;
 }
 
+// User with workspace assignments (for admin user management)
+export interface UserWithWorkspaces {
+  id: string;
+  name: string;
+  email: string;
+  avatar_url: string | null;
+  isAdmin: boolean;
+  title?: string;
+  workspaces: Array<{
+    workspaceId: string;
+    workspaceName: string;
+    role: 'team' | 'consultant' | 'client';
+  }>;
+}
+
 // Workspace entity
 export interface Workspace {
   id: string;
