@@ -361,7 +361,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
       )}
 
       {/* 5. Footer with Workspace Selector or Avatar */}
-      <div className="p-3 border-t border-border flex-shrink-0">
+      <div className="p-3 border-t border-border flex-shrink-0 mt-auto">
         {isCollapsed ? (
           user && (
             <DropdownMenu>
