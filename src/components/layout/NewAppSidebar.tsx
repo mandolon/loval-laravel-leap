@@ -286,29 +286,42 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
   return (
     <aside className={`${isCollapsed ? 'w-16' : 'w-[200px]'} bg-card border-r border-border flex flex-col h-full transition-all duration-300`}>
       {/* 1. User Profile Section */}
-      <div className={`pt-3 pb-3 border-b border-border flex-shrink-0 ${isCollapsed ? 'px-0' : 'pr-3'}`}>
-        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
-          {!isCollapsed && user && (
-            <div className="flex items-center gap-2 flex-1 min-w-0 pl-6">
-              <div className="flex-1 min-w-0">
-                <p className="text-base font-semibold truncate">
-                  {user.name}
-                </p>
-                <p className="text-base text-muted-foreground truncate">
-                  {user.is_admin ? 'Admin' : user.email}
-                </p>
+      <div className="pt-3 pb-3 border-b border-border flex-shrink-0">
+        {isCollapsed ? (
+          <div className="flex justify-center">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+            >
+              <ChevronLeft className="h-4 w-4 rotate-180" />
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between pr-3">
+            {user && (
+              <div className="flex items-center gap-2 flex-1 min-w-0 pl-6">
+                <div className="flex-1 min-w-0">
+                  <p className="text-base font-semibold truncate">
+                    {user.name}
+                  </p>
+                  <p className="text-base text-muted-foreground truncate">
+                    {user.is_admin ? 'Admin' : user.email}
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 flex-shrink-0"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-          >
-            <ChevronLeft className={`h-4 w-4 transition-transform ${isCollapsed ? 'rotate-180' : ''}`} />
-          </Button>
-        </div>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 flex-shrink-0"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* 2. Navigation Icons */}
@@ -363,39 +376,41 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
       {/* 5. Footer with Workspace Selector or Avatar */}
       <div className="p-3 border-t border-border flex-shrink-0 mt-auto">
         {isCollapsed ? (
-          user && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 rounded-full p-0 mx-auto block">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback 
-                      className="text-white text-xs font-semibold"
-                      style={{ background: user.avatar_url || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
-                    >
-                      {user.initials}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 bg-popover">
-                <DropdownMenuItem onClick={() => navigate('/profile')}>
-                  Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => currentWorkspaceId && navigate(`/workspace/${currentWorkspaceId}/trash`)}>
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Trash
-                </DropdownMenuItem>
-                <DropdownMenuItem>Settings</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-                  {theme === 'dark' ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
-                  {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={signOut}>Sign out</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )
+          <div className="flex justify-center">
+            {user && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-8 w-8 rounded-full p-0">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback 
+                        className="text-white text-xs font-semibold"
+                        style={{ background: user.avatar_url || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
+                      >
+                        {user.initials}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-popover">
+                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => currentWorkspaceId && navigate(`/workspace/${currentWorkspaceId}/trash`)}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Trash
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>Settings</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+                    {theme === 'dark' ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
+                    {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={signOut}>Sign out</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         ) : (
           <WorkspaceSwitcher onWorkspaceChange={handleWorkspaceChange} />
         )}
