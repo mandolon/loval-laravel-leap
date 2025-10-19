@@ -325,7 +325,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
       </div>
 
       {/* 2. Navigation Icons */}
-      <div className={`px-3 py-3 border-b border-border flex-shrink-0 ${isCollapsed ? 'flex flex-col items-center space-y-1' : 'flex flex-wrap items-center justify-center gap-2'}`}>
+      <div className={`px-3 py-3 border-b border-border flex-shrink-0 ${isCollapsed ? 'flex flex-col items-center space-y-3' : 'flex flex-wrap items-center justify-center gap-4'}`}>
         {navIcons.map((item) => (
           <NavLink
             key={item.id}
