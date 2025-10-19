@@ -287,7 +287,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
     <aside className={`${isCollapsed ? 'w-16' : 'w-[200px]'} bg-card border-r border-border flex flex-col h-full transition-all duration-300`}>
       {/* 1. User Profile Section */}
       <div className="pt-3 pr-3 pb-3 border-b border-border flex-shrink-0">
-        <div className="flex items-center justify-between">
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
           {!isCollapsed && user && (
             <div className="flex items-center gap-2 flex-1 min-w-0 pl-6">
               <div className="flex-1 min-w-0">
