@@ -90,7 +90,7 @@ export const useUsers = () => {
         avatar_url: user.avatar_url,
         isAdmin: user.is_admin,
         title: user.title,
-        role: (user.user_roles as any)?.[0]?.role || null,
+        role: (user.user_roles as any)?.role || null,
         workspaces: membershipsByUser.get(user.id) || [],
       })) as UserWithWorkspaces[];
     },
