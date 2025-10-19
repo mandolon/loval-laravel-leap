@@ -31,10 +31,10 @@ const userSchema = z.object({
 });
 
 interface AddUserDialogProps {
-  onUserAdded: () => void;
+  onUserAdded?: () => void;
 }
 
-export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
+export function AddUserDialog({ onUserAdded }: AddUserDialogProps = {}) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -139,7 +139,7 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
       });
       
       setOpen(false);
-      onUserAdded();
+      onUserAdded?.();
     } catch (error: any) {
       console.error('Error creating user:', error);
       

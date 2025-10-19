@@ -43,7 +43,8 @@ export const useUpdateUserRole = () => {
         return data;
       }
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['users'] });
       toast({
         title: 'Success',

@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { PageSubhead } from "@/components/layout/PageSubhead";
 import {
   Select,
   SelectContent,
@@ -30,69 +29,26 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Users, Check, X, Pencil, Filter } from "lucide-react";
+import { Trash2, Users, Check, X, Pencil } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import { AddUserDialog } from "@/components/AddUserDialog";
 import { AddUserToWorkspaceDialog } from "@/components/AddUserToWorkspaceDialog";
-import { useUsers, useAllWorkspaces, useUpdateUserRole } from "@/lib/api/hooks";
+import { useUsers, useUpdateUserRole } from "@/lib/api/hooks";
 import { Badge } from "@/components/ui/badge";
-
-interface SystemUser {
-  id: string;
-  short_id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  title?: string;
-  is_admin: boolean;
-  is_active: boolean;
-}
+import { useQueryClient } from "@tanstack/react-query";
 
 const TeamPage = () => {
-  const [users, setUsers] = useState<SystemUser[]>([]);
-  const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState({ name: '', title: '' });
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const { toast } = useToast();
   const { user: currentUser } = useUser();
+  const queryClient = useQueryClient();
 
-  // Phase 1: Data fetching with new hooks
-  const { data: usersWithWorkspaces } = useUsers();
-  const { data: allWorkspaces } = useAllWorkspaces();
+  const { data: usersWithWorkspaces, isLoading } = useUsers();
   const updateUserRole = useUpdateUserRole();
 
-  // Temporary console logging for Phase 1 verification
-  useEffect(() => {
-    if (usersWithWorkspaces) {
-      console.log('👥 Phase 1: Users with workspaces:', usersWithWorkspaces);
-      console.log('📊 User count:', usersWithWorkspaces.length);
-      console.log('🔍 Sample user:', usersWithWorkspaces[0]);
-      
-      // Check for users with workspace assignments
-      const usersWithAssignments = usersWithWorkspaces.filter(u => u.workspaces.length > 0);
-      console.log('✅ Users with workspace assignments:', usersWithAssignments.length);
-      if (usersWithAssignments.length > 0) {
-        console.log('🏢 Sample assigned user:', usersWithAssignments[0]);
-      }
-      
-      // Check for users without workspace assignments
-      const usersWithoutAssignments = usersWithWorkspaces.filter(u => u.workspaces.length === 0);
-      console.log('⚠️ Users without workspace assignments:', usersWithoutAssignments.length);
-      if (usersWithoutAssignments.length > 0) {
-        console.log('📝 Sample unassigned user:', usersWithoutAssignments[0]);
-      }
-    }
-  }, [usersWithWorkspaces]);
 
-  useEffect(() => {
-    if (allWorkspaces) {
-      console.log('🏢 Phase 1: All workspaces:', allWorkspaces);
-      console.log('📊 Workspace count:', allWorkspaces.length);
-    }
-  }, [allWorkspaces]);
-
-  // Only admins can access this page
   if (!currentUser?.is_admin) {
     return (
       <div className="p-4 space-y-4 max-w-7xl mx-auto">
@@ -104,64 +60,6 @@ const TeamPage = () => {
     );
   }
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  // Realtime subscription for users
-  useEffect(() => {
-    const channel = supabase
-      .channel('users-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'users'
-        },
-        () => {
-          loadUsers();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  const loadUsers = async () => {
-    try {
-      const { data: users, error: usersError } = await supabase
-        .from('users')
-        .select('*')
-        .is('deleted_at', null)
-        .order('name');
-
-      if (usersError) throw usersError;
-
-      setUsers(users.map(user => ({
-        id: user.id,
-        short_id: user.short_id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        title: user.title,
-        is_admin: user.is_admin || false,
-        is_active: !user.deleted_at,
-      })));
-    } catch (error) {
-      console.error('Error loading users:', error);
-      toast({
-        title: "Error loading users",
-        description: "Failed to fetch users",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleToggleAdmin = async (userId: string, currentAdminStatus: boolean) => {
     try {
       const { error } = await supabase
@@ -171,11 +69,7 @@ const TeamPage = () => {
 
       if (error) throw error;
 
-      setUsers(users.map(u => 
-        u.id === userId 
-          ? { ...u, is_admin: !currentAdminStatus } 
-          : u
-      ));
+      await queryClient.refetchQueries({ queryKey: ['users'] });
       
       toast({
         title: `User ${!currentAdminStatus ? 'promoted to' : 'removed from'} admin`,
@@ -199,7 +93,7 @@ const TeamPage = () => {
     }
   };
 
-  const startEditing = (user: SystemUser) => {
+  const startEditing = (user: { id: string; name: string; title?: string }) => {
     setEditingId(user.id);
     setEditValues({
       name: user.name,
@@ -233,12 +127,7 @@ const TeamPage = () => {
 
       if (error) throw error;
 
-      setUsers(users.map(u => 
-        u.id === userId 
-          ? { ...u, name: editValues.name.trim(), title: editValues.title.trim() || undefined }
-          : u
-      ));
-
+      await queryClient.refetchQueries({ queryKey: ['users'] });
       setEditingId(null);
       
       toast({
@@ -258,11 +147,10 @@ const TeamPage = () => {
   const handleDelete = async () => {
     if (!deleteUserId || !currentUser) return;
 
-    const userToDelete = users.find(u => u.id === deleteUserId);
+    const userToDelete = usersWithWorkspaces?.find(u => u.id === deleteUserId);
     
-    // Prevent last admin deletion
-    if (userToDelete?.is_admin) {
-      const adminCount = users.filter(u => u.is_admin && u.is_active).length;
+    if (userToDelete?.isAdmin) {
+      const adminCount = usersWithWorkspaces?.filter(u => u.isAdmin).length || 0;
       if (adminCount <= 1) {
         toast({
           title: "Cannot delete last admin",
@@ -275,7 +163,6 @@ const TeamPage = () => {
     }
 
     try {
-      // Soft delete user
       const { error } = await supabase
         .from('users')
         .update({ 
@@ -286,7 +173,7 @@ const TeamPage = () => {
 
       if (error) throw error;
 
-      setUsers(users.filter(u => u.id !== deleteUserId));
+      await queryClient.refetchQueries({ queryKey: ['users'] });
       setDeleteUserId(null);
       
       toast({
@@ -303,9 +190,10 @@ const TeamPage = () => {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="p-4 space-y-4 max-w-7xl mx-auto">
+        <PageHeader title="User Management" />
         <div className="text-center py-16">
           <div className="text-muted-foreground">Loading team members...</div>
         </div>
@@ -315,14 +203,12 @@ const TeamPage = () => {
 
   return (
     <div className="p-4 space-y-4 max-w-7xl mx-auto">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <PageHeader title="User Management" />
-        <AddUserDialog onUserAdded={loadUsers} />
+        <AddUserDialog />
       </div>
 
-      {/* Users Table */}
-      {users.length === 0 ? (
+      {!usersWithWorkspaces || usersWithWorkspaces.length === 0 ? (
         <div className="text-center py-16">
           <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
             <Users className="h-12 w-12 text-muted-foreground" />
@@ -348,9 +234,7 @@ const TeamPage = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user) => {
-                const userWithWorkspaces = usersWithWorkspaces?.find(u => u.id === user.id);
-                return (
+              {usersWithWorkspaces.map((user) => (
                 <TableRow key={user.id}>
                   {/* Name Cell - Editable */}
                   <TableCell>
@@ -381,7 +265,7 @@ const TeamPage = () => {
                   {/* Role Cell */}
                   <TableCell>
                     <Select
-                      value={userWithWorkspaces?.role || 'client'}
+                      value={user.role || 'client'}
                       onValueChange={(newRole: 'team' | 'consultant' | 'client') => 
                         handleRoleChange(user.id, newRole)
                       }
@@ -436,9 +320,9 @@ const TeamPage = () => {
 
                   {/* Workspaces Cell */}
                   <TableCell>
-                    {userWithWorkspaces?.workspaces && userWithWorkspaces.workspaces.length > 0 ? (
+                    {user.workspaces && user.workspaces.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
-                        {userWithWorkspaces.workspaces.map((ws) => (
+                        {user.workspaces.map((ws) => (
                           <Badge key={ws.workspaceId} variant="secondary" className="text-xs">
                             {ws.workspaceName}
                           </Badge>
@@ -452,20 +336,18 @@ const TeamPage = () => {
                   {/* Admin Toggle */}
                   <TableCell>
                     <Button
-                      variant={user.is_admin ? "default" : "outline"}
+                      variant={user.isAdmin ? "default" : "outline"}
                       size="sm"
-                      onClick={() => handleToggleAdmin(user.id, user.is_admin)}
+                      onClick={() => handleToggleAdmin(user.id, user.isAdmin)}
                       disabled={user.id === currentUser?.id}
                     >
-                      {user.is_admin ? '✓ Admin' : 'Make Admin'}
+                      {user.isAdmin ? '✓ Admin' : 'Make Admin'}
                     </Button>
                   </TableCell>
 
                   {/* Status Cell */}
                   <TableCell>
-                    <span className={`text-sm ${user.is_active ? 'text-green-600' : 'text-muted-foreground'}`}>
-                      {user.is_active ? 'Active' : 'Inactive'}
-                    </span>
+                    <span className="text-sm text-green-600">Active</span>
                   </TableCell>
 
                   {/* Actions Cell */}
@@ -474,7 +356,7 @@ const TeamPage = () => {
                       <AddUserToWorkspaceDialog 
                         userId={user.id} 
                         userName={user.name}
-                        userWorkspaceIds={userWithWorkspaces?.workspaces.map(w => w.workspaceId) || []}
+                        userWorkspaceIds={user.workspaces.map(w => w.workspaceId)}
                       />
                       <Button
                         size="icon"
@@ -488,7 +370,7 @@ const TeamPage = () => {
                     </div>
                   </TableCell>
                 </TableRow>
-              )})}
+              ))}
             </TableBody>
           </Table>
         </div>
