@@ -27,6 +27,7 @@ const userSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(200),
   email: z.string().trim().email("Invalid email address").max(255),
   title: z.string().trim().max(100).optional(),
+  role: z.enum(['team', 'consultant', 'client']),
   is_admin: z.boolean(),
 });
 
@@ -43,6 +44,7 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps = {}) {
     name: '',
     email: '',
     title: '',
+    role: 'team' as 'team' | 'consultant' | 'client',
     is_admin: false,
   });
 
@@ -111,6 +113,16 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps = {}) {
           .eq('id', userRecord.id);
       }
 
+      // Insert role into user_roles table
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({
+          user_id: userRecord.id,
+          role: formData.role,
+        });
+
+      if (roleError) throw roleError;
+
       // Send welcome email
       try {
         await supabase.functions.invoke('send-welcome-email', {
@@ -135,6 +147,7 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps = {}) {
         name: '',
         email: '',
         title: '',
+        role: 'team',
         is_admin: false,
       });
       
@@ -225,6 +238,32 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps = {}) {
               />
               {errors.title && (
                 <p className="text-sm text-destructive">{errors.title}</p>
+              )}
+            </div>
+
+            {/* Role */}
+            <div className="grid gap-2">
+              <Label htmlFor="role">
+                Role <span className="text-destructive">*</span>
+              </Label>
+              <Select 
+                value={formData.role} 
+                onValueChange={(value: 'team' | 'consultant' | 'client') => 
+                  setFormData({ ...formData, role: value })
+                }
+                disabled={loading}
+              >
+                <SelectTrigger id="role">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="team">Team</SelectItem>
+                  <SelectItem value="consultant">Consultant</SelectItem>
+                  <SelectItem value="client">Client</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.role && (
+                <p className="text-sm text-destructive">{errors.role}</p>
               )}
             </div>
 
