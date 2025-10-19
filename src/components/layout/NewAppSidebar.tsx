@@ -336,9 +336,9 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
             <Button
               variant="ghost"
               size="icon"
-              className={`h-8 w-8 ${activeTab === item.id ? 'bg-accent text-accent-foreground' : ''}`}
+              className={`h-10 w-10 ${activeTab === item.id ? 'bg-accent text-accent-foreground' : ''}`}
             >
-              <item.icon className="h-5 w-5" />
+              <item.icon className="h-6 w-6" />
             </Button>
           </NavLink>
         ))}
