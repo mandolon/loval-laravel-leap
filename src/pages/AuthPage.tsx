@@ -200,7 +200,7 @@ export default function AuthPage() {
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder="First name"
                   disabled={loading}
-                  className="w-1/2 h-8 rounded-lg border bg-white text-[13px] text-slate-800 placeholder:text-slate-400 placeholder:text-[13px] px-3 outline-none transition border-slate-200 hover:border-slate-300 focus:border-[#00639b] focus:ring-1 focus:ring-[#9ecafc]"
+                  className="w-1/2 h-8 rounded-lg border bg-white text-[13px] text-slate-700 placeholder:text-slate-400 placeholder:text-[13px] px-3 outline-none transition border-slate-200 hover:border-slate-300 focus:border-[#00639b] focus:ring-1 focus:ring-[#9ecafc] disabled:bg-slate-100 disabled:cursor-not-allowed"
                 />
                 <input
                   type="text"
@@ -208,7 +208,7 @@ export default function AuthPage() {
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Last name"
                   disabled={loading}
-                  className="w-1/2 h-8 rounded-lg border bg-white text-[13px] text-slate-800 placeholder:text-slate-400 placeholder:text-[13px] px-3 outline-none transition border-slate-200 hover:border-slate-300 focus:border-[#00639b] focus:ring-1 focus:ring-[#9ecafc]"
+                  className="w-1/2 h-8 rounded-lg border bg-white text-[13px] text-slate-700 placeholder:text-slate-400 placeholder:text-[13px] px-3 outline-none transition border-slate-200 hover:border-slate-300 focus:border-[#00639b] focus:ring-1 focus:ring-[#9ecafc] disabled:bg-slate-100 disabled:cursor-not-allowed"
                 />
               </div>
             )}
@@ -219,7 +219,7 @@ export default function AuthPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Work email"
               disabled={loading}
-              className="w-full h-8 rounded-lg border bg-white text-[13px] text-slate-800 placeholder:text-slate-400 placeholder:text-[13px] px-3 outline-none transition border-slate-200 hover:border-slate-300 focus:border-[#00639b] focus:ring-1 focus:ring-[#9ecafc]"
+              className="w-full h-8 rounded-lg border bg-white text-[13px] text-slate-700 placeholder:text-slate-400 placeholder:text-[13px] px-3 outline-none transition border-slate-200 hover:border-slate-300 focus:border-[#00639b] focus:ring-1 focus:ring-[#9ecafc] disabled:bg-slate-100 disabled:cursor-not-allowed"
             />
 
             <div className="relative">
@@ -229,7 +229,7 @@ export default function AuthPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
                 disabled={loading}
-                className="w-full h-8 rounded-lg border bg-white text-[13px] text-slate-800 placeholder:text-slate-400 placeholder:text-[13px] pr-10 px-3 outline-none transition border-slate-200 hover:border-slate-300 focus:border-[#00639b] focus:ring-1 focus:ring-[#9ecafc]"
+                className="w-full h-8 rounded-lg border bg-white text-[13px] text-slate-700 placeholder:text-slate-400 placeholder:text-[13px] pr-10 px-3 outline-none transition border-slate-200 hover:border-slate-300 focus:border-[#00639b] focus:ring-1 focus:ring-[#9ecafc] disabled:bg-slate-100 disabled:cursor-not-allowed"
               />
               <button
                 type="button"
