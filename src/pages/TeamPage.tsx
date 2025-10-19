@@ -33,7 +33,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Trash2, Users, Check, X, Pencil, Filter } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import { AddUserDialog } from "@/components/AddUserDialog";
+import { AddUserToWorkspaceDialog } from "@/components/AddUserToWorkspaceDialog";
 import { useUsers, useAllWorkspaces } from "@/lib/api/hooks";
+import { Badge } from "@/components/ui/badge";
 
 interface SystemUser {
   id: string;
@@ -329,13 +331,16 @@ const TeamPage = () => {
                 <TableHead>Name</TableHead>
                 <TableHead>Title</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Workspaces</TableHead>
                 <TableHead>Admin Status</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user) => (
+              {users.map((user) => {
+                const userWithWorkspaces = usersWithWorkspaces?.find(u => u.id === user.id);
+                return (
                 <TableRow key={user.id}>
                   {/* Name Cell - Editable */}
                   <TableCell>
@@ -400,6 +405,21 @@ const TeamPage = () => {
                   {/* Email Cell */}
                   <TableCell className="text-muted-foreground">{user.email}</TableCell>
 
+                  {/* Workspaces Cell */}
+                  <TableCell>
+                    {userWithWorkspaces?.workspaces && userWithWorkspaces.workspaces.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {userWithWorkspaces.workspaces.map((ws) => (
+                          <Badge key={ws.workspaceId} variant="secondary" className="text-xs">
+                            {ws.workspaceName} ({ws.role})
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">—</span>
+                    )}
+                  </TableCell>
+
                   {/* Admin Toggle */}
                   <TableCell>
                     <Button
@@ -421,18 +441,21 @@ const TeamPage = () => {
 
                   {/* Actions Cell */}
                   <TableCell className="text-right">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8"
-                      onClick={() => setDeleteUserId(user.id)}
-                      disabled={user.id === currentUser?.id}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    <div className="flex items-center justify-end gap-2">
+                      <AddUserToWorkspaceDialog userId={user.id} userName={user.name} />
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        onClick={() => setDeleteUserId(user.id)}
+                        disabled={user.id === currentUser?.id}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              )})}
             </TableBody>
           </Table>
         </div>
