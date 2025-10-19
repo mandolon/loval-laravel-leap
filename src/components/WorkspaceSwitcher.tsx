@@ -190,7 +190,7 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
             variant="ghost" 
             className="w-full justify-start gap-2 h-auto py-2 px-3 hover:bg-accent/30"
           >
-            <span className="truncate text-sm">{currentWorkspace?.name || 'Select Workspace'}</span>
+            <span className="truncate text-xs">{currentWorkspace?.name || 'Select Workspace'}</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56 bg-popover z-50">
@@ -205,7 +205,7 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
               className="cursor-pointer"
             >
               <div className="flex items-center justify-between w-full">
-                <span className="text-sm">{workspace.name}</span>
+                <span className="text-xs">{workspace.name}</span>
                 {currentWorkspaceId === workspace.id && (
                   <Check className="h-4 w-4 text-primary" />
                 )}
@@ -218,14 +218,14 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
             className="cursor-pointer"
           >
             <Settings className="mr-2 h-4 w-4" />
-            <span className="text-sm">Workspace settings</span>
+            <span className="text-xs">Workspace settings</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => setCreateDialogOpen(true)}
             className="cursor-pointer"
           >
             <Plus className="mr-2 h-4 w-4" />
-            <span className="text-sm">Create workspace</span>
+            <span className="text-xs">Create workspace</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
