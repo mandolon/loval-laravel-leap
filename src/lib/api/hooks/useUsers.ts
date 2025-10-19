@@ -15,10 +15,11 @@ export interface UserWithWorkspaces {
   avatar_url: string | null;
   isAdmin: boolean;
   title?: string;
+  role: 'team' | 'consultant' | 'client' | null;
   workspaces: Array<{
+    membershipId: string;
     workspaceId: string;
     workspaceName: string;
-    role: 'team' | 'consultant' | 'client';
   }>;
 }
 
@@ -26,10 +27,18 @@ export const useUsers = () => {
   return useQuery({
     queryKey: ['users'],
     queryFn: async () => {
-      // Step 1: Fetch all active users
+      // Step 1: Fetch all active users with their roles
       const { data: users, error: usersError } = await supabase
         .from('users')
-        .select('id, name, email, avatar_url, is_admin, title')
+        .select(`
+          id, 
+          name, 
+          email, 
+          avatar_url, 
+          is_admin, 
+          title,
+          user_roles(role)
+        `)
         .is('deleted_at', null)
         .order('name');
 
@@ -43,7 +52,7 @@ export const useUsers = () => {
       if (userIds.length > 0) {
         const { data: membershipsData, error: membershipsError } = await supabase
           .from('workspace_members')
-          .select('user_id, workspace_id, role, workspaces(id, name)')
+          .select('id, user_id, workspace_id, workspaces(id, name)')
           .in('user_id', userIds)
           .is('deleted_at', null);
 
@@ -57,9 +66,9 @@ export const useUsers = () => {
 
       // Step 3: Group memberships by user
       const membershipsByUser = new Map<string, Array<{
+        membershipId: string;
         workspaceId: string;
         workspaceName: string;
-        role: 'team' | 'consultant' | 'client';
       }>>();
 
       memberships.forEach((m: any) => {
@@ -67,9 +76,9 @@ export const useUsers = () => {
           membershipsByUser.set(m.user_id, []);
         }
         membershipsByUser.get(m.user_id)!.push({
+          membershipId: m.id,
           workspaceId: m.workspace_id,
           workspaceName: m.workspaces?.name || 'Unknown',
-          role: m.role as 'team' | 'consultant' | 'client',
         });
       });
 
@@ -81,6 +90,7 @@ export const useUsers = () => {
         avatar_url: user.avatar_url,
         isAdmin: user.is_admin,
         title: user.title,
+        role: (user.user_roles as any)?.[0]?.role || null,
         workspaces: membershipsByUser.get(user.id) || [],
       })) as UserWithWorkspaces[];
     },

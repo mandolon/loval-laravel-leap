@@ -28,11 +28,10 @@ export const WorkspaceMembersTable = ({ workspaceId }: WorkspaceMembersTableProp
         // Check again to prevent duplicate assignments
         const stillNotMember = !members?.some(m => m.userId === userId && !m.deletedAt);
         if (stillNotMember) {
-          await assignMember.mutateAsync({
-            workspaceId,
-            userId,
-            role: 'team',
-          });
+        await assignMember.mutateAsync({
+          workspaceId,
+          userId
+        });
         }
       }
     } catch (error) {

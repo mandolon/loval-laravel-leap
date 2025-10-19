@@ -13,6 +13,7 @@ export * from './useProjectMembers'
 export * from './useUsers'
 export * from './useInvoices'
 export * from './useLedgerEntries'
+export * from './useUserRole'
 
 // Re-export useAllWorkspaces specifically for admin UI
 export { useAllWorkspaces } from './useWorkspaces'

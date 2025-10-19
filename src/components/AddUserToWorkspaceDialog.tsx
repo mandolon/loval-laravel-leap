@@ -1,4 +1,8 @@
 import { useState } from "react";
+import { useAllWorkspaces } from "@/lib/api/hooks/useWorkspaces";
+import { useProjects } from "@/lib/api/hooks/useProjects";
+import { useAssignMember } from "@/lib/api/hooks/useWorkspaceMembers";
+import { useAssignProjectMember } from "@/lib/api/hooks/useProjectMembers";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,197 +13,206 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { UserPlus } from "lucide-react";
-import { useAssignMember, useAllWorkspaces, useProjects } from "@/lib/api/hooks";
-import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Plus } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 interface AddUserToWorkspaceDialogProps {
   userId: string;
   userName: string;
+  userWorkspaceIds: string[];
 }
 
-export function AddUserToWorkspaceDialog({ userId, userName }: AddUserToWorkspaceDialogProps) {
+export function AddUserToWorkspaceDialog({ 
+  userId, 
+  userName,
+  userWorkspaceIds 
+}: AddUserToWorkspaceDialogProps) {
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<1 | 2>(1);
-  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>("");
-  const [selectedRole, setSelectedRole] = useState<"admin" | "team" | "client" | "consultant">("team");
+  const [selectedWorkspaceIds, setSelectedWorkspaceIds] = useState<string[]>([]);
   const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
   
-  const { toast } = useToast();
-  const { data: workspaces } = useAllWorkspaces();
-  const { data: projects } = useProjects(selectedWorkspaceId || "", { limit: 100 });
+  const { data: workspaces, isLoading: isLoadingWorkspaces } = useAllWorkspaces();
+  const { data: allProjects } = useProjects('', { limit: 1000 });
+  
   const assignMember = useAssignMember();
-
-  const handleNext = () => {
-    if (!selectedWorkspaceId) {
-      toast({
-        title: "Workspace required",
-        description: "Please select a workspace",
-        variant: "destructive",
-      });
-      return;
-    }
-    setStep(2);
+  const assignProjectMember = useAssignProjectMember();
+  
+  // Filter available workspaces
+  const availableWorkspaces = workspaces?.filter(ws => 
+    !userWorkspaceIds.includes(ws.id)
+  ) || [];
+  
+  // Filter projects by selected workspaces
+  const availableProjects = allProjects?.filter(p => 
+    selectedWorkspaceIds.includes(p.workspaceId)
+  ) || [];
+  
+  const toggleWorkspace = (workspaceId: string) => {
+    setSelectedWorkspaceIds(prev => 
+      prev.includes(workspaceId) 
+        ? prev.filter(id => id !== workspaceId)
+        : [...prev, workspaceId]
+    );
   };
-
-  const handleSubmit = async () => {
-    try {
-      await assignMember.mutateAsync({
-        workspaceId: selectedWorkspaceId,
-        userId,
-        role: selectedRole,
-      });
-
-      // TODO: Assign to selected projects if any
-      // This will be handled by a separate mutation in the future
-
-      toast({
-        title: "Success",
-        description: `${userName} added to workspace`,
-      });
-
-      setOpen(false);
-      resetDialog();
-    } catch (error) {
-      console.error("Error assigning user:", error);
-    }
-  };
-
-  const resetDialog = () => {
-    setStep(1);
-    setSelectedWorkspaceId("");
-    setSelectedRole("team");
-    setSelectedProjectIds([]);
-  };
-
-  const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
-    if (!newOpen) {
-      resetDialog();
-    }
-  };
-
+  
   const toggleProject = (projectId: string) => {
-    setSelectedProjectIds(prev =>
-      prev.includes(projectId)
+    setSelectedProjectIds(prev => 
+      prev.includes(projectId) 
         ? prev.filter(id => id !== projectId)
         : [...prev, projectId]
     );
   };
-
+  
+  const handleSubmit = async () => {
+    if (selectedWorkspaceIds.length === 0) {
+      toast({
+        title: "No workspaces selected",
+        description: "Please select at least one workspace",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      // Assign to workspaces
+      for (const workspaceId of selectedWorkspaceIds) {
+        await assignMember.mutateAsync({ 
+          userId, 
+          workspaceId 
+        });
+      }
+      
+      // Assign to projects
+      for (const projectId of selectedProjectIds) {
+        await assignProjectMember.mutateAsync({ 
+          userId, 
+          projectId 
+        });
+      }
+      
+      resetDialog();
+      setOpen(false);
+    } catch (error) {
+      console.error('Error assigning user:', error);
+    }
+  };
+  
+  const resetDialog = () => {
+    setSelectedWorkspaceIds([]);
+    setSelectedProjectIds([]);
+  };
+  
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      setOpen(isOpen);
+      if (!isOpen) resetDialog();
+    }}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
-          <UserPlus className="h-4 w-4 mr-2" />
-          Add to Workspace
+        <Button variant="ghost" size="sm">
+          <Plus className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
-        {step === 1 ? (
-          <>
-            <DialogHeader>
-              <DialogTitle>Add {userName} to Workspace</DialogTitle>
-              <DialogDescription>
-                Step 1 of 2: Select workspace and role
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4 py-4">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Add {userName} to Workspaces/Projects</DialogTitle>
+          <DialogDescription>
+            Select workspaces and optionally assign to specific projects
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-6">
+          {/* Workspaces Section */}
+          <div className="space-y-3">
+            <Label className="text-base font-semibold">Workspaces</Label>
+            {availableWorkspaces.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                User is already assigned to all workspaces
+              </p>
+            ) : (
               <div className="space-y-2">
-                <Label htmlFor="workspace">Workspace</Label>
-                <Select value={selectedWorkspaceId} onValueChange={setSelectedWorkspaceId}>
-                  <SelectTrigger id="workspace">
-                    <SelectValue placeholder="Select workspace..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {workspaces?.map((workspace) => (
-                      <SelectItem key={workspace.id} value={workspace.id}>
-                        {workspace.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {availableWorkspaces.map((workspace) => (
+                  <div key={workspace.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`workspace-${workspace.id}`}
+                      checked={selectedWorkspaceIds.includes(workspace.id)}
+                      onCheckedChange={() => toggleWorkspace(workspace.id)}
+                    />
+                    <Label
+                      htmlFor={`workspace-${workspace.id}`}
+                      className="text-sm font-normal cursor-pointer"
+                    >
+                      {workspace.name}
+                    </Label>
+                  </div>
+                ))}
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
-                <Select value={selectedRole} onValueChange={(value: any) => setSelectedRole(value)}>
-                  <SelectTrigger id="role">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="team">Team</SelectItem>
-                    <SelectItem value="client">Client</SelectItem>
-                    <SelectItem value="consultant">Consultant</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleNext}>
-                Next
-              </Button>
-            </DialogFooter>
-          </>
-        ) : (
-          <>
-            <DialogHeader>
-              <DialogTitle>Add {userName} to Workspace</DialogTitle>
-              <DialogDescription>
-                Step 2 of 2: Assign to projects (optional)
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="py-4">
-              {projects && projects.length > 0 ? (
-                <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                  {projects.map((project) => (
-                    <div key={project.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={project.id}
-                        checked={selectedProjectIds.includes(project.id)}
-                        onCheckedChange={() => toggleProject(project.id)}
-                      />
-                      <label
-                        htmlFor={project.id}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                      >
-                        {project.name}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No projects available in this workspace
+            )}
+          </div>
+          
+          {/* Projects Section (only if workspaces selected) */}
+          {selectedWorkspaceIds.length > 0 && (
+            <div className="space-y-3 border-t pt-4">
+              <Label className="text-base font-semibold">
+                Projects (Optional)
+              </Label>
+              {availableProjects.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No projects in selected workspaces
                 </p>
+              ) : (
+                <div className="space-y-3">
+                  {selectedWorkspaceIds.map((workspaceId) => {
+                    const workspace = workspaces?.find(w => w.id === workspaceId);
+                    const workspaceProjects = availableProjects.filter(
+                      p => p.workspaceId === workspaceId
+                    );
+                    
+                    if (workspaceProjects.length === 0) return null;
+                    
+                    return (
+                      <div key={workspaceId} className="space-y-2">
+                        <p className="text-sm font-medium text-muted-foreground">
+                          {workspace?.name}
+                        </p>
+                        <div className="ml-4 space-y-2">
+                          {workspaceProjects.map((project) => (
+                            <div key={project.id} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`project-${project.id}`}
+                                checked={selectedProjectIds.includes(project.id)}
+                                onCheckedChange={() => toggleProject(project.id)}
+                              />
+                              <Label
+                                htmlFor={`project-${project.id}`}
+                                className="text-sm font-normal cursor-pointer"
+                              >
+                                {project.name}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setStep(1)}>
-                Back
-              </Button>
-              <Button onClick={handleSubmit} disabled={assignMember.isPending}>
-                {assignMember.isPending ? "Adding..." : "Add to Workspace"}
-              </Button>
-            </DialogFooter>
-          </>
-        )}
+          )}
+        </div>
+        
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSubmit}
+            disabled={selectedWorkspaceIds.length === 0 || assignMember.isPending}
+          >
+            {assignMember.isPending ? 'Assigning...' : 'Assign'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

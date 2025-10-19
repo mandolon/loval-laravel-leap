@@ -26,10 +26,11 @@ export interface UserWithWorkspaces {
   avatar_url: string | null;
   isAdmin: boolean;
   title?: string;
+  role: 'team' | 'consultant' | 'client' | null;
   workspaces: Array<{
+    membershipId: string;
     workspaceId: string;
     workspaceName: string;
-    role: 'team' | 'consultant' | 'client';
   }>;
 }
 
@@ -50,7 +51,6 @@ export interface WorkspaceMember {
   shortId: string;
   workspaceId: string;
   userId: string;
-  role: 'admin' | 'team' | 'consultant' | 'client';
   createdAt: string;
   deletedAt?: string;
   deletedBy?: string;

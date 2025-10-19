@@ -15,7 +15,6 @@ const transformDbToWorkspaceMember = (data: any): WorkspaceMember => ({
   shortId: data.short_id,
   workspaceId: data.workspace_id,
   userId: data.user_id,
-  role: data.role as 'admin' | 'team' | 'consultant' | 'client',
   createdAt: data.created_at,
   deletedAt: data.deleted_at,
   deletedBy: data.deleted_by,
@@ -61,7 +60,6 @@ export const useWorkspaceMembers = (workspaceId: string) => {
           shortId: member.short_id,
           workspaceId: member.workspace_id,
           userId: member.user_id,
-          role: member.role as 'admin' | 'team' | 'consultant' | 'client',
           createdAt: member.created_at,
           deletedAt: member.deleted_at,
           deletedBy: member.deleted_by,
@@ -83,12 +81,10 @@ export const useAssignMember = () => {
   return useMutation({
     mutationFn: async ({ 
       workspaceId, 
-      userId, 
-      role 
+      userId
     }: { 
       workspaceId: string;
       userId: string;
-      role: 'admin' | 'team' | 'consultant' | 'client';
     }) => {
       // First check if there's an existing soft-deleted record
       const { data: existing, error: checkError } = await supabase
@@ -106,8 +102,7 @@ export const useAssignMember = () => {
           .from('workspace_members')
           .update({
             deleted_at: null,
-            deleted_by: null,
-            role,
+            deleted_by: null
           })
           .eq('id', existing.id)
           .select()
@@ -135,8 +130,7 @@ export const useAssignMember = () => {
         .from('workspace_members')
         .insert({
           workspace_id: workspaceId,
-          user_id: userId,
-          role,
+          user_id: userId
         })
         .select()
         .single()
@@ -155,7 +149,6 @@ export const useAssignMember = () => {
         shortId: data.short_id,
         workspaceId: data.workspace_id,
         userId: data.user_id,
-        role: data.role,
         createdAt: data.created_at,
         deletedAt: data.deleted_at,
         deletedBy: data.deleted_by,
@@ -215,44 +208,3 @@ export const useUnassignMember = () => {
   })
 }
 
-// Update member role
-export const useUpdateMemberRole = () => {
-  const { toast } = useToast()
-  const queryClient = useQueryClient()
-  
-  return useMutation({
-    mutationFn: async ({ 
-      id, 
-      workspaceId, 
-      role 
-    }: { 
-      id: string; 
-      workspaceId: string;
-      role: 'admin' | 'team' | 'consultant' | 'client';
-    }) => {
-      const { data, error } = await supabase
-        .from('workspace_members')
-        .update({ role })
-        .eq('id', id)
-        .select()
-        .single()
-      
-      if (error) throw error
-      return transformDbToWorkspaceMember(data)
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: workspaceMemberKeys.list(data.workspaceId) })
-      toast({
-        title: 'Success',
-        description: 'Member role updated successfully',
-      })
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: `Failed to update member role: ${error.message}`,
-        variant: 'destructive',
-      })
-    },
-  })
-}

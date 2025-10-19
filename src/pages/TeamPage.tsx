@@ -34,7 +34,7 @@ import { Trash2, Users, Check, X, Pencil, Filter } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import { AddUserDialog } from "@/components/AddUserDialog";
 import { AddUserToWorkspaceDialog } from "@/components/AddUserToWorkspaceDialog";
-import { useUsers, useAllWorkspaces } from "@/lib/api/hooks";
+import { useUsers, useAllWorkspaces, useUpdateUserRole } from "@/lib/api/hooks";
 import { Badge } from "@/components/ui/badge";
 
 interface SystemUser {
@@ -60,6 +60,7 @@ const TeamPage = () => {
   // Phase 1: Data fetching with new hooks
   const { data: usersWithWorkspaces } = useUsers();
   const { data: allWorkspaces } = useAllWorkspaces();
+  const updateUserRole = useUpdateUserRole();
 
   // Temporary console logging for Phase 1 verification
   useEffect(() => {
@@ -187,6 +188,14 @@ const TeamPage = () => {
         description: "Failed to change admin status",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleRoleChange = async (userId: string, newRole: 'team' | 'consultant' | 'client') => {
+    try {
+      await updateUserRole.mutateAsync({ userId, role: newRole });
+    } catch (error) {
+      console.error('Error updating role:', error);
     }
   };
 
@@ -329,6 +338,7 @@ const TeamPage = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Role</TableHead>
                 <TableHead>Title</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Workspaces</TableHead>
@@ -366,6 +376,25 @@ const TeamPage = () => {
                         </Button>
                       </div>
                     )}
+                  </TableCell>
+
+                  {/* Role Cell */}
+                  <TableCell>
+                    <Select
+                      value={userWithWorkspaces?.role || 'client'}
+                      onValueChange={(newRole: 'team' | 'consultant' | 'client') => 
+                        handleRoleChange(user.id, newRole)
+                      }
+                    >
+                      <SelectTrigger className="w-[120px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="team">Team</SelectItem>
+                        <SelectItem value="consultant">Consultant</SelectItem>
+                        <SelectItem value="client">Client</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </TableCell>
 
                   {/* Title Cell - Editable */}
@@ -411,7 +440,7 @@ const TeamPage = () => {
                       <div className="flex flex-wrap gap-1">
                         {userWithWorkspaces.workspaces.map((ws) => (
                           <Badge key={ws.workspaceId} variant="secondary" className="text-xs">
-                            {ws.workspaceName} ({ws.role})
+                            {ws.workspaceName}
                           </Badge>
                         ))}
                       </div>
@@ -442,7 +471,11 @@ const TeamPage = () => {
                   {/* Actions Cell */}
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <AddUserToWorkspaceDialog userId={user.id} userName={user.name} />
+                      <AddUserToWorkspaceDialog 
+                        userId={user.id} 
+                        userName={user.name}
+                        userWorkspaceIds={userWithWorkspaces?.workspaces.map(w => w.workspaceId) || []}
+                      />
                       <Button
                         size="icon"
                         variant="ghost"

@@ -24,17 +24,15 @@ export const useWorkspaceRole = (workspaceId: string | undefined) => {
 
       try {
         const { data, error } = await supabase
-          .from('workspace_members')
+          .from('user_roles')
           .select('role')
-          .eq('workspace_id', workspaceId)
           .eq('user_id', user.id)
-          .is('deleted_at', null)
           .maybeSingle();
 
         if (error) throw error;
         setRole((data?.role as 'team' | 'consultant' | 'client') || null);
       } catch (error) {
-        console.error('Error fetching workspace role:', error);
+        console.error('Error fetching user role:', error);
         setRole(null);
       } finally {
         setLoading(false);
