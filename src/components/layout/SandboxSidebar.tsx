@@ -385,16 +385,16 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
       )}
 
       {/* 5. Footer with Workspace Selector or Avatar */}
-      <div className={`p-3 border-t ${T.borderSubtle} flex-shrink-0 mt-auto`}>
+      <div className={`h-9 px-3 flex items-center justify-between border-t border-[#1a2030]/40 dark:border-[#1a2030]/40 bg-[#0E1118] dark:bg-[#0E1118] text-neutral-400 dark:text-neutral-400 flex-shrink-0 mt-auto`}>
         {isCollapsed ? (
-          <div className="flex justify-center">
+          <div className="flex justify-center w-full">
             {user && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className={`h-8 w-8 rounded-full p-0 ${T.focus}`}>
-                    <Avatar className="h-8 w-8">
+                  <button className={`h-7 w-7 rounded-full p-0 ${T.focus}`}>
+                    <Avatar className="h-7 w-7">
                       <AvatarFallback 
-                        className="text-white text-xs font-semibold"
+                        className="text-white text-[10px] font-semibold"
                         style={{ background: user.avatar_url || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
                       >
                         {user.initials}
@@ -439,7 +439,9 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
             )}
           </div>
         ) : (
-          <WorkspaceSwitcher onWorkspaceChange={handleWorkspaceChange} />
+          <div className="w-full">
+            <WorkspaceSwitcher onWorkspaceChange={handleWorkspaceChange} />
+          </div>
         )}
       </div>
     </aside>
