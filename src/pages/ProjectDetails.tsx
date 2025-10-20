@@ -910,7 +910,7 @@ const ProjectDetails = () => {
             </div>
           </ScrollArea>
 
-          <div className="p-4 border-t">
+          <div className="p-4 border-t mt-auto bg-background">
             <ChatInput
               onSendMessage={handleSendMessage}
               replyingTo={replyingTo}
