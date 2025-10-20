@@ -385,7 +385,7 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
       )}
 
       {/* 5. Footer with Workspace Selector or Avatar */}
-      <div className={`h-10 px-3 flex items-center justify-between border-t border-slate-200 dark:border-[#1a2030]/40 bg-white dark:bg-[#0E1118] text-slate-500 dark:text-neutral-400 flex-shrink-0 mt-auto`}>
+      <div className={`px-3 py-3 flex items-center justify-between border-t border-slate-200 dark:border-[#1a2030]/40 bg-white dark:bg-[#0E1118] text-slate-500 dark:text-neutral-400 flex-shrink-0 mt-auto`}>
         {isCollapsed ? (
           <div className="flex justify-center w-full">
             {user && (
