@@ -281,7 +281,7 @@ const ProjectDetails = () => {
     <div className="flex h-[calc(100vh-4rem)]">
       <ResizablePanelGroup direction="horizontal" className="h-full">
         <ResizablePanel defaultSize={chatOpen ? 75 : 100} minSize={50}>
-          <div className="flex flex-col h-full min-h-0 bg-blue-500/10">
+          <div className="flex flex-col h-full min-h-0">
         {/* Header */}
         <div className="border-b bg-background">
           <div className="flex items-center px-6 py-2">
@@ -367,10 +367,10 @@ const ProjectDetails = () => {
         </div>
 
         {/* Main Content */}
-        <div className={`flex-1 min-h-0 ${activeTab === 'files' ? 'overflow-hidden bg-orange-500/10' : 'overflow-auto'}`}>
-          <div className={activeTab === 'files' ? 'h-full bg-pink-500/10' : 'p-4 space-y-4'}>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full bg-cyan-500/10">
-              <TabsContent value="files" className="mt-0 h-full p-0 data-[state=active]:flex data-[state=active]:flex-col bg-amber-500/10">
+        <div className={`flex-1 min-h-0 ${activeTab === 'files' ? 'overflow-hidden' : 'overflow-auto'}`}>
+          <div className={activeTab === 'files' ? 'h-full flex flex-col' : 'p-4 space-y-4'}>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full">
+              <TabsContent value="files" className="mt-0 h-full p-0 data-[state=active]:flex data-[state=active]:flex-col">
                 <FilesTab projectId={id || ''} />
               </TabsContent>
 
@@ -886,12 +886,12 @@ const ProjectDetails = () => {
         <>
           <ResizableHandle withHandle />
           <ResizablePanel defaultSize={25} minSize={20} maxSize={40} className="flex">
-            <div className="h-full border-l bg-background flex flex-col bg-green-500/10">
+            <div className="h-full border-l bg-background flex flex-col">
           <div className="p-4 border-b">
             <h3 className="font-semibold">Project Chat</h3>
           </div>
           
-          <ScrollArea className="flex-1 min-h-0 p-4 bg-yellow-500/10">
+          <ScrollArea className="flex-1 min-h-0 p-4">
             <div className="space-y-4">
               {chatLoading ? (
                 <p className="text-sm text-muted-foreground text-center py-8">Loading messages...</p>
@@ -910,7 +910,7 @@ const ProjectDetails = () => {
             </div>
           </ScrollArea>
 
-          <div className="p-4 border-t bg-purple-500/10">
+          <div className="p-4 border-t">
             <ChatInput
               onSendMessage={handleSendMessage}
               replyingTo={replyingTo}
