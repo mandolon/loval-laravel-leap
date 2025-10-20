@@ -941,14 +941,29 @@ const ProjectDetails = () => {
               ) : messages.length === 0 ? (
                 <p className="text-[12px] text-slate-500 dark:text-neutral-400 text-center py-8">No messages yet. Start a conversation!</p>
               ) : (
-                messages.map((message) => (
-                  <ChatMessage
-                    key={message.id}
-                    message={message}
-                    onDelete={handleDeleteMessage}
-                    onReply={setReplyingTo}
-                  />
-                ))
+                (() => {
+                  // Group messages into threads
+                  const threadedMessages = messages.reduce((acc, message) => {
+                    if (!message.replyToMessageId) {
+                      // This is a parent message
+                      acc.push({
+                        ...message,
+                        replies: messages.filter(m => m.replyToMessageId === message.id),
+                        replyCount: messages.filter(m => m.replyToMessageId === message.id).length
+                      })
+                    }
+                    return acc
+                  }, [] as typeof messages)
+
+                  return threadedMessages.map((message) => (
+                    <ChatMessage
+                      key={message.id}
+                      message={message}
+                      onDelete={handleDeleteMessage}
+                      onReply={setReplyingTo}
+                    />
+                  ))
+                })()
               )}
             </div>
           </ScrollArea>

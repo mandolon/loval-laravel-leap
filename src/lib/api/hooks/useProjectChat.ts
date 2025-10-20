@@ -19,6 +19,8 @@ export interface ProjectChatMessageWithUser extends ProjectChatMessage {
     name: string;
     avatarUrl?: string;
   };
+  replies?: ProjectChatMessageWithUser[];
+  replyCount?: number;
 }
 
 // Transform database row to message with user data

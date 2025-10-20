@@ -1,8 +1,8 @@
-import { useState } from 'react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { MoreVertical, Trash2, Reply } from 'lucide-react'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Trash2, Reply, CornerDownRight } from 'lucide-react'
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { Badge } from '@/components/ui/badge'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { format } from 'date-fns'
 
 export interface ChatMessageData {
@@ -23,6 +23,8 @@ export interface ChatMessageData {
     name: string
     avatarUrl?: string
   }
+  replies?: ChatMessageData[]
+  replyCount?: number
 }
 
 interface ChatMessageProps {
@@ -30,95 +32,118 @@ interface ChatMessageProps {
   onDelete: (id: string) => void
   onReply?: (message: ChatMessageData) => void
   isReply?: boolean
+  showAvatar?: boolean
 }
 
-export const ChatMessage = ({ message, onDelete, onReply, isReply = false }: ChatMessageProps) => {
-  const [showActions, setShowActions] = useState(false)
-
+export const ChatMessage = ({ message, onDelete, onReply, isReply = false, showAvatar = true }: ChatMessageProps) => {
   if (!message.user) return null
 
   return (
-    <div 
-      className={`flex gap-2 group ${isReply ? 'ml-8 mt-2' : ''}`}
-      onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
-    >
-      <Avatar className="h-7 w-7 flex-shrink-0">
-        <AvatarFallback 
-          className="text-white text-[10px] font-semibold"
-          style={{ background: message.user.avatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
-        >
-          {message.user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-        </AvatarFallback>
-      </Avatar>
-
-      <div className="flex-1 min-w-0 space-y-1">
-        <div className="flex items-baseline gap-2">
-          <span className="font-medium text-[12px] text-slate-700 dark:text-neutral-200">{message.user.name}</span>
-          <span className="text-[10px] text-slate-400 dark:text-neutral-500">
-            {format(new Date(message.createdAt), 'MMM d, h:mm a')}
-          </span>
-        </div>
-
-        <div className="bg-slate-50 dark:bg-[#141C28] border border-slate-200 dark:border-[#1a2030]/60 p-2 rounded-[6px] max-w-[85%]">
-          <p className="text-[12px] text-slate-700 dark:text-neutral-300 whitespace-pre-wrap break-words">{message.content}</p>
-          
-          {message.referencedTasks.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {message.referencedTasks.map(taskId => (
-                <Badge key={taskId} variant="secondary" className="text-xs">
-                  Task: {taskId.slice(0, 8)}
-                </Badge>
-              ))}
-            </div>
-          )}
-          
-          {message.referencedFiles.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {message.referencedFiles.map(fileId => (
-                <Badge key={fileId} variant="outline" className="text-xs">
-                  File: {fileId.slice(0, 8)}
-                </Badge>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {showActions && (
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            {onReply && !isReply && (
-              <button 
-                type="button"
-                className="px-2 py-0.5 text-[10px] text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28] rounded-[6px] flex items-center gap-1"
-                onClick={() => onReply(message)}
-              >
-                <Reply className="h-3 w-3" />
-                Reply
-              </button>
+    <div className="flex flex-col">
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <div className={`flex gap-2 group ${isReply ? 'ml-8 mt-1' : ''}`}>
+            {showAvatar && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Avatar className="h-7 w-7 flex-shrink-0 cursor-pointer">
+                      <AvatarFallback 
+                        className="text-white text-[10px] font-semibold"
+                        style={{ background: message.user.avatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
+                      >
+                        {message.user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="text-[11px]">
+                    <div className="font-medium">{message.user.name}</div>
+                    <div className="text-muted-foreground">{format(new Date(message.createdAt), 'MMM d, h:mm a')}</div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
             
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button 
-                  type="button"
-                  className="h-6 w-6 grid place-items-center text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28] rounded-[6px]"
-                >
-                  <MoreVertical className="h-3 w-3" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem 
-                  onClick={() => onDelete(message.id)}
-                  className="text-destructive"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {isReply && !showAvatar && (
+              <div className="h-7 w-7 flex-shrink-0 flex items-center justify-center">
+                <CornerDownRight className="h-3 w-3 text-slate-400 dark:text-neutral-600" />
+              </div>
+            )}
+
+            <div className="flex-1 min-w-0">
+              {isReply && (
+                <div className="flex items-baseline gap-2 mb-0.5">
+                  <span className="text-[10px] font-medium text-slate-600 dark:text-neutral-400">{message.user.name}</span>
+                  <span className="text-[9px] text-slate-400 dark:text-neutral-500">
+                    {format(new Date(message.createdAt), 'h:mm a')}
+                  </span>
+                </div>
+              )}
+
+              <div className="bg-slate-50 dark:bg-[#141C28] border border-slate-200 dark:border-[#1a2030]/60 p-2 rounded-[6px] max-w-[85%]">
+                <p className="text-[12px] text-slate-700 dark:text-neutral-300 whitespace-pre-wrap break-words">{message.content}</p>
+                
+                {message.referencedTasks.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {message.referencedTasks.map(taskId => (
+                      <Badge key={taskId} variant="secondary" className="text-xs">
+                        Task: {taskId.slice(0, 8)}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                
+                {message.referencedFiles.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {message.referencedFiles.map(fileId => (
+                      <Badge key={fileId} variant="outline" className="text-xs">
+                        File: {fileId.slice(0, 8)}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {!isReply && message.replyCount && message.replyCount > 0 && (
+                <div className="mt-1 flex items-center gap-1 text-[10px] text-slate-500 dark:text-neutral-500">
+                  <CornerDownRight className="h-3 w-3" />
+                  <span>{message.replyCount} {message.replyCount === 1 ? 'reply' : 'replies'}</span>
+                </div>
+              )}
+            </div>
           </div>
-        )}
-      </div>
+        </ContextMenuTrigger>
+        <ContextMenuContent className="w-40">
+          {onReply && !isReply && (
+            <ContextMenuItem onClick={() => onReply(message)}>
+              <Reply className="mr-2 h-4 w-4" />
+              Reply
+            </ContextMenuItem>
+          )}
+          <ContextMenuItem 
+            onClick={() => onDelete(message.id)}
+            className="text-destructive focus:text-destructive"
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+
+      {/* Render replies */}
+      {!isReply && message.replies && message.replies.length > 0 && (
+        <div className="mt-1 space-y-1">
+          {message.replies.map(reply => (
+            <ChatMessage 
+              key={reply.id}
+              message={reply}
+              onDelete={onDelete}
+              isReply={true}
+              showAvatar={false}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
