@@ -8,10 +8,10 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/componen
 const T = {
   radius: 'rounded-[8px]',
   text: 'text-[12px]',
-  focus: 'focus:outline-none focus:ring-1 focus:ring-[#3b82f6]/40',
-  panel: 'bg-[#0F1219] dark:bg-[#0F1219] border border-[#1d2230]/60 dark:border-[#1d2230]/60',
-  panelSoft: 'bg-[#10141D] dark:bg-[#10141D] border border-[#1a1f2c]/50 dark:border-[#1a1f2c]/50',
-  panelElev: 'bg-[#0E1118] dark:bg-[#0E1118] border border-[#1a2030]/50 dark:border-[#1a2030]/50',
+  focus: 'focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40',
+  panel: 'bg-white dark:bg-[#0F1219] border border-slate-200 dark:border-[#1d2230]/60',
+  panelSoft: 'bg-slate-50 dark:bg-[#10141D] border border-slate-200 dark:border-[#1a1f2c]/50',
+  panelElev: 'bg-white dark:bg-[#0E1118] border border-slate-200 dark:border-[#1a2030]/50',
 };
 
 /** --------------------- Small Primitives --------------------- */
@@ -22,7 +22,7 @@ function IconBtn({ title, ariaLabel, onClick, children }: { title: string; ariaL
       title={title}
       aria-label={ariaLabel || title}
       onClick={onClick}
-      className={`h-8 w-8 grid place-items-center border border-[#283046]/50 dark:border-[#283046]/50 ${T.radius} text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] ${T.focus}`}
+      className={`h-8 w-8 grid place-items-center border border-slate-200 dark:border-[#283046]/50 ${T.radius} text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28] ${T.focus}`}
     >
       {children}
     </button>
@@ -31,7 +31,7 @@ function IconBtn({ title, ariaLabel, onClick, children }: { title: string; ariaL
 
 function SectionHeader({ title, right }: { title: string; right?: React.ReactNode }) {
   return (
-    <div className="h-9 px-3 border-b border-[#1d2230] dark:border-[#1d2230] flex items-center justify-between text-neutral-500 dark:text-neutral-500 bg-[#0E1118] dark:bg-[#0E1118]">
+    <div className="h-9 px-3 border-b border-slate-200 dark:border-[#1d2230] flex items-center justify-between text-slate-500 dark:text-neutral-500 bg-white dark:bg-[#0E1118]">
       <span>{title}</span>
       {right}
     </div>
@@ -51,7 +51,7 @@ function TabsHeader({ chatOpen, onToggleChat }: { chatOpen: boolean; onToggleCha
 
   return (
     <div
-      className={`h-12 ${T.text} grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 bg-[#0E1118] dark:bg-[#0E1118] border-b border-[#1a2030]/60 dark:border-[#1a2030]/60`}
+      className={`h-12 ${T.text} grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 bg-white dark:bg-[#0E1118] border-b border-slate-200 dark:border-[#1a2030]/60`}
       role="navigation"
       aria-label="Secondary"
     >
@@ -64,7 +64,7 @@ function TabsHeader({ chatOpen, onToggleChat }: { chatOpen: boolean; onToggleCha
 
       {/* Center: Tabs (centered between buttons) */}
       <div className="min-w-0 flex justify-center">
-        <div className={`px-1 py-0.5 bg-[#0E1118] dark:bg-[#0E1118] border border-[#1a2030]/60 dark:border-[#1a2030]/60 ${T.radius} flex gap-1`} role="tablist" aria-label="Views">
+        <div className={`px-1 py-0.5 bg-slate-100 dark:bg-[#0E1118] border border-slate-200 dark:border-[#1a2030]/60 ${T.radius} flex gap-1`} role="tablist" aria-label="Views">
           {NAV.map((tab) => {
             const isActive = active === tab;
             return (
@@ -74,7 +74,7 @@ function TabsHeader({ chatOpen, onToggleChat }: { chatOpen: boolean; onToggleCha
                 role="tab"
                 aria-selected={isActive}
                 onClick={() => setActive(tab)}
-                className={`px-2.5 py-1 ${T.radius} transition-colors ${isActive ? 'bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 'text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] hover:text-blue-300 dark:hover:text-blue-300'} ${T.focus}`}
+                className={`px-2.5 py-1 ${T.radius} transition-colors ${isActive ? 'bg-white dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium' : 'text-slate-500 dark:text-neutral-400 hover:bg-white/60 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300'} ${T.focus}`}
               >
                 {tab}
               </button>
@@ -226,7 +226,7 @@ export default function SandboxPage() {
   const toggleChat = useCallback(() => setChatOpen((v) => !v), []);
 
   return (
-    <div className={`h-screen w-full ${T.text} overflow-hidden bg-[#0B0E14] dark:bg-[#0B0E14] text-neutral-200 dark:text-neutral-200 flex gap-1 p-1`}>
+    <div className={`h-screen w-full ${T.text} overflow-hidden bg-slate-50 dark:bg-[#0B0E14] text-slate-700 dark:text-neutral-200 flex gap-1 p-1`}>
       {/* Hybrid Sidebar */}
       <SandboxSidebar />
 
@@ -242,14 +242,14 @@ export default function SandboxPage() {
             <ResizablePanelGroup direction="vertical" className="min-h-0">
               <ResizablePanel defaultSize={55} minSize={20} maxSize={80}>
                 <div className={`${T.panelElev} ${T.text} grid grid-rows-[auto_1fr] overflow-hidden h-full`}>
-                  <div className="h-9 px-3 flex items-center justify-between border-b border-[#1a2030]/40 dark:border-[#1a2030]/40">
-                    <div className="text-neutral-500 dark:text-neutral-500">Viewer</div>
+                  <div className="h-9 px-3 flex items-center justify-between border-b border-slate-200 dark:border-[#1a2030]/40">
+                    <div className="text-slate-500 dark:text-neutral-500">Viewer</div>
                   </div>
-                  <div className="grid place-items-center text-neutral-500 dark:text-neutral-500">No file selected</div>
+                  <div className="grid place-items-center text-slate-500 dark:text-neutral-500">No file selected</div>
                 </div>
               </ResizablePanel>
 
-              <ResizableHandle className="h-px bg-[#1a2030]/60 hover:bg-[#3b82f6]/40 transition-colors" />
+              <ResizableHandle className="h-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors" />
 
               <ResizablePanel defaultSize={45} minSize={20} maxSize={80}>
                 <div className="h-full min-h-0">

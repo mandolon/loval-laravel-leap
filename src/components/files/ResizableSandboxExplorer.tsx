@@ -9,15 +9,15 @@ import {
 const T = {
   radius: 'rounded-[8px]',
   text: 'text-[12px]',
-  focus: 'focus:outline-none focus:ring-1 focus:ring-[#3b82f6]/40',
-  panel: 'bg-[#0F1219] dark:bg-[#0F1219] border border-[#1d2230]/60 dark:border-[#1d2230]/60',
-  panelSoft: 'bg-[#10141D] dark:bg-[#10141D] border border-[#1a1f2c]/50 dark:border-[#1a1f2c]/50',
-  panelElev: 'bg-[#0E1118] dark:bg-[#0E1118] border border-[#1a2030]/50 dark:border-[#1a2030]/50',
+  focus: 'focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40',
+  panel: 'bg-white dark:bg-[#0F1219] border border-slate-200 dark:border-[#1d2230]/60',
+  panelSoft: 'bg-slate-50 dark:bg-[#10141D] border border-slate-200 dark:border-[#1a1f2c]/50',
+  panelElev: 'bg-white dark:bg-[#0E1118] border border-slate-200 dark:border-[#1a2030]/50',
 };
 
 function SectionHeader({ title, right }: { title: string; right?: React.ReactNode }) {
   return (
-    <div className="h-9 px-3 border-b border-[#1d2230] dark:border-[#1d2230] flex items-center justify-between text-neutral-500 dark:text-neutral-500 bg-[#0E1118] dark:bg-[#0E1118]">
+    <div className="h-9 px-3 border-b border-slate-200 dark:border-[#1d2230] flex items-center justify-between text-slate-500 dark:text-neutral-500 bg-white dark:bg-[#0E1118]">
       <span>{title}</span>
       {right}
     </div>
@@ -47,12 +47,12 @@ export const ResizableSandboxExplorer = React.memo(function ResizableSandboxExpl
       <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
         {/* Root Panel */}
         <ResizablePanel defaultSize={14} minSize={10} maxSize={25}>
-          <div className={`flex flex-col h-full min-w-0 bg-[#0E1118] dark:bg-[#0E1118] border border-[#1a2030]/60 dark:border-[#1a2030]/60 rounded-r-none`}>
+          <div className={`flex flex-col h-full min-w-0 bg-white dark:bg-[#0E1118] border border-slate-200 dark:border-[#1a2030]/60 rounded-r-none`}>
             {/* Search bar - aligned with headers */}
-            <div className="h-9 px-3 flex items-center border-b border-[#1d2230] dark:border-[#1d2230]">
+            <div className="h-9 px-3 flex items-center border-b border-slate-200 dark:border-[#1d2230]">
               <input
                 placeholder="Search…"
-                className={`w-full h-7 px-2 bg-[#0E1118] dark:bg-[#0E1118] border border-[#1d2230] dark:border-[#1d2230] rounded-[6px] text-[11px] text-neutral-300 dark:text-neutral-300 placeholder:text-neutral-500 dark:placeholder:text-neutral-500 ${T.focus}`}
+                className={`w-full h-7 px-2 bg-white dark:bg-[#0E1118] border border-slate-200 dark:border-[#1d2230] rounded-[6px] text-[11px] text-slate-700 dark:text-neutral-300 placeholder:text-slate-400 dark:placeholder:text-neutral-500 ${T.focus}`}
               />
             </div>
             <div className="flex flex-col items-start justify-start px-3 py-2 space-y-2 overflow-auto">
@@ -61,7 +61,7 @@ export const ResizableSandboxExplorer = React.memo(function ResizableSandboxExpl
                   key={r}
                   type="button"
                   onClick={() => setRoot(r)}
-                  className={`px-2.5 py-1 ${T.radius} w-full text-left transition-colors ${T.text} ${root === r ? 'bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 'text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] hover:text-blue-300 dark:hover:text-blue-300'} ${T.focus}`}
+                  className={`px-2.5 py-1 ${T.radius} w-full text-left transition-colors ${T.text} ${root === r ? 'bg-slate-100 dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium' : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300'} ${T.focus}`}
                   aria-current={root === r ? 'true' : undefined}
                 >
                   {r}
@@ -71,7 +71,7 @@ export const ResizableSandboxExplorer = React.memo(function ResizableSandboxExpl
           </div>
         </ResizablePanel>
 
-        <ResizableHandle className="w-px bg-[#1a2030]/60 hover:bg-[#3b82f6]/40 transition-colors" />
+        <ResizableHandle className="w-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors" />
 
         {/* Folders Panel */}
         <ResizablePanel defaultSize={18} minSize={15} maxSize={30}>
@@ -79,7 +79,7 @@ export const ResizableSandboxExplorer = React.memo(function ResizableSandboxExpl
             <SectionHeader
               title="Folders"
               right={
-                <button type="button" className={`px-2 py-0.5 border border-[#283046] dark:border-[#283046] ${T.radius} ${T.text} hover:bg-[#161B26] dark:hover:bg-[#161B26] ${T.focus}`} aria-label="Add folder" title="Add folder">
+                <button type="button" className={`px-2 py-0.5 border border-slate-200 dark:border-[#283046] ${T.radius} ${T.text} text-slate-600 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#161B26] ${T.focus}`} aria-label="Add folder" title="Add folder">
                   ＋
                 </button>
               }
@@ -90,7 +90,7 @@ export const ResizableSandboxExplorer = React.memo(function ResizableSandboxExpl
                   key={f}
                   type="button"
                   onClick={() => setFolder(f)}
-                  className={`w-full text-left px-3 py-1 ${T.text} border-l-2 ${folder === f ? 'border-blue-400 dark:border-blue-400 bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 'border-transparent text-neutral-300 dark:text-neutral-300 hover:bg-[#151A24] dark:hover:bg-[#151A24]'}`}
+                  className={`w-full text-left px-3 py-1 ${T.text} border-l-2 ${folder === f ? 'border-[#00639b] dark:border-blue-400 bg-slate-50 dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium' : 'border-transparent text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-[#151A24]'}`}
                   aria-current={folder === f ? 'true' : undefined}
                 >
                   {f}
@@ -100,7 +100,7 @@ export const ResizableSandboxExplorer = React.memo(function ResizableSandboxExpl
           </div>
         </ResizablePanel>
 
-        <ResizableHandle className="w-px bg-[#1a2030]/60 hover:bg-[#3b82f6]/40 transition-colors" />
+        <ResizableHandle className="w-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors" />
 
         {/* Files Panel */}
         <ResizablePanel defaultSize={68} minSize={40}>
@@ -108,7 +108,7 @@ export const ResizableSandboxExplorer = React.memo(function ResizableSandboxExpl
             <SectionHeader
               title="Files"
               right={
-                <button type="button" className={`px-2 py-0.5 border border-[#283046] dark:border-[#283046] ${T.radius} ${T.text} hover:bg-[#161B26] dark:hover:bg-[#161B26] ${T.focus}`} aria-label="Add file" title="Add file">
+                <button type="button" className={`px-2 py-0.5 border border-slate-200 dark:border-[#283046] ${T.radius} ${T.text} text-slate-600 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#161B26] ${T.focus}`} aria-label="Add file" title="Add file">
                   ＋
                 </button>
               }
@@ -119,13 +119,13 @@ export const ResizableSandboxExplorer = React.memo(function ResizableSandboxExpl
                   key={f.id}
                   type="button"
                   onClick={() => setSel(f.id)}
-                  className={`w-full grid ${compact ? 'grid-cols-[minmax(0,1fr)]' : 'grid-cols-[minmax(0,1fr)_max-content_max-content_56px]'} gap-2 items-center px-3 py-1 text-left ${T.text} ${sel === f.id ? 'bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 'hover:bg-[#151A24] dark:hover:bg-[#151A24] text-neutral-300 dark:text-neutral-300'}`}
+                  className={`w-full grid ${compact ? 'grid-cols-[minmax(0,1fr)]' : 'grid-cols-[minmax(0,1fr)_max-content_max-content_56px]'} gap-2 items-center px-3 py-1 text-left ${T.text} ${sel === f.id ? 'bg-slate-50 dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium' : 'hover:bg-slate-50 dark:hover:bg-[#151A24] text-slate-700 dark:text-neutral-300'}`}
                   aria-current={sel === f.id ? 'true' : undefined}
                 >
                   <span className="truncate min-w-0">{f.name}</span>
-                  <span className={`text-neutral-400 dark:text-neutral-400 whitespace-nowrap ${compact ? 'hidden' : ''}`}>{f.size}</span>
-                  <span className={`text-neutral-400 dark:text-neutral-400 whitespace-nowrap ${compact ? 'hidden' : ''}`}>{f.modified}</span>
-                  <span className={`text-neutral-400 dark:text-neutral-400 whitespace-nowrap ${compact ? 'hidden' : ''}`}>{f.type}</span>
+                  <span className={`text-slate-500 dark:text-neutral-400 whitespace-nowrap ${compact ? 'hidden' : ''}`}>{f.size}</span>
+                  <span className={`text-slate-500 dark:text-neutral-400 whitespace-nowrap ${compact ? 'hidden' : ''}`}>{f.modified}</span>
+                  <span className={`text-slate-500 dark:text-neutral-400 whitespace-nowrap ${compact ? 'hidden' : ''}`}>{f.type}</span>
                 </button>
               ))}
             </div>
@@ -134,14 +134,14 @@ export const ResizableSandboxExplorer = React.memo(function ResizableSandboxExpl
       </ResizablePanelGroup>
 
       {/* Footer for file properties */}
-      <div className="h-7 px-3 flex items-center justify-between border-t border-[#1a2030]/40 dark:border-[#1a2030]/40 bg-[#0E1118] dark:bg-[#0E1118] text-neutral-400 dark:text-neutral-400 text-[10px]">
+      <div className="h-7 px-3 flex items-center justify-between border-t border-slate-200 dark:border-[#1a2030]/40 bg-white dark:bg-[#0E1118] text-slate-500 dark:text-neutral-400 text-[10px]">
         <span>Selected File:</span>
         {selectedFile ? (
-          <span className="truncate text-neutral-300 dark:text-neutral-300 max-w-[60%]">
+          <span className="truncate text-slate-700 dark:text-neutral-300 max-w-[60%]">
             {selectedFile.name} ({selectedFile.size})
           </span>
         ) : (
-          <span className="text-neutral-500 dark:text-neutral-500">None</span>
+          <span className="text-slate-400 dark:text-neutral-500">None</span>
         )}
       </div>
     </div>
