@@ -278,7 +278,7 @@ const ProjectDetails = () => {
   };
 
   return (
-    <div className="flex flex-1 min-h-0">
+    <div className="flex h-full">
       <ResizablePanelGroup direction="horizontal" className="h-full">
         <ResizablePanel defaultSize={chatOpen ? 75 : 100} minSize={50} className="flex flex-col">
           <div className="flex flex-col h-full min-h-0">
