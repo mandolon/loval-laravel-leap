@@ -21,7 +21,7 @@ import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from "@/lib/api
 import { useNotes, useCreateNote, useUpdateNote, useDeleteNote } from "@/lib/api/hooks/useNotes";
 import FileExplorer from "@/components/files/FileExplorer";
 import { FilesTab } from "@/components/files/FilesTab";
-import { useProjectMessages, useCreateMessage, useDeleteMessage, ProjectChatMessageWithUser } from "@/lib/api/hooks/useProjectChat";
+import { useProjectMessages, useCreateMessage, useUpdateMessage, useDeleteMessage, ProjectChatMessageWithUser } from "@/lib/api/hooks/useProjectChat";
 import { useInvoices, useDeleteInvoice } from "@/lib/api/hooks/useInvoices";
 import { CreateInvoiceDialog } from "@/components/invoice/CreateInvoiceDialog";
 import { InvoiceCard } from "@/components/invoice/InvoiceCard";
@@ -48,12 +48,14 @@ import { EditProjectNameDialog } from "@/components/project/EditProjectNameDialo
 import { ProjectMembersTable } from "@/components/project/ProjectMembersTable";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { useUser } from "@/contexts/UserContext";
 
 const ProjectDetails = () => {
   const { id, workspaceId } = useParams<{ id: string; workspaceId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useUser();
   const [activeTab, setActiveTab] = useState("project");
   const [chatOpen, setChatOpen] = useState(true);
   const [replyingTo, setReplyingTo] = useState<ProjectChatMessageWithUser | null>(null);
@@ -78,6 +80,7 @@ const ProjectDetails = () => {
   
   const { data: messages = [], isLoading: chatLoading } = useProjectMessages(id || "");
   const sendChatMutation = useCreateMessage();
+  const updateMessageMutation = useUpdateMessage();
   const deleteMessageMutation = useDeleteMessage();
 
   const { data: invoices = [], isLoading: invoicesLoading } = useInvoices(id || "");
@@ -232,6 +235,10 @@ const ProjectDetails = () => {
   const handleDeleteMessage = (messageId: string) => {
     if (!id) return;
     deleteMessageMutation.mutate({ id: messageId, projectId: id });
+  };
+
+  const handleEditMessage = (messageId: string, content: string) => {
+    updateMessageMutation.mutate({ id: messageId, input: { content } });
   };
 
   const handleUpdateProject = (input: UpdateProjectInput) => {
@@ -960,7 +967,9 @@ const ProjectDetails = () => {
                       key={message.id}
                       message={message}
                       onDelete={handleDeleteMessage}
+                      onEdit={handleEditMessage}
                       onReply={setReplyingTo}
+                      currentUserId={user?.id}
                     />
                   ))
                 })()
