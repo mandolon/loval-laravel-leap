@@ -231,7 +231,7 @@ export default function SandboxPage() {
       {/* Main column */}
       <div className="relative min-h-0 flex-1 grid grid-rows-[1fr] gap-1 w-full overflow-hidden">
         {/* Main content & chat */}
-        <div className={`min-h-0 h-full grid items-stretch gap-1 relative ${chatOpen ? 'md:grid-cols-[minmax(0,1fr)_clamp(280px,32vw,360px)]' : 'md:grid-cols-[minmax(0,1fr)]'}`}>
+        <div className={`min-h-0 h-full grid gap-1 relative ${chatOpen ? 'md:grid-cols-[minmax(0,1fr)_clamp(280px,32vw,360px)]' : 'md:grid-cols-[minmax(0,1fr)]'}`}>
           {/* Main panel */}
           <div className={`relative z-10 ${T.panel} ${T.radius} min-h-0 min-w-0 grid grid-rows-[auto_1fr] overflow-hidden`}>
             <TabsHeader chatOpen={chatOpen} onToggleChat={toggleChat} />

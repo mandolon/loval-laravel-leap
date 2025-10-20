@@ -123,9 +123,10 @@ export function SandboxChatPanel({ onClose, className = '' }: SandboxChatPanelPr
 
   return (
     <div
-      className={`bg-[#0F1219] dark:bg-[#0F1219] border-l border-[#1d2230]/60 dark:border-[#1d2230]/60 ${T.radius} h-full flex flex-col ${className}`}
+      className={`bg-[#0F1219] dark:bg-[#0F1219] border-l border-[#1d2230]/60 dark:border-[#1d2230]/60 ${T.radius} flex flex-col ${className}`}
       role="complementary"
       aria-label="Project chat"
+      style={{ height: '100%' }}
     >
       {/* Header */}
       <div className="h-10 px-3 flex items-center justify-between border-b border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118]">
