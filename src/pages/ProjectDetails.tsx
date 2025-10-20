@@ -283,87 +283,122 @@ const ProjectDetails = () => {
         <ResizablePanel defaultSize={chatOpen ? 75 : 100} minSize={50} className="flex flex-col">
           <div className="flex flex-col h-full min-h-0">
         {/* Header */}
-        <div className="border-b bg-background">
-          <div className="flex items-center px-6 py-2">
-            {/* Left: Back button */}
-            <div className="flex-1 flex items-center">
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => navigate(workspaceId ? `/workspace/${workspaceId}/projects` : "/projects")}
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </div>
+        <div className="h-12 text-[12px] grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 bg-white dark:bg-[#0E1118] border-b border-slate-200 dark:border-[#1a2030]/60">
+          {/* Left: Back button */}
+          <button
+            type="button"
+            title="Back"
+            onClick={() => navigate(workspaceId ? `/workspace/${workspaceId}/projects` : "/projects")}
+            className="h-8 w-8 grid place-items-center rounded-[8px] text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28] focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
 
-            {/* Center: Navigation tabs */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-shrink-0">
-              <TabsList className="h-auto p-0 bg-transparent border-0">
-                <TabsTrigger 
-                  value="files" 
-                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
-                >
-                  Files
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="tasks"
-                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
-                >
-                  Tasks
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="invoices"
-                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
-                >
-                  Invoices
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="links"
-                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
-                >
-                  Links
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="project"
-                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
-                >
-                  Project
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="client"
-                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
-                >
-                  Client
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="notes"
-                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
-                >
-                  Notes
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-
-            {/* Right: Chat toggle button */}
-            <div className="flex-1 flex items-center justify-end">
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => setChatOpen(!chatOpen)}
-                className="relative"
+          {/* Center: Tabs (centered) */}
+          <div className="min-w-0 flex justify-center">
+            <div className="px-1 py-0.5 bg-slate-100 dark:bg-[#0E1118] rounded-[8px] flex gap-1">
+              <button
+                type="button"
+                onClick={() => setActiveTab("files")}
+                className={`px-2.5 py-1 rounded-[8px] transition-colors focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 ${
+                  activeTab === "files"
+                    ? "bg-white dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium"
+                    : "text-slate-500 dark:text-neutral-400 hover:bg-white/60 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300"
+                }`}
               >
-                <MessageSquare className="h-5 w-5" />
-                {messages.length > 0 && (
-                  <Badge 
-                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-                    variant="destructive"
-                  >
-                    {messages.length}
-                  </Badge>
-                )}
-              </Button>
+                Files
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("tasks")}
+                className={`px-2.5 py-1 rounded-[8px] transition-colors focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 ${
+                  activeTab === "tasks"
+                    ? "bg-white dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium"
+                    : "text-slate-500 dark:text-neutral-400 hover:bg-white/60 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300"
+                }`}
+              >
+                Tasks
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("invoices")}
+                className={`px-2.5 py-1 rounded-[8px] transition-colors focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 ${
+                  activeTab === "invoices"
+                    ? "bg-white dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium"
+                    : "text-slate-500 dark:text-neutral-400 hover:bg-white/60 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300"
+                }`}
+              >
+                Invoices
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("links")}
+                className={`px-2.5 py-1 rounded-[8px] transition-colors focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 ${
+                  activeTab === "links"
+                    ? "bg-white dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium"
+                    : "text-slate-500 dark:text-neutral-400 hover:bg-white/60 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300"
+                }`}
+              >
+                Links
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("project")}
+                className={`px-2.5 py-1 rounded-[8px] transition-colors focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 ${
+                  activeTab === "project"
+                    ? "bg-white dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium"
+                    : "text-slate-500 dark:text-neutral-400 hover:bg-white/60 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300"
+                }`}
+              >
+                Project
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("client")}
+                className={`px-2.5 py-1 rounded-[8px] transition-colors focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 ${
+                  activeTab === "client"
+                    ? "bg-white dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium"
+                    : "text-slate-500 dark:text-neutral-400 hover:bg-white/60 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300"
+                }`}
+              >
+                Client
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("notes")}
+                className={`px-2.5 py-1 rounded-[8px] transition-colors focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 ${
+                  activeTab === "notes"
+                    ? "bg-white dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium"
+                    : "text-slate-500 dark:text-neutral-400 hover:bg-white/60 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300"
+                }`}
+              >
+                Notes
+              </button>
             </div>
           </div>
+
+          {/* Right: Chat toggle button */}
+          <button
+            type="button"
+            title={chatOpen ? "Collapse chat" : "Expand chat"}
+            onClick={() => setChatOpen(!chatOpen)}
+            className="h-8 w-8 grid place-items-center rounded-[8px] text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28] focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 relative"
+          >
+            {chatOpen ? (
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6l6 6-6 6" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3h9m-9 3h5.25M21 12c0 4.97-4.03 9-9 9a8.96 8.96 0 01-4.49-1.18L3 21l1.18-4.49A8.96 8.96 0 013 12c0-4.97 4.03-9 9-9s9 4.03 9 9z" />
+              </svg>
+            )}
+            {messages.length > 0 && (
+              <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-[10px] bg-red-500 text-white rounded-full font-medium">
+                {messages.length}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* Main Content */}
