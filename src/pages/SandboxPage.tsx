@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
+import { SandboxSidebar } from '@/components/layout/SandboxSidebar';
 
 /** --------------------- Design Tokens --------------------- */
 const T = {
@@ -34,112 +35,6 @@ function SectionHeader({ title, right }: { title: string; right?: React.ReactNod
   );
 }
 
-/** --------------------- SCHEMA (nav + lists) --------------------- */
-const NAV_SCHEMA = [
-  { key: 'Home', icon: '⌂', items: ['Inbox', 'Replies', 'My Tasks', 'Posts'] },
-  { key: 'Projects', icon: '▦', items: ['Creative Team', 'Dean P.', 'Campaign Agent', 'Vision & Strategy'] },
-  { key: 'Tasks', icon: '☰', items: ['Open Tasks', 'In Progress', 'Blocked', 'Done'] },
-  { key: 'AI', icon: '✦', items: ['Ask Rehome AI', 'Draft Brief', 'Summarize Thread', 'Generate Action Items'] },
-];
-
-/** --------------------- Sidebar: Rail (64px) --------------------- */
-function SidebarRail({ active, onNav, secondaryOpen, onToggleSecondary }: { active: string; onNav: (key: string) => void; secondaryOpen: boolean; onToggleSecondary: () => void }) {
-  return (
-    <aside
-      className={`h-full mt-0 mb-1 ${T.text} text-neutral-300 dark:text-neutral-300 select-none flex flex-col items-center gap-2`}
-      aria-label="Primary"
-      style={{ width: 64 }}
-    >
-      {/* Top: toggle secondary */}
-      <div className="h-9 w-full flex items-center justify-center mb-0">
-        <button
-          type="button"
-          aria-label={secondaryOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-          onClick={onToggleSecondary}
-          className="h-8 w-8 grid place-items-center text-neutral-400 dark:text-neutral-400 hover:text-blue-300 dark:hover:text-blue-300 focus:outline-none focus:ring-1 focus:ring-[#3b82f6]/40"
-        >
-          {secondaryOpen ? (
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          )}
-        </button>
-      </div>
-
-      {/* Nav icons */}
-      <nav className="mt-1 flex-1 flex flex-col items-center gap-2" aria-label="Primary icons">
-        {NAV_SCHEMA.map((b) => (
-          <button
-            key={b.key}
-            type="button"
-            title={b.key}
-            onClick={() => onNav(b.key)}
-            className={`${T.panelSoft} ${T.radius} h-10 w-10 grid place-items-center hover:bg-[#161B26] dark:hover:bg-[#161B26] ${T.focus} ${active === b.key ? 'ring-1 ring-blue-500/40' : ''}`}
-          >
-            <span className="text-neutral-300 dark:text-neutral-300 text-[16px] md:text-[18px] leading-none" aria-hidden>
-              {b.icon}
-            </span>
-          </button>
-        ))}
-      </nav>
-
-      {/* Footer avatar / switcher */}
-      <div className="w-full px-2 pb-3">
-        <button
-          type="button"
-          className={`${T.radius} border border-[#283046]/50 dark:border-[#283046]/50 hover:bg-[#161B26] dark:hover:bg-[#161B26] ${T.focus} h-10 w-10 grid place-items-center mx-auto`}
-        >
-          <div className="h-7 w-7 rounded-full bg-neutral-700/40 dark:bg-neutral-700/40" title="Avatar" />
-        </button>
-      </div>
-    </aside>
-  );
-}
-
-/** --------------------- Sidebar: Secondary (0|200px) --------------------- */
-function SidebarSecondary({ open, active }: { open: boolean; active: string }) {
-  const current = useMemo(() => NAV_SCHEMA.find((n) => n.key === active), [active]);
-  return (
-    <aside
-      className={`h-full mt-0 mb-1 ml-[2px] ${T.text} text-neutral-300 dark:text-neutral-300 select-none flex flex-col overflow-hidden`}
-      aria-label="Secondary"
-      style={{ width: open ? 200 : 0 }}
-    >
-      <div
-        className={`h-full mt-0.5 ${T.panel} ${T.radius} rounded-l-none ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'} transition-opacity duration-150 grid grid-rows-[auto_1fr_auto]`}
-        aria-hidden={!open}
-      >
-        <div className="h-10 px-3 flex items-center justify-between border-b border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118]">
-          <span className="text-neutral-400 dark:text-neutral-400">{current?.key || ''}</span>
-        </div>
-
-        {/* Lists */}
-        <div className="flex-1 overflow-auto min-w-0">
-          {(current?.items || []).map((label) => (
-            <button
-              key={label}
-              type="button"
-              className={`w-full text-left px-3 py-2 border-l-2 border-transparent text-neutral-300 dark:text-neutral-300 hover:bg-[#151A24] dark:hover:bg-[#151A24] hover:text-blue-300 dark:hover:text-blue-300 hover:border-blue-400 dark:hover:border-blue-400 ${T.focus}`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* Footer link */}
-        <div className="h-9 px-3 flex items-center border-t border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118] text-neutral-400 dark:text-neutral-400">
-          <button type="button" className={`px-2 py-0.5 border border-[#283046]/60 dark:border-[#283046]/60 ${T.radius} hover:bg-[#161B26] dark:hover:bg-[#161B26] ${T.focus}`}>
-            Manage sidebar
-          </button>
-        </div>
-      </div>
-    </aside>
-  );
-}
 
 
 /** --------------------- Tabs Header --------------------- */
@@ -366,24 +261,13 @@ export default function SandboxPage() {
   const [chatOpen, setChatOpen] = useState(true);
   const toggleChat = useCallback(() => setChatOpen((v) => !v), []);
 
-  const [secondaryOpen, setSecondaryOpen] = useState(true);
-  const toggleSecondary = useCallback(() => setSecondaryOpen((v) => !v), []);
-
-  const [active, setActive] = useState('Home');
-
   return (
-    <div
-      className={`h-screen w-full ${T.text} overflow-hidden bg-[#0B0E14] dark:bg-[#0B0E14] text-neutral-200 dark:text-neutral-200 grid gap-y-1 gap-x-0 p-1`}
-      style={{ gridTemplateColumns: `64px ${secondaryOpen ? '200px' : '0px'} 1fr` }}
-    >
-      {/* Left rail */}
-      <SidebarRail active={active} onNav={setActive} secondaryOpen={secondaryOpen} onToggleSecondary={toggleSecondary} />
-
-      {/* Secondary sidebar (schema-driven lists) */}
-      <SidebarSecondary open={secondaryOpen} active={active} />
+    <div className={`h-screen w-full ${T.text} overflow-hidden bg-[#0B0E14] dark:bg-[#0B0E14] text-neutral-200 dark:text-neutral-200 flex gap-1 p-1`}>
+      {/* Hybrid Sidebar */}
+      <SandboxSidebar />
 
       {/* Main column */}
-      <div className={`relative min-h-0 grid grid-rows-[1fr] gap-1 w-full overflow-hidden ${secondaryOpen ? 'ml-2' : ''}`}>
+      <div className="relative min-h-0 flex-1 grid grid-rows-[1fr] gap-1 w-full overflow-hidden">
         {/* Main content & chat */}
         <div className={`min-h-0 h-full grid items-stretch gap-1 relative ${chatOpen ? 'md:grid-cols-[minmax(0,1fr)_clamp(280px,32vw,360px)]' : 'md:grid-cols-[minmax(0,1fr)]'}`}>
           {/* Main panel */}
