@@ -163,7 +163,7 @@ const Explorer = React.memo(function Explorer({ compact = false }: { compact?: b
                 key={f}
                 type="button"
                 onClick={() => setFolder(f)}
-                className={`w-full text-left px-3 py-2 border-l-2 ${folder === f ? 'border-blue-400 dark:border-blue-400 bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 'border-transparent text-neutral-300 dark:text-neutral-300 hover:bg-[#151A24] dark:hover:bg-[#151A24]'}`}
+                className={`w-full text-left px-3 py-1 border-l-2 ${folder === f ? 'border-blue-400 dark:border-blue-400 bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 'border-transparent text-neutral-300 dark:text-neutral-300 hover:bg-[#151A24] dark:hover:bg-[#151A24]'}`}
                 aria-current={folder === f ? 'true' : undefined}
               >
                 {f}
@@ -188,7 +188,7 @@ const Explorer = React.memo(function Explorer({ compact = false }: { compact?: b
                 key={f.id}
                 type="button"
                 onClick={() => setSel(f.id)}
-                className={`w-full grid ${compact ? 'grid-cols-[minmax(0,1fr)]' : 'grid-cols-[minmax(0,1fr)_max-content_max-content_56px]'} gap-2 items-center px-3 py-2 text-left ${sel === f.id ? 'bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 'hover:bg-[#151A24] dark:hover:bg-[#151A24] text-neutral-300 dark:text-neutral-300'}`}
+                className={`w-full grid ${compact ? 'grid-cols-[minmax(0,1fr)]' : 'grid-cols-[minmax(0,1fr)_max-content_max-content_56px]'} gap-2 items-center px-3 py-1 text-left ${sel === f.id ? 'bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 'hover:bg-[#151A24] dark:hover:bg-[#151A24] text-neutral-300 dark:text-neutral-300'}`}
                 aria-current={sel === f.id ? 'true' : undefined}
               >
                 <span className="truncate min-w-0">{f.name}</span>
