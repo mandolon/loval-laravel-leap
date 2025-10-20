@@ -298,32 +298,32 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
   return (
     <aside className={`${isCollapsed ? 'w-16' : 'w-[200px]'} bg-[#0F1219] dark:bg-[#0F1219] border-r ${T.borderSubtle} flex flex-col h-full transition-all duration-300`}>
       {/* 1. User Profile Section */}
-      <div className={`pt-3 pb-3 border-b ${T.borderSubtle} flex-shrink-0`}>
+      <div className={`py-2 px-3 border-b border-[#1d2230] dark:border-[#1d2230] flex-shrink-0 bg-[#0E1118] dark:bg-[#0E1118]`}>
         {isCollapsed ? (
           <div className="flex justify-center">
             <button
-              className={`h-8 w-8 flex items-center justify-center ${T.radiusSmall} text-neutral-400 hover:bg-[#141C28] transition-colors ${T.focus}`}
+              className={`h-8 w-8 flex items-center justify-center rounded-[6px] text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] transition-colors ${T.focus}`}
               onClick={() => setIsCollapsed(!isCollapsed)}
             >
               <ChevronLeft className="h-4 w-4 rotate-180" />
             </button>
           </div>
         ) : (
-          <div className="flex items-center justify-between pr-3">
+          <div className="flex items-center justify-between">
             {user && (
-              <div className="flex items-center gap-2 flex-1 min-w-0 pl-6">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
                 <div className="flex-1 min-w-0">
-                  <p className={`${T.text} font-semibold truncate text-neutral-200`}>
+                  <p className={`text-[11px] font-medium truncate text-neutral-300 dark:text-neutral-300`}>
                     {user.name}
                   </p>
-                  <p className={`${T.textSmall} text-neutral-400 truncate`}>
+                  <p className={`text-[10px] text-neutral-500 dark:text-neutral-500 truncate`}>
                     {user.is_admin ? 'Admin' : user.email}
                   </p>
                 </div>
               </div>
             )}
             <button
-              className={`h-8 w-8 flex items-center justify-center ${T.radiusSmall} text-neutral-400 hover:bg-[#141C28] transition-colors flex-shrink-0 ${T.focus}`}
+              className={`h-8 w-8 flex items-center justify-center rounded-[6px] text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] transition-colors flex-shrink-0 ${T.focus}`}
               onClick={() => setIsCollapsed(!isCollapsed)}
             >
               <ChevronLeft className="h-4 w-4" />
