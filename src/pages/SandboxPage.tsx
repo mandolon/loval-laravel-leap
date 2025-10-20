@@ -231,46 +231,75 @@ export default function SandboxPage() {
       <SandboxSidebar />
 
       {/* Main column */}
-      <div className="relative min-h-0 flex-1 grid grid-rows-[1fr] gap-1 w-full overflow-hidden">
+      <div className="relative min-h-0 flex-1 w-full overflow-hidden">
         {/* Main content & chat */}
-        <div className={`min-h-0 h-full grid gap-1 relative ${chatOpen ? 'md:grid-cols-[minmax(0,1fr)_clamp(280px,32vw,360px)]' : 'md:grid-cols-[minmax(0,1fr)]'}`}>
-          {/* Main panel */}
-          <div className={`relative z-10 ${T.panel} ${T.radius} min-h-0 min-w-0 grid grid-rows-[auto_1fr] overflow-hidden`}>
-            <TabsHeader chatOpen={chatOpen} onToggleChat={toggleChat} />
+        {chatOpen ? (
+          <ResizablePanelGroup direction="horizontal" className="gap-1">
+            {/* Main panel */}
+            <ResizablePanel defaultSize={68} minSize={40}>
+              <div className={`relative z-10 ${T.panel} ${T.radius} min-h-0 min-w-0 grid grid-rows-[auto_1fr] overflow-hidden h-full`}>
+                <TabsHeader chatOpen={chatOpen} onToggleChat={toggleChat} />
 
-            {/* Viewer (top) + Explorer (bottom) - Resizable */}
-            <ResizablePanelGroup direction="vertical" className="min-h-0">
-              <ResizablePanel defaultSize={55} minSize={20} maxSize={80}>
-                <div className={`${T.panelElev} ${T.text} grid grid-rows-[auto_1fr] overflow-hidden h-full`}>
-                  <div className="h-9 px-3 flex items-center justify-between border-b border-slate-200 dark:border-[#1a2030]/40">
-                    <div className="text-slate-500 dark:text-neutral-500">Viewer</div>
-                  </div>
-                  <div className="grid place-items-center text-slate-500 dark:text-neutral-500">No file selected</div>
-                </div>
-              </ResizablePanel>
+                {/* Viewer (top) + Explorer (bottom) - Resizable */}
+                <ResizablePanelGroup direction="vertical" className="min-h-0">
+                  <ResizablePanel defaultSize={55} minSize={20} maxSize={80}>
+                    <div className={`${T.panelElev} ${T.text} grid grid-rows-[auto_1fr] overflow-hidden h-full`}>
+                      <div className="h-9 px-3 flex items-center justify-between border-b border-slate-200 dark:border-[#1a2030]/40">
+                        <div className="text-slate-500 dark:text-neutral-500">Viewer</div>
+                      </div>
+                      <div className="grid place-items-center text-slate-500 dark:text-neutral-500">No file selected</div>
+                    </div>
+                  </ResizablePanel>
 
-              <ResizableHandle className="h-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors" />
+                  <ResizableHandle className="h-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors" />
 
-              <ResizablePanel defaultSize={45} minSize={20} maxSize={80}>
-                <div className="h-full min-h-0">
-                  <ResizableSandboxExplorer compact={chatOpen} />
-                </div>
-              </ResizablePanel>
-            </ResizablePanelGroup>
-          </div>
+                  <ResizablePanel defaultSize={45} minSize={20} maxSize={80}>
+                    <div className="h-full min-h-0">
+                      <ResizableSandboxExplorer compact={chatOpen} />
+                    </div>
+                  </ResizablePanel>
+                </ResizablePanelGroup>
+              </div>
+            </ResizablePanel>
 
-          {/* Chat panel */}
-          {chatOpen && (
-            <>
-              {/* Mobile overlay backdrop */}
-              <button type="button" aria-label="Close chat overlay" onClick={() => setChatOpen(false)} className="md:hidden fixed inset-0 bg-black/40 z-20" />
+            <ResizableHandle className="w-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors mx-1" />
+
+            {/* Chat panel */}
+            <ResizablePanel defaultSize={32} minSize={20} maxSize={50}>
               <SandboxChatPanel
                 onClose={() => setChatOpen(false)}
-                className="md:static md:z-10 md:h-full md:block fixed right-1 left-auto top-[56px] bottom-1 z-30 w-[92vw] max-w-[480px] min-w-[280px] md:w-auto md:top-auto md:bottom-auto md:right-auto"
+                className="h-full"
               />
-            </>
-          )}
-        </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        ) : (
+          <div className="h-full">
+            {/* Main panel - Full width when chat closed */}
+            <div className={`relative z-10 ${T.panel} ${T.radius} min-h-0 min-w-0 grid grid-rows-[auto_1fr] overflow-hidden h-full`}>
+              <TabsHeader chatOpen={chatOpen} onToggleChat={toggleChat} />
+
+              {/* Viewer (top) + Explorer (bottom) - Resizable */}
+              <ResizablePanelGroup direction="vertical" className="min-h-0">
+                <ResizablePanel defaultSize={55} minSize={20} maxSize={80}>
+                  <div className={`${T.panelElev} ${T.text} grid grid-rows-[auto_1fr] overflow-hidden h-full`}>
+                    <div className="h-9 px-3 flex items-center justify-between border-b border-slate-200 dark:border-[#1a2030]/40">
+                      <div className="text-slate-500 dark:text-neutral-500">Viewer</div>
+                    </div>
+                    <div className="grid place-items-center text-slate-500 dark:text-neutral-500">No file selected</div>
+                  </div>
+                </ResizablePanel>
+
+                <ResizableHandle className="h-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors" />
+
+                <ResizablePanel defaultSize={45} minSize={20} maxSize={80}>
+                  <div className="h-full min-h-0">
+                    <ResizableSandboxExplorer compact={chatOpen} />
+                  </div>
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
