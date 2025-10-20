@@ -426,10 +426,10 @@ const ProjectDetails = () => {
                 <FilesTab projectId={id || ''} />
               </TabsContent>
 
-            <TabsContent value="tasks" className="mt-0 flex-1 min-h-0 overflow-auto">
+            <TabsContent value="tasks" className="mt-0 flex-1 min-h-0 overflow-auto bg-white dark:bg-[#0F1219]">
               <div className="space-y-4 mb-6">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold">Tasks</h2>
+                  <h2 className="text-2xl font-bold text-slate-700 dark:text-neutral-300">Tasks</h2>
                   <CreateTaskDialog projects={[project]} onCreateTask={handleCreateTask} />
                 </div>
               </div>
@@ -438,12 +438,12 @@ const ProjectDetails = () => {
                 {/* Task/Redline Column */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-lg">Task/Redline</h3>
-                    <Badge className="bg-destructive text-destructive-foreground">{taskRedlineTasks.length}</Badge>
+                    <h3 className="font-semibold text-lg text-slate-700 dark:text-neutral-300">Task/Redline</h3>
+                    <Badge className="bg-red-500 dark:bg-red-500/20 text-white dark:text-red-300 border-0">{taskRedlineTasks.length}</Badge>
                   </div>
                   <div className="space-y-3">
                     {taskRedlineTasks.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-8">No tasks</p>
+                      <p className="text-sm text-slate-500 dark:text-neutral-400 text-center py-8">No tasks</p>
                     ) : (
                       taskRedlineTasks.map(task => (
                         <TaskItem
@@ -461,12 +461,12 @@ const ProjectDetails = () => {
                 {/* Progress/Update Column */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-lg">Progress/Update</h3>
-                    <Badge className="bg-primary text-primary-foreground">{progressUpdateTasks.length}</Badge>
+                    <h3 className="font-semibold text-lg text-slate-700 dark:text-neutral-300">Progress/Update</h3>
+                    <Badge className="bg-[#00639b] dark:bg-blue-500/20 text-white dark:text-blue-300 border-0">{progressUpdateTasks.length}</Badge>
                   </div>
                   <div className="space-y-3">
                     {progressUpdateTasks.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-8">No tasks</p>
+                      <p className="text-sm text-slate-500 dark:text-neutral-400 text-center py-8">No tasks</p>
                     ) : (
                       progressUpdateTasks.map(task => (
                         <TaskItem
@@ -484,12 +484,12 @@ const ProjectDetails = () => {
                 {/* Complete Column */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-lg">Complete</h3>
-                    <Badge className="bg-secondary text-secondary-foreground">{completeTasks.length}</Badge>
+                    <h3 className="font-semibold text-lg text-slate-700 dark:text-neutral-300">Complete</h3>
+                    <Badge className="bg-green-500 dark:bg-green-500/20 text-white dark:text-green-300 border-0">{completeTasks.length}</Badge>
                   </div>
                   <div className="space-y-3">
                     {completeTasks.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-8">No tasks</p>
+                      <p className="text-sm text-slate-500 dark:text-neutral-400 text-center py-8">No tasks</p>
                     ) : (
                       completeTasks.map(task => (
                         <TaskItem
@@ -506,12 +506,12 @@ const ProjectDetails = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="invoices" className="mt-0 flex-1 min-h-0 overflow-auto">
+            <TabsContent value="invoices" className="mt-0 flex-1 min-h-0 overflow-auto bg-white dark:bg-[#0F1219]">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-2xl font-bold">Invoices</h2>
-                    <p className="text-muted-foreground">Manage project invoices and billing</p>
+                    <h2 className="text-2xl font-bold text-slate-700 dark:text-neutral-300">Invoices</h2>
+                    <p className="text-slate-500 dark:text-neutral-400">Manage project invoices and billing</p>
                   </div>
                   <div className="flex gap-2">
                     <div className="flex border rounded-md">
@@ -519,7 +519,7 @@ const ProjectDetails = () => {
                         variant={invoiceViewMode === 'card' ? 'default' : 'ghost'}
                         size="sm"
                         onClick={() => setInvoiceViewMode('card')}
-                        className="rounded-r-none"
+                        className={`rounded-r-none ${invoiceViewMode === 'card' ? 'bg-[#00639b] dark:bg-[#141C28] text-white dark:text-blue-300' : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28]'}`}
                       >
                         <LayoutGrid className="h-4 w-4" />
                       </Button>
@@ -527,7 +527,7 @@ const ProjectDetails = () => {
                         variant={invoiceViewMode === 'list' ? 'default' : 'ghost'}
                         size="sm"
                         onClick={() => setInvoiceViewMode('list')}
-                        className="rounded-l-none"
+                        className={`rounded-l-none ${invoiceViewMode === 'list' ? 'bg-[#00639b] dark:bg-[#141C28] text-white dark:text-blue-300' : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28]'}`}
                       >
                         <List className="h-4 w-4" />
                       </Button>
@@ -538,12 +538,12 @@ const ProjectDetails = () => {
 
                 {invoicesLoading ? (
                   <div className="flex items-center justify-center py-12">
-                    <p className="text-muted-foreground">Loading invoices...</p>
+                    <p className="text-slate-500 dark:text-neutral-400">Loading invoices...</p>
                   </div>
                 ) : invoices.length === 0 ? (
                   <Card className={`${T.panel} ${T.radius}`}>
-                    <CardContent className="py-12">
-                      <p className="text-center text-muted-foreground">No invoices yet. Create your first invoice to get started.</p>
+                    <CardContent className="py-12 bg-white dark:bg-[#0F1219]">
+                      <p className="text-center text-slate-500 dark:text-neutral-400">No invoices yet. Create your first invoice to get started.</p>
                     </CardContent>
                   </Card>
                 ) : invoiceViewMode === 'card' ? (
@@ -613,24 +613,24 @@ const ProjectDetails = () => {
               />
             </TabsContent>
 
-            <TabsContent value="links" className="mt-0 flex-1 min-h-0 overflow-auto">
+            <TabsContent value="links" className="mt-0 flex-1 min-h-0 overflow-auto bg-white dark:bg-[#0F1219]">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-2xl font-bold">Links</h2>
-                    <p className="text-muted-foreground">Reference links and resources</p>
+                    <h2 className="text-2xl font-bold text-slate-700 dark:text-neutral-300">Links</h2>
+                    <p className="text-slate-500 dark:text-neutral-400">Reference links and resources</p>
                   </div>
                   <CreateLinkDialog projectId={id || ''} />
                 </div>
 
                 {linksLoading ? (
                   <div className="flex items-center justify-center py-12">
-                    <p className="text-muted-foreground">Loading links...</p>
+                    <p className="text-slate-500 dark:text-neutral-400">Loading links...</p>
                   </div>
                 ) : links.length === 0 ? (
                   <Card className={`${T.panel} ${T.radius}`}>
-                    <CardContent className="py-12">
-                      <p className="text-center text-muted-foreground">
+                    <CardContent className="py-12 bg-white dark:bg-[#0F1219]">
+                      <p className="text-center text-slate-500 dark:text-neutral-400">
                         No links yet. Add your first reference link to get started.
                       </p>
                     </CardContent>
@@ -663,7 +663,7 @@ const ProjectDetails = () => {
               />
             </TabsContent>
 
-            <TabsContent value="project" className="mt-0 flex-1 min-h-0 space-y-6 overflow-auto">
+            <TabsContent value="project" className="mt-0 flex-1 min-h-0 space-y-6 overflow-auto bg-white dark:bg-[#0F1219]">
               {/* Project Name */}
               <Card className={`${T.panel} ${T.radius}`}>
                 <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
@@ -675,8 +675,8 @@ const ProjectDetails = () => {
                     onUpdate={(name) => handleUpdateProject({ name })}
                   />
                 </CardHeader>
-                <CardContent>
-                  <p className="font-medium text-lg">{project.name}</p>
+                <CardContent className="bg-white dark:bg-[#0F1219]">
+                  <p className="font-medium text-lg text-slate-700 dark:text-neutral-300">{project.name}</p>
                 </CardContent>
               </Card>
 
@@ -691,8 +691,8 @@ const ProjectDetails = () => {
                     onUpdate={(address) => handleUpdateProject({ address })}
                   />
                 </CardHeader>
-                <CardContent>
-                  <p className="font-medium">
+                <CardContent className="bg-white dark:bg-[#0F1219]">
+                  <p className="font-medium text-slate-700 dark:text-neutral-300">
                     {typeof project.address === 'object' && project.address 
                       ? (() => {
                           const { streetNumber, streetName, city, state, zipCode } = project.address;
@@ -717,8 +717,8 @@ const ProjectDetails = () => {
                     onUpdate={(description) => handleUpdateProject({ description })}
                   />
                 </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">{project.description || "No description provided yet. Click edit to add project details."}</p>
+                <CardContent className="bg-white dark:bg-[#0F1219]">
+                  <p className="text-slate-500 dark:text-neutral-400">{project.description || "No description provided yet. Click edit to add project details."}</p>
                 </CardContent>
               </Card>
 
@@ -734,7 +734,7 @@ const ProjectDetails = () => {
                       onUpdate={(status) => handleUpdateProject({ status: status as any })}
                     />
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="bg-white dark:bg-[#0F1219]">
                     <Badge variant={
                       project.status === 'active' ? 'default' : 
                       project.status === 'completed' ? 'secondary' : 
@@ -759,8 +759,8 @@ const ProjectDetails = () => {
                       onUpdate={(phase) => handleUpdateProject({ phase: phase as any })}
                     />
                   </CardHeader>
-                  <CardContent>
-                    <p className="font-medium">{project.phase}</p>
+                  <CardContent className="bg-white dark:bg-[#0F1219]">
+                    <p className="font-medium text-slate-700 dark:text-neutral-300">{project.phase}</p>
                   </CardContent>
                 </Card>
 
@@ -774,8 +774,8 @@ const ProjectDetails = () => {
                       onUpdate={(estimatedAmount) => handleUpdateProject({ estimatedAmount })}
                     />
                   </CardHeader>
-                  <CardContent>
-                    <p className="font-medium text-lg">
+                  <CardContent className="bg-white dark:bg-[#0F1219]">
+                    <p className="font-medium text-lg text-slate-700 dark:text-neutral-300">
                       {project.estimatedAmount 
                         ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(project.estimatedAmount)
                         : '—'}
@@ -789,7 +789,7 @@ const ProjectDetails = () => {
                 <CardHeader className="border-b border-slate-200 dark:border-[#1d2230]">
                   <CardTitle>Team</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="bg-white dark:bg-[#0F1219]">
                   <ProjectMembersTable projectId={id || ''} workspaceId={workspaceId || ''} />
                 </CardContent>
               </Card>
@@ -805,50 +805,50 @@ const ProjectDetails = () => {
                     onUpdate={(data) => handleUpdateProject({ assessorParcelInfo: data })}
                   />
                 </CardHeader>
-                <CardContent>
+                <CardContent className="bg-white dark:bg-[#0F1219]">
                   <div className="space-y-4">
                     <div className="grid grid-cols-4 gap-4">
                       <div>
-                        <p className="text-sm text-muted-foreground mb-1">Assessor's Parcel #</p>
-                        <p className="font-medium text-primary">{project.assessorParcelInfo?.parcelNumber || '—'}</p>
+                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Assessor's Parcel #</p>
+                        <p className="font-medium text-[#00639b] dark:text-blue-300">{project.assessorParcelInfo?.parcelNumber || '—'}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground mb-1">Occupancy Class</p>
-                        <p className="font-medium">{project.assessorParcelInfo?.occupancyClass || '—'}</p>
+                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Occupancy Class</p>
+                        <p className="font-medium text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.occupancyClass || '—'}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground mb-1">Zoning Designation</p>
-                        <p className="font-medium text-primary">{project.assessorParcelInfo?.zoningDesignation || '—'}</p>
+                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Zoning Designation</p>
+                        <p className="font-medium text-[#00639b] dark:text-blue-300">{project.assessorParcelInfo?.zoningDesignation || '—'}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground mb-1">Construction</p>
-                        <p className="font-medium">{project.assessorParcelInfo?.construction || '—'}</p>
+                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Construction</p>
+                        <p className="font-medium text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.construction || '—'}</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-6 gap-4">
                       <div>
-                        <p className="text-sm text-muted-foreground mb-1">Stories</p>
-                        <p className="font-medium">{project.assessorParcelInfo?.stories || '—'}</p>
+                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Stories</p>
+                        <p className="font-medium text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.stories || '—'}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground mb-1">Plate Height</p>
-                        <p className="font-medium">{project.assessorParcelInfo?.plateHeight || '—'}</p>
+                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Plate Height</p>
+                        <p className="font-medium text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.plateHeight || '—'}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground mb-1">Roof Height</p>
-                        <p className="font-medium">{project.assessorParcelInfo?.roofHeight || '—'}</p>
+                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Roof Height</p>
+                        <p className="font-medium text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.roofHeight || '—'}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground mb-1">Year Built</p>
-                        <p className="font-medium">{project.assessorParcelInfo?.yearBuilt || '—'}</p>
+                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Year Built</p>
+                        <p className="font-medium text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.yearBuilt || '—'}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground mb-1">Approx Lot Area</p>
-                        <p className="font-medium">{project.assessorParcelInfo?.lotArea || '—'}</p>
+                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Approx Lot Area</p>
+                        <p className="font-medium text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.lotArea || '—'}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground mb-1">Acres</p>
-                        <p className="font-medium">{project.assessorParcelInfo?.acres || '—'}</p>
+                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Acres</p>
+                        <p className="font-medium text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.acres || '—'}</p>
                       </div>
                     </div>
                   </div>
@@ -856,7 +856,7 @@ const ProjectDetails = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="client" className="mt-0 flex-1 min-h-0 overflow-auto">
+            <TabsContent value="client" className="mt-0 flex-1 min-h-0 overflow-auto bg-white dark:bg-[#0F1219]">
               <Card className={`${T.panel} ${T.radius}`}>
                 <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
                   <div>
@@ -867,31 +867,31 @@ const ProjectDetails = () => {
                     onUpdate={(data) => handleUpdateProject(data)}
                   />
                 </CardHeader>
-                <CardContent>
+                <CardContent className="bg-white dark:bg-[#0F1219]">
                   <div className="space-y-4">
                     <div>
-                      <p className="text-sm text-muted-foreground">Primary Client</p>
-                      <p className="font-medium text-lg">
+                      <p className="text-sm text-slate-500 dark:text-neutral-500">Primary Client</p>
+                      <p className="font-medium text-lg text-slate-700 dark:text-neutral-300">
                         {project.primaryClient.firstName} {project.primaryClient.lastName}
                       </p>
                       {project.primaryClient.email && (
-                        <p className="text-sm">{project.primaryClient.email}</p>
+                        <p className="text-sm text-slate-500 dark:text-neutral-400">{project.primaryClient.email}</p>
                       )}
                       {project.primaryClient.phone && (
-                        <p className="text-sm">{project.primaryClient.phone}</p>
+                        <p className="text-sm text-slate-500 dark:text-neutral-400">{project.primaryClient.phone}</p>
                       )}
                     </div>
                     {project.secondaryClient && (
                       <div>
-                        <p className="text-sm text-muted-foreground">Secondary Client</p>
-                        <p className="font-medium text-lg">
+                        <p className="text-sm text-slate-500 dark:text-neutral-500">Secondary Client</p>
+                        <p className="font-medium text-lg text-slate-700 dark:text-neutral-300">
                           {project.secondaryClient.firstName} {project.secondaryClient.lastName}
                         </p>
                         {project.secondaryClient.email && (
-                          <p className="text-sm">{project.secondaryClient.email}</p>
+                          <p className="text-sm text-slate-500 dark:text-neutral-400">{project.secondaryClient.email}</p>
                         )}
                         {project.secondaryClient.phone && (
-                          <p className="text-sm">{project.secondaryClient.phone}</p>
+                          <p className="text-sm text-slate-500 dark:text-neutral-400">{project.secondaryClient.phone}</p>
                         )}
                       </div>
                     )}
@@ -900,20 +900,20 @@ const ProjectDetails = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="notes" className="mt-0 flex-1 min-h-0 overflow-auto">
+            <TabsContent value="notes" className="mt-0 flex-1 min-h-0 overflow-auto bg-white dark:bg-[#0F1219]">
               <Card className={`${T.panel} ${T.radius}`}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-slate-200 dark:border-[#1d2230]">
                   <div>
                     <CardTitle>Notes</CardTitle>
-                    <CardDescription>Project notes and comments</CardDescription>
+                    <CardDescription className="text-slate-500 dark:text-neutral-400">Project notes and comments</CardDescription>
                   </div>
                   <CreateNoteDialog onCreateNote={(content) => createNoteMutation.mutate({ content })} />
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 bg-white dark:bg-[#0F1219]">
                   {notesLoading ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">Loading notes...</p>
+                    <p className="text-sm text-slate-500 dark:text-neutral-400 text-center py-8">Loading notes...</p>
                   ) : notes.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">No notes yet. Create your first note above.</p>
+                    <p className="text-sm text-slate-500 dark:text-neutral-400 text-center py-8">No notes yet. Create your first note above.</p>
                   ) : (
                     notes.map(note => (
                       <NoteCard
@@ -945,7 +945,7 @@ const ProjectDetails = () => {
               type="button"
               onClick={() => setChatOpen(false)}
               aria-label="Collapse chat"
-              className="h-7 w-7 grid place-items-center border border-slate-200 dark:border-[#283046]/60 rounded-[6px] text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#161B26] focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40"
+              className="h-7 w-7 grid place-items-center border border-[#283046] dark:border-[#283046] rounded-[6px] text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#161B26] focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
