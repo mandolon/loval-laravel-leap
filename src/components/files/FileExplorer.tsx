@@ -364,7 +364,7 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
           <>
             {/* New folder input row */}
             {isCreatingFolder && (
-        <div className="flex items-center h-7 border-b border-border/50 bg-background pl-3 pr-3">
+        <div className="flex items-center h-7 pl-3 pr-3 px-3 py-1 bg-white dark:bg-[#0F1219]">
                 <div className="flex-[2] pr-2 min-w-0 flex items-center">
                   <input
                     ref={inputRef}
@@ -398,7 +398,7 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
             return (
               <div
                 key={f.name}
-                className={`group flex items-center h-7 border-b border-border/50 pl-3 pr-3 cursor-pointer transition-colors border-l-2 ${
+                className={`group flex items-center h-7 pl-3 pr-3 cursor-pointer transition-colors px-3 py-1 border-l-2 ${
                   isSelected ? 'border-l-2 border-blue-400 dark:border-blue-400 bg-[#141C28] dark:bg-[#141C28]' : 
                   isKeyboardFocused ? 'border-l-2 border-blue-400/50 dark:border-blue-400/50 bg-[#141C28]/50 dark:bg-[#141C28]/50' : 
                   'border-l-transparent hover:bg-[#151A24] dark:hover:bg-[#151A24]'
@@ -1553,7 +1553,7 @@ export default function FileExplorer({
         }
       }}>
         <DialogContent 
-          className="max-w-2xl max-h-[80vh] flex flex-col p-0"
+          className="max-w-2xl max-h-[80vh] flex flex-col p-0 bg-white dark:bg-[#0F1219] border border-slate-200 dark:border-[#1d2230]/60"
           onKeyDown={(e) => {
             const query = modalSearchQuery.toLowerCase();
             const results: Array<{
@@ -1615,13 +1615,13 @@ export default function FileExplorer({
             }
           }}
         >
-          <DialogHeader className="px-4 pt-4 pb-2 border-b">
-            <DialogTitle className="text-base">Search Files</DialogTitle>
+          <DialogHeader className="px-4 pt-4 pb-2 border-b border-slate-200 dark:border-[#1d2230] bg-white dark:bg-[#0E1118]">
+            <DialogTitle className="text-base text-slate-500 dark:text-neutral-500">Search Files</DialogTitle>
           </DialogHeader>
           
-          <div className="px-4 py-2 border-b">
+          <div className="px-4 py-2 border-b border-slate-200 dark:border-[#1d2230] bg-white dark:bg-[#0E1118]">
             <div className="flex items-center gap-2">
-              <Search className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+              <Search className="h-3.5 w-3.5 text-neutral-500 dark:text-neutral-500 flex-shrink-0" />
               <input
                 type="text"
                 placeholder="Search files..."
@@ -1630,7 +1630,7 @@ export default function FileExplorer({
                   setModalSearchQuery(e.target.value);
                   setModalSelectedIndex(0);
                 }}
-                className="flex-1 h-8 px-0 bg-white dark:bg-[#0E1118] text-sm text-slate-700 dark:text-neutral-300 placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:outline-none border-0"
+                className="flex-1 h-8 px-2 bg-white dark:bg-[#0E1118] text-sm text-slate-700 dark:text-neutral-300 placeholder:text-slate-400 dark:placeholder:text-neutral-500 border border-slate-200 dark:border-[#283046]/60 rounded-[6px] focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40"
                 autoFocus
               />
             </div>
@@ -1686,8 +1686,8 @@ export default function FileExplorer({
                     return (
                       <div
                         key={`${result.type}-${result.name}-${index}`}
-                        className={`p-2 cursor-pointer rounded-md flex items-center gap-2 ${
-                          isHighlighted ? 'bg-accent' : 'hover:bg-accent/50'
+                        className={`p-2 cursor-pointer rounded-md flex items-center gap-2 transition-colors ${
+                          isHighlighted ? 'bg-[#141C28] dark:bg-[#141C28]' : 'hover:bg-[#151A24] dark:hover:bg-[#151A24]'
                         }`}
                         onClick={() => {
                           // Select the phase and folder
@@ -1710,11 +1710,11 @@ export default function FileExplorer({
                       >
                         <FileIcon
                           fileName={result.name}
-                          className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0"
+                          className={`h-3.5 w-3.5 flex-shrink-0 ${isHighlighted ? 'text-blue-300 dark:text-blue-300' : 'text-neutral-400 dark:text-neutral-400'}`}
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="text-[13px] font-medium truncate leading-tight">{result.name}</div>
-                          <div className="text-[11px] text-muted-foreground truncate leading-tight mt-0.5">
+                          <div className={`text-[13px] font-medium truncate leading-tight ${isHighlighted ? 'text-blue-300 dark:text-blue-300' : 'text-neutral-300 dark:text-neutral-300'}`}>{result.name}</div>
+                          <div className="text-[11px] text-neutral-500 dark:text-neutral-500 truncate leading-tight mt-0.5">
                             {result.phase} / {result.folder}
                           </div>
                         </div>
