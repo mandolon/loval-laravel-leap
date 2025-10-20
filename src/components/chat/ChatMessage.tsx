@@ -3,6 +3,7 @@ import { Trash2, Reply, CornerDownRight, Pencil, Check, X } from 'lucide-react'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
+import { UTILITY_CLASSES } from '@/lib/design-tokens'
 
 export interface ChatMessageData {
   id: string
@@ -78,10 +79,10 @@ export const ChatMessage = ({ message, onDelete, onReply, onEdit, currentUserId,
             </div>
 
             <div 
-              className={`bg-slate-50 dark:bg-[#141C28] border p-2 rounded-[6px] max-w-[85%] transition-colors ${
+              className={`${UTILITY_CLASSES.chatBubble} transition-colors ${
                 isOwnMessage && isHovered && !isEditing
                   ? 'border-slate-300 dark:border-[#283046] cursor-pointer'
-                  : 'border-slate-200 dark:border-[#1a2030]/60'
+                  : ''
               }`}
               onClick={() => isOwnMessage && !isEditing && setIsEditing(true)}
             >
@@ -90,7 +91,7 @@ export const ChatMessage = ({ message, onDelete, onReply, onEdit, currentUserId,
                   <textarea
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
-                    className="w-full min-h-[60px] px-2 py-1 text-[12px] bg-white dark:bg-[#0E1118] border border-slate-200 dark:border-[#283046]/60 rounded-[4px] text-slate-700 dark:text-neutral-300 focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 resize-none"
+                    className={`w-full min-h-[60px] ${UTILITY_CLASSES.inputBase} resize-none`}
                     autoFocus
                   />
                   <div className="flex items-center gap-1">

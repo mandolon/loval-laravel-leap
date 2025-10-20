@@ -296,13 +296,13 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
   };
 
   return (
-    <aside className={`${isCollapsed ? 'w-16' : 'w-[200px]'} bg-white dark:bg-[#0F1219] border-r ${T.borderSubtle} flex flex-col h-full transition-all duration-300`}>
+    <aside className={`${isCollapsed ? 'w-16' : 'w-[200px]'} ${T.panel} flex flex-col h-full transition-all duration-300`}>
       {/* 1. User Profile Section */}
-      <div className={`py-2 px-3 border-b border-slate-200 dark:border-[#1d2230] flex-shrink-0 bg-white dark:bg-[#0E1118]`}>
+      <div className={`py-2 px-3 border-b ${T.borderSubtle} flex-shrink-0 bg-white dark:bg-[#0E1118]`}>
         {isCollapsed ? (
           <div className="flex justify-center">
             <button
-              className={`h-8 w-8 flex items-center justify-center rounded-[6px] text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28] transition-colors ${T.focus}`}
+              className={UTILITY_CLASSES.buttonIcon}
               onClick={() => setIsCollapsed(!isCollapsed)}
             >
               <ChevronLeft className="h-4 w-4 rotate-180" />
@@ -323,7 +323,7 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
               </div>
             )}
             <button
-              className={`h-8 w-8 flex items-center justify-center rounded-[6px] text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28] transition-colors flex-shrink-0 ${T.focus}`}
+              className={`${UTILITY_CLASSES.buttonIcon} flex-shrink-0`}
               onClick={() => setIsCollapsed(!isCollapsed)}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -333,7 +333,7 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
       </div>
 
       {/* 2. Navigation Icons */}
-      <div className={`px-2 py-3 border-b ${T.borderSubtle} flex-shrink-0 ${isCollapsed ? 'flex flex-col items-center space-y-2' : 'flex items-center justify-center gap-1'}`}>
+      <div className={`px-2 py-3 ${T.borderSubtle} flex-shrink-0 ${isCollapsed ? 'flex flex-col items-center space-y-2' : 'flex items-center justify-center gap-1'}`}>
         {navIcons.map((item) => (
           <NavLink
             key={item.id}
@@ -344,8 +344,8 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
             <button
               className={`h-10 w-10 flex items-center justify-center ${T.radiusSmall} transition-colors ${T.focus} ${
                 activeTab === item.id 
-                  ? 'bg-slate-100 dark:bg-[#141C28] text-[#00639b] dark:text-blue-300' 
-                  : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28]/60'
+                  ? UTILITY_CLASSES.activeItem
+                  : UTILITY_CLASSES.inactiveItem
               }`}
             >
               <item.icon className="h-5 w-5" />

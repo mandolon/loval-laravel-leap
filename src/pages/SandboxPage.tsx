@@ -3,16 +3,7 @@ import { SandboxSidebar } from '@/components/layout/SandboxSidebar';
 import { SandboxChatPanel } from '@/components/chat/SandboxChatPanel';
 import { ResizableSandboxExplorer } from '@/components/files/ResizableSandboxExplorer';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
-
-/** --------------------- Design Tokens --------------------- */
-const T = {
-  radius: 'rounded-[8px]',
-  text: 'text-[12px]',
-  focus: 'focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40',
-  panel: 'bg-white dark:bg-[#0F1219] border border-slate-200 dark:border-[#1d2230]/60',
-  panelSoft: 'bg-slate-50 dark:bg-[#10141D] border border-slate-200 dark:border-[#1a1f2c]/50',
-  panelElev: 'bg-white dark:bg-[#0E1118] border border-slate-200 dark:border-[#1a2030]/50',
-};
+import { DESIGN_TOKENS as T, UTILITY_CLASSES } from '@/lib/design-tokens';
 
 /** --------------------- Small Primitives --------------------- */
 function IconBtn({ title, ariaLabel, onClick, children }: { title: string; ariaLabel?: string; onClick: () => void; children: React.ReactNode }) {
@@ -22,7 +13,7 @@ function IconBtn({ title, ariaLabel, onClick, children }: { title: string; ariaL
       title={title}
       aria-label={ariaLabel || title}
       onClick={onClick}
-      className={`h-8 w-8 grid place-items-center ${T.radius} text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28] ${T.focus}`}
+      className={UTILITY_CLASSES.buttonIcon}
     >
       {children}
     </button>
@@ -31,7 +22,7 @@ function IconBtn({ title, ariaLabel, onClick, children }: { title: string; ariaL
 
 function SectionHeader({ title, right }: { title: string; right?: React.ReactNode }) {
   return (
-    <div className="h-9 px-3 border-b border-slate-200 dark:border-[#1d2230] flex items-center justify-between text-slate-500 dark:text-neutral-500 bg-white dark:bg-[#0E1118]">
+    <div className={UTILITY_CLASSES.sectionHeader}>
       <span>{title}</span>
       {right}
     </div>
@@ -51,7 +42,7 @@ function TabsHeader({ chatOpen, onToggleChat }: { chatOpen: boolean; onToggleCha
 
   return (
     <div
-      className={`h-12 ${T.text} grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 bg-white dark:bg-[#0E1118] border-b border-slate-200 dark:border-[#1a2030]/60`}
+      className={UTILITY_CLASSES.pageHeader}
       role="navigation"
       aria-label="Secondary"
     >
@@ -74,7 +65,7 @@ function TabsHeader({ chatOpen, onToggleChat }: { chatOpen: boolean; onToggleCha
                 role="tab"
                 aria-selected={isActive}
                 onClick={() => setActive(tab)}
-                className={`px-2.5 py-1 ${T.radius} transition-colors ${isActive ? 'bg-white dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium' : 'text-slate-500 dark:text-neutral-400 hover:bg-white/60 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300'} ${T.focus}`}
+                className={`px-2.5 py-1 ${T.radius} transition-colors ${isActive ? UTILITY_CLASSES.activeItem : UTILITY_CLASSES.inactiveItem} ${T.focus}`}
               >
                 {tab}
               </button>
@@ -127,12 +118,12 @@ const Explorer = React.memo(function Explorer({ compact = false }: { compact?: b
         aria-label="File explorer"
       >
         {/* Root */}
-        <div className={`flex flex-col justify-start min-w-0 bg-[#0E1118] dark:bg-[#0E1118] border border-[#1a2030]/60 dark:border-[#1a2030]/60 rounded-r-none`}>
+        <div className={`flex flex-col justify-start min-w-0 ${UTILITY_CLASSES.explorerRoot} rounded-r-none`}>
           {/* Search bar - aligned with headers */}
           <div className="h-9 px-3 flex items-center border-b border-[#1d2230] dark:border-[#1d2230]">
             <input
               placeholder="Search…"
-              className={`w-full h-7 px-2 bg-[#0E1118] dark:bg-[#0E1118] border border-[#1d2230] dark:border-[#1d2230] rounded-[6px] text-[11px] text-neutral-300 dark:text-neutral-300 placeholder:text-neutral-500 dark:placeholder:text-neutral-500 ${T.focus}`}
+              className={UTILITY_CLASSES.inputSearch}
             />
           </div>
           <div className="flex flex-col items-start justify-start px-3 py-2 space-y-2">
@@ -141,7 +132,7 @@ const Explorer = React.memo(function Explorer({ compact = false }: { compact?: b
                 key={r}
                 type="button"
                 onClick={() => setRoot(r)}
-                className={`px-2.5 py-1 ${T.radius} w-full text-left transition-colors ${root === r ? 'bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 'text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] hover:text-blue-300 dark:hover:text-blue-300'} ${T.focus}`}
+                className={`px-2.5 py-1 ${T.radius} w-full text-left transition-colors ${root === r ? UTILITY_CLASSES.activeItem : UTILITY_CLASSES.inactiveItem} ${T.focus}`}
                 aria-current={root === r ? 'true' : undefined}
               >
                 {r}
@@ -166,7 +157,7 @@ const Explorer = React.memo(function Explorer({ compact = false }: { compact?: b
                 key={f}
                 type="button"
                 onClick={() => setFolder(f)}
-                className={`w-full text-left px-3 py-1 border-l-2 ${folder === f ? 'border-blue-400 dark:border-blue-400 bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 'border-transparent text-neutral-300 dark:text-neutral-300 hover:bg-[#151A24] dark:hover:bg-[#151A24]'}`}
+                className={`w-full text-left px-3 py-1 border-l-2 ${folder === f ? UTILITY_CLASSES.explorerActiveFolder : UTILITY_CLASSES.explorerInactiveFolder}`}
                 aria-current={folder === f ? 'true' : undefined}
               >
                 {f}
@@ -191,7 +182,7 @@ const Explorer = React.memo(function Explorer({ compact = false }: { compact?: b
                 key={f.id}
                 type="button"
                 onClick={() => setSel(f.id)}
-                className={`w-full grid ${compact ? 'grid-cols-[minmax(0,1fr)]' : 'grid-cols-[minmax(0,1fr)_max-content_max-content_56px]'} gap-2 items-center px-3 py-1 text-left ${sel === f.id ? 'bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 'hover:bg-[#151A24] dark:hover:bg-[#151A24] text-neutral-300 dark:text-neutral-300'}`}
+                className={`w-full grid ${compact ? 'grid-cols-[minmax(0,1fr)]' : 'grid-cols-[minmax(0,1fr)_max-content_max-content_56px]'} gap-2 items-center px-3 py-1 text-left ${sel === f.id ? UTILITY_CLASSES.explorerActiveFile : UTILITY_CLASSES.explorerInactiveFile}`}
                 aria-current={sel === f.id ? 'true' : undefined}
               >
                 <span className="truncate min-w-0">{f.name}</span>
@@ -251,7 +242,7 @@ export default function SandboxPage() {
                   </div>
                 </ResizablePanel>
 
-                <ResizableHandle className="h-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors" />
+                <ResizableHandle className={UTILITY_CLASSES.handleVertical} />
 
                 <ResizablePanel defaultSize={45} minSize={20} maxSize={80} order={1}>
                   <div className="h-full min-h-0 flex flex-col">
@@ -262,7 +253,7 @@ export default function SandboxPage() {
               </div>
             </ResizablePanel>
 
-            <ResizableHandle className="w-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors mx-1" />
+            <ResizableHandle className={`${UTILITY_CLASSES.handleHorizontal} mx-1`} />
 
             {/* Chat panel */}
             <ResizablePanel defaultSize={32} minSize={20} maxSize={50}>
@@ -289,7 +280,7 @@ export default function SandboxPage() {
                   </div>
                 </ResizablePanel>
 
-                <ResizableHandle className="h-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors" />
+                <ResizableHandle className={UTILITY_CLASSES.handleVertical} />
 
                 <ResizablePanel defaultSize={45} minSize={20} maxSize={80} order={1}>
                   <div className="h-full min-h-0 flex flex-col">

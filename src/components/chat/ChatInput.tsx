@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Send, X } from 'lucide-react'
 import type { ChatMessageData } from './ChatMessage'
+import { UTILITY_CLASSES } from '@/lib/design-tokens'
 
 interface ChatInputProps {
   onSendMessage: (content: string, replyToId?: string) => void
@@ -41,7 +42,7 @@ export const ChatInput = ({ onSendMessage, replyingTo, onCancelReply, disabled }
   return (
     <form onSubmit={handleSubmit}>
       {replyingTo && (
-        <div className="mb-2 flex items-center justify-between bg-slate-50 dark:bg-[#141C28] px-2 py-1 rounded-[6px]">
+        <div className={`mb-2 flex items-center justify-between ${UTILITY_CLASSES.chatBubble} px-2 py-1 max-w-full`}>
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] text-slate-500 dark:text-neutral-400">Replying to</span>
             <span className="text-[10px] font-medium text-slate-700 dark:text-neutral-300">{replyingTo.user?.name}</span>
@@ -65,7 +66,7 @@ export const ChatInput = ({ onSendMessage, replyingTo, onCancelReply, disabled }
           placeholder="Type a message…"
           rows={1}
           disabled={disabled}
-          className="h-8 px-2 py-1 bg-white dark:bg-[#0E1118] border border-slate-200 dark:border-[#283046]/60 rounded-[6px] text-[12px] text-slate-700 dark:text-neutral-200 placeholder:text-slate-400 dark:placeholder:text-neutral-500 resize-none focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40"
+          className={`${UTILITY_CLASSES.inputBase} resize-none`}
         />
         <button 
           type="submit" 

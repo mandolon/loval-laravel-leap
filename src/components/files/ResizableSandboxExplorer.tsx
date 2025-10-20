@@ -4,20 +4,11 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
-
-/** --------------------- Design Tokens --------------------- */
-const T = {
-  radius: 'rounded-[8px]',
-  text: 'text-[12px]',
-  focus: 'focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40',
-  panel: 'bg-white dark:bg-[#0F1219] border border-slate-200 dark:border-[#1d2230]/60',
-  panelSoft: 'bg-slate-50 dark:bg-[#10141D] border border-slate-200 dark:border-[#1a1f2c]/50',
-  panelElev: 'bg-white dark:bg-[#0E1118] border border-slate-200 dark:border-[#1a2030]/50',
-};
+import { DESIGN_TOKENS as T, UTILITY_CLASSES } from '@/lib/design-tokens';
 
 function SectionHeader({ title, right }: { title: string; right?: React.ReactNode }) {
   return (
-    <div className="h-9 px-3 border-b border-slate-200 dark:border-[#1d2230] flex items-center justify-between text-slate-500 dark:text-neutral-500 bg-white dark:bg-[#0E1118]">
+    <div className={UTILITY_CLASSES.sectionHeader}>
       <span>{title}</span>
       {right}
     </div>
@@ -64,7 +55,7 @@ export const ResizableSandboxExplorer = React.memo(function ResizableSandboxExpl
                   key={r}
                   type="button"
                   onClick={() => setRoot(r)}
-                  className={`px-2.5 py-1 ${T.radius} w-full text-left transition-colors ${T.text} ${root === r ? 'bg-slate-100 dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium' : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300'} ${T.focus}`}
+                  className={`px-2.5 py-1 ${T.radius} w-full text-left transition-colors ${T.text} ${root === r ? UTILITY_CLASSES.activeItem : UTILITY_CLASSES.inactiveItem} ${T.focus}`}
                   aria-current={root === r ? 'true' : undefined}
                 >
                   {r}
@@ -74,7 +65,7 @@ export const ResizableSandboxExplorer = React.memo(function ResizableSandboxExpl
           </div>
         </ResizablePanel>
 
-        <ResizableHandle className="w-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors" />
+        <ResizableHandle className={UTILITY_CLASSES.handleHorizontal} />
 
         {/* Folders Panel */}
         <ResizablePanel defaultSize={18} minSize={15} maxSize={30}>
@@ -93,7 +84,7 @@ export const ResizableSandboxExplorer = React.memo(function ResizableSandboxExpl
                   key={f}
                   type="button"
                   onClick={() => setFolder(f)}
-                  className={`w-full text-left px-3 py-1 ${T.text} border-l-2 ${folder === f ? 'border-[#00639b] dark:border-blue-400 bg-slate-50 dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium' : 'border-transparent text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-[#151A24]'}`}
+                  className={`w-full text-left px-3 py-1 ${T.text} border-l-2 ${folder === f ? UTILITY_CLASSES.explorerActiveFolder : UTILITY_CLASSES.explorerInactiveFolder}`}
                   aria-current={folder === f ? 'true' : undefined}
                 >
                   {f}
@@ -103,7 +94,7 @@ export const ResizableSandboxExplorer = React.memo(function ResizableSandboxExpl
           </div>
         </ResizablePanel>
 
-        <ResizableHandle className="w-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors" />
+        <ResizableHandle className={UTILITY_CLASSES.handleHorizontal} />
 
         {/* Files Panel */}
         <ResizablePanel defaultSize={68} minSize={40}>
@@ -122,7 +113,7 @@ export const ResizableSandboxExplorer = React.memo(function ResizableSandboxExpl
                   key={f.id}
                   type="button"
                   onClick={() => setSel(f.id)}
-                  className={`w-full grid ${compact ? 'grid-cols-[minmax(0,1fr)]' : 'grid-cols-[minmax(0,1fr)_max-content_max-content_56px]'} gap-2 items-center px-3 py-1 text-left ${T.text} ${sel === f.id ? 'bg-slate-50 dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium' : 'hover:bg-slate-50 dark:hover:bg-[#151A24] text-slate-700 dark:text-neutral-300'}`}
+                  className={`w-full grid ${compact ? 'grid-cols-[minmax(0,1fr)]' : 'grid-cols-[minmax(0,1fr)_max-content_max-content_56px]'} gap-2 items-center px-3 py-1 text-left ${T.text} ${sel === f.id ? UTILITY_CLASSES.explorerActiveFile : UTILITY_CLASSES.explorerInactiveFile}`}
                   aria-current={sel === f.id ? 'true' : undefined}
                 >
                   <span className="truncate min-w-0">{f.name}</span>
