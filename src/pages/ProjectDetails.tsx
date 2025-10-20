@@ -280,7 +280,7 @@ const ProjectDetails = () => {
   return (
     <div className="flex h-[calc(100vh-4rem)]">
       <ResizablePanelGroup direction="horizontal" className="h-full">
-        <ResizablePanel defaultSize={chatOpen ? 75 : 100} minSize={50}>
+        <ResizablePanel defaultSize={chatOpen ? 75 : 100} minSize={50} className="flex flex-col">
           <div className="flex flex-col h-full min-h-0">
         {/* Header */}
         <div className="border-b bg-background">
@@ -367,14 +367,14 @@ const ProjectDetails = () => {
         </div>
 
         {/* Main Content */}
-        <div className={`flex-1 min-h-0 ${activeTab === 'files' ? 'overflow-hidden' : 'overflow-auto'}`}>
-          <div className={activeTab === 'files' ? 'h-full flex flex-col' : 'p-4 space-y-4'}>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full">
-              <TabsContent value="files" className="mt-0 h-full p-0 data-[state=active]:flex data-[state=active]:flex-col">
+        <div className="flex-1 min-h-0 flex flex-col">
+          <div className={activeTab === 'files' ? 'h-full flex flex-col' : 'flex-1 min-h-0 p-4 space-y-4 overflow-auto'}>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
+              <TabsContent value="files" className="mt-0 flex-1 min-h-0 p-0 flex flex-col">
                 <FilesTab projectId={id || ''} />
               </TabsContent>
 
-            <TabsContent value="tasks" className="mt-0">
+            <TabsContent value="tasks" className="mt-0 flex-1 min-h-0 overflow-auto">
               <div className="space-y-4 mb-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold">Tasks</h2>
@@ -454,7 +454,7 @@ const ProjectDetails = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="invoices" className="mt-0">
+            <TabsContent value="invoices" className="mt-0 flex-1 min-h-0 overflow-auto">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -561,7 +561,7 @@ const ProjectDetails = () => {
               />
             </TabsContent>
 
-            <TabsContent value="links" className="mt-0">
+            <TabsContent value="links" className="mt-0 flex-1 min-h-0 overflow-auto">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -611,7 +611,7 @@ const ProjectDetails = () => {
               />
             </TabsContent>
 
-            <TabsContent value="project" className="mt-0 space-y-6">
+            <TabsContent value="project" className="mt-0 flex-1 min-h-0 space-y-6 overflow-auto">
               {/* Project Name */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
@@ -804,7 +804,7 @@ const ProjectDetails = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="client" className="mt-0">
+            <TabsContent value="client" className="mt-0 flex-1 min-h-0 overflow-auto">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
@@ -848,7 +848,7 @@ const ProjectDetails = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="notes" className="mt-0">
+            <TabsContent value="notes" className="mt-0 flex-1 min-h-0 overflow-auto">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                   <div>
@@ -885,7 +885,7 @@ const ProjectDetails = () => {
       {chatOpen && (
         <>
           <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={25} minSize={20} maxSize={40} className="flex">
+          <ResizablePanel defaultSize={25} minSize={20} maxSize={40} className="flex flex-col">
             <div className="h-full border-l bg-background flex flex-col">
           <div className="p-4 border-b">
             <h3 className="font-semibold">Project Chat</h3>
