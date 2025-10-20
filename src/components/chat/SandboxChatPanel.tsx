@@ -210,8 +210,9 @@ export function SandboxChatPanel({ onClose, className = '' }: SandboxChatPanelPr
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area - Fixed at bottom */}
-      <div className="border-t border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118] flex-shrink-0">
+      {/* Input Area - Fixed at bottom - DEBUG: Red border */}
+      <div className="border-t border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118] flex-shrink-0 border-4 border-red-500">
+        <div className="text-xs text-red-400 px-2">DEBUG: Input container - should be BELOW blue messages area</div>
         {replyingTo && (
           <div className="px-2 pt-2 flex items-center justify-between">
             <div className={`flex items-center gap-2 text-[10px] text-neutral-400 dark:text-neutral-400`}>
