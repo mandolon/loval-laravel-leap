@@ -281,7 +281,7 @@ const ProjectDetails = () => {
     <div className="flex h-[calc(100vh-4rem)]">
       <ResizablePanelGroup direction="horizontal">
         <ResizablePanel defaultSize={chatOpen ? 75 : 100} minSize={50}>
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full min-h-0">
         {/* Header */}
         <div className="border-b bg-background">
           <div className="flex items-center px-6 py-2">
@@ -885,13 +885,13 @@ const ProjectDetails = () => {
       {chatOpen && (
         <>
           <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
+          <ResizablePanel defaultSize={25} minSize={20} maxSize={40} className="flex">
             <div className="h-full border-l bg-background flex flex-col">
           <div className="p-4 border-b">
             <h3 className="font-semibold">Project Chat</h3>
           </div>
           
-          <ScrollArea className="flex-1 p-4">
+          <ScrollArea className="flex-1 min-h-0 p-4">
             <div className="space-y-4">
               {chatLoading ? (
                 <p className="text-sm text-muted-foreground text-center py-8">Loading messages...</p>

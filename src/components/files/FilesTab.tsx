@@ -544,7 +544,7 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps)
   }
 
   return (
-    <div ref={containerRef} className="flex-1 flex flex-col overflow-hidden">
+    <div ref={containerRef} className="h-full flex flex-col overflow-hidden">
       {/* Tab Bar */}
       <TabBar
         tabs={tabs}
