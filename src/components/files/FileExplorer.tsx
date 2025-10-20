@@ -1388,10 +1388,10 @@ export default function FileExplorer({
           <ResizablePanelGroup direction="horizontal">
             {/* Sidebar/Phases Panel */}
             <ResizablePanel defaultSize={14} minSize={10} maxSize={25}>
-              <aside className="h-full border-r border-slate-200 dark:border-[#1a2030]/60 bg-[#0E1118] dark:bg-[#0E1118] flex flex-col">
+              <aside className="h-full border-r border-slate-200 dark:border-[#1a2030]/60 bg-slate-50 dark:bg-[#0E1118] flex flex-col">
                 {/* Search bar - aligned with headers */}
-                <div className="h-9 px-3 flex items-center gap-2 border-b border-[#1d2230] dark:border-[#1d2230]">
-                  <Search className="h-3.5 w-3.5 text-neutral-500 flex-shrink-0" />
+                <div className="h-9 px-3 flex items-center gap-2 border-b border-slate-200 dark:border-[#1d2230]">
+                  <Search className="h-3.5 w-3.5 text-slate-500 dark:text-neutral-500 flex-shrink-0" />
                   <input
                     type="text"
                     placeholder="Search…"
@@ -1401,7 +1401,7 @@ export default function FileExplorer({
                       setModalSearchQuery("");
                     }}
                     readOnly
-                    className="flex-1 h-6 px-0 bg-[#0E1118] dark:bg-[#0E1118] text-[11px] text-neutral-300 placeholder:text-neutral-500 focus:outline-none border-0 cursor-pointer"
+                    className="flex-1 h-6 px-0 bg-slate-50 dark:bg-[#0E1118] text-[11px] text-slate-700 dark:text-neutral-300 placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:outline-none border-0 cursor-pointer"
                   />
                 </div>
                 <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-2 custom-scrollbar">
