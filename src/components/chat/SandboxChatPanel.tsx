@@ -122,13 +122,12 @@ export function SandboxChatPanel({ onClose, className = '' }: SandboxChatPanelPr
 
   return (
     <div
-      className={`flex flex-col h-full bg-[#0F1219] dark:bg-[#0F1219] border-l border-[#1d2230]/60 dark:border-[#1d2230]/60 ${T.radius} overflow-hidden border-8 border-purple-500 ${className}`}
+      className={`flex flex-col bg-[#0F1219] dark:bg-[#0F1219] border-l border-[#1d2230]/60 dark:border-[#1d2230]/60 ${T.radius} h-full max-h-full overflow-hidden ${className}`}
       role="complementary"
       aria-label="Project chat"
     >
-      <div className="absolute top-0 right-0 bg-purple-500 text-white text-xs p-1 z-50">DEBUG: Main container</div>
-      {/* Header - DEBUG: Green border */}
-      <div className="h-10 px-3 flex items-center justify-between border-b border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118] flex-shrink-0 border-4 border-green-500">
+      {/* Header */}
+      <div className="h-10 px-3 flex items-center justify-between border-b border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118] flex-shrink-0">
         <span className={`${T.text} text-neutral-300 dark:text-neutral-300`}>Project Chat</span>
         <button
           type="button"
@@ -142,9 +141,8 @@ export function SandboxChatPanel({ onClose, className = '' }: SandboxChatPanelPr
         </button>
       </div>
 
-      {/* Messages - Scrollable area - DEBUG: Blue border */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0 border-4 border-blue-500">
-        <div className="text-xs text-blue-400">DEBUG: Messages container - should scroll, input should be below</div>
+      {/* Messages - Scrollable area */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-3 min-h-0">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex gap-2 group ${msg.replyToMessageId ? 'ml-8' : ''}`}>
             <Avatar className="h-7 w-7 flex-shrink-0">
@@ -210,9 +208,8 @@ export function SandboxChatPanel({ onClose, className = '' }: SandboxChatPanelPr
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area - Fixed at bottom - DEBUG: Red border */}
-      <div className="border-t border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118] flex-shrink-0 border-4 border-red-500">
-        <div className="text-xs text-red-400 px-2">DEBUG: Input container - should be BELOW blue messages area</div>
+      {/* Input Area - Fixed at bottom */}
+      <div className="border-t border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118] flex-shrink-0">
         {replyingTo && (
           <div className="px-2 pt-2 flex items-center justify-between">
             <div className={`flex items-center gap-2 text-[10px] text-neutral-400 dark:text-neutral-400`}>
