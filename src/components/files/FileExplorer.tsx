@@ -1469,77 +1469,80 @@ export default function FileExplorer({
         </div>
       )}
 
-      {heightMode !== 'collapsed' && (
-        <div className="h-5 border-t border-[#1a2030]/40 bg-[#0E1118] flex items-center justify-between px-2 text-[11px] text-neutral-400">
-          <div className="truncate flex-1">
-            {viewerStatus && viewerStatus.name ? (
-              <span className="truncate">
-                {viewerStatus.name}
-                {viewerStatus.size ? ` • ${viewerStatus.size}` : ''}
-                {viewerStatus.modified ? ` • Modified ${viewerStatus.modified}` : ''}
-                {viewerStatus.pixels && (typeof viewerStatus.pixels.width === 'number') ? ` • ${viewerStatus.pixels.width}×${viewerStatus.pixels.height}px` : ''}
-                {viewerStatus.type === 'pdf' && viewerStatus.pageNumber && viewerStatus.numPages ? ` • Page ${viewerStatus.pageNumber}/${viewerStatus.numPages}` : ''}
-              </span>
-            ) : selectedFolder ? (
-              <span>
-                {currentFiles.length} {currentFiles.length === 1 ? 'file' : 'files'} in {selectedFolder.name}
-              </span>
-            ) : selectedPhase ? (
-              <span>
-                {filteredFolders.length} {filteredFolders.length === 1 ? 'folder' : 'folders'}
-              </span>
-            ) : null}
-          </div>
-          <div className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
-            {/* Toggle buttons */}
-            {selectedFolder && (
-              <button
-                className={`h-5 px-1.5 rounded-[6px] border border-[#283046] inline-flex items-center gap-1 focus:outline-none active:transform-none text-[10px] text-neutral-400 ${viewMode === 'grid' ? 'bg-[#161B26]' : 'bg-[#0E1118]'} hover:bg-[#161B26]`}
-                onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
-                title={viewMode === "grid" ? "Switch to List View" : "Switch to Grid View"}
-              >
-                {viewMode === "grid" ? <List className="h-3.5 w-3.5" /> : <Grid className="h-3.5 w-3.5" />}
-              </button>
-            )}
-            {onToggleHeight && (
-              <button
-                onClick={onToggleHeight}
-                title={heightMode === 'compact' ? 'Collapse to Search' : 'Make Explorer Compact'}
-                className="h-5 w-5 rounded-[6px] border border-[#283046] bg-[#0E1118] hover:bg-[#161B26] flex items-center justify-center text-neutral-400"
-              >
-                <div className="relative w-2.5 h-2.5">
-                  <Minus
-                    className={`absolute h-2.5 w-2.5 transition-transform ${
-                      heightMode === 'tall' || heightMode === 'custom' ? 'translate-y-[-2px]' :
-                      heightMode === 'compact' ? 'translate-y-0' :
-                      'translate-y-[2px]'
-                    }`}
-                  />
-                </div>
-              </button>
-            )}
-            
-            {/* Separator */}
-            {(selectedFolder || onToggleHeight) && (viewerStatus?.loading || viewerStatus?.type) && (
-              <div className="h-4 w-px bg-[#1a2030]/60" />
-            )}
-            
-            {/* Status messages */}
-            {viewerStatus?.loading && viewerStatus?.type === 'pdf' && (
-              <div className="flex items-center gap-1.5">
-                <div className="animate-spin rounded-full h-3 w-3 border border-neutral-400 border-t-transparent" />
-                <span className="text-neutral-400">Loading PDF...</span>
-              </div>
-            )}
-            {!viewerStatus?.loading && viewerStatus?.type === 'image' && (
-              <span className="text-neutral-400">Helpers: Shift+Wheel zoom • Shift+ +/- zoom • R rotate • F fullscreen</span>
-            )}
-            {!viewerStatus?.loading && viewerStatus?.type === 'pdf' && (
-              <span className="text-neutral-400">Helpers: Shift+Wheel zoom • Shift+ +/- zoom • R rotate • Arrows nav • F fullscreen</span>
-            )}
-          </div>
+      {/* Footer - Always visible */}
+      <div className="h-5 border-t border-[#1a2030]/40 bg-[#0E1118] flex items-center justify-between px-2 text-[11px] text-neutral-400">
+        <div className="truncate flex-1">
+          {heightMode !== 'collapsed' && (
+            <>
+              {viewerStatus && viewerStatus.name ? (
+                <span className="truncate">
+                  {viewerStatus.name}
+                  {viewerStatus.size ? ` • ${viewerStatus.size}` : ''}
+                  {viewerStatus.modified ? ` • Modified ${viewerStatus.modified}` : ''}
+                  {viewerStatus.pixels && (typeof viewerStatus.pixels.width === 'number') ? ` • ${viewerStatus.pixels.width}×${viewerStatus.pixels.height}px` : ''}
+                  {viewerStatus.type === 'pdf' && viewerStatus.pageNumber && viewerStatus.numPages ? ` • Page ${viewerStatus.pageNumber}/${viewerStatus.numPages}` : ''}
+                </span>
+              ) : selectedFolder ? (
+                <span>
+                  {currentFiles.length} {currentFiles.length === 1 ? 'file' : 'files'} in {selectedFolder.name}
+                </span>
+              ) : selectedPhase ? (
+                <span>
+                  {filteredFolders.length} {filteredFolders.length === 1 ? 'folder' : 'folders'}
+                </span>
+              ) : null}
+            </>
+          )}
         </div>
-      )}
+        <div className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
+          {/* Toggle buttons */}
+          {heightMode !== 'collapsed' && selectedFolder && (
+            <button
+              className={`h-5 px-1.5 rounded-[6px] border border-[#283046] inline-flex items-center gap-1 focus:outline-none active:transform-none text-[10px] text-neutral-400 ${viewMode === 'grid' ? 'bg-[#161B26]' : 'bg-[#0E1118]'} hover:bg-[#161B26]`}
+              onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
+              title={viewMode === "grid" ? "Switch to List View" : "Switch to Grid View"}
+            >
+              {viewMode === "grid" ? <List className="h-3.5 w-3.5" /> : <Grid className="h-3.5 w-3.5" />}
+            </button>
+          )}
+          {onToggleHeight && (
+            <button
+              onClick={onToggleHeight}
+              title={heightMode === 'collapsed' ? 'Expand Explorer' : heightMode === 'compact' ? 'Collapse to Search' : 'Make Explorer Compact'}
+              className="h-5 w-5 rounded-[6px] border border-[#283046] bg-[#0E1118] hover:bg-[#161B26] flex items-center justify-center text-neutral-400"
+            >
+              <div className="relative w-2.5 h-2.5">
+                <Minus
+                  className={`absolute h-2.5 w-2.5 transition-transform ${
+                    heightMode === 'tall' || heightMode === 'custom' ? 'translate-y-[-2px]' :
+                    heightMode === 'compact' ? 'translate-y-0' :
+                    'translate-y-[2px]'
+                  }`}
+                />
+              </div>
+            </button>
+          )}
+          
+          {/* Separator */}
+          {heightMode !== 'collapsed' && (selectedFolder || onToggleHeight) && (viewerStatus?.loading || viewerStatus?.type) && (
+            <div className="h-4 w-px bg-[#1a2030]/60" />
+          )}
+          
+          {/* Status messages */}
+          {heightMode !== 'collapsed' && viewerStatus?.loading && viewerStatus?.type === 'pdf' && (
+            <div className="flex items-center gap-1.5">
+              <div className="animate-spin rounded-full h-3 w-3 border border-neutral-400 border-t-transparent" />
+              <span className="text-neutral-400">Loading PDF...</span>
+            </div>
+          )}
+          {heightMode !== 'collapsed' && !viewerStatus?.loading && viewerStatus?.type === 'image' && (
+            <span className="text-neutral-400">Helpers: Shift+Wheel zoom • Shift+ +/- zoom • R rotate • F fullscreen</span>
+          )}
+          {heightMode !== 'collapsed' && !viewerStatus?.loading && viewerStatus?.type === 'pdf' && (
+            <span className="text-neutral-400">Helpers: Shift+Wheel zoom • Shift+ +/- zoom • R rotate • Arrows nav • F fullscreen</span>
+          )}
+        </div>
+      </div>
 
       {/* Search Modal */}
       <Dialog open={isSearchModalOpen} onOpenChange={(open) => {
