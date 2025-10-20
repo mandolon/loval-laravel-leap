@@ -557,11 +557,15 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps)
       />
       
       <div
-        className={`relative flex flex-col min-h-0 border-t-[0.5px] border-l-[1.5px] border-r-[1.5px] border-b-[1.5px] transition-[border-color,box-shadow] duration-150 ${viewerBorderClass}`}
-        style={isFullscreen ? { flex: '1 1 auto' } : { flex: '1 1 auto', minHeight: 0 }}
+        className={`relative flex flex-col border-t-[0.5px] border-l-[1.5px] border-r-[1.5px] border-b-[1.5px] transition-[border-color,box-shadow] duration-150 ${viewerBorderClass}`}
+        style={{ 
+          flex: '1 1 0%',
+          minHeight: 0,
+          overflow: 'hidden'
+        }}
         onClick={() => !isFullscreen && setActivePane('viewer')}
       >
-        <div className="relative flex-1 flex flex-col min-h-0">
+        <div className="relative h-full flex flex-col">
           {tabs.map(tab => {
             const isActiveTab = tab.id === activeTabId
             return (
