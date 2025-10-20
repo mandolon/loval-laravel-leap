@@ -234,7 +234,7 @@ export default function SandboxPage() {
       <div className="relative min-h-0 flex-1 w-full overflow-hidden">
         {/* Main content & chat */}
         {chatOpen ? (
-          <ResizablePanelGroup direction="horizontal">
+          <ResizablePanelGroup direction="horizontal" className="gap-1">
             {/* Main panel */}
             <ResizablePanel defaultSize={68} minSize={40}>
               <div className={`relative z-10 ${T.panel} ${T.radius} min-h-0 min-w-0 grid grid-rows-[auto_1fr] overflow-hidden h-full`}>
@@ -262,7 +262,7 @@ export default function SandboxPage() {
               </div>
             </ResizablePanel>
 
-            <ResizableHandle className="w-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors" />
+            <ResizableHandle className="w-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors mx-1" />
 
             {/* Chat panel */}
             <ResizablePanel defaultSize={32} minSize={20} maxSize={50}>

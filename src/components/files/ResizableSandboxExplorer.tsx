@@ -47,7 +47,7 @@ export const ResizableSandboxExplorer = React.memo(function ResizableSandboxExpl
       <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
         {/* Root Panel */}
         <ResizablePanel defaultSize={14} minSize={10} maxSize={25}>
-          <div className={`flex flex-col h-full min-w-0 bg-white dark:bg-[#0E1118] border border-slate-200 dark:border-[#1a2030]/60 rounded-r-none`}>
+          <div className={`flex flex-col h-full min-w-0 bg-white dark:bg-[#0E1118] border-r border-slate-200 dark:border-[#1a2030]/60`}>
             {/* Search bar - aligned with headers */}
             <div className="h-9 px-3 flex items-center border-b border-slate-200 dark:border-[#1d2230]">
               <input
@@ -75,7 +75,7 @@ export const ResizableSandboxExplorer = React.memo(function ResizableSandboxExpl
 
         {/* Folders Panel */}
         <ResizablePanel defaultSize={18} minSize={15} maxSize={30}>
-          <div className={`${T.panel} flex flex-col h-full rounded-none border-l-0 border-r-0 min-w-0`}>
+          <div className={`bg-white dark:bg-[#0F1219] border-r border-slate-200 dark:border-[#1d2230]/60 flex flex-col h-full min-w-0`}>
             <SectionHeader
               title="Folders"
               right={
@@ -104,7 +104,7 @@ export const ResizableSandboxExplorer = React.memo(function ResizableSandboxExpl
 
         {/* Files Panel */}
         <ResizablePanel defaultSize={68} minSize={40}>
-          <div className={`${T.panel} flex flex-col h-full rounded-l-none border-l-0 min-w-0`}>
+          <div className={`bg-white dark:bg-[#0F1219] flex flex-col h-full min-w-0`}>
             <SectionHeader
               title="Files"
               right={
