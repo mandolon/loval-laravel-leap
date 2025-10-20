@@ -75,24 +75,15 @@ export const ChatMessage = ({ message, onDelete, onReply, onEdit, currentUserId,
               <span className="text-[10px] text-slate-400 dark:text-neutral-500">
                 {format(new Date(message.createdAt), 'MMM d, h:mm a')}
               </span>
-              {isOwnMessage && isHovered && !isEditing && (
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(true)}
-                  className="ml-auto px-1.5 py-0.5 text-[10px] text-slate-500 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-[#1a2030] rounded-[4px] opacity-0 group-hover:opacity-100 transition-opacity"
-                  aria-label="Edit message"
-                >
-                  Edit
-                </button>
-              )}
             </div>
 
             <div 
               className={`bg-slate-50 dark:bg-[#141C28] border p-2 rounded-[6px] max-w-[85%] transition-colors ${
                 isOwnMessage && isHovered && !isEditing
-                  ? 'border-slate-300 dark:border-[#283046]'
+                  ? 'border-slate-300 dark:border-[#283046] cursor-pointer'
                   : 'border-slate-200 dark:border-[#1a2030]/60'
               }`}
+              onClick={() => isOwnMessage && !isEditing && setIsEditing(true)}
             >
               {isEditing ? (
                 <div className="space-y-2">
