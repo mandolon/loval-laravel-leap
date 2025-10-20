@@ -13,6 +13,7 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { MOCK_FILES } from '@/data/mock';
 import { useProjectFolders, useProjectFiles as useProjectFilesApi, useCreateFolder } from '@/lib/api/hooks/useProjectFiles';
 import { supabase } from '@/integrations/supabase/client';
@@ -54,69 +55,6 @@ const FileIcon = ({ fileName, className }: { fileName: string; className: string
   return <File className={className} />;
 };
 
-// Centered search results modal
-const CenteredSearchResults = ({ 
-  results, 
-  onSelect, 
-  onClose,
-  searchQuery, 
-  keyboardSelectedIndex,
-  darkMode 
-}: {
-  results: any[];
-  onSelect: (result: any) => void;
-  onClose: () => void;
-  searchQuery: string;
-  keyboardSelectedIndex: number;
-  darkMode: boolean;
-}) => {
-  if (!results.length) return null;
-
-  const body = (
-    <>
-      {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50"
-        onClick={onClose}
-      />
-      
-      {/* Modal */}
-      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-2xl">
-        <div className="bg-popover border border-border rounded-lg shadow-xl max-h-[70vh] overflow-hidden flex flex-col">
-          <div className="px-4 py-3 text-[12px] text-muted-foreground bg-muted border-b border-border/60">
-            {results.length} result{results.length !== 1 ? 's' : ''} for "{searchQuery}"
-          </div>
-          <div className="overflow-y-auto custom-scrollbar">
-            {results.map((result, index) => {
-              const isKeyboardSelected = keyboardSelectedIndex === index;
-              return (
-                <div
-                  key={`${result.type}-${result.name}-${index}`}
-                  className={`flex items-center px-4 py-2 cursor-pointer border-b border-border/60 last:border-b-0 ${
-                    isKeyboardSelected ? 'bg-accent text-accent-foreground' : 'hover:bg-muted/60'
-                  }`}
-                  onClick={() => {
-                    onSelect(result);
-                    onClose();
-                  }}
-                >
-                  <FileIcon
-                    fileName={result.name}
-                    className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[12px] truncate text-foreground">{result.name}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </>
-  );
-  return createPortal(body, document.body);
-};
 
 
 const SidebarItem = ({ item, selected, keyboardFocused, onClick, darkMode }: {
@@ -1011,6 +949,8 @@ export default function FileExplorer({
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [modalSearchQuery, setModalSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState("list");
   const [focusedPanel, setFocusedPanel] = useState('phases');
   const [keyboardSelectedPhase, setKeyboardSelectedPhase] = useState(0);
@@ -1493,16 +1433,6 @@ export default function FileExplorer({
       </div>
       {heightMode !== 'collapsed' && (
         <div className="flex flex-1 min-h-0 overflow-hidden">
-          {showSearchDropdown && (
-            <CenteredSearchResults
-              results={performSearch}
-              searchQuery={searchQuery}
-              keyboardSelectedIndex={keyboardSelectedSearchResult}
-              onSelect={handleSearchResultSelect}
-              onClose={() => setShowSearchDropdown(false)}
-              darkMode={darkMode}
-            />
-          )}
           <ResizablePanelGroup direction="horizontal">
             {/* Sidebar/Phases Panel */}
             <ResizablePanel defaultSize={14} minSize={10} maxSize={25}>
@@ -1511,13 +1441,15 @@ export default function FileExplorer({
                 <div className="h-7 px-3 flex items-center gap-2 border-b border-border">
                   <Search className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                   <input
-                    ref={searchInputRef}
                     type="text"
                     placeholder="Search…"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onFocus={() => setShowSearchDropdown(searchQuery.trim().length > 0 && performSearch.length > 0)}
-                    className="flex-1 h-6 px-0 bg-transparent text-[12px] text-foreground placeholder:text-muted-foreground focus:outline-none border-0"
+                    value=""
+                    onFocus={() => {
+                      setIsSearchModalOpen(true);
+                      setModalSearchQuery("");
+                    }}
+                    readOnly
+                    className="flex-1 h-6 px-0 bg-transparent text-[12px] text-foreground placeholder:text-muted-foreground focus:outline-none border-0 cursor-pointer"
                   />
                 </div>
                 <nav className="flex-1 overflow-y-auto px-1 py-1 custom-scrollbar">
@@ -1622,6 +1554,112 @@ export default function FileExplorer({
           </div>
         </div>
       )}
+
+      {/* Search Modal */}
+      <Dialog open={isSearchModalOpen} onOpenChange={setIsSearchModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b">
+            <DialogTitle>Search Files</DialogTitle>
+          </DialogHeader>
+          
+          <div className="px-6 py-4 border-b">
+            <div className="flex items-center gap-2">
+              <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <input
+                type="text"
+                placeholder="Search files..."
+                value={modalSearchQuery}
+                onChange={(e) => setModalSearchQuery(e.target.value)}
+                className="flex-1 h-10 px-0 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none border-0"
+                autoFocus
+              />
+            </div>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            {(() => {
+              if (!modalSearchQuery.trim()) {
+                return (
+                  <div className="text-center text-muted-foreground py-8">
+                    Type to search for files
+                  </div>
+                );
+              }
+              
+              const query = modalSearchQuery.toLowerCase();
+              const results: Array<{
+                type: 'file';
+                name: string;
+                phase: string;
+                folder: string;
+                data: any;
+              }> = [];
+              
+              phases.forEach((phase: any) => {
+                files.forEach(file => {
+                  if (file.phase === phase.name && file.name.toLowerCase().includes(query)) {
+                    results.push({
+                      type: 'file',
+                      name: file.name,
+                      phase: file.phase,
+                      folder: file.folder,
+                      data: file
+                    });
+                  }
+                });
+              });
+              
+              const limitedResults = results.slice(0, 20);
+              
+              if (limitedResults.length === 0) {
+                return (
+                  <div className="text-center text-muted-foreground py-8">
+                    No files found matching "{modalSearchQuery}"
+                  </div>
+                );
+              }
+              
+              return (
+                <div className="space-y-1">
+                  {limitedResults.map((result, index) => (
+                    <div
+                      key={`${result.type}-${result.name}-${index}`}
+                      className="p-3 hover:bg-accent cursor-pointer rounded-md flex items-center gap-3"
+                      onClick={() => {
+                        // Select the phase and folder
+                        const phase = phases.find((p: any) => p.name === result.phase);
+                        const folder = phase?.children?.find((f: any) => f.name === result.folder);
+                        
+                        if (phase && folder) {
+                          setSelectedPhase(phase);
+                          setSelectedFolder(folder);
+                          setTimeout(() => {
+                            handleFileClick(result.data);
+                          }, 0);
+                        }
+                        
+                        setIsSearchModalOpen(false);
+                        setModalSearchQuery("");
+                      }}
+                    >
+                      <FileIcon
+                        fileName={result.name}
+                        className="h-4 w-4 text-muted-foreground flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate">{result.name}</div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {result.phase} / {result.folder}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
