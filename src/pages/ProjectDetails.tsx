@@ -49,16 +49,10 @@ import { ProjectMembersTable } from "@/components/project/ProjectMembersTable";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
+import { DESIGN_TOKENS as T, UTILITY_CLASSES } from "@/lib/design-tokens";
 
-// Design tokens matching SandboxPage
-const T = {
-  radius: 'rounded-[8px]',
-  text: 'text-[12px]',
-  focus: 'focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40',
-  panel: 'bg-white dark:bg-[#0F1219] border border-slate-200 dark:border-[#1d2230]/60',
-  panelSoft: 'bg-slate-50 dark:bg-[#10141D] border border-slate-200 dark:border-[#1a1f2c]/50',
-  panelElev: 'bg-white dark:bg-[#0E1118] border border-slate-200 dark:border-[#1a2030]/50',
-};
+// PanelRightClose icon import
+import { PanelRightClose } from "lucide-react";
 
 const ProjectDetails = () => {
   const { id, workspaceId } = useParams<{ id: string; workspaceId: string }>();

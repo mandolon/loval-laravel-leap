@@ -19,20 +19,11 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { DESIGN_TOKENS as T, UTILITY_CLASSES } from "@/lib/design-tokens";
 
 interface SandboxSidebarProps {
   onWorkspaceChange?: (workspaceId: string) => void;
 }
-
-const T = {
-  border: "border-slate-200 dark:border-[#1d2230]",
-  borderSubtle: "border-slate-200 dark:border-[#1a2030]/60",
-  radius: "rounded-[8px]",
-  radiusSmall: "rounded-[6px]",
-  text: "text-[12px]",
-  textSmall: "text-[11px]",
-  focus: "focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40",
-};
 
 export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
   const { workspaceId, id: projectId } = useParams<{ workspaceId: string; id: string }>();
