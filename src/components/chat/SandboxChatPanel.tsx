@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { Send, X, MoreVertical, Trash2, Reply } from 'lucide-react';
 import {
@@ -122,12 +123,12 @@ export function SandboxChatPanel({ onClose, className = '' }: SandboxChatPanelPr
 
   return (
     <div
-      className={`flex flex-col bg-[#0F1219] dark:bg-[#0F1219] border-l border-[#1d2230]/60 dark:border-[#1d2230]/60 ${T.radius} h-full max-h-full overflow-hidden ${className}`}
+      className={`bg-[#0F1219] dark:bg-[#0F1219] border-l border-[#1d2230]/60 dark:border-[#1d2230]/60 ${T.radius} h-full flex flex-col ${className}`}
       role="complementary"
       aria-label="Project chat"
     >
       {/* Header */}
-      <div className="h-10 px-3 flex items-center justify-between border-b border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118] flex-shrink-0">
+      <div className="h-10 px-3 flex items-center justify-between border-b border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118]">
         <span className={`${T.text} text-neutral-300 dark:text-neutral-300`}>Project Chat</span>
         <button
           type="button"
@@ -142,76 +143,78 @@ export function SandboxChatPanel({ onClose, className = '' }: SandboxChatPanelPr
       </div>
 
       {/* Messages - Scrollable area */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-3 min-h-0">
-        {messages.map((msg) => (
-          <div key={msg.id} className={`flex gap-2 group ${msg.replyToMessageId ? 'ml-8' : ''}`}>
-            <Avatar className="h-7 w-7 flex-shrink-0">
-              <AvatarFallback
-                className="text-white text-[10px] font-semibold"
-                style={{
-                  background: msg.user.avatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)',
-                }}
-              >
-                {msg.user.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)}
-              </AvatarFallback>
-            </Avatar>
+      <ScrollArea className="flex-1 p-3">
+        <div className="space-y-3">
+          {messages.map((msg) => (
+            <div key={msg.id} className={`flex gap-2 group ${msg.replyToMessageId ? 'ml-8' : ''}`}>
+              <Avatar className="h-7 w-7 flex-shrink-0">
+                <AvatarFallback
+                  className="text-white text-[10px] font-semibold"
+                  style={{
+                    background: msg.user.avatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)',
+                  }}
+                >
+                  {msg.user.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)}
+                </AvatarFallback>
+              </Avatar>
 
-            <div className="flex-1 min-w-0 space-y-1">
-              <div className="flex items-baseline gap-2">
-                <span className={`font-medium ${T.text} text-neutral-200 dark:text-neutral-200`}>
-                  {msg.user.name}
-                </span>
-                <span className="text-[10px] text-neutral-500 dark:text-neutral-500">
-                  {format(new Date(msg.createdAt), 'MMM d, h:mm a')}
-                </span>
-              </div>
+              <div className="flex-1 min-w-0 space-y-1">
+                <div className="flex items-baseline gap-2">
+                  <span className={`font-medium ${T.text} text-neutral-200 dark:text-neutral-200`}>
+                    {msg.user.name}
+                  </span>
+                  <span className="text-[10px] text-neutral-500 dark:text-neutral-500">
+                    {format(new Date(msg.createdAt), 'MMM d, h:mm a')}
+                  </span>
+                </div>
 
-              <div className={`bg-[#141C28] dark:bg-[#141C28] border border-[#1a2030]/60 dark:border-[#1a2030]/60 p-2 ${T.radiusSmall} max-w-[85%]`}>
-                <p className={`${T.text} text-neutral-300 dark:text-neutral-300 whitespace-pre-wrap break-words`}>{msg.content}</p>
-              </div>
+                <div className={`bg-[#141C28] dark:bg-[#141C28] border border-[#1a2030]/60 dark:border-[#1a2030]/60 p-2 ${T.radiusSmall} max-w-[85%]`}>
+                  <p className={`${T.text} text-neutral-300 dark:text-neutral-300 whitespace-pre-wrap break-words`}>{msg.content}</p>
+                </div>
 
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                {!msg.replyToMessageId && (
-                  <button
-                    type="button"
-                    onClick={() => setReplyingTo(msg)}
-                    className={`px-2 py-0.5 text-[10px] text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] ${T.radiusSmall} ${T.focus}`}
-                  >
-                    <Reply className="h-3 w-3 inline mr-1" />
-                    Reply
-                  </button>
-                )}
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                  {!msg.replyToMessageId && (
                     <button
                       type="button"
-                      className={`h-6 w-6 grid place-items-center text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] ${T.radiusSmall} ${T.focus}`}
+                      onClick={() => setReplyingTo(msg)}
+                      className={`px-2 py-0.5 text-[10px] text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] ${T.radiusSmall} ${T.focus}`}
                     >
-                      <MoreVertical className="h-3 w-3" />
+                      <Reply className="h-3 w-3 inline mr-1" />
+                      Reply
                     </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-[#0E1118] border-[#1d2230]">
-                    <DropdownMenuItem
-                      onClick={() => handleDelete(msg.id)}
-                      className="text-neutral-300 hover:bg-[#141C28] hover:text-red-400 focus:bg-[#141C28] focus:text-red-400"
-                    >
-                      <Trash2 className="mr-2 h-3 w-3" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  )}
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className={`h-6 w-6 grid place-items-center text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] ${T.radiusSmall} ${T.focus}`}
+                      >
+                        <MoreVertical className="h-3 w-3" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-[#0E1118] border-[#1d2230]">
+                      <DropdownMenuItem
+                        onClick={() => handleDelete(msg.id)}
+                        className="text-neutral-300 hover:bg-[#141C28] hover:text-red-400 focus:bg-[#141C28] focus:text-red-400"
+                      >
+                        <Trash2 className="mr-2 h-3 w-3" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+      </ScrollArea>
 
       {/* Input Area - Fixed at bottom */}
-      <div className="border-t border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118] flex-shrink-0">
+      <div className="p-3 border-t border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118]">
         {replyingTo && (
-          <div className="px-2 pt-2 flex items-center justify-between">
+          <div className="mb-2 flex items-center justify-between bg-[#141C28] dark:bg-[#141C28] px-2 py-1 ${T.radiusSmall}">
             <div className={`flex items-center gap-2 text-[10px] text-neutral-400 dark:text-neutral-400`}>
               <span>Replying to</span>
               <span className="font-medium text-neutral-300 dark:text-neutral-300">{replyingTo.user.name}</span>
@@ -219,14 +222,14 @@ export function SandboxChatPanel({ onClose, className = '' }: SandboxChatPanelPr
             <button
               type="button"
               onClick={() => setReplyingTo(null)}
-              className={`h-5 w-5 grid place-items-center text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] ${T.radiusSmall} ${T.focus}`}
+              className={`h-5 w-5 grid place-items-center text-neutral-400 dark:text-neutral-400 hover:bg-[#161B26] dark:hover:bg-[#161B26] ${T.radiusSmall} ${T.focus}`}
             >
               <X className="h-3 w-3" />
             </button>
           </div>
         )}
 
-        <form className="px-2 py-2 grid grid-cols-[1fr_auto] gap-2" onSubmit={handleSubmit}>
+        <form className="grid grid-cols-[1fr_auto] gap-2" onSubmit={handleSubmit}>
           <textarea
             ref={textareaRef}
             value={message}
