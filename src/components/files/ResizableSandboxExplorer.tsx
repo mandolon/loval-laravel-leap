@@ -49,10 +49,13 @@ export const ResizableSandboxExplorer = React.memo(function ResizableSandboxExpl
         <ResizablePanel defaultSize={14} minSize={10} maxSize={25}>
           <div className={`flex flex-col h-full min-w-0 bg-white dark:bg-[#0E1118] border-r border-slate-200 dark:border-[#1a2030]/60`}>
             {/* Search bar - aligned with headers */}
-            <div className="h-9 px-3 flex items-center border-b border-slate-200 dark:border-[#1d2230]">
+            <div className="h-9 px-3 flex items-center gap-2 border-b border-slate-200 dark:border-[#1d2230]">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4 text-slate-400 dark:text-neutral-500" aria-hidden>
+                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+              </svg>
               <input
                 placeholder="Search…"
-                className={`w-full h-7 px-2 bg-white dark:bg-[#0E1118] border border-slate-200 dark:border-[#1d2230] rounded-[6px] text-[11px] text-slate-700 dark:text-neutral-300 placeholder:text-slate-400 dark:placeholder:text-neutral-500 ${T.focus}`}
+                className={`w-full h-7 px-2 bg-transparent text-[11px] text-slate-700 dark:text-neutral-300 placeholder:text-slate-400 dark:placeholder:text-neutral-500 ${T.focus}`}
               />
             </div>
             <div className="flex flex-col items-start justify-start px-3 py-2 space-y-2 overflow-auto">
