@@ -332,7 +332,7 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
       onDrop={handleExternalDrop}
     >
       <div className="h-9 border-b border-[#1d2230] bg-[#0E1118] flex items-center justify-between px-3">
-        <span className="text-neutral-500">Folders</span>
+        <span className="text-slate-500 dark:text-neutral-500">Folders</span>
         {phase && (
           <button
             onClick={handleCreateFolderClick}
@@ -356,7 +356,7 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
         )}
         
             {!phase ? (
-          <div className="flex items-center justify-center h-32 text-neutral-500 text-[12px]">
+          <div className="flex items-center justify-center h-32 text-slate-500 dark:text-neutral-500 text-[12px]">
             Select a phase
           </div>
         ) : (
@@ -386,7 +386,7 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
             
             {/* Existing folders */}
             {folders.length === 0 && !isCreatingFolder ? (
-              <div className="flex items-center justify-center h-32 text-neutral-500 text-[12px]">
+              <div className="flex items-center justify-center h-32 text-slate-500 dark:text-neutral-500 text-[12px]">
                 No folders found
               </div>
             ) : (
@@ -578,7 +578,7 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
           </div>
         )}
         {!folder ? (
-          <div className="flex items-center justify-center h-32 text-neutral-500 text-[12px]">
+          <div className="flex items-center justify-center h-32 text-slate-500 dark:text-neutral-500 text-[12px]">
             Select a folder
           </div>
         ) : (
@@ -652,7 +652,7 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
     >
       {/* Fixed Header */}
       <div className="h-9 border-b border-[#1d2230] bg-[#0E1118] flex items-center justify-between px-3 flex-shrink-0">
-        <span className="text-neutral-500">Files</span>
+        <span className="text-slate-500 dark:text-neutral-500">Files</span>
         {canUpload && folder && (
           <>
             <input
@@ -703,11 +703,11 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
           </div>
         )}
         {!folder ? (
-          <div className="flex items-center justify-center h-32 text-neutral-500 text-[12px]">
+          <div className="flex items-center justify-center h-32 text-slate-500 dark:text-neutral-500 text-[12px]">
             No file selected
           </div>
         ) : files.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-neutral-500 text-[12px]">
+          <div className="flex items-center justify-center h-32 text-slate-500 dark:text-neutral-500 text-[12px]">
             No files found
           </div>
         ) : (
