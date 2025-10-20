@@ -230,7 +230,14 @@ const Explorer = React.memo(function Explorer({ compact = false }: { compact?: b
       >
         {/* Root */}
         <div className={`flex flex-col justify-start min-w-0 bg-[#0E1118] dark:bg-[#0E1118] border border-[#1a2030]/60 dark:border-[#1a2030]/60 rounded-r-none`}>
-          <div className="flex flex-col items-start justify-start px-3 py-3 space-y-2">
+          {/* Search bar */}
+          <div className="px-3 pt-3 pb-2">
+            <input
+              placeholder="Search…"
+              className={`w-full h-7 px-2 bg-[#0E1118] dark:bg-[#0E1118] border border-[#1d2230] dark:border-[#1d2230] rounded-[6px] text-[11px] text-neutral-300 dark:text-neutral-300 placeholder:text-neutral-500 dark:placeholder:text-neutral-500 ${T.focus}`}
+            />
+          </div>
+          <div className="flex flex-col items-start justify-start px-3 pb-3 space-y-2">
             {ROOT.map((r) => (
               <button
                 key={r}
@@ -299,12 +306,16 @@ const Explorer = React.memo(function Explorer({ compact = false }: { compact?: b
         </div>
       </div>
 
-      {/* Footer with search bar */}
-      <div className="h-9 px-3 flex items-center border-t border-[#1a2030]/40 dark:border-[#1a2030]/40 bg-[#0E1118] dark:bg-[#0E1118]">
-        <input
-          placeholder="Search files…"
-          className={`w-full h-7 px-3 bg-[#0E1118] dark:bg-[#0E1118] border border-[#1d2230] dark:border-[#1d2230] rounded-[6px] text-[12px] text-neutral-300 dark:text-neutral-300 placeholder:text-neutral-500 dark:placeholder:text-neutral-500 ${T.focus}`}
-        />
+      {/* Footer for file properties */}
+      <div className="h-9 px-3 flex items-center justify-between border-t border-[#1a2030]/40 dark:border-[#1a2030]/40 bg-[#0E1118] dark:bg-[#0E1118] text-neutral-400 dark:text-neutral-400">
+        <span>Selected File:</span>
+        {selectedFile ? (
+          <span className="truncate text-neutral-300 dark:text-neutral-300 max-w-[60%]">
+            {selectedFile.name} ({selectedFile.size})
+          </span>
+        ) : (
+          <span className="text-neutral-500 dark:text-neutral-500">None</span>
+        )}
       </div>
     </div>
   );
