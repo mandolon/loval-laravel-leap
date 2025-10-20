@@ -206,14 +206,14 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
     switch (activeTab) {
       case 'home':
         return (
-          <div className="p-3 space-y-1">
+          <div className="flex flex-col items-start justify-start px-3 pb-3 space-y-2">
             {homeLinks.map((link) => (
               <NavLink
                 key={link.label}
                 to={link.path}
                 className={({ isActive }) => `
-                  w-full flex items-center gap-2 px-3 py-2 ${T.radiusSmall} ${T.text} font-medium transition-colors
-                  ${isActive ? 'bg-[#141C28] text-blue-300' : 'text-neutral-300 hover:bg-[#141C28]/60'}
+                  px-2.5 py-1 ${T.radius} w-full text-left transition-colors
+                  ${isActive ? 'bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 'text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] hover:text-blue-300 dark:hover:text-blue-300'} ${T.focus}
                 `}
               >
                 {link.label}
@@ -226,10 +226,10 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
         const filteredProjects = projects.filter(project => project.status === statusFilter);
         return (
           <>
-            <div className="p-3">
-              <div className="space-y-1 max-h-[200px] overflow-y-auto">
+            <div className="flex flex-col items-start justify-start px-3 pb-3 space-y-2">
+              <div className="w-full space-y-2 max-h-[200px] overflow-y-auto">
                 {filteredProjects.length === 0 ? (
-                  <div className={`${T.text} text-neutral-500 py-2 px-3`}>
+                  <div className={`${T.text} text-neutral-500 py-1 px-2.5`}>
                     No {statusFilter} projects
                   </div>
                 ) : (
@@ -238,12 +238,14 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
                     return (
                       <button
                         key={project.id}
+                        type="button"
                         onClick={() => navigate(`/workspace/${currentWorkspaceId}/project/${project.id}`)}
-                        className={`w-full text-left flex items-center gap-2 px-3 py-2 ${T.radiusSmall} ${T.text} font-medium transition-colors truncate ${
+                        className={`px-2.5 py-1 ${T.radius} w-full text-left transition-colors ${
                           isActive 
-                            ? 'bg-[#141C28] text-blue-300' 
-                            : 'text-neutral-300 hover:bg-[#141C28]/60'
-                        }`}
+                            ? 'bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' 
+                            : 'text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] hover:text-blue-300 dark:hover:text-blue-300'
+                        } ${T.focus}`}
+                        aria-current={isActive ? 'true' : undefined}
                       >
                         <span className="truncate">{project.name}</span>
                       </button>
@@ -257,12 +259,12 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
 
       case 'tasks':
         return (
-          <div className="p-3 space-y-1">
+          <div className="flex flex-col items-start justify-start px-3 pb-3 space-y-2">
             <NavLink
               to={getNavPath('/tasks')}
               className={({ isActive }) => `
-                w-full flex items-center justify-between px-3 py-2 ${T.radiusSmall} ${T.text} font-medium transition-colors
-                ${isActive && !location.search ? 'bg-[#141C28] text-blue-300' : 'text-neutral-300 hover:bg-[#141C28]/60'}
+                px-2.5 py-1 ${T.radius} w-full text-left transition-colors
+                ${isActive && !location.search ? 'bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 'text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] hover:text-blue-300 dark:hover:text-blue-300'} ${T.focus}
               `}
             >
               <span>All Tasks</span>
@@ -270,8 +272,8 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
             <NavLink
               to={getNavPath('/tasks?view=my-tasks')}
               className={({ isActive }) => `
-                w-full flex items-center justify-between px-3 py-2 ${T.radiusSmall} ${T.text} font-medium transition-colors
-                ${location.search.includes('my-tasks') ? 'bg-[#141C28] text-blue-300' : 'text-neutral-300 hover:bg-[#141C28]/60'}
+                px-2.5 py-1 ${T.radius} w-full text-left transition-colors
+                ${location.search.includes('my-tasks') ? 'bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 'text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] hover:text-blue-300 dark:hover:text-blue-300'} ${T.focus}
               `}
             >
               <span>My Tasks</span>
@@ -279,8 +281,8 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
             <NavLink
               to={getNavPath('/tasks?view=completed')}
               className={({ isActive }) => `
-                w-full flex items-center justify-between px-3 py-2 ${T.radiusSmall} ${T.text} font-medium transition-colors
-                ${location.search.includes('completed') ? 'bg-[#141C28] text-blue-300' : 'text-neutral-300 hover:bg-[#141C28]/60'}
+                px-2.5 py-1 ${T.radius} w-full text-left transition-colors
+                ${location.search.includes('completed') ? 'bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 'text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] hover:text-blue-300 dark:hover:text-blue-300'} ${T.focus}
               `}
             >
               <span>Completed</span>
@@ -362,18 +364,19 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
       {/* 4. Project Status Filters */}
       {!isCollapsed && activeTab === 'workspace' && (
         <div className={`border-t ${T.borderSubtle} flex-shrink-0`}>
-          <div className="p-3 space-y-1">
+          <div className="flex flex-col items-start justify-start px-3 pb-3 space-y-2">
             {statusFilters.map((filter) => (
               <button
                 key={filter.label}
+                type="button"
                 onClick={() => handleStatusFilterClick(filter)}
-                className={`w-full flex items-center gap-2 px-3 py-2 ${T.radiusSmall} ${T.text} transition-colors ${
+                className={`px-2.5 py-1 ${T.radius} w-full text-left transition-colors ${
                   statusFilter === filter.value
-                    ? 'bg-[#141C28] text-blue-300 font-medium'
-                    : 'text-neutral-400 hover:bg-[#141C28]/60'
-                }`}
+                    ? 'bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300'
+                    : 'text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] hover:text-blue-300 dark:hover:text-blue-300'
+                } ${T.focus}`}
+                aria-current={statusFilter === filter.value ? 'true' : undefined}
               >
-                <ChevronRight className="h-3 w-3" />
                 {filter.label}
               </button>
             ))}
