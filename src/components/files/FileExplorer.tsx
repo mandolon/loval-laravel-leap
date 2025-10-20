@@ -54,41 +54,34 @@ const FileIcon = ({ fileName, className }: { fileName: string; className: string
   return <File className={className} />;
 };
 
-// Floating (portal) dropdown to escape clipping/overflow contexts
-const FloatingSearchDropdown = ({ 
-  anchorRef, 
+// Full-width search results overlay
+const FullWidthSearchResults = ({ 
+  containerRef,
   results, 
   onSelect, 
-  onClose: _onClose, 
   searchQuery, 
-  keyboardSelectedIndex, 
-  placement = 'up', 
+  keyboardSelectedIndex,
   darkMode 
 }: {
-  anchorRef: RefObject<HTMLElement>;
+  containerRef: RefObject<HTMLElement>;
   results: any[];
   onSelect: (result: any) => void;
-  onClose: () => void;
   searchQuery: string;
   keyboardSelectedIndex: number;
-  placement?: 'up' | 'down';
   darkMode: boolean;
 }) => {
-  const [coords, setCoords] = useState<{left: number; width: number; top: number; placement: string} | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [coords, setCoords] = useState<{left: number; width: number; top: number} | null>(null);
 
   const recalc = useCallback(() => {
-    const anchor = anchorRef.current;
-    if (!anchor) return;
-    const r = anchor.getBoundingClientRect();
+    const container = containerRef.current;
+    if (!container) return;
+    const r = container.getBoundingClientRect();
     setCoords({
       left: r.left,
       width: r.width,
-      // For 'up' we anchor to the top edge then translate -100%
-      top: placement === 'up' ? r.top - 4 : r.bottom + 4,
-      placement
+      top: r.bottom + 1
     });
-  }, [anchorRef, placement]);
+  }, [containerRef]);
 
   useEffect(() => {
     recalc();
@@ -106,19 +99,17 @@ const FloatingSearchDropdown = ({
 
   const body = (
     <div
-      ref={dropdownRef}
-      data-search-dropdown
+      data-search-results
       style={{
         position: 'fixed',
         left: coords.left,
         top: coords.top,
         width: coords.width,
-        zIndex: 100000,
-        transform: coords.placement === 'up' ? 'translateY(-100%)' : 'translateY(0)'
+        zIndex: 100000
       }}
-      className="bg-popover border border-border rounded-md shadow-xl max-h-96 overflow-y-auto custom-scrollbar"
+      className="bg-popover border border-border shadow-xl max-h-96 overflow-y-auto custom-scrollbar"
     >
-      <div className="px-3 py-1.5 text-[11px] text-muted-foreground bg-muted border-b border-border/60">
+      <div className="px-3 py-1.5 text-[12px] text-muted-foreground bg-muted border-b border-border/60">
         {results.length} result{results.length !== 1 ? 's' : ''} for "{searchQuery}"
       </div>
       {results.map((result, index) => {
@@ -136,7 +127,7 @@ const FloatingSearchDropdown = ({
               className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground"
             />
             <div className="flex-1 min-w-0">
-              <div className="text-[11px] truncate text-foreground">{result.name}</div>
+              <div className="text-[12px] truncate text-foreground">{result.name}</div>
             </div>
           </div>
         );
@@ -145,6 +136,7 @@ const FloatingSearchDropdown = ({
   );
   return createPortal(body, document.body);
 };
+
 
 const SidebarItem = ({ item, selected, keyboardFocused, onClick, darkMode }: {
   item: any;
@@ -165,7 +157,7 @@ const SidebarItem = ({ item, selected, keyboardFocused, onClick, darkMode }: {
       data-focus={keyboardFocused ? 'true' : 'false'}
     >
       <Folder className="h-3.5 w-3.5 flex-shrink-0" />
-      <span className={`truncate text-[11px] ${selected ? 'font-medium' : ''}`}>{item.name}</span>
+      <span className={`truncate text-[12px] ${selected ? 'font-medium' : ''}`}>{item.name}</span>
     </button>
   );
 };
@@ -421,7 +413,7 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
       onDragLeave={handleExternalDragLeave}
       onDrop={handleExternalDrop}
     >
-  <div className="flex items-center h-7 border-b border-border bg-muted text-[11px] text-muted-foreground select-none pl-3 pr-2">
+  <div className="flex items-center h-7 border-b border-border bg-muted text-[12px] text-muted-foreground select-none pl-3 pr-2">
         <div className="flex-[2] pr-2">Folder</div>
         <div className="flex-[1] hidden lg:block">Modified</div>
         <div className="h-5 w-5 flex items-center justify-center">
@@ -441,7 +433,7 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
         {isExternalDragOver && (
           <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary/60 flex items-center justify-center text-primary z-10 pointer-events-none">
             <div className="text-center">
-              <div className="text-[11px] font-medium leading-normal tracking-normal text-primary">
+              <div className="text-[12px] font-medium leading-normal tracking-normal text-primary">
                 Drop folders here to add them
               </div>
             </div>
@@ -449,7 +441,7 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
         )}
         
             {!phase ? (
-          <div className="flex items-center justify-center h-32 text-muted-foreground text-[11px]">
+          <div className="flex items-center justify-center h-32 text-muted-foreground text-[12px]">
             Select a phase
           </div>
         ) : (
@@ -466,12 +458,12 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
                     onChange={(e) => setNewFolderName(e.target.value)}
                     onBlur={handleCancelFolder}
                     onKeyDown={handleKeyDown}
-                    className="flex-1 bg-transparent outline-none text-[11px] border-none focus:ring-0 p-0 text-foreground placeholder:text-muted-foreground"
+                    className="flex-1 bg-transparent outline-none text-[12px] border-none focus:ring-0 p-0 text-foreground placeholder:text-muted-foreground"
                     placeholder="New folder name..."
                     autoFocus
                   />
                 </div>
-                <span className="flex-[1] text-[11px] text-muted-foreground tabular-nums hidden lg:block">
+                <span className="flex-[1] text-[12px] text-muted-foreground tabular-nums hidden lg:block">
                   —
                 </span>
                 <div className="h-5 w-5"></div>
@@ -480,7 +472,7 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
             
             {/* Existing folders */}
             {folders.length === 0 && !isCreatingFolder ? (
-              <div className="flex items-center justify-center h-32 text-muted-foreground text-[11px]">
+              <div className="flex items-center justify-center h-32 text-muted-foreground text-[12px]">
                 No folders found
               </div>
             ) : (
@@ -507,9 +499,9 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
                   "text-foreground/80"
                 }`}>
                   <Folder className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-                  <span className="truncate text-[11px]">{f.name}</span>
+                  <span className="truncate text-[12px]">{f.name}</span>
                 </div>
-                <span className="flex-[1] text-[11px] text-muted-foreground tabular-nums hidden lg:block">
+                <span className="flex-[1] text-[12px] text-muted-foreground tabular-nums hidden lg:block">
                   {getMostRecentFileDate(phase?.name, f.name)}
                 </span>
                 <div className="h-5 w-5 flex items-center justify-center">
@@ -663,17 +655,17 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
         {isDragOver && canUpload && (
             <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary/60 flex items-center justify-center text-primary z-10 pointer-events-none">
             <div className="text-center">
-              <div className="text-[11px] font-medium leading-normal tracking-normal text-primary">
+              <div className="text-[12px] font-medium leading-normal tracking-normal text-primary">
                 Drop files here to upload
               </div>
-              <div className="text-[11px] text-primary/80 mt-1">
+              <div className="text-[12px] text-primary/80 mt-1">
                 PDF, images, and documents supported
               </div>
             </div>
           </div>
         )}
         {!folder ? (
-          <div className="flex items-center justify-center h-32 text-muted-foreground text-[11px]">
+          <div className="flex items-center justify-center h-32 text-muted-foreground text-[12px]">
             Select a folder
           </div>
         ) : (
@@ -728,10 +720,10 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
                       })()}
                     </div>
                   </div>
-                  <span className={`text-[11px] leading-snug text-center truncate w-full px-0.5 ${
+                  <span className={`text-[12px] leading-snug text-center truncate w-full px-0.5 ${
                     isSelected ? 'text-primary-foreground font-medium' : isKeyboardFocused ? 'text-foreground' : 'text-foreground/80'
                   }`}>{file.name}</span>
-                  <span className="text-[11px] text-muted-foreground">{file.size}</span>
+                  <span className="text-[12px] text-muted-foreground">{file.size}</span>
                 </div>
               );
             })}
@@ -746,7 +738,7 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
       className="flex-1 flex flex-col bg-card"
     >
       {/* Fixed Header */}
-  <div className="flex items-center h-7 border-b border-border bg-muted text-[11px] text-muted-foreground select-none pl-3 pr-1 flex-shrink-0">
+  <div className="flex items-center h-7 border-b border-border bg-muted text-[12px] text-muted-foreground select-none pl-3 pr-1 flex-shrink-0">
         <div className="flex-1 pr-3 flex items-center min-w-0">
           <span className="inline-block w-4 h-4 mr-2" aria-hidden="true"></span>
           Name
@@ -796,21 +788,21 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
         {isDragOver && canUpload && (
           <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary/60 flex items-center justify-center text-primary z-10 pointer-events-none">
             <div className="text-center">
-              <div className="text-[11px] font-medium leading-normal tracking-normal text-primary">
+              <div className="text-[12px] font-medium leading-normal tracking-normal text-primary">
                 Drop files here to upload
               </div>
-              <div className="text-[11px] text-primary/80 mt-1">
+              <div className="text-[12px] text-primary/80 mt-1">
                 PDF, images, and documents supported
               </div>
             </div>
           </div>
         )}
         {!folder ? (
-          <div className="flex items-center justify-center h-32 text-muted-foreground text-[11px]">
+          <div className="flex items-center justify-center h-32 text-muted-foreground text-[12px]">
             No file selected
           </div>
         ) : files.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-muted-foreground text-[11px]">
+          <div className="flex items-center justify-center h-32 text-muted-foreground text-[12px]">
             No files found
           </div>
         ) : (
@@ -856,11 +848,11 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
                     fileName={file.name}
                     className={`h-3.5 w-3.5 mr-2 ${darkMode ? 'text-muted-foreground' : 'text-gray-500'}`}
                   />
-                  <span className="truncate text-[11px]">{file.name}</span>
+                  <span className="truncate text-[12px]">{file.name}</span>
                 </div>
-                <span className="w-20 shrink-0 text-[11px] text-gray-500 tabular-nums pr-1 hidden md:inline">{file.size}</span>
-                <span className="w-28 shrink-0 text-[11px] text-gray-500 tabular-nums pr-1 hidden lg:inline">{formatFileModified(file.modified)}</span>
-                <span className="w-16 shrink-0 text-[11px] text-gray-500 hidden xl:inline">{getFileExtension(file.name)}</span>
+                <span className="w-20 shrink-0 text-[12px] text-gray-500 tabular-nums pr-1 hidden md:inline">{file.size}</span>
+                <span className="w-28 shrink-0 text-[12px] text-gray-500 tabular-nums pr-1 hidden lg:inline">{formatFileModified(file.modified)}</span>
+                <span className="w-16 shrink-0 text-[12px] text-gray-500 hidden xl:inline">{getFileExtension(file.name)}</span>
               </div>
             );
           })
@@ -1519,16 +1511,23 @@ export default function FileExplorer({
         </div>
       </div>
       {heightMode !== 'collapsed' && (
-        <div className="flex flex-1 min-h-0 overflow-hidden">
+        <div className="flex flex-1 min-h-0 overflow-hidden" ref={searchContainerRef}>
+          {showSearchDropdown && (
+            <FullWidthSearchResults
+              containerRef={searchContainerRef as unknown as RefObject<HTMLElement>}
+              results={performSearch}
+              searchQuery={searchQuery}
+              keyboardSelectedIndex={keyboardSelectedSearchResult}
+              onSelect={handleSearchResultSelect}
+              darkMode={darkMode}
+            />
+          )}
           <ResizablePanelGroup direction="horizontal">
             {/* Sidebar/Phases Panel */}
             <ResizablePanel defaultSize={14} minSize={10} maxSize={25}>
               <aside className="h-full border-r border-border bg-muted flex flex-col">
                 {/* Search bar - aligned with headers */}
-                <div
-                  ref={searchContainerRef}
-                  className="h-7 px-3 flex items-center gap-2 border-b border-border relative"
-                >
+                <div className="h-7 px-3 flex items-center gap-2 border-b border-border">
                   <Search className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                   <input
                     ref={searchInputRef}
@@ -1537,20 +1536,8 @@ export default function FileExplorer({
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onFocus={() => setShowSearchDropdown(searchQuery.trim().length > 0 && performSearch.length > 0)}
-                    className="flex-1 h-6 px-0 bg-transparent text-[11px] text-foreground placeholder:text-muted-foreground focus:outline-none border-0"
+                    className="flex-1 h-6 px-0 bg-transparent text-[12px] text-foreground placeholder:text-muted-foreground focus:outline-none border-0"
                   />
-                  {showSearchDropdown && (
-                    <FloatingSearchDropdown
-                      anchorRef={searchContainerRef as unknown as RefObject<HTMLElement>}
-                      results={performSearch}
-                      searchQuery={searchQuery}
-                      keyboardSelectedIndex={keyboardSelectedSearchResult}
-                      onSelect={handleSearchResultSelect}
-                      onClose={() => setShowSearchDropdown(false)}
-                      placement="down"
-                      darkMode={darkMode}
-                    />
-                  )}
                 </div>
                 <nav className="flex-1 overflow-y-auto px-1 py-1 custom-scrollbar">
                   {phases.map((item: any, index: number) => (
