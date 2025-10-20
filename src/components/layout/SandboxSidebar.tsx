@@ -364,7 +364,7 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
       {/* 4. Project Status Filters */}
       {!isCollapsed && activeTab === 'workspace' && (
         <div className={`border-t ${T.borderSubtle} flex-shrink-0`}>
-          <div className="flex flex-col items-start justify-start px-3 pb-3 space-y-2">
+          <div className="flex flex-col items-start justify-start px-3 py-2 space-y-2">
             {statusFilters.map((filter) => (
               <button
                 key={filter.label}
