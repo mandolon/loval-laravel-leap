@@ -16,7 +16,7 @@ export function NewAppLayout({ children }: NewAppLayoutProps) {
   return (
     <div className="h-screen flex bg-background w-full">
       <NewAppSidebar onWorkspaceChange={handleWorkspaceChange} />
-      <main key={workspaceKey} className="flex-1 overflow-auto">
+      <main key={workspaceKey} className="flex-1 min-h-0 flex flex-col">
         {children}
       </main>
     </div>
