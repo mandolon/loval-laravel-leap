@@ -332,20 +332,17 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
       onDragLeave={handleExternalDragLeave}
       onDrop={handleExternalDrop}
     >
-  <div className="flex items-center h-7 border-b border-border bg-muted text-[12px] text-muted-foreground select-none pl-3 pr-2">
-        <div className="flex-[2] pr-2">Folder</div>
-        <div className="flex-[1] hidden lg:block">Modified</div>
-        <div className="h-5 w-5 flex items-center justify-center">
-          {phase && (
-            <button
-              onClick={handleCreateFolderClick}
-              className="h-5 w-5 flex items-center justify-center rounded hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground"
-              title="Create new folder"
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
+      <div className="h-7 border-b border-border bg-muted flex items-center justify-between px-3">
+        <span className="text-[12px] text-foreground font-medium">Folders</span>
+        {phase && (
+          <button
+            onClick={handleCreateFolderClick}
+            className="h-5 w-5 flex items-center justify-center rounded hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground"
+            title="Create new folder"
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
       <div className="flex-1 overflow-y-auto custom-scrollbar relative">
         {/* External drag overlay */}
@@ -657,43 +654,35 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
       className="flex-1 flex flex-col bg-card"
     >
       {/* Fixed Header */}
-  <div className="flex items-center h-7 border-b border-border bg-muted text-[12px] text-muted-foreground select-none pl-3 pr-1 flex-shrink-0">
-        <div className="flex-1 pr-3 flex items-center min-w-0">
-          <span className="inline-block w-4 h-4 mr-2" aria-hidden="true"></span>
-          Name
-        </div>
-        <div className="w-20 shrink-0 pr-1 hidden md:block">Size</div>
-        <div className="w-28 shrink-0 pr-1 hidden lg:block">Modified</div>
-        <div className="w-16 shrink-0 pr-2 hidden xl:block">Type</div>
-        <div className="w-6 shrink-0 flex items-center justify-end">
-          {canUpload && folder && (
-            <>
-              <input
-                type="file"
-                multiple
-                className="hidden"
-                id="file-explorer-upload-input"
-                onChange={(e) => {
-                  const list = e.target.files;
-                  if (list && list.length) {
-                    onUploadFiles?.(Array.from(list), { phaseName: folder?.phase, folderName: folder?.name });
-                    // reset so selecting same files again re-triggers
-                    e.target.value = '';
-                  }
-                }}
-                accept=".pdf,.png,.jpg,.jpeg,.gif,.bmp,.svg,.webp,.txt,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-              />
-              <button
-                type="button"
-                onClick={() => document.getElementById('file-explorer-upload-input')?.click()}
-                title="Upload files"
-                className="h-5 w-5 flex items-center justify-center rounded hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            </>
-          )}
-        </div>
+      <div className="h-7 border-b border-border bg-muted flex items-center justify-between px-3 flex-shrink-0">
+        <span className="text-[12px] text-foreground font-medium">Files</span>
+        {canUpload && folder && (
+          <>
+            <input
+              type="file"
+              multiple
+              className="hidden"
+              id="file-explorer-upload-input"
+              onChange={(e) => {
+                const list = e.target.files;
+                if (list && list.length) {
+                  onUploadFiles?.(Array.from(list), { phaseName: folder?.phase, folderName: folder?.name });
+                  // reset so selecting same files again re-triggers
+                  e.target.value = '';
+                }
+              }}
+              accept=".pdf,.png,.jpg,.jpeg,.gif,.bmp,.svg,.webp,.txt,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+            />
+            <button
+              type="button"
+              onClick={() => document.getElementById('file-explorer-upload-input')?.click()}
+              title="Upload files"
+              className="h-5 w-5 flex items-center justify-center rounded hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          </>
+        )}
       </div>
       {/* Scrollable Content (drag target) */}
       <div 
