@@ -14,7 +14,7 @@ const T = {
   radius: 'rounded-[8px]',
   radiusSmall: 'rounded-[6px]',
   text: 'text-[12px]',
-  focus: 'focus:outline-none focus:ring-1 focus:ring-[#3b82f6]/40',
+  focus: 'focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40',
 };
 
 interface MockMessage {
@@ -123,19 +123,19 @@ export function SandboxChatPanel({ onClose, className = '' }: SandboxChatPanelPr
 
   return (
     <div
-      className={`bg-[#0F1219] dark:bg-[#0F1219] border-l border-[#1d2230]/60 dark:border-[#1d2230]/60 ${T.radius} flex flex-col ${className}`}
+      className={`bg-white dark:bg-[#0F1219] border-l border-slate-200 dark:border-[#1d2230]/60 ${T.radius} flex flex-col ${className}`}
       role="complementary"
       aria-label="Project chat"
       style={{ height: '100%' }}
     >
       {/* Header */}
-      <div className="h-10 px-3 flex items-center justify-between border-b border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118]">
-        <span className={`${T.text} text-neutral-300 dark:text-neutral-300`}>Project Chat</span>
+      <div className="h-10 px-3 flex items-center justify-between border-b border-slate-200 dark:border-[#1d2230] bg-white dark:bg-[#0E1118]">
+        <span className={`${T.text} text-slate-700 dark:text-neutral-300`}>Project Chat</span>
         <button
           type="button"
           onClick={onClose}
           aria-label="Collapse chat"
-          className={`h-7 w-7 grid place-items-center border border-[#283046]/60 dark:border-[#283046]/60 ${T.radiusSmall} text-neutral-400 dark:text-neutral-400 hover:bg-[#161B26] dark:hover:bg-[#161B26] ${T.focus}`}
+          className={`h-7 w-7 grid place-items-center border border-slate-200 dark:border-[#283046]/60 ${T.radiusSmall} text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#161B26] ${T.focus}`}
         >
           <svg xmlns="http://www.w3.org/2000/svg" aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
             <path strokeLinecap="round" strokeLinejoin="round" d="M10 6l6 6-6 6" />
@@ -161,16 +161,16 @@ export function SandboxChatPanel({ onClose, className = '' }: SandboxChatPanelPr
 
               <div className="flex-1 min-w-0 space-y-1">
                 <div className="flex items-baseline gap-2">
-                  <span className={`font-medium ${T.text} text-neutral-200 dark:text-neutral-200`}>
+                  <span className={`font-medium ${T.text} text-slate-700 dark:text-neutral-200`}>
                     {msg.user.name}
                   </span>
-                  <span className="text-[10px] text-neutral-500 dark:text-neutral-500">
+                  <span className="text-[10px] text-slate-400 dark:text-neutral-500">
                     {format(new Date(msg.createdAt), 'MMM d, h:mm a')}
                   </span>
                 </div>
 
-                <div className={`bg-[#141C28] dark:bg-[#141C28] border border-[#1a2030]/60 dark:border-[#1a2030]/60 p-2 ${T.radiusSmall} max-w-[85%]`}>
-                  <p className={`${T.text} text-neutral-300 dark:text-neutral-300 whitespace-pre-wrap break-words`}>{msg.content}</p>
+                <div className={`bg-slate-50 dark:bg-[#141C28] border border-slate-200 dark:border-[#1a2030]/60 p-2 ${T.radiusSmall} max-w-[85%]`}>
+                  <p className={`${T.text} text-slate-700 dark:text-neutral-300 whitespace-pre-wrap break-words`}>{msg.content}</p>
                 </div>
 
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
@@ -178,7 +178,7 @@ export function SandboxChatPanel({ onClose, className = '' }: SandboxChatPanelPr
                     <button
                       type="button"
                       onClick={() => setReplyingTo(msg)}
-                      className={`px-2 py-0.5 text-[10px] text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] ${T.radiusSmall} ${T.focus}`}
+                      className={`px-2 py-0.5 text-[10px] text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28] ${T.radiusSmall} ${T.focus}`}
                     >
                       <Reply className="h-3 w-3 inline mr-1" />
                       Reply
@@ -189,15 +189,15 @@ export function SandboxChatPanel({ onClose, className = '' }: SandboxChatPanelPr
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
-                        className={`h-6 w-6 grid place-items-center text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] ${T.radiusSmall} ${T.focus}`}
+                        className={`h-6 w-6 grid place-items-center text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28] ${T.radiusSmall} ${T.focus}`}
                       >
                         <MoreVertical className="h-3 w-3" />
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-[#0E1118] border-[#1d2230]">
+                    <DropdownMenuContent align="end" className="bg-white dark:bg-[#0E1118] border-slate-200 dark:border-[#1d2230]">
                       <DropdownMenuItem
                         onClick={() => handleDelete(msg.id)}
-                        className="text-neutral-300 hover:bg-[#141C28] hover:text-red-400 focus:bg-[#141C28] focus:text-red-400"
+                        className="text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-[#141C28] hover:text-red-600 dark:hover:text-red-400 focus:bg-slate-50 dark:focus:bg-[#141C28] focus:text-red-600 dark:focus:text-red-400"
                       >
                         <Trash2 className="mr-2 h-3 w-3" />
                         Delete
@@ -213,17 +213,17 @@ export function SandboxChatPanel({ onClose, className = '' }: SandboxChatPanelPr
       </ScrollArea>
 
       {/* Input Area - Fixed at bottom */}
-      <div className="p-3 border-t border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118]">
+      <div className="p-3 border-t border-slate-200 dark:border-[#1d2230] bg-white dark:bg-[#0E1118]">
         {replyingTo && (
-          <div className="mb-2 flex items-center justify-between bg-[#141C28] dark:bg-[#141C28] px-2 py-1 ${T.radiusSmall}">
-            <div className={`flex items-center gap-2 text-[10px] text-neutral-400 dark:text-neutral-400`}>
+          <div className="mb-2 flex items-center justify-between bg-slate-50 dark:bg-[#141C28] px-2 py-1 ${T.radiusSmall}">
+            <div className={`flex items-center gap-2 text-[10px] text-slate-500 dark:text-neutral-400`}>
               <span>Replying to</span>
-              <span className="font-medium text-neutral-300 dark:text-neutral-300">{replyingTo.user.name}</span>
+              <span className="font-medium text-slate-700 dark:text-neutral-300">{replyingTo.user.name}</span>
             </div>
             <button
               type="button"
               onClick={() => setReplyingTo(null)}
-              className={`h-5 w-5 grid place-items-center text-neutral-400 dark:text-neutral-400 hover:bg-[#161B26] dark:hover:bg-[#161B26] ${T.radiusSmall} ${T.focus}`}
+              className={`h-5 w-5 grid place-items-center text-slate-500 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-[#161B26] ${T.radiusSmall} ${T.focus}`}
             >
               <X className="h-3 w-3" />
             </button>
@@ -237,13 +237,13 @@ export function SandboxChatPanel({ onClose, className = '' }: SandboxChatPanelPr
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Type a message…"
-            className={`h-8 px-2 py-1 bg-[#0E1118] dark:bg-[#0E1118] border border-[#283046]/60 dark:border-[#283046]/60 ${T.radiusSmall} ${T.text} text-neutral-200 dark:text-neutral-200 placeholder:text-neutral-500 dark:placeholder:text-neutral-500 resize-none ${T.focus}`}
+            className={`h-8 px-2 py-1 bg-white dark:bg-[#0E1118] border border-slate-200 dark:border-[#283046]/60 ${T.radiusSmall} ${T.text} text-slate-700 dark:text-neutral-200 placeholder:text-slate-400 dark:placeholder:text-neutral-500 resize-none ${T.focus}`}
             rows={1}
           />
           <button
             type="submit"
             disabled={!message.trim()}
-            className={`h-8 px-3 border border-[#283046]/60 dark:border-[#283046]/60 ${T.radiusSmall} ${T.text} text-neutral-300 dark:text-neutral-300 hover:bg-[#161B26] dark:hover:bg-[#161B26] disabled:opacity-50 disabled:cursor-not-allowed ${T.focus}`}
+            className={`h-8 px-3 border border-slate-200 dark:border-[#283046]/60 ${T.radiusSmall} ${T.text} text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-[#161B26] disabled:opacity-50 disabled:cursor-not-allowed ${T.focus}`}
           >
             <Send className="h-3 w-3" />
           </button>

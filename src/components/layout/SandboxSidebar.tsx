@@ -25,13 +25,13 @@ interface SandboxSidebarProps {
 }
 
 const T = {
-  border: "border-[#1d2230] dark:border-[#1d2230]",
-  borderSubtle: "border-[#1a2030]/60 dark:border-[#1a2030]/60",
+  border: "border-slate-200 dark:border-[#1d2230]",
+  borderSubtle: "border-slate-200 dark:border-[#1a2030]/60",
   radius: "rounded-[8px]",
   radiusSmall: "rounded-[6px]",
   text: "text-[12px]",
   textSmall: "text-[11px]",
-  focus: "focus:outline-none focus:ring-1 focus:ring-[#3b82f6]/40",
+  focus: "focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40",
 };
 
 export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
@@ -213,7 +213,7 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
                 to={link.path}
                 className={({ isActive }) => `
                   px-2.5 py-1 ${T.radius} w-full text-left transition-colors
-                  ${isActive ? 'bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 'text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] hover:text-blue-300 dark:hover:text-blue-300'} ${T.focus}
+                  ${isActive ? 'bg-slate-100 dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium' : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300'} ${T.focus}
                 `}
               >
                 {link.label}
@@ -229,7 +229,7 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
             <div className="flex flex-col items-start justify-start px-3 py-2 space-y-2">
               <div className="w-full space-y-2 max-h-[200px] overflow-y-auto">
                 {filteredProjects.length === 0 ? (
-                  <div className={`${T.text} text-neutral-500 py-1 px-2.5`}>
+                  <div className={`${T.text} text-slate-400 dark:text-neutral-500 py-1 px-2.5`}>
                     No {statusFilter} projects
                   </div>
                 ) : (
@@ -242,8 +242,8 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
                         onClick={() => navigate(`/workspace/${currentWorkspaceId}/project/${project.id}`)}
                         className={`px-2.5 py-1 ${T.radius} w-full text-left transition-colors ${
                           isActive 
-                            ? 'bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' 
-                            : 'text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] hover:text-blue-300 dark:hover:text-blue-300'
+                            ? 'bg-slate-100 dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium' 
+                            : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300'
                         } ${T.focus}`}
                         aria-current={isActive ? 'true' : undefined}
                       >
@@ -296,13 +296,13 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
   };
 
   return (
-    <aside className={`${isCollapsed ? 'w-16' : 'w-[200px]'} bg-[#0F1219] dark:bg-[#0F1219] border-r ${T.borderSubtle} flex flex-col h-full transition-all duration-300`}>
+    <aside className={`${isCollapsed ? 'w-16' : 'w-[200px]'} bg-white dark:bg-[#0F1219] border-r ${T.borderSubtle} flex flex-col h-full transition-all duration-300`}>
       {/* 1. User Profile Section */}
-      <div className={`py-2 px-3 border-b border-[#1d2230] dark:border-[#1d2230] flex-shrink-0 bg-[#0E1118] dark:bg-[#0E1118]`}>
+      <div className={`py-2 px-3 border-b border-slate-200 dark:border-[#1d2230] flex-shrink-0 bg-white dark:bg-[#0E1118]`}>
         {isCollapsed ? (
           <div className="flex justify-center">
             <button
-              className={`h-8 w-8 flex items-center justify-center rounded-[6px] text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] transition-colors ${T.focus}`}
+              className={`h-8 w-8 flex items-center justify-center rounded-[6px] text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28] transition-colors ${T.focus}`}
               onClick={() => setIsCollapsed(!isCollapsed)}
             >
               <ChevronLeft className="h-4 w-4 rotate-180" />
@@ -313,17 +313,17 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
             {user && (
               <div className="flex items-center gap-2 flex-1 min-w-0 pl-3">
                 <div className="flex-1 min-w-0">
-                  <p className={`text-[11px] font-medium truncate text-neutral-300 dark:text-neutral-300`}>
+                  <p className={`text-[11px] font-medium truncate text-slate-700 dark:text-neutral-300`}>
                     {user.name}
                   </p>
-                  <p className={`text-[10px] text-neutral-500 dark:text-neutral-500 truncate`}>
+                  <p className={`text-[10px] text-slate-500 dark:text-neutral-500 truncate`}>
                     {user.is_admin ? 'Admin' : user.email}
                   </p>
                 </div>
               </div>
             )}
             <button
-              className={`h-8 w-8 flex items-center justify-center rounded-[6px] text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] transition-colors flex-shrink-0 ${T.focus}`}
+              className={`h-8 w-8 flex items-center justify-center rounded-[6px] text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28] transition-colors flex-shrink-0 ${T.focus}`}
               onClick={() => setIsCollapsed(!isCollapsed)}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -344,8 +344,8 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
             <button
               className={`h-10 w-10 flex items-center justify-center ${T.radiusSmall} transition-colors ${T.focus} ${
                 activeTab === item.id 
-                  ? 'bg-[#141C28] text-blue-300' 
-                  : 'text-neutral-400 hover:bg-[#141C28]/60'
+                  ? 'bg-slate-100 dark:bg-[#141C28] text-[#00639b] dark:text-blue-300' 
+                  : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28]/60'
               }`}
             >
               <item.icon className="h-5 w-5" />
@@ -372,8 +372,8 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
                 onClick={() => handleStatusFilterClick(filter)}
                 className={`px-2.5 py-1 ${T.radius} w-full text-left transition-colors ${
                   statusFilter === filter.value
-                    ? 'bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300'
-                    : 'text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] hover:text-blue-300 dark:hover:text-blue-300'
+                    ? 'bg-slate-100 dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium'
+                    : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300'
                 } ${T.focus}`}
                 aria-current={statusFilter === filter.value ? 'true' : undefined}
               >
@@ -385,7 +385,7 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
       )}
 
       {/* 5. Footer with Workspace Selector or Avatar */}
-      <div className={`h-10 px-3 flex items-center justify-between border-t border-[#1a2030]/40 dark:border-[#1a2030]/40 bg-[#0E1118] dark:bg-[#0E1118] text-neutral-400 dark:text-neutral-400 flex-shrink-0 mt-auto`}>
+      <div className={`h-10 px-3 flex items-center justify-between border-t border-slate-200 dark:border-[#1a2030]/40 bg-white dark:bg-[#0E1118] text-slate-500 dark:text-neutral-400 flex-shrink-0 mt-auto`}>
         {isCollapsed ? (
           <div className="flex justify-center w-full">
             {user && (
@@ -402,35 +402,35 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
                     </Avatar>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-[#0E1118] border-[#1d2230]">
+                <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-[#0E1118] border-slate-200 dark:border-[#1d2230]">
                   <DropdownMenuItem 
                     onClick={() => navigate('/profile')}
-                    className="text-neutral-300 hover:bg-[#141C28] hover:text-blue-300 focus:bg-[#141C28] focus:text-blue-300"
+                    className="text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-[#141C28] hover:text-[#00639b] dark:hover:text-blue-300 focus:bg-slate-50 dark:focus:bg-[#141C28] focus:text-[#00639b] dark:focus:text-blue-300"
                   >
                     Profile
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => currentWorkspaceId && navigate(`/workspace/${currentWorkspaceId}/trash`)}
-                    className="text-neutral-300 hover:bg-[#141C28] hover:text-blue-300 focus:bg-[#141C28] focus:text-blue-300"
+                    className="text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-[#141C28] hover:text-[#00639b] dark:hover:text-blue-300 focus:bg-slate-50 dark:focus:bg-[#141C28] focus:text-[#00639b] dark:focus:text-blue-300"
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
                     Trash
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="text-neutral-300 hover:bg-[#141C28] hover:text-blue-300 focus:bg-[#141C28] focus:text-blue-300">
+                  <DropdownMenuItem className="text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-[#141C28] hover:text-[#00639b] dark:hover:text-blue-300 focus:bg-slate-50 dark:focus:bg-[#141C28] focus:text-[#00639b] dark:focus:text-blue-300">
                     Settings
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-[#1d2230]" />
+                  <DropdownMenuSeparator className="bg-slate-200 dark:bg-[#1d2230]" />
                   <DropdownMenuItem 
                     onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                    className="text-neutral-300 hover:bg-[#141C28] hover:text-blue-300 focus:bg-[#141C28] focus:text-blue-300"
+                    className="text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-[#141C28] hover:text-[#00639b] dark:hover:text-blue-300 focus:bg-slate-50 dark:focus:bg-[#141C28] focus:text-[#00639b] dark:focus:text-blue-300"
                   >
                     {theme === 'dark' ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
                     {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-[#1d2230]" />
+                  <DropdownMenuSeparator className="bg-slate-200 dark:bg-[#1d2230]" />
                   <DropdownMenuItem 
                     onClick={signOut}
-                    className="text-neutral-300 hover:bg-[#141C28] hover:text-blue-300 focus:bg-[#141C28] focus:text-blue-300"
+                    className="text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-[#141C28] hover:text-[#00639b] dark:hover:text-blue-300 focus:bg-slate-50 dark:focus:bg-[#141C28] focus:text-[#00639b] dark:focus:text-blue-300"
                   >
                     Sign out
                   </DropdownMenuItem>
