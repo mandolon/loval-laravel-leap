@@ -12,6 +12,7 @@ import {
   Plus,
   ChevronUp
 } from 'lucide-react';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { MOCK_FILES } from '@/data/mock';
 import { useProjectFolders, useProjectFiles as useProjectFilesApi, useCreateFolder } from '@/lib/api/hooks/useProjectFiles';
 import { supabase } from '@/integrations/supabase/client';
@@ -1519,86 +1520,100 @@ export default function FileExplorer({
       </div>
       {heightMode !== 'collapsed' && (
         <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* Sidebar */}
-          <aside className="w-[clamp(140px,18%,180px)] border-r border-border bg-muted flex flex-col">
-            {/* Search bar - aligned with headers */}
-            <div
-              ref={searchContainerRef}
-              className="h-7 px-3 flex items-center gap-2 border-b border-border relative"
-            >
-              <Search className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Search…"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => setShowSearchDropdown(searchQuery.trim().length > 0 && performSearch.length > 0)}
-                className="flex-1 h-6 px-0 bg-transparent text-[11px] text-foreground placeholder:text-muted-foreground focus:outline-none border-0"
-              />
-              {showSearchDropdown && (
-                <FloatingSearchDropdown
-                  anchorRef={searchContainerRef as unknown as RefObject<HTMLElement>}
-                  results={performSearch}
-                  searchQuery={searchQuery}
-                  keyboardSelectedIndex={keyboardSelectedSearchResult}
-                  onSelect={handleSearchResultSelect}
-                  onClose={() => setShowSearchDropdown(false)}
-                  placement="down"
-                  darkMode={darkMode}
-                />
-              )}
-            </div>
-            <nav className="flex-1 overflow-y-auto px-1 py-1 custom-scrollbar">
-              {phases.map((item: any, index: number) => (
-                <SidebarItem
-                  key={item.name}
-                  item={item}
-                  selected={selectedPhase?.name === item.name}
-                  keyboardFocused={focusedPanel === 'phases' && keyboardSelectedPhase === index}
-                  darkMode={darkMode}
-                  onClick={() => {
-                    setSelectedPhase(item);
-                    setSelectedFolder(null);
+          <ResizablePanelGroup direction="horizontal">
+            {/* Sidebar/Phases Panel */}
+            <ResizablePanel defaultSize={14} minSize={10} maxSize={25}>
+              <aside className="h-full border-r border-border bg-muted flex flex-col">
+                {/* Search bar - aligned with headers */}
+                <div
+                  ref={searchContainerRef}
+                  className="h-7 px-3 flex items-center gap-2 border-b border-border relative"
+                >
+                  <Search className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Search…"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setShowSearchDropdown(searchQuery.trim().length > 0 && performSearch.length > 0)}
+                    className="flex-1 h-6 px-0 bg-transparent text-[11px] text-foreground placeholder:text-muted-foreground focus:outline-none border-0"
+                  />
+                  {showSearchDropdown && (
+                    <FloatingSearchDropdown
+                      anchorRef={searchContainerRef as unknown as RefObject<HTMLElement>}
+                      results={performSearch}
+                      searchQuery={searchQuery}
+                      keyboardSelectedIndex={keyboardSelectedSearchResult}
+                      onSelect={handleSearchResultSelect}
+                      onClose={() => setShowSearchDropdown(false)}
+                      placement="down"
+                      darkMode={darkMode}
+                    />
+                  )}
+                </div>
+                <nav className="flex-1 overflow-y-auto px-1 py-1 custom-scrollbar">
+                  {phases.map((item: any, index: number) => (
+                    <SidebarItem
+                      key={item.name}
+                      item={item}
+                      selected={selectedPhase?.name === item.name}
+                      keyboardFocused={focusedPanel === 'phases' && keyboardSelectedPhase === index}
+                      darkMode={darkMode}
+                      onClick={() => {
+                        setSelectedPhase(item);
+                        setSelectedFolder(null);
+                        setSelectedFile(null);
+                        setKeyboardSelectedPhase(index);
+                      }}
+                    />
+                  ))}
+                </nav>
+              </aside>
+            </ResizablePanel>
+
+            <ResizableHandle className="w-px bg-border hover:bg-primary/40 transition-colors" />
+
+            {/* Folders Panel */}
+            <ResizablePanel defaultSize={18} minSize={15} maxSize={30}>
+              <div className="h-full border-r border-border">
+                <FolderList 
+                  phase={selectedPhase} 
+                  folders={filteredFolders} 
+                  selectedFolder={selectedFolder}
+                  keyboardFocused={focusedPanel === 'folders'}
+                  keyboardSelectedIndex={keyboardSelectedFolder}
+                  onFolderClick={(folder) => {
+                    setSelectedFolder(folder);
                     setSelectedFile(null);
-                    setKeyboardSelectedPhase(index);
                   }}
+                  allFiles={files}
+                  darkMode={darkMode}
+                  onCreateFolder={handleCreateFolder}
+                  onFolderReorder={handleFolderReorder}
+                  onUploadFiles={handleUploadFiles}
                 />
-              ))}
-            </nav>
-          </aside>
-          {/* Folder List View */}
-          <div className="w-[260px] border-r border-border">
-            <FolderList 
-              phase={selectedPhase} 
-              folders={filteredFolders} 
-              selectedFolder={selectedFolder}
-              keyboardFocused={focusedPanel === 'folders'}
-              keyboardSelectedIndex={keyboardSelectedFolder}
-              onFolderClick={(folder) => {
-                setSelectedFolder(folder);
-                setSelectedFile(null);
-              }}
-              allFiles={files}
-              darkMode={darkMode}
-              onCreateFolder={handleCreateFolder}
-              onFolderReorder={handleFolderReorder}
-              onUploadFiles={handleUploadFiles}
-            />
-          </div>
-          {/* File List View */}
-          <FileList 
-            folder={selectedFolder} 
-            files={currentFiles} 
-            viewMode={viewMode}
-            selectedFile={selectedFile}
-            keyboardFocused={focusedPanel === 'files'}
-            keyboardSelectedIndex={keyboardSelectedFile}
-            onFileClick={handleFileClick}
-            onUploadFiles={handleUploadFiles}
-            canUpload={!!selectedPhase && !!selectedFolder}
-            darkMode={darkMode}
-          />
+              </div>
+            </ResizablePanel>
+
+            <ResizableHandle className="w-px bg-border hover:bg-primary/40 transition-colors" />
+
+            {/* Files Panel */}
+            <ResizablePanel defaultSize={68} minSize={40}>
+              <FileList 
+                folder={selectedFolder} 
+                files={currentFiles} 
+                viewMode={viewMode}
+                selectedFile={selectedFile}
+                keyboardFocused={focusedPanel === 'files'}
+                keyboardSelectedIndex={keyboardSelectedFile}
+                onFileClick={handleFileClick}
+                onUploadFiles={handleUploadFiles}
+                canUpload={!!selectedPhase && !!selectedFolder}
+                darkMode={darkMode}
+              />
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </div>
       )}
 
