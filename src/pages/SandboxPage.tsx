@@ -352,7 +352,7 @@ const ChatPanel = React.memo(function ChatPanel({ onClose, className = '' }: { o
         <div className="bg-[#141C28] dark:bg-[#141C28] border border-[#1a2030]/60 dark:border-[#1a2030]/60 p-2 rounded-[6px] w-fit max-w-[85%]">Welcome to the project chat.</div>
       </div>
 
-      <form className="p-2 border-t border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118] grid grid-cols-[1fr_auto] gap-2 mb-0" onSubmit={(e) => e.preventDefault()}>
+      <form className="px-2 pt-2 pb-0 border-t border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118] grid grid-cols-[1fr_auto] gap-2" onSubmit={(e) => e.preventDefault()}>
         <input
           placeholder="Type a message…"
           className={`h-8 px-2 bg-[#0E1118] dark:bg-[#0E1118] border border-[#283046]/60 dark:border-[#283046]/60 ${T.radius} text-neutral-200 dark:text-neutral-200 placeholder:text-neutral-500 dark:placeholder:text-neutral-500 ${T.focus}`}
