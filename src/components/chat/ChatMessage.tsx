@@ -79,10 +79,10 @@ export const ChatMessage = ({ message, onDelete, onReply, onEdit, currentUserId,
                 <button
                   type="button"
                   onClick={() => setIsEditing(true)}
-                  className="ml-auto h-5 w-5 grid place-items-center text-slate-500 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-[#1a2030] rounded-[4px] opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="ml-auto px-1.5 py-0.5 text-[10px] text-slate-500 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-[#1a2030] rounded-[4px] opacity-0 group-hover:opacity-100 transition-opacity"
                   aria-label="Edit message"
                 >
-                  <Pencil className="h-3 w-3" />
+                  Edit
                 </button>
               )}
             </div>
@@ -149,13 +149,6 @@ export const ChatMessage = ({ message, onDelete, onReply, onEdit, currentUserId,
                 </>
               )}
             </div>
-
-            {!isReply && message.replyCount && message.replyCount > 0 && (
-              <div className="mt-1 flex items-center gap-1 text-[10px] text-slate-500 dark:text-neutral-500">
-                <CornerDownRight className="h-3 w-3" />
-                <span>{message.replyCount} {message.replyCount === 1 ? 'reply' : 'replies'}</span>
-              </div>
-            )}
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent className="w-40">
