@@ -1,6 +1,4 @@
 import { useState, useRef, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
 import { Send, X } from 'lucide-react'
 import type { ChatMessageData } from './ChatMessage'
 
@@ -41,43 +39,41 @@ export const ChatInput = ({ onSendMessage, replyingTo, onCancelReply, disabled }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2">
+    <form onSubmit={handleSubmit}>
       {replyingTo && (
-        <div className="flex items-center justify-between bg-muted/50 px-3 py-2 rounded-md text-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground">Replying to</span>
-            <span className="font-medium">{replyingTo.user?.name}</span>
+        <div className="mb-2 flex items-center justify-between bg-slate-50 dark:bg-[#141C28] px-2 py-1 rounded-[6px]">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-slate-500 dark:text-neutral-400">Replying to</span>
+            <span className="text-[10px] font-medium text-slate-700 dark:text-neutral-300">{replyingTo.user?.name}</span>
           </div>
-          <Button
+          <button
             type="button"
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0"
+            className="h-5 w-5 grid place-items-center text-slate-500 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-[#0E1118] rounded-[6px]"
             onClick={onCancelReply}
           >
             <X className="h-3 w-3" />
-          </Button>
+          </button>
         </div>
       )}
       
-      <div className="flex gap-2">
-        <Textarea
+      <div className="grid grid-cols-[1fr_auto] gap-2">
+        <textarea
           ref={textareaRef}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Type a message... (Shift+Enter for new line)"
-          className="min-h-[60px] max-h-[120px] resize-none"
+          placeholder="Type a message…"
+          rows={1}
           disabled={disabled}
+          className="h-8 px-2 py-1 bg-white dark:bg-[#0E1118] border border-slate-200 dark:border-[#283046]/60 rounded-[6px] text-[12px] text-slate-700 dark:text-neutral-200 placeholder:text-slate-400 dark:placeholder:text-neutral-500 resize-none focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40"
         />
-        <Button 
+        <button 
           type="submit" 
-          size="icon" 
           disabled={!message.trim() || disabled}
-          className="flex-shrink-0"
+          className="h-8 px-3 bg-white dark:bg-[#0E1118] border border-slate-200 dark:border-[#283046]/60 rounded-[6px] text-[12px] text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-[#141C28] disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 flex items-center justify-center"
         >
-          <Send className="h-4 w-4" />
-        </Button>
+          <Send className="h-3 w-3" />
+        </button>
       </div>
     </form>
   )

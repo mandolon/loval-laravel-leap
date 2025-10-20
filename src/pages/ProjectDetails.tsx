@@ -921,17 +921,25 @@ const ProjectDetails = () => {
         <>
           <ResizableHandle withHandle />
           <ResizablePanel defaultSize={25} minSize={20} maxSize={40} className="flex flex-col">
-            <div className="h-full border-l bg-background flex flex-col">
-          <div className="p-4 border-b">
-            <h3 className="font-semibold">Project Chat</h3>
+            <div className="bg-white dark:bg-[#0F1219] border-l border-slate-200 dark:border-[#1d2230]/60 rounded-[8px] flex flex-col h-full">
+          <div className="h-10 px-3 flex items-center justify-between border-b border-slate-200 dark:border-[#1d2230] bg-white dark:bg-[#0E1118]">
+            <span className="text-[12px] text-slate-700 dark:text-neutral-300">Project Chat</span>
+            <button
+              type="button"
+              onClick={() => setChatOpen(false)}
+              aria-label="Collapse chat"
+              className="h-7 w-7 grid place-items-center border border-slate-200 dark:border-[#283046]/60 rounded-[6px] text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#161B26] focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
           
-          <ScrollArea className="flex-1 min-h-0 p-4">
-            <div className="space-y-4">
+          <ScrollArea className="flex-1 min-h-0 p-3">
+            <div className="space-y-3">
               {chatLoading ? (
-                <p className="text-sm text-muted-foreground text-center py-8">Loading messages...</p>
+                <p className="text-[12px] text-slate-500 dark:text-neutral-400 text-center py-8">Loading messages...</p>
               ) : messages.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">No messages yet. Start a conversation!</p>
+                <p className="text-[12px] text-slate-500 dark:text-neutral-400 text-center py-8">No messages yet. Start a conversation!</p>
               ) : (
                 messages.map((message) => (
                   <ChatMessage
@@ -945,7 +953,7 @@ const ProjectDetails = () => {
             </div>
           </ScrollArea>
 
-          <div className="p-4 border-t">
+          <div className="p-3 border-t border-slate-200 dark:border-[#1d2230] bg-white dark:bg-[#0E1118] mt-auto">
             <ChatInput
               onSendMessage={handleSendMessage}
               replyingTo={replyingTo}
