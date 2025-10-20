@@ -231,7 +231,7 @@ export default function SandboxPage() {
       {/* Main column */}
       <div className="relative min-h-0 flex-1 grid grid-rows-[1fr] gap-1 w-full overflow-hidden">
         {/* Main content & chat */}
-        <div className={`min-h-0 h-full grid items-stretch gap-1 relative ${chatOpen ? 'md:grid-cols-[minmax(0,1fr)_clamp(280px,32vw,360px)]' : 'md:grid-cols-[minmax(0,1fr)]'}`}>
+        <div className={`min-h-0 h-full grid items-stretch gap-1 relative border-8 border-cyan-500 ${chatOpen ? 'md:grid-cols-[minmax(0,1fr)_clamp(280px,32vw,360px)]' : 'md:grid-cols-[minmax(0,1fr)]'}`}>
           {/* Main panel */}
           <div className={`relative z-10 ${T.panel} ${T.radius} min-h-0 min-w-0 grid grid-rows-[auto_1fr] overflow-hidden`}>
             <TabsHeader chatOpen={chatOpen} onToggleChat={toggleChat} />
@@ -260,7 +260,7 @@ export default function SandboxPage() {
               <button type="button" aria-label="Close chat overlay" onClick={() => setChatOpen(false)} className="md:hidden fixed inset-0 bg-black/40 z-20" />
               <SandboxChatPanel
                 onClose={() => setChatOpen(false)}
-                className="md:static md:z-10 md:h-full md:block fixed right-1 left-auto top-[56px] bottom-1 z-30 w-[92vw] max-w-[480px] min-w-[280px] md:w-auto md:top-auto md:bottom-auto md:right-auto"
+                className="md:static md:z-10 md:h-full md:block fixed right-1 left-auto top-[56px] bottom-1 z-30 w-[92vw] max-w-[480px] min-w-[280px] md:w-auto md:top-auto md:bottom-auto md:right-auto border-8 border-orange-500"
               />
             </>
           )}
