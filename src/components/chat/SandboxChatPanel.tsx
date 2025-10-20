@@ -77,13 +77,13 @@ export function SandboxChatPanel({ onClose, className = '' }: SandboxChatPanelPr
 
   return (
     <div
-      className={`relative z-20 h-full bg-[#0F1219] dark:bg-[#0F1219] border-l border-[#1d2230]/60 dark:border-[#1d2230]/60 ${T.radius} grid grid-rows-[auto_1fr_auto] overflow-hidden pb-0 ${className}`}
+      className={`flex flex-col h-full bg-[#0F1219] dark:bg-[#0F1219] border-l border-[#1d2230]/60 dark:border-[#1d2230]/60 ${T.radius} overflow-hidden ${className}`}
       role="complementary"
       aria-label="Project chat"
     >
       {/* Header */}
-      <div className="h-10 px-3 flex items-center justify-between border-b border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118]">
-        <span className="text-neutral-300 dark:text-neutral-300">Project Chat</span>
+      <div className="h-10 px-3 flex items-center justify-between border-b border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118] flex-shrink-0">
+        <span className={`${T.text} text-neutral-300 dark:text-neutral-300`}>Project Chat</span>
         <button
           type="button"
           onClick={onClose}
@@ -96,14 +96,14 @@ export function SandboxChatPanel({ onClose, className = '' }: SandboxChatPanelPr
         </button>
       </div>
 
-      {/* Messages */}
-      <div className="overflow-auto p-3 space-y-3 text-neutral-300 dark:text-neutral-300 min-h-0">
+      {/* Messages - Scrollable area */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0">
         {isLoading ? (
-          <div className="text-neutral-500 dark:text-neutral-500 ${T.text}">Loading messages...</div>
+          <div className={`${T.text} text-neutral-500 dark:text-neutral-500`}>Loading messages...</div>
         ) : messages.length === 0 ? (
           <>
-            <div className="text-neutral-500 dark:text-neutral-500 ${T.text}">No messages yet.</div>
-            <div className="bg-[#141C28] dark:bg-[#141C28] border border-[#1a2030]/60 dark:border-[#1a2030]/60 p-2 ${T.radiusSmall} w-fit max-w-[85%] ${T.text}">
+            <div className={`${T.text} text-neutral-500 dark:text-neutral-500`}>No messages yet.</div>
+            <div className={`bg-[#141C28] dark:bg-[#141C28] border border-[#1a2030]/60 dark:border-[#1a2030]/60 p-2 ${T.radiusSmall} w-fit max-w-[85%] ${T.text} text-neutral-300 dark:text-neutral-300`}>
               Welcome to the project chat.
             </div>
           </>
@@ -131,8 +131,8 @@ export function SandboxChatPanel({ onClose, className = '' }: SandboxChatPanelPr
                   </span>
                 </div>
 
-                <div className="bg-[#141C28] dark:bg-[#141C28] border border-[#1a2030]/60 dark:border-[#1a2030]/60 p-2 ${T.radiusSmall} max-w-[85%]">
-                  <p className={`${T.text} whitespace-pre-wrap break-words`}>{msg.content}</p>
+                <div className={`bg-[#141C28] dark:bg-[#141C28] border border-[#1a2030]/60 dark:border-[#1a2030]/60 p-2 ${T.radiusSmall} max-w-[85%]`}>
+                  <p className={`${T.text} text-neutral-300 dark:text-neutral-300 whitespace-pre-wrap break-words`}>{msg.content}</p>
                 </div>
 
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
@@ -174,11 +174,11 @@ export function SandboxChatPanel({ onClose, className = '' }: SandboxChatPanelPr
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="border-t border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118]">
+      {/* Input Area - Fixed at bottom */}
+      <div className="border-t border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118] flex-shrink-0">
         {replyingTo && (
-          <div className="px-2 pt-2 flex items-center justify-between bg-[#0E1118] dark:bg-[#0E1118]">
-            <div className="flex items-center gap-2 text-[10px] text-neutral-400 dark:text-neutral-400">
+          <div className="px-2 pt-2 flex items-center justify-between">
+            <div className={`flex items-center gap-2 text-[10px] text-neutral-400 dark:text-neutral-400`}>
               <span>Replying to</span>
               <span className="font-medium text-neutral-300 dark:text-neutral-300">{replyingTo.user?.name}</span>
             </div>
@@ -192,7 +192,7 @@ export function SandboxChatPanel({ onClose, className = '' }: SandboxChatPanelPr
           </div>
         )}
 
-        <form className="px-2 pt-2 pb-0 grid grid-cols-[1fr_auto] gap-2" onSubmit={handleSubmit}>
+        <form className="px-2 py-2 grid grid-cols-[1fr_auto] gap-2" onSubmit={handleSubmit}>
           <textarea
             ref={textareaRef}
             value={message}
