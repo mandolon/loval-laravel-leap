@@ -64,7 +64,7 @@ function TabsHeader({ chatOpen, onToggleChat }: { chatOpen: boolean; onToggleCha
 
       {/* Center: Tabs (centered between buttons) */}
       <div className="min-w-0 flex justify-center">
-        <div className={`px-1 py-0.5 bg-slate-100 dark:bg-[#0E1118] border border-slate-200 dark:border-[#1a2030]/60 ${T.radius} flex gap-1`} role="tablist" aria-label="Views">
+        <div className={`px-1 py-0.5 bg-slate-100 dark:bg-[#0E1118] ${T.radius} flex gap-1`} role="tablist" aria-label="Views">
           {NAV.map((tab) => {
             const isActive = active === tab;
             return (
