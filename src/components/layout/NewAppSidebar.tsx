@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { DESIGN_TOKENS as T, UTILITY_CLASSES } from "@/lib/design-tokens";
 
 interface NewAppSidebarProps {
   onWorkspaceChange?: (workspaceId: string) => void;
@@ -197,14 +198,14 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
     switch (activeTab) {
       case 'home':
         return (
-          <div className="p-3 space-y-1">
+          <div className="flex flex-col items-start justify-start px-3 pb-3 space-y-2">
             {homeLinks.map((link) => (
               <NavLink
                 key={link.label}
                 to={link.path}
                 className={({ isActive }) => `
-                  w-full flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium transition-colors
-                  ${isActive ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/50'}
+                  px-2.5 py-1 ${T.radius} w-full text-left transition-colors
+                  ${isActive ? 'bg-slate-100 dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium' : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300'} ${T.focus}
                 `}
               >
                 {link.label}
@@ -217,10 +218,10 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
         const filteredProjects = projects.filter(project => project.status === statusFilter);
         return (
           <>
-            <div className="p-3">
-              <div className="space-y-1 max-h-[200px] overflow-y-auto">
+            <div className="flex flex-col items-start justify-start px-3 py-2 space-y-2">
+              <div className="w-full space-y-2 max-h-[200px] overflow-y-auto">
                 {filteredProjects.length === 0 ? (
-                  <div className="text-base text-muted-foreground py-2 px-3">
+                  <div className={`${T.text} text-slate-400 dark:text-neutral-500 py-1 px-2.5`}>
                     No {statusFilter} projects
                   </div>
                 ) : (
@@ -229,12 +230,14 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
                     return (
                       <button
                         key={project.id}
+                        type="button"
                         onClick={() => navigate(`/workspace/${currentWorkspaceId}/project/${project.id}`)}
-                        className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium transition-colors truncate ${
+                        className={`px-2.5 py-1 ${T.radius} w-full text-left transition-colors ${
                           isActive 
-                            ? 'bg-accent text-accent-foreground' 
-                            : 'text-muted-foreground hover:bg-accent/50'
-                        }`}
+                            ? 'bg-slate-100 dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium' 
+                            : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300'
+                        } ${T.focus}`}
+                        aria-current={isActive ? 'true' : undefined}
                       >
                         <span className="truncate">{project.name}</span>
                       </button>
@@ -248,12 +251,12 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
 
       case 'tasks':
         return (
-          <div className="p-3 space-y-1">
+          <div className="flex flex-col items-start justify-start px-3 pb-3 space-y-2">
             <NavLink
               to={getNavPath('/tasks')}
               className={({ isActive }) => `
-                w-full flex items-center justify-between px-3 py-2 rounded-md text-base font-medium transition-colors
-                ${isActive && !location.search ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/50'}
+                px-2.5 py-1 ${T.radius} w-full text-left transition-colors
+                ${isActive && !location.search ? 'bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 'text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] hover:text-blue-300 dark:hover:text-blue-300'} ${T.focus}
               `}
             >
               <span>All Tasks</span>
@@ -261,8 +264,8 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
             <NavLink
               to={getNavPath('/tasks?view=my-tasks')}
               className={({ isActive }) => `
-                w-full flex items-center justify-between px-3 py-2 rounded-md text-base font-medium transition-colors
-                ${location.search.includes('my-tasks') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/50'}
+                px-2.5 py-1 ${T.radius} w-full text-left transition-colors
+                ${location.search.includes('my-tasks') ? 'bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 'text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] hover:text-blue-300 dark:hover:text-blue-300'} ${T.focus}
               `}
             >
               <span>My Tasks</span>
@@ -270,8 +273,8 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
             <NavLink
               to={getNavPath('/tasks?view=completed')}
               className={({ isActive }) => `
-                w-full flex items-center justify-between px-3 py-2 rounded-md text-base font-medium transition-colors
-                ${location.search.includes('completed') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/50'}
+                px-2.5 py-1 ${T.radius} w-full text-left transition-colors
+                ${location.search.includes('completed') ? 'bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 'text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] hover:text-blue-300 dark:hover:text-blue-300'} ${T.focus}
               `}
             >
               <span>Completed</span>
@@ -285,48 +288,44 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
   };
 
   return (
-    <aside className={`${isCollapsed ? 'w-16' : 'w-[200px]'} bg-card border-r border-border flex flex-col h-full transition-all duration-300`}>
+    <aside className={`${isCollapsed ? 'w-16' : 'w-[200px]'} ${T.panel} flex flex-col h-full transition-all duration-300`}>
       {/* 1. User Profile Section */}
-      <div className="pt-3 pb-3 border-b border-border flex-shrink-0">
+      <div className={`py-2 px-3 border-b ${T.borderSubtle} flex-shrink-0 bg-white dark:bg-[#0E1118]`}>
         {isCollapsed ? (
           <div className="flex justify-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
+            <button
+              className={UTILITY_CLASSES.buttonIcon}
               onClick={() => setIsCollapsed(!isCollapsed)}
             >
               <ChevronLeft className="h-4 w-4 rotate-180" />
-            </Button>
+            </button>
           </div>
         ) : (
-          <div className="flex items-center justify-between pr-3">
+          <div className="flex items-center justify-between">
             {user && (
-              <div className="flex items-center gap-2 flex-1 min-w-0 pl-6">
+              <div className="flex items-center gap-2 flex-1 min-w-0 pl-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-base font-semibold truncate">
+                  <p className={`text-[11px] font-medium truncate text-slate-700 dark:text-neutral-300`}>
                     {user.name}
                   </p>
-                  <p className="text-base text-muted-foreground truncate">
+                  <p className={`text-[10px] text-slate-500 dark:text-neutral-500 truncate`}>
                     {user.is_admin ? 'Admin' : user.email}
                   </p>
                 </div>
               </div>
             )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 flex-shrink-0"
+            <button
+              className={`${UTILITY_CLASSES.buttonIcon} flex-shrink-0`}
               onClick={() => setIsCollapsed(!isCollapsed)}
             >
               <ChevronLeft className="h-4 w-4" />
-            </Button>
+            </button>
           </div>
         )}
       </div>
 
       {/* 2. Navigation Icons */}
-      <div className={`px-2 py-3 border-b border-border flex-shrink-0 ${isCollapsed ? 'flex flex-col items-center space-y-2' : 'flex items-center justify-center gap-1'}`}>
+      <div className={`px-2 py-3 border-b ${T.borderSubtle} flex-shrink-0 ${isCollapsed ? 'flex flex-col items-center space-y-2' : 'flex items-center justify-center gap-1'}`}>
         {navIcons.map((item) => (
           <NavLink
             key={item.id}
@@ -334,13 +333,15 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
             onClick={() => setActiveTab(item.id)}
             title={item.label}
           >
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`h-10 w-10 ${activeTab === item.id ? 'bg-accent text-accent-foreground' : ''}`}
+            <button
+              className={`h-10 w-10 flex items-center justify-center ${T.radiusSmall} transition-colors ${T.focus} ${
+                activeTab === item.id 
+                  ? 'bg-slate-100 dark:bg-[#141C28] text-[#00639b] dark:text-blue-300' 
+                  : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28]/60'
+              }`}
             >
-              <item.icon className="h-6 w-6" />
-            </Button>
+              <item.icon className="h-5 w-5" />
+            </button>
           </NavLink>
         ))}
       </div>
@@ -354,19 +355,20 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
 
       {/* 4. Project Status Filters */}
       {!isCollapsed && activeTab === 'workspace' && (
-        <div className="border-t border-border flex-shrink-0">
-          <div className="p-3 space-y-1">
+        <div className={`border-t ${T.borderSubtle} flex-shrink-0`}>
+          <div className="flex flex-col items-start justify-start px-3 py-2 space-y-2">
             {statusFilters.map((filter) => (
               <button
                 key={filter.label}
+                type="button"
                 onClick={() => handleStatusFilterClick(filter)}
-                className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-base transition-colors ${
+                className={`px-2.5 py-1 ${T.radius} w-full text-left transition-colors ${
                   statusFilter === filter.value
-                    ? 'bg-accent text-accent-foreground font-medium'
-                    : 'text-muted-foreground hover:bg-accent/50'
-                }`}
+                    ? 'bg-slate-100 dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium'
+                    : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300'
+                } ${T.focus}`}
+                aria-current={statusFilter === filter.value ? 'true' : undefined}
               >
-                <ChevronRight className="h-3 w-3" />
                 {filter.label}
               </button>
             ))}
@@ -375,39 +377,52 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
       )}
 
       {/* 5. Footer with Workspace Selector or Avatar */}
-      <div className="p-3 border-t border-border flex-shrink-0 mt-auto">
+      <div className={`px-3 py-3 flex items-center justify-between border-t border-slate-200 dark:border-[#1a2030]/40 bg-white dark:bg-[#0E1118] text-slate-500 dark:text-neutral-400 flex-shrink-0 mt-auto`}>
         {isCollapsed ? (
-          <div className="flex justify-center">
+          <div className="flex justify-center w-full">
             {user && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-8 w-8 rounded-full p-0">
-                    <Avatar className="h-8 w-8">
+                  <button className={`h-7 w-7 rounded-full p-0 ${T.focus}`}>
+                    <Avatar className="h-7 w-7">
                       <AvatarFallback 
-                        className="text-white text-xs font-semibold"
+                        className="text-white text-[10px] font-semibold"
                         style={{ background: user.avatar_url || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
                       >
                         {user.initials}
                       </AvatarFallback>
                     </Avatar>
-                  </Button>
+                  </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-popover">
-                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-[#0E1118] border-slate-200 dark:border-[#1d2230]">
+                  <DropdownMenuItem 
+                    onClick={() => navigate('/profile')}
+                    className="text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-[#141C28] hover:text-[#00639b] dark:hover:text-blue-300 focus:bg-slate-50 dark:focus:bg-[#141C28] focus:text-[#00639b] dark:focus:text-blue-300"
+                  >
                     Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => currentWorkspaceId && navigate(`/workspace/${currentWorkspaceId}/trash`)}>
+                  <DropdownMenuItem 
+                    onClick={() => currentWorkspaceId && navigate(`/workspace/${currentWorkspaceId}/trash`)}
+                    className="text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-[#141C28] hover:text-[#00639b] dark:hover:text-blue-300 focus:bg-slate-50 dark:focus:bg-[#141C28] focus:text-[#00639b] dark:focus:text-blue-300"
+                  >
                     <Trash2 className="mr-2 h-4 w-4" />
                     Trash
                   </DropdownMenuItem>
-                  <DropdownMenuItem>Settings</DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+                  <DropdownMenuItem 
+                    onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                    className="text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-[#141C28] hover:text-[#00639b] dark:hover:text-blue-300 focus:bg-slate-50 dark:focus:bg-[#141C28] focus:text-[#00639b] dark:focus:text-blue-300"
+                  >
                     {theme === 'dark' ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
                     {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={signOut}>Sign out</DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={signOut}
+                    className="text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-[#141C28] hover:text-[#00639b] dark:hover:text-blue-300 focus:bg-slate-50 dark:focus:bg-[#141C28] focus:text-[#00639b] dark:focus:text-blue-300"
+                  >
+                    Sign out
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
