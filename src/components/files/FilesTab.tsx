@@ -429,12 +429,12 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps)
   const showExplorerPanel = !isFullscreen && explorerHeightMode !== 'collapsed'
 
   const viewerBorderClass = !isFullscreen && explorerHeightMode !== 'collapsed'
-    ? (activePane === 'viewer' ? 'border-blue-500' : 'border-transparent shadow-[inset_0_-1px_0_rgba(148,163,184,0.45)]')
-    : (activePane === 'viewer' && !isFullscreen ? 'border-blue-500' : 'border-transparent')
+    ? (activePane === 'viewer' ? 'border-primary' : 'border-transparent shadow-[inset_0_-1px_0_hsl(var(--border))]')
+    : (activePane === 'viewer' && !isFullscreen ? 'border-primary' : 'border-transparent')
 
   const explorerBorderClass = activePane === 'explorer'
-    ? 'border-blue-500'
-    : 'border-transparent shadow-[inset_0_-1px_0_rgba(148,163,184,0.45)]'
+    ? 'border-primary'
+    : 'border-transparent shadow-[inset_0_-1px_0_hsl(var(--border))]'
 
   const renderViewerForTab = (tab: ViewerTab, isActiveTab: boolean) => {
     if (tab.viewerMode === 'pdf' && tab.file) {
@@ -618,7 +618,7 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps)
 
       {!isFullscreen && explorerHeightMode === 'collapsed' && (
         <div 
-          className={`flex-shrink-0 border-t-[0.5px] border-l-[1.5px] border-r-[1.5px] border-b-[1.5px] bg-background transition-[border-color,box-shadow] duration-150 ${activePane === 'explorer' ? 'border-blue-500' : 'border-transparent shadow-[inset_0_-1px_0_rgba(148,163,184,0.45)]'}`}
+          className={`flex-shrink-0 border-t-[0.5px] border-l-[1.5px] border-r-[1.5px] border-b-[1.5px] bg-background transition-[border-color,box-shadow] duration-150 ${activePane === 'explorer' ? 'border-primary' : 'border-transparent shadow-[inset_0_-1px_0_hsl(var(--border))]'}`}
           style={{ height: 32 }}
           onClick={() => setActivePane('explorer')}
         >

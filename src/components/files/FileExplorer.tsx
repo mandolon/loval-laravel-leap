@@ -68,9 +68,9 @@ const SidebarItem = ({ item, selected, keyboardFocused, onClick, darkMode }: {
     <button
       onClick={onClick}
       className={`w-full text-left px-2.5 py-1 rounded-[8px] transition-colors focus:outline-none active:transform-none border-0 ${
-        selected ? 'bg-[#141C28] text-blue-300' : 
-        keyboardFocused ? 'bg-[#141C28]/50 text-neutral-300' : 
-        'text-neutral-400 hover:bg-[#141C28] hover:text-blue-300'
+        selected ? 'bg-secondary text-primary' : 
+        keyboardFocused ? 'bg-secondary/50 text-foreground' : 
+        'text-muted-foreground hover:bg-secondary hover:text-primary'
       }`}
       data-selected={selected ? 'true' : 'false'}
       data-focus={keyboardFocused ? 'true' : 'false'}
@@ -325,18 +325,18 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
 
   return (
     <div 
-      className={`flex flex-col flex-1 overflow-hidden bg-[#0E1118] ${isExternalDragOver ? 'ring-2 ring-blue-400 ring-opacity-50' : ''}`}
+      className={`flex flex-col flex-1 overflow-hidden bg-background ${isExternalDragOver ? 'ring-2 ring-primary ring-opacity-50' : ''}`}
       onDragEnter={handleExternalDragEnter}
       onDragOver={handleExternalDragOver}
       onDragLeave={handleExternalDragLeave}
       onDrop={handleExternalDrop}
     >
-      <div className="h-9 border-b border-[#1d2230] bg-[#0E1118] flex items-center justify-between px-3">
+      <div className="h-9 border-b border-border bg-background flex items-center justify-between px-3">
         <span className="text-slate-500 dark:text-neutral-500">Folders</span>
         {phase && (
           <button
             onClick={handleCreateFolderClick}
-            className="h-5 w-5 flex items-center justify-center rounded-[6px] hover:bg-[#161B26] transition-colors text-neutral-400 hover:text-blue-300"
+            className="h-5 w-5 flex items-center justify-center rounded-[6px] hover:bg-secondary transition-colors text-muted-foreground hover:text-primary"
             title="Create new folder"
           >
             <Plus className="h-3.5 w-3.5" />
@@ -363,7 +363,7 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
           <>
             {/* New folder input row */}
             {isCreatingFolder && (
-        <div className="flex items-center h-7 border-b border-[#1d2230]/50 bg-[#0E1118] pl-3 pr-3">
+        <div className="flex items-center h-7 border-b border-border/50 bg-background pl-3 pr-3">
                 <div className="flex-[2] pr-2 min-w-0 flex items-center">
                   <input
                     ref={inputRef}
@@ -372,12 +372,12 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
                     onChange={(e) => setNewFolderName(e.target.value)}
                     onBlur={handleCancelFolder}
                     onKeyDown={handleKeyDown}
-                    className="flex-1 bg-transparent outline-none text-[12px] border-none focus:ring-0 p-0 text-neutral-300 placeholder:text-neutral-500"
+                    className="flex-1 bg-transparent outline-none text-[12px] border-none focus:ring-0 p-0 text-foreground placeholder:text-muted-foreground"
                     placeholder="New folder name..."
                     autoFocus
                   />
                 </div>
-                <span className="flex-[1] text-[12px] text-neutral-400 tabular-nums hidden lg:block">
+                <span className="flex-[1] text-[12px] text-muted-foreground tabular-nums hidden lg:block">
                   —
                 </span>
                 <div className="h-5 w-5"></div>
@@ -397,10 +397,10 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
             return (
               <div
                 key={f.name}
-                className={`group flex items-center h-7 border-b border-[#1d2230]/50 pl-3 pr-3 cursor-pointer transition-colors border-l-2 ${
-                  isSelected ? 'border-l-blue-400 bg-[#141C28]' : 
-                  isKeyboardFocused ? 'border-l-blue-400/50 bg-[#141C28]/50' : 
-                  'border-l-transparent hover:bg-[#151A24]'
+                className={`group flex items-center h-7 border-b border-border/50 pl-3 pr-3 cursor-pointer transition-colors border-l-2 ${
+                  isSelected ? 'border-l-primary bg-secondary' : 
+                  isKeyboardFocused ? 'border-l-primary/50 bg-secondary/50' : 
+                  'border-l-transparent hover:bg-secondary/30'
                 }`}
                 onClick={() => onFolderClick(f)}
                 data-selected={isSelected ? 'true' : 'false'}
@@ -408,13 +408,13 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
                 tabIndex={0}
               >
                 <div className={`flex items-center flex-[2] pr-2 min-w-0 ${
-                  isSelected ? "text-blue-300 font-medium" :
-                  isKeyboardFocused ? "text-blue-300/80" :
-                  "text-neutral-300"
+                  isSelected ? "text-primary font-medium" :
+                  isKeyboardFocused ? "text-primary/80" :
+                  "text-foreground"
                 }`}>
                   <span className="truncate text-[12px]">{f.name}</span>
                 </div>
-                <span className="flex-[1] text-[12px] text-neutral-400 tabular-nums hidden lg:block">
+                <span className="flex-[1] text-[12px] text-muted-foreground tabular-nums hidden lg:block">
                   {getMostRecentFileDate(phase?.name, f.name)}
                 </span>
                 <div className="h-5 w-5 flex items-center justify-center">
@@ -426,7 +426,7 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
                     }}
                     disabled={isFirstFolder}
                     className={`h-4 w-4 flex items-center justify-center rounded-[6px] transition-opacity opacity-0 group-hover:opacity-100 ${
-                      isFirstFolder ? 'cursor-not-allowed text-neutral-500/60' : 'text-neutral-400 hover:text-blue-300 hover:bg-[#161B26]'
+                      isFirstFolder ? 'cursor-not-allowed text-muted-foreground/60' : 'text-muted-foreground hover:text-primary hover:bg-secondary'
                     }`}
                     aria-label="Move folder up"
                     title={isFirstFolder ? 'Top folder' : 'Move folder up'}
@@ -558,7 +558,7 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
   if (viewMode === "grid") {
     return (
       <div 
-        className={`flex-1 overflow-auto bg-[#0E1118] p-3 custom-scrollbar relative ${isDragOver ? 'ring-2 ring-blue-400 ring-opacity-40' : ''}`}
+        className={`flex-1 overflow-auto bg-background p-3 custom-scrollbar relative ${isDragOver ? 'ring-2 ring-primary ring-opacity-40' : ''}`}
         onDragEnter={canUpload ? handleDragEnter : undefined}
         onDragLeave={canUpload ? handleDragLeave : undefined}
         onDragOver={canUpload ? handleDragOver : undefined}
@@ -604,9 +604,9 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
                 <div
                   key={file.name}
                   className={`flex flex-col items-stretch p-2 rounded-[8px] cursor-pointer transition-colors gap-1 ${
-                    isSelected ? 'bg-[#141C28]' : 
-                    isKeyboardFocused ? 'bg-[#141C28]/50' : 
-                    'hover:bg-[#151A24]'
+                    isSelected ? 'bg-secondary' : 
+                    isKeyboardFocused ? 'bg-secondary/50' : 
+                    'hover:bg-secondary/30'
                   }`}
                   onClick={() => onFileClick(file)}
                   draggable={true}
@@ -634,9 +634,9 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
                     </div>
                   </div>
                   <span className={`text-[12px] leading-snug text-center truncate w-full px-0.5 ${
-                    isSelected ? 'text-blue-300 font-medium' : isKeyboardFocused ? 'text-neutral-300' : 'text-neutral-300/80'
+                    isSelected ? 'text-primary font-medium' : isKeyboardFocused ? 'text-foreground' : 'text-foreground/80'
                   }`}>{file.name}</span>
-                  <span className="text-[12px] text-neutral-400">{file.size}</span>
+                  <span className="text-[12px] text-muted-foreground">{file.size}</span>
                 </div>
               );
             })}
@@ -648,10 +648,10 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
 
   return (
     <div 
-      className="flex-1 flex flex-col bg-[#0E1118]"
+      className="flex-1 flex flex-col bg-background"
     >
       {/* Fixed Header */}
-      <div className="h-9 border-b border-[#1d2230] bg-[#0E1118] flex items-center justify-between px-3 flex-shrink-0">
+      <div className="h-9 border-b border-border bg-background flex items-center justify-between px-3 flex-shrink-0">
         <span className="text-slate-500 dark:text-neutral-500">Files</span>
         {canUpload && folder && (
           <>
@@ -674,7 +674,7 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
               type="button"
               onClick={() => document.getElementById('file-explorer-upload-input')?.click()}
               title="Upload files"
-              className="h-5 w-5 flex items-center justify-center rounded-[6px] hover:bg-[#161B26] transition-colors text-neutral-400 hover:text-blue-300"
+              className="h-5 w-5 flex items-center justify-center rounded-[6px] hover:bg-secondary transition-colors text-muted-foreground hover:text-primary"
             >
               <Plus className="h-3.5 w-3.5" />
             </button>
@@ -731,10 +731,10 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
             return (
               <div
                 key={file.name}
-                className={`flex items-center h-7 border-b border-[#1d2230]/50 pl-3 pr-3 cursor-pointer transition-colors ${
-                  isSelected ? 'bg-[#141C28] text-blue-300' : 
-                  isKeyboardFocused ? 'bg-[#141C28]/50 text-neutral-300' : 
-                  'text-neutral-300 hover:bg-[#151A24]'
+                className={`flex items-center h-7 border-b border-border/50 pl-3 pr-3 cursor-pointer transition-colors ${
+                  isSelected ? 'bg-secondary text-primary' : 
+                  isKeyboardFocused ? 'bg-secondary/50 text-foreground' : 
+                  'text-foreground hover:bg-secondary/30'
                 }`}
                 onClick={() => onFileClick(file)}
                 draggable={true}
@@ -742,22 +742,21 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
                 data-selected={isSelected ? 'true' : 'false'}
                 data-focus={isKeyboardFocused ? 'true' : 'false'}
                 tabIndex={0}
-                style={darkMode ? { borderColor: '#1d2230' } : {}}
               >
                 <div className={`flex-1 flex items-center pr-3 min-w-0 ${
-                  isSelected ? "text-blue-300 font-medium" :
-                  isKeyboardFocused ? "text-neutral-300" :
-                  "text-neutral-300"
-                }`} style={darkMode ? { color: isSelected ? '#93c5fd' : (isKeyboardFocused ? '#d4d4d8' : '#d4d4d8') } : {}}>
+                  isSelected ? "text-primary font-medium" :
+                  isKeyboardFocused ? "text-foreground" :
+                  "text-foreground"
+                }`}>
                   <FileIcon
                     fileName={file.name}
-                    className={`h-3.5 w-3.5 mr-2 ${darkMode ? 'text-neutral-400' : 'text-gray-500'}`}
+                    className="h-3.5 w-3.5 mr-2 text-muted-foreground"
                   />
                   <span className="truncate text-[12px]">{file.name}</span>
                 </div>
-                <span className="w-20 shrink-0 text-[12px] text-neutral-400 tabular-nums pr-1 hidden md:inline">{file.size}</span>
-                <span className="w-28 shrink-0 text-[12px] text-neutral-400 tabular-nums pr-1 hidden lg:inline">{formatFileModified(file.modified)}</span>
-                <span className="w-16 shrink-0 text-[12px] text-neutral-400 hidden xl:inline">{getFileExtension(file.name)}</span>
+                <span className="w-20 shrink-0 text-[12px] text-muted-foreground tabular-nums pr-1 hidden md:inline">{file.size}</span>
+                <span className="w-28 shrink-0 text-[12px] text-muted-foreground tabular-nums pr-1 hidden lg:inline">{formatFileModified(file.modified)}</span>
+                <span className="w-16 shrink-0 text-[12px] text-muted-foreground hidden xl:inline">{getFileExtension(file.name)}</span>
               </div>
             );
           })
@@ -1388,9 +1387,9 @@ export default function FileExplorer({
           <ResizablePanelGroup direction="horizontal">
             {/* Sidebar/Phases Panel */}
             <ResizablePanel defaultSize={14} minSize={10} maxSize={25}>
-              <aside className="h-full border-r border-[#1a2030]/60 bg-[#0E1118] flex flex-col">
+              <aside className="h-full border-r border-border bg-background flex flex-col">
                 {/* Search bar - aligned with headers */}
-                <div className="h-9 px-3 flex items-center gap-2 border-b border-[#1d2230]">
+                <div className="h-9 px-3 flex items-center gap-2 border-b border-border">
                   <Search className="h-3.5 w-3.5 text-neutral-500 flex-shrink-0" />
                   <input
                     type="text"
@@ -1424,11 +1423,11 @@ export default function FileExplorer({
               </aside>
             </ResizablePanel>
 
-            <ResizableHandle className="w-px bg-[#1a2030]/60 hover:bg-blue-400/40 transition-colors" />
+            <ResizableHandle className="w-px bg-border hover:bg-primary/40 transition-colors" />
 
             {/* Folders Panel */}
             <ResizablePanel defaultSize={18} minSize={15} maxSize={30}>
-              <div className="h-full border-r border-[#1a2030]/60">
+              <div className="h-full border-r border-border">
                 <FolderList 
                   phase={selectedPhase} 
                   folders={filteredFolders} 
@@ -1448,7 +1447,7 @@ export default function FileExplorer({
               </div>
             </ResizablePanel>
 
-            <ResizableHandle className="w-px bg-[#1a2030]/60 hover:bg-blue-400/40 transition-colors" />
+            <ResizableHandle className="w-px bg-border hover:bg-primary/40 transition-colors" />
 
             {/* Files Panel */}
             <ResizablePanel defaultSize={68} minSize={40}>
@@ -1470,7 +1469,7 @@ export default function FileExplorer({
       )}
 
       {/* Footer - Always visible */}
-      <div className="h-5 border-t border-[#1a2030]/40 bg-[#0E1118] flex items-center justify-between px-2 text-[11px] text-neutral-400">
+      <div className="h-5 border-t border-border bg-background flex items-center justify-between px-2 text-[11px] text-muted-foreground">
         <div className="truncate flex-1">
           {heightMode !== 'collapsed' && (
             <>
@@ -1498,7 +1497,7 @@ export default function FileExplorer({
           {/* Toggle buttons */}
           {heightMode !== 'collapsed' && selectedFolder && (
             <button
-              className={`h-5 px-1.5 rounded-[6px] border border-[#283046] inline-flex items-center gap-1 focus:outline-none active:transform-none text-[10px] text-neutral-400 ${viewMode === 'grid' ? 'bg-[#161B26]' : 'bg-[#0E1118]'} hover:bg-[#161B26]`}
+              className={`h-5 px-1.5 rounded-[6px] border border-border inline-flex items-center gap-1 focus:outline-none active:transform-none text-[10px] text-muted-foreground ${viewMode === 'grid' ? 'bg-secondary' : 'bg-background'} hover:bg-secondary`}
               onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
               title={viewMode === "grid" ? "Switch to List View" : "Switch to Grid View"}
             >
@@ -1509,7 +1508,7 @@ export default function FileExplorer({
             <button
               onClick={onToggleHeight}
               title={heightMode === 'collapsed' ? 'Expand Explorer' : heightMode === 'compact' ? 'Collapse to Search' : 'Make Explorer Compact'}
-              className="h-5 w-5 rounded-[6px] border border-[#283046] bg-[#0E1118] hover:bg-[#161B26] flex items-center justify-center text-neutral-400"
+              className="h-5 w-5 rounded-[6px] border border-border bg-background hover:bg-secondary flex items-center justify-center text-muted-foreground"
             >
               <div className="relative w-2.5 h-2.5">
                 <Minus
@@ -1525,7 +1524,7 @@ export default function FileExplorer({
           
           {/* Separator */}
           {heightMode !== 'collapsed' && (selectedFolder || onToggleHeight) && (viewerStatus?.loading || viewerStatus?.type) && (
-            <div className="h-4 w-px bg-[#1a2030]/60" />
+            <div className="h-4 w-px bg-border" />
           )}
           
           {/* Status messages */}
