@@ -543,8 +543,21 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps)
     )
   }
 
+  // Debug: Log container dimensions
+  useEffect(() => {
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      console.log('FilesTab container:', {
+        height: rect.height,
+        explorerHeight,
+        explorerHeightMode,
+        containerClassName: containerRef.current.className
+      });
+    }
+  }, [explorerHeight, explorerHeightMode]);
+
   return (
-    <div ref={containerRef} className="h-full flex flex-col overflow-hidden">
+    <div ref={containerRef} className="h-full flex flex-col overflow-hidden bg-red-500/10">
       {/* Tab Bar */}
       <TabBar
         tabs={tabs}
