@@ -240,8 +240,8 @@ const Explorer = React.memo(function Explorer({ compact = false }: { compact?: b
         aria-label="File explorer"
       >
         {/* Root */}
-        <div className={`flex flex-col justify-center min-w-0 bg-[#0E1118] dark:bg-[#0E1118] border border-[#1a2030]/60 dark:border-[#1a2030]/60 rounded-r-none`}>
-          <div className="flex flex-col items-start justify-center px-3 space-y-2">
+        <div className={`flex flex-col justify-start min-w-0 bg-[#0E1118] dark:bg-[#0E1118] border border-[#1a2030]/60 dark:border-[#1a2030]/60 rounded-r-none`}>
+          <div className="flex flex-col items-start justify-start px-3 py-3 space-y-2">
             {ROOT.map((r) => (
               <button
                 key={r}
