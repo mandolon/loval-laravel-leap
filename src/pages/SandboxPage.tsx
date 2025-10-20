@@ -141,17 +141,6 @@ function SidebarSecondary({ open, active }: { open: boolean; active: string }) {
   );
 }
 
-/** --------------------- Search --------------------- */
-const CenteredSearch = React.memo(function CenteredSearch() {
-  return (
-    <div className="h-9 flex justify-start items-center mb-1">
-      <input
-        placeholder="Search files…"
-        className={`w-[420px] md:w-[560px] lg:w-[720px] h-8 px-3 bg-[#0E1118] dark:bg-[#0E1118] border border-[#1d2230] dark:border-[#1d2230] rounded-[6px] text-[12px] text-neutral-300 dark:text-neutral-300 placeholder:text-neutral-500 dark:placeholder:text-neutral-500 ${T.focus}`}
-      />
-    </div>
-  );
-});
 
 /** --------------------- Tabs Header --------------------- */
 function TabsHeader({ chatOpen, onToggleChat }: { chatOpen: boolean; onToggleChat: () => void }) {
@@ -310,16 +299,12 @@ const Explorer = React.memo(function Explorer({ compact = false }: { compact?: b
         </div>
       </div>
 
-      {/* Footer for file properties */}
-      <div className="h-9 px-3 flex items-center justify-between border-t border-[#1a2030]/40 dark:border-[#1a2030]/40 bg-[#0E1118] dark:bg-[#0E1118] text-neutral-400 dark:text-neutral-400">
-        <span>Selected File:</span>
-        {selectedFile ? (
-          <span className="truncate text-neutral-300 dark:text-neutral-300 max-w-[60%]">
-            {selectedFile.name} ({selectedFile.size})
-          </span>
-        ) : (
-          <span className="text-neutral-500 dark:text-neutral-500">None</span>
-        )}
+      {/* Footer with search bar */}
+      <div className="h-9 px-3 flex items-center border-t border-[#1a2030]/40 dark:border-[#1a2030]/40 bg-[#0E1118] dark:bg-[#0E1118]">
+        <input
+          placeholder="Search files…"
+          className={`w-full h-7 px-3 bg-[#0E1118] dark:bg-[#0E1118] border border-[#1d2230] dark:border-[#1d2230] rounded-[6px] text-[12px] text-neutral-300 dark:text-neutral-300 placeholder:text-neutral-500 dark:placeholder:text-neutral-500 ${T.focus}`}
+        />
       </div>
     </div>
   );
@@ -387,10 +372,8 @@ export default function SandboxPage() {
       <SidebarSecondary open={secondaryOpen} active={active} />
 
       {/* Main column */}
-      <div className={`relative min-h-0 grid grid-rows-[auto_1fr] gap-1 w-full overflow-hidden ${secondaryOpen ? 'ml-2' : ''}`}>
-        <CenteredSearch />
-
-        {/* Main content & chat. Chat is full-height, starts below search. */}
+      <div className={`relative min-h-0 grid grid-rows-[1fr] gap-1 w-full overflow-hidden ${secondaryOpen ? 'ml-2' : ''}`}>
+        {/* Main content & chat */}
         <div className={`min-h-0 h-full grid items-stretch gap-1 relative ${chatOpen ? 'md:grid-cols-[minmax(0,1fr)_clamp(280px,32vw,360px)]' : 'md:grid-cols-[minmax(0,1fr)]'}`}>
           {/* Main panel */}
           <div className={`relative z-10 ${T.panel} ${T.radius} min-h-0 min-w-0 grid grid-rows-[auto_1fr] overflow-hidden`}>
