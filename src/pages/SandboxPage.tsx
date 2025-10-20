@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { SandboxSidebar } from '@/components/layout/SandboxSidebar';
+import { SandboxChatPanel } from '@/components/chat/SandboxChatPanel';
 
 /** --------------------- Design Tokens --------------------- */
 const T = {
@@ -216,45 +217,6 @@ const Explorer = React.memo(function Explorer({ compact = false }: { compact?: b
   );
 });
 
-/** --------------------- Chat --------------------- */
-const ChatPanel = React.memo(function ChatPanel({ onClose, className = '' }: { onClose: () => void; className?: string }) {
-  return (
-    <div
-      className={`relative z-20 h-full ${T.panel} ${T.radius} bg-[#0F1219] dark:bg-[#0F1219] border-l border-[#1d2230]/60 dark:border-[#1d2230]/60 grid grid-rows-[auto_1fr_auto] overflow-hidden pb-0 ${className}`}
-      role="complementary"
-      aria-label="Project chat"
-    >
-      <div className="h-10 px-3 flex items-center justify-between border-b border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118]">
-        <span className="text-neutral-300 dark:text-neutral-300">Project Chat</span>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Collapse chat"
-          className={`h-7 w-7 grid place-items-center border border-[#283046]/60 dark:border-[#283046]/60 ${T.radius} text-neutral-400 dark:text-neutral-400 hover:bg-[#161B26] dark:hover:bg-[#161B26] ${T.focus}`}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6l6 6-6 6" />
-          </svg>
-        </button>
-      </div>
-
-      <div className="overflow-auto p-3 space-y-2 text-neutral-300 dark:text-neutral-300 min-h-0">
-        <div className="text-neutral-500 dark:text-neutral-500">No messages yet.</div>
-        <div className="bg-[#141C28] dark:bg-[#141C28] border border-[#1a2030]/60 dark:border-[#1a2030]/60 p-2 rounded-[6px] w-fit max-w-[85%]">Welcome to the project chat.</div>
-      </div>
-
-      <form className="px-2 pt-2 pb-0 border-t border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118] grid grid-cols-[1fr_auto] gap-2" onSubmit={(e) => e.preventDefault()}>
-        <input
-          placeholder="Type a message…"
-          className={`h-8 px-2 bg-[#0E1118] dark:bg-[#0E1118] border border-[#283046]/60 dark:border-[#283046]/60 ${T.radius} text-neutral-200 dark:text-neutral-200 placeholder:text-neutral-500 dark:placeholder:text-neutral-500 ${T.focus}`}
-        />
-        <button type="submit" className={`h-8 px-3 border border-[#283046]/60 dark:border-[#283046]/60 ${T.radius} text-neutral-300 dark:text-neutral-300 hover:bg-[#161B26] dark:hover:bg-[#161B26] ${T.focus}`}>
-          Send
-        </button>
-      </form>
-    </div>
-  );
-});
 
 /** --------------------- Page --------------------- */
 export default function SandboxPage() {
@@ -296,7 +258,7 @@ export default function SandboxPage() {
             <>
               {/* Mobile overlay backdrop */}
               <button type="button" aria-label="Close chat overlay" onClick={() => setChatOpen(false)} className="md:hidden fixed inset-0 bg-black/40 z-20" />
-              <ChatPanel
+              <SandboxChatPanel
                 onClose={() => setChatOpen(false)}
                 className="md:static md:z-10 md:h-full md:block fixed right-1 left-auto top-[56px] bottom-1 z-30 w-[92vw] max-w-[480px] min-w-[280px] md:w-auto md:top-auto md:bottom-auto md:right-auto"
               />
