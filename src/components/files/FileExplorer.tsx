@@ -54,85 +54,66 @@ const FileIcon = ({ fileName, className }: { fileName: string; className: string
   return <File className={className} />;
 };
 
-// Full-width search results overlay
-const FullWidthSearchResults = ({ 
-  containerRef,
+// Centered search results modal
+const CenteredSearchResults = ({ 
   results, 
   onSelect, 
+  onClose,
   searchQuery, 
   keyboardSelectedIndex,
   darkMode 
 }: {
-  containerRef: RefObject<HTMLElement>;
   results: any[];
   onSelect: (result: any) => void;
+  onClose: () => void;
   searchQuery: string;
   keyboardSelectedIndex: number;
   darkMode: boolean;
 }) => {
-  const [coords, setCoords] = useState<{left: number; width: number; top: number} | null>(null);
-
-  const recalc = useCallback(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    const r = container.getBoundingClientRect();
-    setCoords({
-      left: r.left,
-      width: r.width,
-      top: r.bottom + 1
-    });
-  }, [containerRef]);
-
-  useEffect(() => {
-    recalc();
-    window.addEventListener('resize', recalc);
-    window.addEventListener('scroll', recalc, true);
-    const id = setInterval(recalc, 750);
-    return () => {
-      window.removeEventListener('resize', recalc);
-      window.removeEventListener('scroll', recalc, true);
-      clearInterval(id);
-    };
-  }, [recalc]);
-
-  if (!results.length || !coords) return null;
+  if (!results.length) return null;
 
   const body = (
-    <div
-      data-search-results
-      style={{
-        position: 'fixed',
-        left: coords.left,
-        top: coords.top,
-        width: coords.width,
-        zIndex: 100000
-      }}
-      className="bg-popover border border-border shadow-xl max-h-96 overflow-y-auto custom-scrollbar"
-    >
-      <div className="px-3 py-1.5 text-[12px] text-muted-foreground bg-muted border-b border-border/60">
-        {results.length} result{results.length !== 1 ? 's' : ''} for "{searchQuery}"
-      </div>
-      {results.map((result, index) => {
-        const isKeyboardSelected = keyboardSelectedIndex === index;
-        return (
-          <div
-            key={`${result.type}-${result.name}-${index}`}
-            className={`flex items-center px-3 py-1 cursor-pointer border-b border-border/60 last:border-b-0 ${
-              isKeyboardSelected ? 'bg-accent text-accent-foreground' : 'hover:bg-muted/60'
-            }`}
-            onClick={() => onSelect(result)}
-          >
-            <FileIcon
-              fileName={result.name}
-              className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground"
-            />
-            <div className="flex-1 min-w-0">
-              <div className="text-[12px] truncate text-foreground">{result.name}</div>
-            </div>
+    <>
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50"
+        onClick={onClose}
+      />
+      
+      {/* Modal */}
+      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-2xl">
+        <div className="bg-popover border border-border rounded-lg shadow-xl max-h-[70vh] overflow-hidden flex flex-col">
+          <div className="px-4 py-3 text-[12px] text-muted-foreground bg-muted border-b border-border/60">
+            {results.length} result{results.length !== 1 ? 's' : ''} for "{searchQuery}"
           </div>
-        );
-      })}
-    </div>
+          <div className="overflow-y-auto custom-scrollbar">
+            {results.map((result, index) => {
+              const isKeyboardSelected = keyboardSelectedIndex === index;
+              return (
+                <div
+                  key={`${result.type}-${result.name}-${index}`}
+                  className={`flex items-center px-4 py-2 cursor-pointer border-b border-border/60 last:border-b-0 ${
+                    isKeyboardSelected ? 'bg-accent text-accent-foreground' : 'hover:bg-muted/60'
+                  }`}
+                  onClick={() => {
+                    onSelect(result);
+                    onClose();
+                  }}
+                >
+                  <FileIcon
+                    fileName={result.name}
+                    className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[12px] truncate text-foreground">{result.name}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </>
   );
   return createPortal(body, document.body);
 };
@@ -1511,14 +1492,14 @@ export default function FileExplorer({
         </div>
       </div>
       {heightMode !== 'collapsed' && (
-        <div className="flex flex-1 min-h-0 overflow-hidden" ref={searchContainerRef}>
+        <div className="flex flex-1 min-h-0 overflow-hidden">
           {showSearchDropdown && (
-            <FullWidthSearchResults
-              containerRef={searchContainerRef as unknown as RefObject<HTMLElement>}
+            <CenteredSearchResults
               results={performSearch}
               searchQuery={searchQuery}
               keyboardSelectedIndex={keyboardSelectedSearchResult}
               onSelect={handleSearchResultSelect}
+              onClose={() => setShowSearchDropdown(false)}
               darkMode={darkMode}
             />
           )}
