@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { SandboxSidebar } from '@/components/layout/SandboxSidebar';
 import { SandboxChatPanel } from '@/components/chat/SandboxChatPanel';
+import { ResizableSandboxExplorer } from '@/components/files/ResizableSandboxExplorer';
 
 /** --------------------- Design Tokens --------------------- */
 const T = {
@@ -248,7 +249,7 @@ export default function SandboxPage() {
               </div>
 
               <div className="relative flex-1 min-h-0">
-                <Explorer compact={chatOpen} />
+                <ResizableSandboxExplorer compact={chatOpen} />
               </div>
             </div>
           </div>
