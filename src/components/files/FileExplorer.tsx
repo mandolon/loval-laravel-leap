@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { MOCK_FILES } from '@/data/mock';
 import { useProjectFolders, useProjectFiles as useProjectFilesApi, useCreateFolder } from '@/lib/api/hooks/useProjectFiles';
 import { supabase } from '@/integrations/supabase/client';
+import { DESIGN_TOKENS as T, UTILITY_CLASSES } from '@/lib/design-tokens';
 
 // Utility: format bytes to human readable (simplistic)
 function formatFileSize(bytes: number) {
@@ -325,13 +326,13 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
 
   return (
     <div 
-      className={`flex flex-col flex-1 overflow-hidden bg-background ${isExternalDragOver ? 'ring-2 ring-primary ring-opacity-50' : ''}`}
+      className={`flex flex-col flex-1 overflow-hidden bg-white dark:bg-[#0F1219] ${isExternalDragOver ? 'ring-2 ring-primary ring-opacity-50' : ''}`}
       onDragEnter={handleExternalDragEnter}
       onDragOver={handleExternalDragOver}
       onDragLeave={handleExternalDragLeave}
       onDrop={handleExternalDrop}
     >
-      <div className="h-9 border-b border-border bg-background flex items-center justify-between px-3">
+      <div className="h-9 border-b border-slate-200 dark:border-[#1d2230] bg-white dark:bg-[#0E1118] flex items-center justify-between px-3">
         <span className="text-slate-500 dark:text-neutral-500">Folders</span>
         {phase && (
           <button
@@ -372,7 +373,7 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
                     onChange={(e) => setNewFolderName(e.target.value)}
                     onBlur={handleCancelFolder}
                     onKeyDown={handleKeyDown}
-                    className="flex-1 bg-transparent outline-none text-[12px] border-none focus:ring-0 p-0 text-foreground placeholder:text-muted-foreground"
+                    className="flex-1 bg-white dark:bg-[#0E1118] outline-none text-[12px] border-none focus:ring-0 p-0 text-slate-700 dark:text-neutral-300 placeholder:text-slate-400 dark:placeholder:text-neutral-500"
                     placeholder="New folder name..."
                     autoFocus
                   />
@@ -648,10 +649,10 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
 
   return (
     <div 
-      className="flex-1 flex flex-col bg-background"
+      className="flex-1 flex flex-col bg-white dark:bg-[#0F1219]"
     >
       {/* Fixed Header */}
-      <div className="h-9 border-b border-border bg-background flex items-center justify-between px-3 flex-shrink-0">
+      <div className="h-9 border-b border-slate-200 dark:border-[#1d2230] bg-white dark:bg-[#0E1118] flex items-center justify-between px-3 flex-shrink-0">
         <span className="text-slate-500 dark:text-neutral-500">Files</span>
         {canUpload && folder && (
           <>
@@ -1387,9 +1388,9 @@ export default function FileExplorer({
           <ResizablePanelGroup direction="horizontal">
             {/* Sidebar/Phases Panel */}
             <ResizablePanel defaultSize={14} minSize={10} maxSize={25}>
-              <aside className="h-full border-r border-border bg-background flex flex-col">
+              <aside className="h-full border-r border-slate-200 dark:border-[#1a2030]/60 bg-[#0E1118] dark:bg-[#0E1118] flex flex-col">
                 {/* Search bar - aligned with headers */}
-                <div className="h-9 px-3 flex items-center gap-2 border-b border-border">
+                <div className="h-9 px-3 flex items-center gap-2 border-b border-[#1d2230] dark:border-[#1d2230]">
                   <Search className="h-3.5 w-3.5 text-neutral-500 flex-shrink-0" />
                   <input
                     type="text"
@@ -1400,7 +1401,7 @@ export default function FileExplorer({
                       setModalSearchQuery("");
                     }}
                     readOnly
-                    className="flex-1 h-6 px-0 bg-transparent text-[11px] text-neutral-300 placeholder:text-neutral-500 focus:outline-none border-0 cursor-pointer"
+                    className="flex-1 h-6 px-0 bg-[#0E1118] dark:bg-[#0E1118] text-[11px] text-neutral-300 placeholder:text-neutral-500 focus:outline-none border-0 cursor-pointer"
                   />
                 </div>
                 <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-2 custom-scrollbar">
@@ -1423,11 +1424,11 @@ export default function FileExplorer({
               </aside>
             </ResizablePanel>
 
-            <ResizableHandle className="w-px bg-border hover:bg-primary/40 transition-colors" />
+            <ResizableHandle className="w-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors" />
 
             {/* Folders Panel */}
             <ResizablePanel defaultSize={18} minSize={15} maxSize={30}>
-              <div className="h-full border-r border-border">
+              <div className="h-full border-r border-slate-200 dark:border-[#1d2230]/60 bg-white dark:bg-[#0F1219]">
                 <FolderList 
                   phase={selectedPhase} 
                   folders={filteredFolders} 
@@ -1447,7 +1448,7 @@ export default function FileExplorer({
               </div>
             </ResizablePanel>
 
-            <ResizableHandle className="w-px bg-border hover:bg-primary/40 transition-colors" />
+            <ResizableHandle className="w-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors" />
 
             {/* Files Panel */}
             <ResizablePanel defaultSize={68} minSize={40}>
@@ -1629,7 +1630,7 @@ export default function FileExplorer({
                   setModalSearchQuery(e.target.value);
                   setModalSelectedIndex(0);
                 }}
-                className="flex-1 h-8 px-0 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none border-0"
+                className="flex-1 h-8 px-0 bg-white dark:bg-[#0E1118] text-sm text-slate-700 dark:text-neutral-300 placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:outline-none border-0"
                 autoFocus
               />
             </div>
