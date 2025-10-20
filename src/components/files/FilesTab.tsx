@@ -485,7 +485,7 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps)
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="1.5"
-                className="mx-auto opacity-40 text-gray-600"
+                className="mx-auto opacity-40 text-muted-foreground"
               >
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                 <polyline points="14,2 14,8 20,8" />
@@ -494,17 +494,17 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps)
                 <line x1="9" y1="15" x2="15" y2="15" />
               </svg>
             </div>
-            <h3 className="text-[10px] font-medium leading-normal tracking-normal mb-1 text-gray-800">
+            <h3 className="text-[10px] font-medium leading-normal tracking-normal mb-1 text-foreground">
               {tab.file.name}
             </h3>
-            <p className="text-[10px] mb-3 text-gray-600">
+            <p className="text-[10px] mb-3 text-muted-foreground">
               File type not supported for preview
             </p>
-            <div className="text-[10px] space-y-1 mb-4 text-gray-600">
+            <div className="text-[10px] space-y-1 mb-4 text-muted-foreground">
               <div>{tab.file.size}</div>
               <div>{tab.file.modified}</div>
             </div>
-            <div className="text-[10px] px-3 py-2 rounded border bg-muted border-border text-gray-600">
+            <div className="text-[10px] px-3 py-2 rounded border bg-muted border-border text-muted-foreground">
               Preview not available
             </div>
           </div>
@@ -523,7 +523,7 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps)
               fill="none"
               stroke="currentColor"
               strokeWidth="1.5"
-              className="mx-auto opacity-40 text-gray-600"
+              className="mx-auto opacity-40 text-muted-foreground"
             >
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
               <polyline points="14,2 14,8 20,8" />
@@ -532,10 +532,10 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps)
               <polyline points="10,9 9,9 8,9" />
             </svg>
           </div>
-          <h3 className="text-[10px] font-medium leading-normal tracking-normal mb-2 text-gray-800">
+          <h3 className="text-[10px] font-medium leading-normal tracking-normal mb-2 text-foreground">
             No file selected
           </h3>
-          <p className="text-[10px] leading-relaxed text-gray-600">
+          <p className="text-[10px] leading-relaxed text-muted-foreground">
             Choose a PDF or image from the file explorer to preview it here
           </p>
         </div>
@@ -587,12 +587,12 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps)
             aria-orientation="horizontal"
             aria-valuemin={EXPLORER_MIN_HEIGHT}
             aria-valuenow={Math.round(explorerHeight)}
-            className={`flex-shrink-0 h-[6px] cursor-row-resize flex items-center justify-center transition-colors duration-150 ${isResizingExplorer ? 'bg-blue-100 dark:bg-slate-700/40' : 'bg-transparent hover:bg-blue-50 dark:hover:bg-slate-700/30'}`}
+            className={`flex-shrink-0 h-[6px] cursor-row-resize flex items-center justify-center transition-colors duration-150 ${isResizingExplorer ? 'bg-secondary dark:bg-slate-700/40' : 'bg-transparent hover:bg-secondary/50 dark:hover:bg-slate-700/30'}`}
             onMouseDown={handleExplorerResizeStart}
             onDoubleClick={handleResizeDoubleClick}
             style={{ touchAction: 'none' }}
           >
-            <div className="h-[2px] w-14 rounded-full bg-blue-200 dark:bg-slate-500" />
+            <div className="h-[2px] w-14 rounded-full bg-primary/30 dark:bg-slate-500" />
           </div>
 
           <div
