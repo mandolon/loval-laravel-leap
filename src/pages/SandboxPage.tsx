@@ -120,20 +120,20 @@ const Explorer = React.memo(function Explorer({ compact = false }: { compact?: b
     <div className="flex flex-col h-full min-h-0">
       <div
         className={`${T.text} grid gap-x-0 flex-1 items-stretch min-w-0`}
-        style={{ gridTemplateColumns: 'clamp(100px,12vw,140px) clamp(160px,18vw,220px) minmax(0,1fr)' }}
+        style={{ gridTemplateColumns: 'clamp(120px,14vw,160px) clamp(160px,18vw,220px) minmax(0,1fr)' }}
         role="region"
         aria-label="File explorer"
       >
         {/* Root */}
         <div className={`flex flex-col justify-start min-w-0 bg-[#0E1118] dark:bg-[#0E1118] border border-[#1a2030]/60 dark:border-[#1a2030]/60 rounded-r-none`}>
-          {/* Search bar */}
-          <div className="px-3 pt-3 pb-2">
+          {/* Search bar - aligned with headers */}
+          <div className="h-9 px-3 flex items-center border-b border-[#1d2230] dark:border-[#1d2230]">
             <input
               placeholder="Search…"
               className={`w-full h-7 px-2 bg-[#0E1118] dark:bg-[#0E1118] border border-[#1d2230] dark:border-[#1d2230] rounded-[6px] text-[11px] text-neutral-300 dark:text-neutral-300 placeholder:text-neutral-500 dark:placeholder:text-neutral-500 ${T.focus}`}
             />
           </div>
-          <div className="flex flex-col items-start justify-start px-3 pb-3 space-y-2">
+          <div className="flex flex-col items-start justify-start px-3 py-2 space-y-2">
             {ROOT.map((r) => (
               <button
                 key={r}
