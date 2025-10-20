@@ -226,7 +226,7 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
         const filteredProjects = projects.filter(project => project.status === statusFilter);
         return (
           <>
-            <div className="flex flex-col items-start justify-start px-3 pb-3 space-y-2">
+            <div className="flex flex-col items-start justify-start px-3 py-2 space-y-2">
               <div className="w-full space-y-2 max-h-[200px] overflow-y-auto">
                 {filteredProjects.length === 0 ? (
                   <div className={`${T.text} text-neutral-500 py-1 px-2.5`}>
