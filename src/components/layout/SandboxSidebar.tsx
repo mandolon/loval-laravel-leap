@@ -348,7 +348,7 @@ export function SandboxSidebar({ onWorkspaceChange }: SandboxSidebarProps) {
                   : 'text-neutral-400 hover:bg-[#141C28]/60'
               }`}
             >
-              <item.icon className="h-6 w-6" />
+              <item.icon className="h-5 w-5" />
             </button>
           </NavLink>
         ))}
