@@ -367,10 +367,10 @@ const ProjectDetails = () => {
         </div>
 
         {/* Main Content */}
-        <div className={`flex-1 min-h-0 ${activeTab === 'files' ? 'overflow-hidden' : 'overflow-auto'}`}>
-          <div className={activeTab === 'files' ? 'h-full' : 'p-4 space-y-4'}>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full">
-              <TabsContent value="files" className="mt-0 h-full p-0 data-[state=active]:flex data-[state=active]:flex-col">
+        <div className={`flex-1 min-h-0 ${activeTab === 'files' ? 'overflow-hidden bg-orange-500/10' : 'overflow-auto'}`}>
+          <div className={activeTab === 'files' ? 'h-full bg-pink-500/10' : 'p-4 space-y-4'}>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full bg-cyan-500/10">
+              <TabsContent value="files" className="mt-0 h-full p-0 data-[state=active]:flex data-[state=active]:flex-col bg-amber-500/10">
                 <FilesTab projectId={id || ''} />
               </TabsContent>
 

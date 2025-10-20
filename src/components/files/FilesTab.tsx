@@ -547,17 +547,25 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps)
   useEffect(() => {
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
-      console.log('FilesTab container:', {
-        height: rect.height,
+      const parent = containerRef.current.parentElement;
+      const parentRect = parent?.getBoundingClientRect();
+      console.log('FilesTab layout debug:', {
+        container: { height: rect.height, bottom: rect.bottom },
+        parent: { height: parentRect?.height, bottom: parentRect?.bottom },
         explorerHeight,
         explorerHeightMode,
-        containerClassName: containerRef.current.className
+        viewportHeight: window.innerHeight,
+        containerOffsetFromBottom: window.innerHeight - rect.bottom
       });
     }
   }, [explorerHeight, explorerHeightMode]);
 
   return (
     <div ref={containerRef} className="h-full flex flex-col overflow-hidden bg-red-500/10">
+      {/* Debug info */}
+      <div className="absolute top-0 right-0 bg-black text-white text-xs p-2 z-50">
+        Container: {containerRef.current?.getBoundingClientRect().height.toFixed(0)}px
+      </div>
       {/* Tab Bar */}
       <TabBar
         tabs={tabs}
