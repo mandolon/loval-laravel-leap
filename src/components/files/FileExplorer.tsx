@@ -331,8 +331,8 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
       onDragLeave={handleExternalDragLeave}
       onDrop={handleExternalDrop}
     >
-      <div className="h-7 border-b border-[#1d2230] bg-[#0E1118] flex items-center justify-between px-3">
-        <span className="text-[12px] text-neutral-500 font-medium">Folders</span>
+      <div className="h-9 border-b border-[#1d2230] bg-[#0E1118] flex items-center justify-between px-3">
+        <span className="text-neutral-500">Folders</span>
         {phase && (
           <button
             onClick={handleCreateFolderClick}
@@ -651,8 +651,8 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
       className="flex-1 flex flex-col bg-[#0E1118]"
     >
       {/* Fixed Header */}
-      <div className="h-7 border-b border-[#1d2230] bg-[#0E1118] flex items-center justify-between px-3 flex-shrink-0">
-        <span className="text-[12px] text-neutral-500 font-medium">Files</span>
+      <div className="h-9 border-b border-[#1d2230] bg-[#0E1118] flex items-center justify-between px-3 flex-shrink-0">
+        <span className="text-neutral-500">Files</span>
         {canUpload && folder && (
           <>
             <input
@@ -1390,7 +1390,7 @@ export default function FileExplorer({
             <ResizablePanel defaultSize={14} minSize={10} maxSize={25}>
               <aside className="h-full border-r border-[#1a2030]/60 bg-[#0E1118] flex flex-col">
                 {/* Search bar - aligned with headers */}
-                <div className="h-7 px-3 flex items-center gap-2 border-b border-[#1d2230]">
+                <div className="h-9 px-3 flex items-center gap-2 border-b border-[#1d2230]">
                   <Search className="h-3.5 w-3.5 text-neutral-500 flex-shrink-0" />
                   <input
                     type="text"
@@ -1401,7 +1401,7 @@ export default function FileExplorer({
                       setModalSearchQuery("");
                     }}
                     readOnly
-                    className="flex-1 h-6 px-0 bg-transparent text-[12px] text-neutral-300 placeholder:text-neutral-500 focus:outline-none border-0 cursor-pointer"
+                    className="flex-1 h-6 px-0 bg-transparent text-[11px] text-neutral-300 placeholder:text-neutral-500 focus:outline-none border-0 cursor-pointer"
                   />
                 </div>
                 <nav className="flex-1 overflow-y-auto px-1 py-1 custom-scrollbar">
