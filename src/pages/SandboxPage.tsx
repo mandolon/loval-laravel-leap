@@ -22,7 +22,7 @@ function IconBtn({ title, ariaLabel, onClick, children }: { title: string; ariaL
       title={title}
       aria-label={ariaLabel || title}
       onClick={onClick}
-      className={`h-8 w-8 grid place-items-center border border-slate-200 dark:border-[#283046]/50 ${T.radius} text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28] ${T.focus}`}
+      className={`h-8 w-8 grid place-items-center ${T.radius} text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28] ${T.focus}`}
     >
       {children}
     </button>
