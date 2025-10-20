@@ -243,7 +243,7 @@ export default function SandboxPage() {
                 {/* Viewer (top) + Explorer (bottom) - Resizable */}
                 <ResizablePanelGroup direction="vertical" className="min-h-0">
                   <ResizablePanel defaultSize={55} minSize={20} maxSize={80}>
-                    <div className={`${T.panelElev} ${T.text} grid grid-rows-[auto_1fr] overflow-hidden h-full`}>
+                    <div className={`bg-white dark:bg-[#0E1118] ${T.text} grid grid-rows-[auto_1fr] overflow-hidden h-full`}>
                       <div className="h-9 px-3 flex items-center justify-between border-b border-slate-200 dark:border-[#1a2030]/40">
                         <div className="text-slate-500 dark:text-neutral-500">Viewer</div>
                       </div>
@@ -281,7 +281,7 @@ export default function SandboxPage() {
               {/* Viewer (top) + Explorer (bottom) - Resizable */}
               <ResizablePanelGroup direction="vertical" className="min-h-0">
                 <ResizablePanel defaultSize={55} minSize={20} maxSize={80}>
-                  <div className={`${T.panelElev} ${T.text} grid grid-rows-[auto_1fr] overflow-hidden h-full`}>
+                  <div className={`bg-white dark:bg-[#0E1118] ${T.text} grid grid-rows-[auto_1fr] overflow-hidden h-full`}>
                     <div className="h-9 px-3 flex items-center justify-between border-b border-slate-200 dark:border-[#1a2030]/40">
                       <div className="text-slate-500 dark:text-neutral-500">Viewer</div>
                     </div>
