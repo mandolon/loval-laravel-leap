@@ -1,272 +1,430 @@
-import { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 
-// --- Data ---
-const navTabs = ["Files", "Tasks", "Invoices", "Links", "Project", "Client", "Notes"];
-const ROOT_FOLDERS = ["Attachments", "Build", "Design", "Permit", "Photos", "Plans"];
-const SUB_FOLDERS = ["In Progress", "Pending", "Completed", "Archived"];
-const FILES = [
-  { id: 1, name: "RES-2427762 - INVOICE.pdf", size: "63.0 KB", modified: "Oct 17, 02:46 AM", type: "PDF" },
-  { id: 2, name: "Receipt-2482-0266.pdf", size: "20.2 KB", modified: "Oct 17, 02:39 AM", type: "PDF" },
-  { id: 3, name: "Flattened_Partial_Set_10.13.25.pdf", size: "5.3 MB", modified: "Oct 17, 02:38 AM", type: "PDF" },
-  { id: 4, name: "Invoice-INV-01.pdf", size: "3.3 KB", modified: "Oct 17, 02:36 AM", type: "PDF" },
+/** --------------------- Design Tokens --------------------- */
+const T = {
+  radius: 'rounded-[8px]',
+  text: 'text-[12px]',
+  focus: 'focus:outline-none focus:ring-1 focus:ring-[#3b82f6]/40',
+  panel: 'bg-[#0F1219] dark:bg-[#0F1219] border border-[#1d2230]/60 dark:border-[#1d2230]/60',
+  panelSoft: 'bg-[#10141D] dark:bg-[#10141D] border border-[#1a1f2c]/50 dark:border-[#1a1f2c]/50',
+  panelElev: 'bg-[#0E1118] dark:bg-[#0E1118] border border-[#1a2030]/50 dark:border-[#1a2030]/50',
+};
+
+/** --------------------- Small Primitives --------------------- */
+function IconBtn({ title, ariaLabel, onClick, children }: { title: string; ariaLabel?: string; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      title={title}
+      aria-label={ariaLabel || title}
+      onClick={onClick}
+      className={`h-8 w-8 grid place-items-center border border-[#283046]/50 dark:border-[#283046]/50 ${T.radius} text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] ${T.focus}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function SectionHeader({ title, right }: { title: string; right?: React.ReactNode }) {
+  return (
+    <div className="h-9 px-3 border-b border-[#1d2230] dark:border-[#1d2230] flex items-center justify-between text-neutral-500 dark:text-neutral-500 bg-[#0E1118] dark:bg-[#0E1118]">
+      <span>{title}</span>
+      {right}
+    </div>
+  );
+}
+
+/** --------------------- SCHEMA (nav + lists) --------------------- */
+const NAV_SCHEMA = [
+  { key: 'Home', icon: '⌂', items: ['Inbox', 'Replies', 'My Tasks', 'Posts'] },
+  { key: 'Projects', icon: '▦', items: ['Creative Team', 'Dean P.', 'Campaign Agent', 'Vision & Strategy'] },
+  { key: 'Tasks', icon: '☰', items: ['Open Tasks', 'In Progress', 'Blocked', 'Done'] },
+  { key: 'AI', icon: '✦', items: ['Ask Rehome AI', 'Draft Brief', 'Summarize Thread', 'Generate Action Items'] },
 ];
 
-// --- Sidebar ---
-function Sidebar() {
+/** --------------------- Sidebar: Rail (64px) --------------------- */
+function SidebarRail({ active, onNav, secondaryOpen, onToggleSecondary }: { active: string; onNav: (key: string) => void; secondaryOpen: boolean; onToggleSecondary: () => void }) {
   return (
-    <aside className="h-full w-[72px] bg-white dark:bg-[#0F1219] border-r border-gray-200 dark:border-neutral-800 text-[12px] text-gray-600 dark:text-neutral-300 select-none flex flex-col items-center">
-      <div className="h-12 w-full flex items-center justify-center border-b border-gray-200 dark:border-neutral-800 text-gray-500 dark:text-neutral-400 tracking-wider">RH</div>
-      <nav className="mt-2 flex-1 flex flex-col items-center gap-1">
-        {[
-          { k: 'Home', label: 'H' },
-          { k: 'Files', label: 'F' },
-          { k: 'Tasks', label: 'T' },
-          { k: 'AI', label: 'A' },
-        ].map((i) => (
-          <button key={i.k} title={i.k} className="h-10 w-10 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-[#141821] focus:outline-none border border-transparent hover:border-gray-300 dark:hover:border-neutral-700">
-            <span className="text-gray-500 dark:text-neutral-400">{i.label}</span>
+    <aside
+      className={`h-full mt-0 mb-1 ${T.text} text-neutral-300 dark:text-neutral-300 select-none flex flex-col items-center gap-2`}
+      aria-label="Primary"
+      style={{ width: 64 }}
+    >
+      {/* Top: toggle secondary */}
+      <div className="h-9 w-full flex items-center justify-center mb-0">
+        <button
+          type="button"
+          aria-label={secondaryOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+          onClick={onToggleSecondary}
+          className="h-8 w-8 grid place-items-center text-neutral-400 dark:text-neutral-400 hover:text-blue-300 dark:hover:text-blue-300 focus:outline-none focus:ring-1 focus:ring-[#3b82f6]/40"
+        >
+          {secondaryOpen ? (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          )}
+        </button>
+      </div>
+
+      {/* Nav icons */}
+      <nav className="mt-1 flex-1 flex flex-col items-center gap-2" aria-label="Primary icons">
+        {NAV_SCHEMA.map((b) => (
+          <button
+            key={b.key}
+            type="button"
+            title={b.key}
+            onClick={() => onNav(b.key)}
+            className={`${T.panelSoft} ${T.radius} h-10 w-10 grid place-items-center hover:bg-[#161B26] dark:hover:bg-[#161B26] ${T.focus} ${active === b.key ? 'ring-1 ring-blue-500/40' : ''}`}
+          >
+            <span className="text-neutral-300 dark:text-neutral-300 text-[16px] md:text-[18px] leading-none" aria-hidden>
+              {b.icon}
+            </span>
           </button>
         ))}
       </nav>
-      <div className="w-full border-t border-gray-200 dark:border-neutral-800 py-2 flex flex-col items-center gap-2">
-        <div className="h-8 w-8 rounded bg-gray-200 dark:bg-neutral-700/40" title="Avatar" />
-        <button className="text-[11px] text-gray-500 dark:text-neutral-400 hover:text-gray-900 dark:hover:text-neutral-200">Switch</button>
+
+      {/* Footer avatar / switcher */}
+      <div className="w-full px-2 pb-3">
+        <button
+          type="button"
+          className={`${T.radius} border border-[#283046]/50 dark:border-[#283046]/50 hover:bg-[#161B26] dark:hover:bg-[#161B26] ${T.focus} h-10 w-10 grid place-items-center mx-auto`}
+        >
+          <div className="h-7 w-7 rounded-full bg-neutral-700/40 dark:bg-neutral-700/40" title="Avatar" />
+        </button>
       </div>
     </aside>
   );
 }
 
-// --- Header (centered tabs; Chat toggle lives here) ---
-function HeaderNav({ chatOpen, onToggleChat }: { chatOpen: boolean; onToggleChat: () => void }) {
-  const [active, setActive] = useState(navTabs[0]);
-  const handleSetActive = (tab: string) => { setActive(tab); };
+/** --------------------- Sidebar: Secondary (0|200px) --------------------- */
+function SidebarSecondary({ open, active }: { open: boolean; active: string }) {
+  const current = useMemo(() => NAV_SCHEMA.find((n) => n.key === active), [active]);
   return (
-    <header className="relative flex items-center justify-center h-12 border-b border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-[#10131A] select-none">
-      {/* Centered tabs */}
-      <nav className="flex gap-6">
-        {navTabs.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => handleSetActive(tab)}
-            className={`relative px-4 py-1.5 text-[13px] font-medium tracking-wide transition-colors duration-200 rounded-md focus:outline-none ${
-              active === tab 
-                ? 'text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-[#1a2230] border border-blue-300 dark:border-blue-500/40 shadow-sm dark:shadow-[0_0_4px_rgba(0,0,0,0.5)]' 
-                : 'text-gray-600 dark:text-neutral-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#181C25] border border-transparent'
-            }`}
-          >
-            {tab}
+    <aside
+      className={`h-full mt-0 mb-1 ml-[2px] ${T.text} text-neutral-300 dark:text-neutral-300 select-none flex flex-col overflow-hidden`}
+      aria-label="Secondary"
+      style={{ width: open ? 200 : 0 }}
+    >
+      <div
+        className={`h-full mt-0.5 ${T.panel} ${T.radius} rounded-l-none ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'} transition-opacity duration-150 grid grid-rows-[auto_1fr_auto]`}
+        aria-hidden={!open}
+      >
+        <div className="h-10 px-3 flex items-center justify-between border-b border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118]">
+          <span className="text-neutral-400 dark:text-neutral-400">{current?.key || ''}</span>
+        </div>
+
+        {/* Lists */}
+        <div className="flex-1 overflow-auto min-w-0">
+          {(current?.items || []).map((label) => (
+            <button
+              key={label}
+              type="button"
+              className={`w-full text-left px-3 py-2 border-l-2 border-transparent text-neutral-300 dark:text-neutral-300 hover:bg-[#151A24] dark:hover:bg-[#151A24] hover:text-blue-300 dark:hover:text-blue-300 hover:border-blue-400 dark:hover:border-blue-400 ${T.focus}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Footer link */}
+        <div className="h-9 px-3 flex items-center border-t border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118] text-neutral-400 dark:text-neutral-400">
+          <button type="button" className={`px-2 py-0.5 border border-[#283046]/60 dark:border-[#283046]/60 ${T.radius} hover:bg-[#161B26] dark:hover:bg-[#161B26] ${T.focus}`}>
+            Manage sidebar
           </button>
-        ))}
-      </nav>
-      {/* Right actions */}
-      <div className="absolute right-3 inset-y-0 flex items-center gap-2">
-        <button
-          onClick={onToggleChat}
-          className={`px-3 py-1 text-[12px] border transition ${
-            chatOpen 
-              ? 'border-blue-400 text-blue-600 dark:text-blue-300' 
-              : 'border-gray-300 dark:border-neutral-600 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-300'
-          }`}
-          title="Toggle Project Chat"
-        >
-          Chat
-        </button>
+        </div>
       </div>
-    </header>
+    </aside>
   );
 }
 
-// --- PDF viewer toolbar ---
-function ViewerToolbar() {
+/** --------------------- Search --------------------- */
+const CenteredSearch = React.memo(function CenteredSearch() {
   return (
-    <div className="flex items-center justify-between h-9 border-b border-gray-200 dark:border-neutral-700 bg-gray-100 dark:bg-[#1B1F2A] text-[12px] text-gray-600 dark:text-neutral-300 px-4 select-none">
-      <div className="flex items-center gap-2">
-        <button className="px-3 py-1 border border-gray-300 dark:border-neutral-600 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-300 transition" title="Zoom out">-</button>
-        <span className="text-xs text-gray-500 dark:text-neutral-400">100%</span>
-        <button className="px-3 py-1 border border-gray-300 dark:border-neutral-600 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-300 transition" title="Zoom in">+</button>
+    <div className="h-9 flex justify-start items-center mb-1">
+      <input
+        placeholder="Search files…"
+        className={`w-[420px] md:w-[560px] lg:w-[720px] h-8 px-3 bg-[#0E1118] dark:bg-[#0E1118] border border-[#1d2230] dark:border-[#1d2230] rounded-[6px] text-[12px] text-neutral-300 dark:text-neutral-300 placeholder:text-neutral-500 dark:placeholder:text-neutral-500 ${T.focus}`}
+      />
+    </div>
+  );
+});
+
+/** --------------------- Tabs Header --------------------- */
+function TabsHeader({ chatOpen, onToggleChat }: { chatOpen: boolean; onToggleChat: () => void }) {
+  const NAV = useMemo(() => ['Files', 'Tasks', 'Invoices', 'Links', 'Project', 'Client', 'Notes'], []);
+  const [active, setActive] = useState(NAV[0]);
+
+  const goBack = useCallback(() => {
+    if (window?.history?.back) window.history.back();
+  }, []);
+
+  return (
+    <div
+      className={`h-12 ${T.text} grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 bg-[#0E1118] dark:bg-[#0E1118] border-b border-[#1a2030]/60 dark:border-[#1a2030]/60`}
+      role="navigation"
+      aria-label="Secondary"
+    >
+      {/* Left: Back */}
+      <IconBtn title="Back" ariaLabel="Back" onClick={goBack}>
+        <svg xmlns="http://www.w3.org/2000/svg" aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+        </svg>
+      </IconBtn>
+
+      {/* Center: Tabs (centered between buttons) */}
+      <div className="min-w-0 flex justify-center">
+        <div className={`px-1 py-0.5 bg-[#0E1118] dark:bg-[#0E1118] border border-[#1a2030]/60 dark:border-[#1a2030]/60 ${T.radius} flex gap-1`} role="tablist" aria-label="Views">
+          {NAV.map((tab) => {
+            const isActive = active === tab;
+            return (
+              <button
+                key={tab}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => setActive(tab)}
+                className={`px-2.5 py-1 ${T.radius} transition-colors ${isActive ? 'bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 'text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] hover:text-blue-300 dark:hover:text-blue-300'} ${T.focus}`}
+              >
+                {tab}
+              </button>
+            );
+          })}
+        </div>
       </div>
-      <div className="text-xs text-gray-500 dark:text-neutral-400">PDF Placeholder</div>
-      <div className="flex items-center gap-2">
-        <button className="px-2 py-1 border border-gray-300 dark:border-neutral-600 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-300 transition" title="Fit to screen">Fit</button>
-        <button className="px-2 py-1 border border-gray-300 dark:border-neutral-600 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-300 transition" title="Fullscreen">Full</button>
-      </div>
+
+      {/* Right: Chat toggle (always right-aligned) */}
+      <IconBtn title={chatOpen ? 'Collapse chat' : 'Expand chat'} ariaLabel="Toggle chat" onClick={onToggleChat}>
+        {chatOpen ? (
+          <svg xmlns="http://www.w3.org/2000/svg" aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6l6 6-6 6" />
+          </svg>
+        ) : (
+          <svg xmlns="http://www.w3.org/2000/svg" aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3h9m-9 3h5.25M21 12c0 4.97-4.03 9-9 9a8.96 8.96 0 01-4.49-1.18L3 21l1.18-4.49A8.96 8.96 0 013 12c0-4.97 4.03-9 9-9s9 4.03 9 9z" />
+          </svg>
+        )}
+      </IconBtn>
     </div>
   );
 }
 
-function PdfPlaceholder() {
-  return (
-    <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-[#0E1118] text-gray-400 dark:text-neutral-500 text-sm">PDF Viewer Placeholder</div>
+/** --------------------- Explorer --------------------- */
+const Explorer = React.memo(function Explorer({ compact = false }: { compact?: boolean }) {
+  const ROOT = useMemo(() => ['Attachments', 'Build', 'Design', 'Permit', 'Photos', 'Plans'], []);
+  const FOLDERS = useMemo(() => ['In Progress', 'Pending', 'Completed', 'Archived'], []);
+  const FILES = useMemo(
+    () => [
+      { id: 1, name: 'RES-2427762 - INVOICE.pdf', size: '63.0 KB', modified: 'Oct 17, 02:46 AM', type: 'PDF' },
+      { id: 2, name: 'Receipt-2482-0266.pdf', size: '20.2 KB', modified: 'Oct 17, 02:39 AM', type: 'PDF' },
+      { id: 3, name: 'Flattened_Partial_Set_10.13.25.pdf', size: '5.3 MB', modified: 'Oct 17, 02:38 AM', type: 'PDF' },
+      { id: 4, name: 'Invoice-INV-01.pdf', size: '3.3 KB', modified: 'Oct 17, 02:36 AM', type: 'PDF' },
+    ],
+    []
   );
-}
 
-// --- File Explorer (3-column; dark, crisp aesthetic) ---
-function FileExplorer() {
-  const [selectedRoot, setSelectedRoot] = useState("Attachments");
-  const [selectedFolder, setSelectedFolder] = useState("In Progress");
-  const [selectedFile, setSelectedFile] = useState(1);
+  const [root, setRoot] = useState(ROOT[0]);
+  const [folder, setFolder] = useState(FOLDERS[0]);
+  const [sel, setSel] = useState(FILES[0].id);
+  const selectedFile = FILES.find((f) => f.id === sel);
 
   return (
-    <div className="border-t border-gray-200 dark:border-neutral-800 bg-white dark:bg-[#0F1219] text-[12px] text-gray-600 dark:text-neutral-300 select-none">
-      <div className="grid grid-cols-[130px_220px_1fr] h-[260px] overflow-hidden divide-x divide-gray-200 dark:divide-neutral-800">
-        {/* Root (fixed backend folders) */}
-        <div className="bg-gray-50 dark:bg-[#0E121A] flex flex-col border-r border-gray-200 dark:border-neutral-800">
-          <div className="flex-1 overflow-auto">
-            {ROOT_FOLDERS.map((r) => (
-              <div
+    <div className="flex flex-col h-full min-h-0">
+      <div
+        className={`${T.text} grid gap-x-0 flex-1 items-stretch min-w-0`}
+        style={{ gridTemplateColumns: 'clamp(100px,12vw,140px) clamp(160px,18vw,220px) minmax(0,1fr)' }}
+        role="region"
+        aria-label="File explorer"
+      >
+        {/* Root */}
+        <div className={`flex flex-col justify-center min-w-0 bg-[#0E1118] dark:bg-[#0E1118] border border-[#1a2030]/60 dark:border-[#1a2030]/60 rounded-r-none`}>
+          <div className="flex flex-col items-start justify-center px-3 space-y-2">
+            {ROOT.map((r) => (
+              <button
                 key={r}
-                onClick={() => setSelectedRoot(r)}
-                className={`px-3 py-2 cursor-pointer border-l-2 text-[12px] transition ${
-                  selectedRoot === r 
-                    ? 'border-blue-400 text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-[#1C2433]' 
-                    : 'border-transparent hover:bg-gray-100 dark:hover:bg-[#181C25] text-gray-600 dark:text-neutral-300'
-                }`}
+                type="button"
+                onClick={() => setRoot(r)}
+                className={`px-2.5 py-1 ${T.radius} w-full text-left transition-colors ${root === r ? 'bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 'text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] hover:text-blue-300 dark:hover:text-blue-300'} ${T.focus}`}
+                aria-current={root === r ? 'true' : undefined}
               >
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-sm bg-gray-400 dark:bg-neutral-500/50" />
-                  <span className="truncate">{r}</span>
-                </div>
-              </div>
+                {r}
+              </button>
             ))}
           </div>
         </div>
 
         {/* Folders */}
-        <div className="bg-gray-50 dark:bg-[#10141D] flex flex-col">
-          <div className="px-3 py-2 text-[11px] text-gray-500 dark:text-neutral-500 uppercase tracking-wide border-b border-gray-200 dark:border-neutral-800 flex items-center justify-between">
-            <span>Folders</span>
-            <button className="text-gray-400 dark:text-neutral-400 hover:text-blue-600 dark:hover:text-blue-300" title="Add folder">＋</button>
-          </div>
-          <div className="flex-1 overflow-auto">
-            {SUB_FOLDERS.map((s) => (
-              <div
-                key={s}
-                onClick={() => setSelectedFolder(s)}
-                className={`px-4 py-2 cursor-pointer border-l-2 transition ${
-                  selectedFolder === s 
-                    ? 'border-blue-400 text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-[#1C2433]' 
-                    : 'border-transparent hover:bg-gray-100 dark:hover:bg-[#181C25]'
-                }`}
+        <div className={`${T.panel} ${T.radius} flex flex-col rounded-l-none rounded-r-none border-l-0 min-w-0`}>
+          <SectionHeader
+            title="Folders"
+            right={
+              <button type="button" className={`px-2 py-0.5 border border-[#283046] dark:border-[#283046] ${T.radius} hover:bg-[#161B26] dark:hover:bg-[#161B26] ${T.focus}`} aria-label="Add folder" title="Add folder">
+                ＋
+              </button>
+            }
+          />
+          <div className="flex-1 overflow-auto min-w-0">
+            {FOLDERS.map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setFolder(f)}
+                className={`w-full text-left px-3 py-2 border-l-2 ${folder === f ? 'border-blue-400 dark:border-blue-400 bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 'border-transparent text-neutral-300 dark:text-neutral-300 hover:bg-[#151A24] dark:hover:bg-[#151A24]'}`}
+                aria-current={folder === f ? 'true' : undefined}
               >
-                {s}
-              </div>
+                {f}
+              </button>
             ))}
           </div>
         </div>
 
         {/* Files */}
-        <div className="bg-white dark:bg-[#10141D] flex flex-col">
-          <div className="px-3 py-2 text-[11px] text-gray-500 dark:text-neutral-500 uppercase tracking-wide border-b border-gray-200 dark:border-neutral-800 flex items-center justify-between">
-            <span>Files</span>
-            <button className="text-gray-400 dark:text-neutral-400 hover:text-blue-600 dark:hover:text-blue-300" title="Add file">＋</button>
-          </div>
-          <div className="flex-1 overflow-auto">
+        <div className={`${T.panel} ${T.radius} flex flex-col rounded-l-none border-l-0 min-w-0`}>
+          <SectionHeader
+            title="Files"
+            right={
+              <button type="button" className={`px-2 py-0.5 border border-[#283046] dark:border-[#283046] ${T.radius} hover:bg-[#161B26] dark:hover:bg-[#161B26] ${T.focus}`} aria-label="Add file" title="Add file">
+                ＋
+              </button>
+            }
+          />
+          <div className="flex-1 overflow-auto min-w-0">
             {FILES.map((f) => (
-              <div
+              <button
                 key={f.id}
-                onClick={() => setSelectedFile(f.id)}
-                className={`grid grid-cols-[1fr_100px_140px_60px] items-center px-4 py-2 cursor-pointer transition ${
-                  selectedFile === f.id 
-                    ? 'bg-blue-50 dark:bg-[#1C2433] text-blue-600 dark:text-blue-300' 
-                    : 'hover:bg-gray-100 dark:hover:bg-[#181C25]'
-                }`}
+                type="button"
+                onClick={() => setSel(f.id)}
+                className={`w-full grid ${compact ? 'grid-cols-[minmax(0,1fr)]' : 'grid-cols-[minmax(0,1fr)_max-content_max-content_56px]'} gap-2 items-center px-3 py-2 text-left ${sel === f.id ? 'bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 'hover:bg-[#151A24] dark:hover:bg-[#151A24] text-neutral-300 dark:text-neutral-300'}`}
+                aria-current={sel === f.id ? 'true' : undefined}
               >
-                <div className="truncate">{f.name}</div>
-                <div className="text-gray-500 dark:text-neutral-400">{f.size}</div>
-                <div className="text-gray-500 dark:text-neutral-400">{f.modified}</div>
-                <div className="text-gray-500 dark:text-neutral-400">{f.type}</div>
-              </div>
+                <span className="truncate min-w-0">{f.name}</span>
+                <span className={`text-neutral-400 dark:text-neutral-400 whitespace-nowrap ${compact ? 'hidden' : ''}`}>{f.size}</span>
+                <span className={`text-neutral-400 dark:text-neutral-400 whitespace-nowrap ${compact ? 'hidden' : ''}`}>{f.modified}</span>
+                <span className={`text-neutral-400 dark:text-neutral-400 whitespace-nowrap ${compact ? 'hidden' : ''}`}>{f.type}</span>
+              </button>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="h-8 px-4 flex items-center justify-between border-t border-gray-200 dark:border-neutral-800 text-[11px] text-gray-500 dark:text-neutral-500 bg-gray-50 dark:bg-[#10131A]">
-        <span>{FILES.length} files</span>
-        <span>27.7 MB total</span>
+      {/* Footer for file properties */}
+      <div className="h-9 px-3 flex items-center justify-between border-t border-[#1a2030]/40 dark:border-[#1a2030]/40 bg-[#0E1118] dark:bg-[#0E1118] text-neutral-400 dark:text-neutral-400">
+        <span>Selected File:</span>
+        {selectedFile ? (
+          <span className="truncate text-neutral-300 dark:text-neutral-300 max-w-[60%]">
+            {selectedFile.name} ({selectedFile.size})
+          </span>
+        ) : (
+          <span className="text-neutral-500 dark:text-neutral-500">None</span>
+        )}
       </div>
     </div>
   );
-}
+});
 
-// --- Project Chat (collapsible, full-height) ---
-function ProjectChat({ onClose }: { onClose: () => void }) {
-  const [messages, setMessages] = useState([
-    { id: 1, author: 'Alex', text: 'Kickoff notes posted in Files > In Progress.' },
-    { id: 2, author: 'Sam', text: 'Please review page 3 of the PDF.' },
-  ]);
-  const [draft, setDraft] = useState('');
-
-  const send = () => {
-    const t = draft.trim();
-    if (!t) return;
-    setMessages((m) => [...m, { id: m.length + 1, author: 'You', text: t }]);
-    setDraft('');
-  };
-
+/** --------------------- Chat --------------------- */
+const ChatPanel = React.memo(function ChatPanel({ onClose, className = '' }: { onClose: () => void; className?: string }) {
   return (
-    <aside className="h-full w-[340px] bg-white dark:bg-[#0F1219] border-l border-gray-200 dark:border-neutral-800 text-[12px] text-gray-900 dark:text-neutral-200 flex flex-col min-w-0">
-      <div className="h-12 px-3 border-b border-gray-200 dark:border-neutral-800 flex items-center justify-between bg-gray-50 dark:bg-[#10131A]">
-        <div className="uppercase tracking-wide text-[11px] text-gray-500 dark:text-neutral-400">Project Chat</div>
-        <button onClick={onClose} className="text-gray-400 dark:text-neutral-400 hover:text-blue-600 dark:hover:text-blue-300" title="Close">×</button>
+    <div
+      className={`relative z-20 h-full ${T.panel} ${T.radius} bg-[#0F1219] dark:bg-[#0F1219] border-l border-[#1d2230]/60 dark:border-[#1d2230]/60 grid grid-rows-[auto_1fr_auto] overflow-hidden pb-0 ${className}`}
+      role="complementary"
+      aria-label="Project chat"
+    >
+      <div className="h-10 px-3 flex items-center justify-between border-b border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118]">
+        <span className="text-neutral-300 dark:text-neutral-300">Project Chat</span>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Collapse chat"
+          className={`h-7 w-7 grid place-items-center border border-[#283046]/60 dark:border-[#283046]/60 ${T.radius} text-neutral-400 dark:text-neutral-400 hover:bg-[#161B26] dark:hover:bg-[#161B26] ${T.focus}`}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6l6 6-6 6" />
+          </svg>
+        </button>
       </div>
-      <div className="flex-1 overflow-auto p-3 space-y-3">
-        {messages.map((m) => (
-          <div key={m.id}>
-            <div className="text-gray-500 dark:text-neutral-400 text-[11px] mb-0.5">{m.author}</div>
-            <div className="bg-gray-100 dark:bg-[#141821] border border-gray-200 dark:border-neutral-800 px-3 py-2">{m.text}</div>
-          </div>
-        ))}
-      </div>
-      <div className="border-t border-gray-200 dark:border-neutral-800 p-2 bg-gray-50 dark:bg-[#10131A]">
-        <div className="flex gap-2">
-          <input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') send(); }}
-            placeholder="Message…"
-            className="flex-1 h-8 px-2 bg-white dark:bg-[#0E1118] border border-gray-300 dark:border-neutral-800 text-gray-900 dark:text-neutral-200 outline-none"
-          />
-          <button onClick={send} className="px-3 h-8 border border-gray-300 dark:border-neutral-700 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-300">Send</button>
-        </div>
-      </div>
-    </aside>
-  );
-}
 
-// --- Page wrapper that shows sidebar + header + viewer + explorer + chat ---
+      <div className="overflow-auto p-3 space-y-2 text-neutral-300 dark:text-neutral-300 min-h-0">
+        <div className="text-neutral-500 dark:text-neutral-500">No messages yet.</div>
+        <div className="bg-[#141C28] dark:bg-[#141C28] border border-[#1a2030]/60 dark:border-[#1a2030]/60 p-2 rounded-[6px] w-fit max-w-[85%]">Welcome to the project chat.</div>
+      </div>
+
+      <form className="p-2 border-t border-[#1d2230] dark:border-[#1d2230] bg-[#0E1118] dark:bg-[#0E1118] grid grid-cols-[1fr_auto] gap-2 mb-0" onSubmit={(e) => e.preventDefault()}>
+        <input
+          placeholder="Type a message…"
+          className={`h-8 px-2 bg-[#0E1118] dark:bg-[#0E1118] border border-[#283046]/60 dark:border-[#283046]/60 ${T.radius} text-neutral-200 dark:text-neutral-200 placeholder:text-neutral-500 dark:placeholder:text-neutral-500 ${T.focus}`}
+        />
+        <button type="submit" className={`h-8 px-3 border border-[#283046]/60 dark:border-[#283046]/60 ${T.radius} text-neutral-300 dark:text-neutral-300 hover:bg-[#161B26] dark:hover:bg-[#161B26] ${T.focus}`}>
+          Send
+        </button>
+      </form>
+    </div>
+  );
+});
+
+/** --------------------- Page --------------------- */
 export default function SandboxPage() {
   const [chatOpen, setChatOpen] = useState(true);
+  const toggleChat = useCallback(() => setChatOpen((v) => !v), []);
+
+  const [secondaryOpen, setSecondaryOpen] = useState(true);
+  const toggleSecondary = useCallback(() => setSecondaryOpen((v) => !v), []);
+
+  const [active, setActive] = useState('Home');
 
   return (
-    <div className="h-screen w-full bg-white dark:bg-[#0E1118] text-gray-900 dark:text-neutral-200 grid grid-cols-[72px_1fr]">
-      {/* Left sidebar */}
-      <Sidebar />
+    <div
+      className={`h-screen w-full ${T.text} overflow-hidden bg-[#0B0E14] dark:bg-[#0B0E14] text-neutral-200 dark:text-neutral-200 grid gap-y-1 gap-x-0 p-1`}
+      style={{ gridTemplateColumns: `64px ${secondaryOpen ? '200px' : '0px'} 1fr` }}
+    >
+      {/* Left rail */}
+      <SidebarRail active={active} onNav={setActive} secondaryOpen={secondaryOpen} onToggleSecondary={toggleSecondary} />
 
-      {/* Right side: 2-column grid when chat is open; chat spans from header to footer */}
-      <div
-        className={`min-h-0 grid ${
-          chatOpen ? 'grid-cols-[1fr_340px]' : 'grid-cols-1'
-        } grid-rows-[auto_1fr]`}
-      >
-        {/* Row 1, Col 1: header */}
-        <div className="col-start-1 row-start-1">
-          <HeaderNav chatOpen={chatOpen} onToggleChat={() => setChatOpen((v) => !v)} />
-        </div>
+      {/* Secondary sidebar (schema-driven lists) */}
+      <SidebarSecondary open={secondaryOpen} active={active} />
 
-        {/* Row 2, Col 1: main viewer + explorer */}
-        <div className="col-start-1 row-start-2 min-h-0 flex flex-col">
-          <ViewerToolbar />
-          <PdfPlaceholder />
-          <FileExplorer />
-        </div>
+      {/* Main column */}
+      <div className={`relative min-h-0 grid grid-rows-[auto_1fr] gap-1 w-full overflow-hidden ${secondaryOpen ? 'ml-2' : ''}`}>
+        <CenteredSearch />
 
-        {/* Col 2 (spans both rows): persistent project chat full height */}
-        {chatOpen && (
-          <div className="col-start-2 row-start-1 row-span-2 min-h-0">
-            <ProjectChat onClose={() => setChatOpen(false)} />
+        {/* Main content & chat. Chat is full-height, starts below search. */}
+        <div className={`min-h-0 h-full grid items-stretch gap-1 relative ${chatOpen ? 'md:grid-cols-[minmax(0,1fr)_clamp(280px,32vw,360px)]' : 'md:grid-cols-[minmax(0,1fr)]'}`}>
+          {/* Main panel */}
+          <div className={`relative z-10 ${T.panel} ${T.radius} min-h-0 min-w-0 grid grid-rows-[auto_1fr] overflow-hidden`}>
+            <TabsHeader chatOpen={chatOpen} onToggleChat={toggleChat} />
+
+            {/* Viewer (top) + Explorer (bottom) */}
+            <div className="min-h-0 grid" style={{ gridTemplateRows: 'minmax(200px,55%) minmax(0,45%)' }}>
+              <div className="min-h-[200px]">
+                <div className={`${T.panelElev} ${T.text} grid grid-rows-[auto_1fr] overflow-hidden`}>
+                  <div className="h-9 px-3 flex items-center justify-between border-b border-[#1a2030]/40 dark:border-[#1a2030]/40">
+                    <div className="text-neutral-500 dark:text-neutral-500">Viewer</div>
+                  </div>
+                  <div className="grid place-items-center text-neutral-500 dark:text-neutral-500">No file selected</div>
+                </div>
+              </div>
+
+              <div className="relative flex-1 min-h-0">
+                <Explorer compact={chatOpen} />
+              </div>
+            </div>
           </div>
-        )}
+
+          {/* Chat panel */}
+          {chatOpen && (
+            <>
+              {/* Mobile overlay backdrop */}
+              <button type="button" aria-label="Close chat overlay" onClick={() => setChatOpen(false)} className="md:hidden fixed inset-0 bg-black/40 z-20" />
+              <ChatPanel
+                onClose={() => setChatOpen(false)}
+                className="md:static md:z-10 md:h-full md:block fixed right-1 left-auto top-[56px] bottom-1 z-30 w-[92vw] max-w-[480px] min-w-[280px] md:w-auto md:top-auto md:bottom-auto md:right-auto"
+              />
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
