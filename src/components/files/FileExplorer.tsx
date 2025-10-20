@@ -1404,7 +1404,7 @@ export default function FileExplorer({
                     className="flex-1 h-6 px-0 bg-transparent text-[11px] text-neutral-300 placeholder:text-neutral-500 focus:outline-none border-0 cursor-pointer"
                   />
                 </div>
-                <nav className="flex-1 overflow-y-auto px-1 py-1 custom-scrollbar">
+                <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-2 custom-scrollbar">
                   {phases.map((item: any, index: number) => (
                     <SidebarItem
                       key={item.name}
