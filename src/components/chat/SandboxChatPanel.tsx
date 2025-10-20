@@ -213,7 +213,7 @@ export function SandboxChatPanel({ onClose, className = '' }: SandboxChatPanelPr
       </ScrollArea>
 
       {/* Input Area - Fixed at bottom */}
-      <div className="p-3 border-t border-slate-200 dark:border-[#1d2230] bg-white dark:bg-[#0E1118]">
+      <div className="p-3 border-t border-slate-200 dark:border-[#1d2230] bg-white dark:bg-[#0E1118] mt-auto">
         {replyingTo && (
           <div className="mb-2 flex items-center justify-between bg-slate-50 dark:bg-[#141C28] px-2 py-1 ${T.radiusSmall}">
             <div className={`flex items-center gap-2 text-[10px] text-slate-500 dark:text-neutral-400`}>

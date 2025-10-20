@@ -240,25 +240,25 @@ export default function SandboxPage() {
               <div className={`relative z-10 ${T.panel} ${T.radius} min-h-0 min-w-0 grid grid-rows-[auto_1fr] overflow-hidden h-full`}>
                 <TabsHeader chatOpen={chatOpen} onToggleChat={toggleChat} />
 
-                {/* Viewer (top) + Explorer (bottom) - Resizable */}
-                <ResizablePanelGroup direction="vertical" className="min-h-0">
-                  <ResizablePanel defaultSize={55} minSize={20} maxSize={80}>
-                    <div className={`bg-white dark:bg-[#0E1118] ${T.text} grid grid-rows-[auto_1fr] overflow-hidden h-full`}>
-                      <div className="h-9 px-3 flex items-center justify-between border-b border-slate-200 dark:border-[#1a2030]/40">
-                        <div className="text-slate-500 dark:text-neutral-500">Viewer</div>
-                      </div>
-                      <div className="grid place-items-center text-slate-500 dark:text-neutral-500">No file selected</div>
+              {/* Viewer (top) + Explorer (bottom) - Reversed order, Explorer anchored at bottom */}
+              <ResizablePanelGroup direction="vertical" className="min-h-0">
+                <ResizablePanel defaultSize={55} minSize={20} maxSize={80}>
+                  <div className={`bg-white dark:bg-[#0E1118] ${T.text} grid grid-rows-[auto_1fr] overflow-hidden h-full`}>
+                    <div className="h-9 px-3 flex items-center justify-between border-b border-slate-200 dark:border-[#1a2030]/40">
+                      <div className="text-slate-500 dark:text-neutral-500">Viewer</div>
                     </div>
-                  </ResizablePanel>
+                    <div className="grid place-items-center text-slate-500 dark:text-neutral-500">No file selected</div>
+                  </div>
+                </ResizablePanel>
 
-                  <ResizableHandle className="h-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors" />
+                <ResizableHandle className="h-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors" />
 
-                  <ResizablePanel defaultSize={45} minSize={20} maxSize={80}>
-                    <div className="h-full min-h-0">
-                      <ResizableSandboxExplorer compact={chatOpen} />
-                    </div>
-                  </ResizablePanel>
-                </ResizablePanelGroup>
+                <ResizablePanel defaultSize={45} minSize={20} maxSize={80} order={1}>
+                  <div className="h-full min-h-0 flex flex-col">
+                    <ResizableSandboxExplorer compact={chatOpen} />
+                  </div>
+                </ResizablePanel>
+              </ResizablePanelGroup>
               </div>
             </ResizablePanel>
 
@@ -278,7 +278,7 @@ export default function SandboxPage() {
             <div className={`relative z-10 ${T.panel} ${T.radius} min-h-0 min-w-0 grid grid-rows-[auto_1fr] overflow-hidden h-full`}>
               <TabsHeader chatOpen={chatOpen} onToggleChat={toggleChat} />
 
-              {/* Viewer (top) + Explorer (bottom) - Resizable */}
+              {/* Viewer (top) + Explorer (bottom) - Reversed order, Explorer anchored at bottom */}
               <ResizablePanelGroup direction="vertical" className="min-h-0">
                 <ResizablePanel defaultSize={55} minSize={20} maxSize={80}>
                   <div className={`bg-white dark:bg-[#0E1118] ${T.text} grid grid-rows-[auto_1fr] overflow-hidden h-full`}>
@@ -291,8 +291,8 @@ export default function SandboxPage() {
 
                 <ResizableHandle className="h-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors" />
 
-                <ResizablePanel defaultSize={45} minSize={20} maxSize={80}>
-                  <div className="h-full min-h-0">
+                <ResizablePanel defaultSize={45} minSize={20} maxSize={80} order={1}>
+                  <div className="h-full min-h-0 flex flex-col">
                     <ResizableSandboxExplorer compact={chatOpen} />
                   </div>
                 </ResizablePanel>
