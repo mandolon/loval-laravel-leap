@@ -203,7 +203,7 @@ const Explorer = React.memo(function Explorer({ compact = false }: { compact?: b
       </div>
 
       {/* Footer for file properties */}
-      <div className="h-9 px-3 flex items-center justify-between border-t border-[#1a2030]/40 dark:border-[#1a2030]/40 bg-[#0E1118] dark:bg-[#0E1118] text-neutral-400 dark:text-neutral-400">
+      <div className="h-7 px-3 flex items-center justify-between border-t border-[#1a2030]/40 dark:border-[#1a2030]/40 bg-[#0E1118] dark:bg-[#0E1118] text-neutral-400 dark:text-neutral-400 text-[10px]">
         <span>Selected File:</span>
         {selectedFile ? (
           <span className="truncate text-neutral-300 dark:text-neutral-300 max-w-[60%]">
