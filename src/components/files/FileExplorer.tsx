@@ -1484,52 +1484,8 @@ export default function FileExplorer({
     >
       {/* Header */}
   <div className="h-8 border-b border-border bg-muted/80 flex items-center px-2 relative text-[11px]">
-        <div className={`absolute left-1/2 -translate-x-1/2 w-full flex justify-center pointer-events-none ${(heightMode === 'collapsed' || heightMode === 'compact') ? 'z-[9999]' : ''}`}>
-          <div
-            ref={searchContainerRef}
-            className={`w-full relative pointer-events-auto text-[11px] ${(heightMode === 'collapsed' || heightMode === 'compact') ? 'z-[9999]' : ''}`}
-            style={{
-              maxWidth: 'min(48rem, calc(100% - 160px))',
-              margin: '0 auto'
-            }}
-          >
-            <div className="h-6 px-2 rounded border border-border bg-muted/50 flex items-center gap-1 relative">
-              <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <input
-                className="flex-1 bg-transparent outline-none text-[11px] pr-5 text-foreground placeholder:text-muted-foreground"
-                placeholder="Search files..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => setShowSearchDropdown(searchQuery.trim().length > 0 && performSearch.length > 0)}
-                ref={searchInputRef}
-              />
-              {searchQuery && (
-                <button
-                  className="absolute right-1 h-4 w-4 rounded-full bg-gray-400 hover:bg-gray-500 flex items-center justify-center focus:outline-none active:transform-none"
-                  style={{ ...(darkMode ? { backgroundColor: 'hsl(var(--muted-foreground))' } : {}), transform: 'none' }}
-                  onClick={() => {
-                    setSearchQuery("");
-                    setShowSearchDropdown(false);
-                  }}
-                  title="Clear search"
-                >
-                  <span className="text-white text-[11px] leading-none">×</span>
-                </button>
-              )}
-            </div>
-            {showSearchDropdown && (
-              <FloatingSearchDropdown
-                anchorRef={searchContainerRef as unknown as RefObject<HTMLElement>}
-                results={performSearch}
-                searchQuery={searchQuery}
-                keyboardSelectedIndex={keyboardSelectedSearchResult}
-                onSelect={handleSearchResultSelect}
-                onClose={() => setShowSearchDropdown(false)}
-                placement="up"
-                darkMode={darkMode}
-              />
-            )}
-          </div>
+        <div className="flex items-center">
+          <span className="text-foreground font-medium text-[11px]">Files</span>
         </div>
         
         <div className="hidden md:flex items-center gap-2 ml-auto pr-1">
@@ -1565,6 +1521,34 @@ export default function FileExplorer({
         <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* Sidebar */}
           <aside className="w-[clamp(140px,18%,180px)] border-r border-border bg-muted flex flex-col">
+            {/* Search bar - aligned with headers */}
+            <div
+              ref={searchContainerRef}
+              className="h-7 px-3 flex items-center gap-2 border-b border-border relative"
+            >
+              <Search className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setShowSearchDropdown(searchQuery.trim().length > 0 && performSearch.length > 0)}
+                className="flex-1 h-6 px-0 bg-transparent text-[11px] text-foreground placeholder:text-muted-foreground focus:outline-none border-0"
+              />
+              {showSearchDropdown && (
+                <FloatingSearchDropdown
+                  anchorRef={searchContainerRef as unknown as RefObject<HTMLElement>}
+                  results={performSearch}
+                  searchQuery={searchQuery}
+                  keyboardSelectedIndex={keyboardSelectedSearchResult}
+                  onSelect={handleSearchResultSelect}
+                  onClose={() => setShowSearchDropdown(false)}
+                  placement="down"
+                  darkMode={darkMode}
+                />
+              )}
+            </div>
             <nav className="flex-1 overflow-y-auto px-1 py-1 custom-scrollbar">
               {phases.map((item: any, index: number) => (
                 <SidebarItem
