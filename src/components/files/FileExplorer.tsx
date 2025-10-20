@@ -69,9 +69,9 @@ const SidebarItem = ({ item, selected, keyboardFocused, onClick, darkMode }: {
     <button
       onClick={onClick}
       className={`w-full text-left px-2.5 py-1 rounded-[8px] transition-colors focus:outline-none active:transform-none border-0 ${
-        selected ? 'bg-secondary text-primary' : 
-        keyboardFocused ? 'bg-secondary/50 text-foreground' : 
-        'text-muted-foreground hover:bg-secondary hover:text-primary'
+        selected ? 'bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 
+        keyboardFocused ? 'bg-[#141C28] dark:bg-[#141C28] text-blue-300 dark:text-blue-300' : 
+        'text-neutral-400 dark:text-neutral-400 hover:bg-[#141C28] dark:hover:bg-[#141C28] hover:text-blue-300 dark:hover:text-blue-300'
       }`}
       data-selected={selected ? 'true' : 'false'}
       data-focus={keyboardFocused ? 'true' : 'false'}
@@ -399,9 +399,9 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
               <div
                 key={f.name}
                 className={`group flex items-center h-7 border-b border-border/50 pl-3 pr-3 cursor-pointer transition-colors border-l-2 ${
-                  isSelected ? 'border-l-primary bg-secondary' : 
-                  isKeyboardFocused ? 'border-l-primary/50 bg-secondary/50' : 
-                  'border-l-transparent hover:bg-secondary/30'
+                  isSelected ? 'border-l-2 border-blue-400 dark:border-blue-400 bg-[#141C28] dark:bg-[#141C28]' : 
+                  isKeyboardFocused ? 'border-l-2 border-blue-400/50 dark:border-blue-400/50 bg-[#141C28]/50 dark:bg-[#141C28]/50' : 
+                  'border-l-transparent hover:bg-[#151A24] dark:hover:bg-[#151A24]'
                 }`}
                 onClick={() => onFolderClick(f)}
                 data-selected={isSelected ? 'true' : 'false'}
@@ -409,9 +409,9 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
                 tabIndex={0}
               >
                 <div className={`flex items-center flex-[2] pr-2 min-w-0 ${
-                  isSelected ? "text-primary font-medium" :
-                  isKeyboardFocused ? "text-primary/80" :
-                  "text-foreground"
+                  isSelected ? "text-blue-300 dark:text-blue-300" :
+                  isKeyboardFocused ? "text-blue-300/80 dark:text-blue-300/80" :
+                  "text-neutral-300 dark:text-neutral-300"
                 }`}>
                   <span className="truncate text-[12px]">{f.name}</span>
                 </div>
@@ -605,9 +605,9 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
                 <div
                   key={file.name}
                   className={`flex flex-col items-stretch p-2 rounded-[8px] cursor-pointer transition-colors gap-1 ${
-                    isSelected ? 'bg-secondary' : 
-                    isKeyboardFocused ? 'bg-secondary/50' : 
-                    'hover:bg-secondary/30'
+                    isSelected ? 'bg-[#141C28] dark:bg-[#141C28]' : 
+                    isKeyboardFocused ? 'bg-[#141C28]/50 dark:bg-[#141C28]/50' : 
+                    'hover:bg-[#151A24] dark:hover:bg-[#151A24]'
                   }`}
                   onClick={() => onFileClick(file)}
                   draggable={true}
@@ -635,7 +635,7 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
                     </div>
                   </div>
                   <span className={`text-[12px] leading-snug text-center truncate w-full px-0.5 ${
-                    isSelected ? 'text-primary font-medium' : isKeyboardFocused ? 'text-foreground' : 'text-foreground/80'
+                    isSelected ? 'text-blue-300 dark:text-blue-300 font-medium' : isKeyboardFocused ? 'text-blue-300/80 dark:text-blue-300/80' : 'text-neutral-300 dark:text-neutral-300'
                   }`}>{file.name}</span>
                   <span className="text-[12px] text-muted-foreground">{file.size}</span>
                 </div>
@@ -733,9 +733,9 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
               <div
                 key={file.name}
                 className={`flex items-center h-7 border-b border-border/50 pl-3 pr-3 cursor-pointer transition-colors ${
-                  isSelected ? 'bg-secondary text-primary' : 
-                  isKeyboardFocused ? 'bg-secondary/50 text-foreground' : 
-                  'text-foreground hover:bg-secondary/30'
+                  isSelected ? 'bg-[#141C28] dark:bg-[#141C28]' : 
+                  isKeyboardFocused ? 'bg-[#141C28]/50 dark:bg-[#141C28]/50' : 
+                  'hover:bg-[#151A24] dark:hover:bg-[#151A24]'
                 }`}
                 onClick={() => onFileClick(file)}
                 draggable={true}
@@ -745,9 +745,9 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
                 tabIndex={0}
               >
                 <div className={`flex-1 flex items-center pr-3 min-w-0 ${
-                  isSelected ? "text-primary font-medium" :
-                  isKeyboardFocused ? "text-foreground" :
-                  "text-foreground"
+                  isSelected ? "text-blue-300 dark:text-blue-300 font-medium" :
+                  isKeyboardFocused ? "text-blue-300/80 dark:text-blue-300/80" :
+                  "text-neutral-300 dark:text-neutral-300"
                 }`}>
                   <FileIcon
                     fileName={file.name}
