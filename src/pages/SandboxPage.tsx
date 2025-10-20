@@ -260,7 +260,7 @@ export default function SandboxPage() {
               <button type="button" aria-label="Close chat overlay" onClick={() => setChatOpen(false)} className="md:hidden fixed inset-0 bg-black/40 z-20" />
               <SandboxChatPanel
                 onClose={() => setChatOpen(false)}
-                className="md:static md:z-10 md:block fixed right-1 left-auto top-[56px] bottom-1 z-30 w-[92vw] max-w-[480px] min-w-[280px] md:w-auto md:top-auto md:bottom-auto md:right-auto"
+                className="md:static md:z-10 md:h-full md:block fixed right-1 left-auto top-[56px] bottom-1 z-30 w-[92vw] max-w-[480px] min-w-[280px] md:w-auto md:top-auto md:bottom-auto md:right-auto"
               />
             </>
           )}
