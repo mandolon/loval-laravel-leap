@@ -75,7 +75,6 @@ const SidebarItem = ({ item, selected, keyboardFocused, onClick, darkMode }: {
       data-selected={selected ? 'true' : 'false'}
       data-focus={keyboardFocused ? 'true' : 'false'}
     >
-      <Folder className="h-3.5 w-3.5 flex-shrink-0" />
       <span className={`truncate text-[12px] ${selected ? 'font-medium' : ''}`}>{item.name}</span>
     </button>
   );
@@ -366,7 +365,6 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
             {isCreatingFolder && (
         <div className="flex items-center h-7 border-b border-[#1d2230]/50 bg-[#0E1118] pl-3 pr-3">
                 <div className="flex-[2] pr-2 min-w-0 flex items-center">
-                  <Folder className="h-3.5 w-3.5 mr-2 text-neutral-400" />
                   <input
                     ref={inputRef}
                     type="text"
@@ -414,7 +412,6 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
                   isKeyboardFocused ? "text-blue-300/80" :
                   "text-neutral-300"
                 }`}>
-                  <Folder className="h-3.5 w-3.5 mr-2 text-neutral-400" />
                   <span className="truncate text-[12px]">{f.name}</span>
                 </div>
                 <span className="flex-[1] text-[12px] text-neutral-400 tabular-nums hidden lg:block">
