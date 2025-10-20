@@ -940,6 +940,7 @@ export default function FileExplorer({
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [modalSearchQuery, setModalSearchQuery] = useState("");
+  const [modalSelectedIndex, setModalSelectedIndex] = useState(0);
   const [viewMode, setViewMode] = useState("list");
   const [focusedPanel, setFocusedPanel] = useState('phases');
   const [keyboardSelectedPhase, setKeyboardSelectedPhase] = useState(0);
@@ -1545,8 +1546,76 @@ export default function FileExplorer({
       )}
 
       {/* Search Modal */}
-      <Dialog open={isSearchModalOpen} onOpenChange={setIsSearchModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0">
+      <Dialog open={isSearchModalOpen} onOpenChange={(open) => {
+        setIsSearchModalOpen(open);
+        if (!open) {
+          setModalSearchQuery("");
+          setModalSelectedIndex(0);
+        }
+      }}>
+        <DialogContent 
+          className="max-w-2xl max-h-[80vh] flex flex-col p-0"
+          onKeyDown={(e) => {
+            const query = modalSearchQuery.toLowerCase();
+            const results: Array<{
+              type: 'file';
+              name: string;
+              phase: string;
+              folder: string;
+              data: any;
+            }> = [];
+            
+            phases.forEach((phase: any) => {
+              files.forEach(file => {
+                if (file.phase === phase.name && file.name.toLowerCase().includes(query)) {
+                  results.push({
+                    type: 'file',
+                    name: file.name,
+                    phase: file.phase,
+                    folder: file.folder,
+                    data: file
+                  });
+                }
+              });
+            });
+            
+            const limitedResults = results.slice(0, 20);
+            
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              setModalSelectedIndex(prev => 
+                prev < limitedResults.length - 1 ? prev + 1 : prev
+              );
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              setModalSelectedIndex(prev => prev > 0 ? prev - 1 : 0);
+            } else if (e.key === 'Enter' && limitedResults.length > 0) {
+              e.preventDefault();
+              const result = limitedResults[modalSelectedIndex];
+              if (result) {
+                const phase = phases.find((p: any) => p.name === result.phase);
+                const folder = phase?.children?.find((f: any) => f.name === result.folder);
+                
+                if (phase && folder) {
+                  setSelectedPhase(phase);
+                  setSelectedFolder(folder);
+                  setTimeout(() => {
+                    handleFileClick(result.data);
+                  }, 0);
+                }
+                
+                setIsSearchModalOpen(false);
+                setModalSearchQuery("");
+                setModalSelectedIndex(0);
+              }
+            } else if (e.key === 'Escape') {
+              e.preventDefault();
+              setIsSearchModalOpen(false);
+              setModalSearchQuery("");
+              setModalSelectedIndex(0);
+            }
+          }}
+        >
           <DialogHeader className="px-4 pt-4 pb-2 border-b">
             <DialogTitle className="text-base">Search Files</DialogTitle>
           </DialogHeader>
@@ -1558,7 +1627,10 @@ export default function FileExplorer({
                 type="text"
                 placeholder="Search files..."
                 value={modalSearchQuery}
-                onChange={(e) => setModalSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setModalSearchQuery(e.target.value);
+                  setModalSelectedIndex(0);
+                }}
                 className="flex-1 h-8 px-0 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none border-0"
                 autoFocus
               />
@@ -1610,39 +1682,46 @@ export default function FileExplorer({
               
               return (
                 <div className="space-y-0.5">
-                  {limitedResults.map((result, index) => (
-                    <div
-                      key={`${result.type}-${result.name}-${index}`}
-                      className="p-2 hover:bg-accent cursor-pointer rounded-md flex items-center gap-2"
-                      onClick={() => {
-                        // Select the phase and folder
-                        const phase = phases.find((p: any) => p.name === result.phase);
-                        const folder = phase?.children?.find((f: any) => f.name === result.folder);
-                        
-                        if (phase && folder) {
-                          setSelectedPhase(phase);
-                          setSelectedFolder(folder);
-                          setTimeout(() => {
-                            handleFileClick(result.data);
-                          }, 0);
-                        }
-                        
-                        setIsSearchModalOpen(false);
-                        setModalSearchQuery("");
-                      }}
-                    >
-                      <FileIcon
-                        fileName={result.name}
-                        className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[13px] font-medium truncate leading-tight">{result.name}</div>
-                        <div className="text-[11px] text-muted-foreground truncate leading-tight mt-0.5">
-                          {result.phase} / {result.folder}
+                  {limitedResults.map((result, index) => {
+                    const isHighlighted = index === modalSelectedIndex;
+                    return (
+                      <div
+                        key={`${result.type}-${result.name}-${index}`}
+                        className={`p-2 cursor-pointer rounded-md flex items-center gap-2 ${
+                          isHighlighted ? 'bg-accent' : 'hover:bg-accent/50'
+                        }`}
+                        onClick={() => {
+                          // Select the phase and folder
+                          const phase = phases.find((p: any) => p.name === result.phase);
+                          const folder = phase?.children?.find((f: any) => f.name === result.folder);
+                          
+                          if (phase && folder) {
+                            setSelectedPhase(phase);
+                            setSelectedFolder(folder);
+                            setTimeout(() => {
+                              handleFileClick(result.data);
+                            }, 0);
+                          }
+                          
+                          setIsSearchModalOpen(false);
+                          setModalSearchQuery("");
+                          setModalSelectedIndex(0);
+                        }}
+                        onMouseEnter={() => setModalSelectedIndex(index)}
+                      >
+                        <FileIcon
+                          fileName={result.name}
+                          className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[13px] font-medium truncate leading-tight">{result.name}</div>
+                          <div className="text-[11px] text-muted-foreground truncate leading-tight mt-0.5">
+                            {result.phase} / {result.folder}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               );
             })()}
