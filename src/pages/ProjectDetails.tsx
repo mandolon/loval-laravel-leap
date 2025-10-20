@@ -50,6 +50,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
 
+// Design tokens matching SandboxPage
+const T = {
+  radius: 'rounded-[8px]',
+  text: 'text-[12px]',
+  focus: 'focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40',
+  panel: 'bg-white dark:bg-[#0F1219] border border-slate-200 dark:border-[#1d2230]/60',
+  panelSoft: 'bg-slate-50 dark:bg-[#10141D] border border-slate-200 dark:border-[#1a1f2c]/50',
+  panelElev: 'bg-white dark:bg-[#0E1118] border border-slate-200 dark:border-[#1a2030]/50',
+};
+
 const ProjectDetails = () => {
   const { id, workspaceId } = useParams<{ id: string; workspaceId: string }>();
   const navigate = useNavigate();
@@ -285,10 +295,10 @@ const ProjectDetails = () => {
   };
 
   return (
-    <div className="flex h-full">
-      <ResizablePanelGroup direction="horizontal" className="h-full">
-        <ResizablePanel defaultSize={chatOpen ? 75 : 100} minSize={50} className="flex flex-col">
-          <div className="flex flex-col h-full min-h-0">
+    <div className="h-full w-full text-[12px] overflow-hidden bg-slate-50 dark:bg-[#0B0E14] text-slate-700 dark:text-neutral-200 flex gap-1 p-1">
+      <ResizablePanelGroup direction="horizontal" className="h-full gap-1">
+        <ResizablePanel defaultSize={chatOpen ? 75 : 100} minSize={50}>
+          <div className={`${T.panel} ${T.radius} flex flex-col h-full min-h-0 overflow-hidden`}>
         {/* Header */}
         <div className="h-12 text-[12px] grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 bg-white dark:bg-[#0E1118] border-b border-slate-200 dark:border-[#1a2030]/60">
           {/* Left: Back button */}
@@ -531,7 +541,7 @@ const ProjectDetails = () => {
                     <p className="text-muted-foreground">Loading invoices...</p>
                   </div>
                 ) : invoices.length === 0 ? (
-                  <Card>
+                  <Card className={`${T.panel} ${T.radius}`}>
                     <CardContent className="py-12">
                       <p className="text-center text-muted-foreground">No invoices yet. Create your first invoice to get started.</p>
                     </CardContent>
@@ -618,7 +628,7 @@ const ProjectDetails = () => {
                     <p className="text-muted-foreground">Loading links...</p>
                   </div>
                 ) : links.length === 0 ? (
-                  <Card>
+                  <Card className={`${T.panel} ${T.radius}`}>
                     <CardContent className="py-12">
                       <p className="text-center text-muted-foreground">
                         No links yet. Add your first reference link to get started.
@@ -655,8 +665,8 @@ const ProjectDetails = () => {
 
             <TabsContent value="project" className="mt-0 flex-1 min-h-0 space-y-6 overflow-auto">
               {/* Project Name */}
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+              <Card className={`${T.panel} ${T.radius}`}>
+                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
                   <div>
                     <CardTitle>Project Name</CardTitle>
                   </div>
@@ -671,8 +681,8 @@ const ProjectDetails = () => {
               </Card>
 
               {/* Project Address */}
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+              <Card className={`${T.panel} ${T.radius}`}>
+                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
                   <div>
                     <CardTitle>Project Address</CardTitle>
                   </div>
@@ -697,8 +707,8 @@ const ProjectDetails = () => {
               </Card>
 
               {/* Project Narrative */}
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+              <Card className={`${T.panel} ${T.radius}`}>
+                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
                   <div>
                     <CardTitle>Project Description</CardTitle>
                   </div>
@@ -714,8 +724,8 @@ const ProjectDetails = () => {
 
               {/* Project Status, Phase, and Design Fee in a row */}
               <div className="grid grid-cols-3 gap-6">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
+                <Card className={`${T.panel} ${T.radius}`}>
+                  <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
                     <div>
                       <CardTitle>Status</CardTitle>
                     </div>
@@ -739,8 +749,8 @@ const ProjectDetails = () => {
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
+                <Card className={`${T.panel} ${T.radius}`}>
+                  <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
                     <div>
                       <CardTitle>Phase</CardTitle>
                     </div>
@@ -754,8 +764,8 @@ const ProjectDetails = () => {
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
+                <Card className={`${T.panel} ${T.radius}`}>
+                  <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
                     <div>
                       <CardTitle>Design Fee</CardTitle>
                     </div>
@@ -775,8 +785,8 @@ const ProjectDetails = () => {
               </div>
 
               {/* Team Section */}
-              <Card>
-                <CardHeader>
+              <Card className={`${T.panel} ${T.radius}`}>
+                <CardHeader className="border-b border-slate-200 dark:border-[#1d2230]">
                   <CardTitle>Team</CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -785,8 +795,8 @@ const ProjectDetails = () => {
               </Card>
 
               {/* Assessor Parcel Information */}
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+              <Card className={`${T.panel} ${T.radius}`}>
+                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
                   <div>
                     <CardTitle>Assessor Parcel Information</CardTitle>
                   </div>
@@ -847,8 +857,8 @@ const ProjectDetails = () => {
             </TabsContent>
 
             <TabsContent value="client" className="mt-0 flex-1 min-h-0 overflow-auto">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+              <Card className={`${T.panel} ${T.radius}`}>
+                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
                   <div>
                     <CardTitle>Client Information</CardTitle>
                   </div>
@@ -891,8 +901,8 @@ const ProjectDetails = () => {
             </TabsContent>
 
             <TabsContent value="notes" className="mt-0 flex-1 min-h-0 overflow-auto">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <Card className={`${T.panel} ${T.radius}`}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-slate-200 dark:border-[#1d2230]">
                   <div>
                     <CardTitle>Notes</CardTitle>
                     <CardDescription>Project notes and comments</CardDescription>
@@ -926,9 +936,9 @@ const ProjectDetails = () => {
       {/* Project Chat Sidebar - Resizable */}
       {chatOpen && (
         <>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={25} minSize={20} maxSize={40} className="flex flex-col">
-            <div className="bg-white dark:bg-[#0F1219] border-l border-slate-200 dark:border-[#1d2230]/60 rounded-[8px] flex flex-col h-full">
+          <ResizableHandle withHandle className="w-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors" />
+          <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
+            <div className={`${T.panel} ${T.radius} flex flex-col h-full overflow-hidden`}>
           <div className="h-10 px-3 flex items-center justify-between border-b border-slate-200 dark:border-[#1d2230] bg-white dark:bg-[#0E1118]">
             <span className="text-[12px] text-slate-700 dark:text-neutral-300">Project Chat</span>
             <button
