@@ -36,7 +36,7 @@ export const TaskItem = ({ task, assignees, onStatusChange, onDelete }: TaskItem
   };
 
   return (
-    <Card className="p-4 hover:shadow-md transition-all duration-200 group bg-card">
+    <Card className="p-4 hover:shadow-lg transition-all duration-200 group bg-white dark:bg-[#0F1219] border border-slate-200 dark:border-[#1d2230]/60">
       <div className="flex items-start gap-3">
         <Checkbox 
           checked={isDone}

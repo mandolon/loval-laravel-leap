@@ -40,7 +40,7 @@ export const InvoiceCard = ({ invoice, onView, onEdit, onDelete, onDownloadPDF, 
   const isOverdue = invoice.status === 'pending' && new Date(invoice.dueDate) < new Date();
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="hover:shadow-lg transition-all duration-200">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">

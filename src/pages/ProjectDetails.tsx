@@ -420,14 +420,13 @@ const ProjectDetails = () => {
               </TabsContent>
 
             <TabsContent value="tasks" className="h-full overflow-auto bg-white dark:bg-[#0F1219]">
-              <div className="p-4 space-y-4 mb-6">
+              <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold text-slate-700 dark:text-neutral-300">Tasks</h2>
                   <CreateTaskDialog projects={[project]} onCreateTask={handleCreateTask} />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Task/Redline Column */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -497,10 +496,11 @@ const ProjectDetails = () => {
                   </div>
                 </div>
               </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="invoices" className="h-full overflow-auto bg-white dark:bg-[#0F1219]">
-              <div className="p-4 space-y-4">
+              <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-2xl font-bold text-slate-700 dark:text-neutral-300">Invoices</h2>
@@ -540,7 +540,7 @@ const ProjectDetails = () => {
                     </CardContent>
                   </Card>
                 ) : invoiceViewMode === 'card' ? (
-                  <div className="grid gap-4 md:grid-cols-2">
+                  <div className="grid gap-6 md:grid-cols-2">
                     {invoices.map((invoice) => (
                       <InvoiceCard
                         key={invoice.id}
@@ -607,7 +607,7 @@ const ProjectDetails = () => {
             </TabsContent>
 
             <TabsContent value="links" className="h-full overflow-auto bg-white dark:bg-[#0F1219]">
-              <div className="p-4 space-y-4">
+              <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-2xl font-bold text-slate-700 dark:text-neutral-300">Links</h2>
@@ -629,7 +629,7 @@ const ProjectDetails = () => {
                     </CardContent>
                   </Card>
                 ) : (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {links.map((link) => (
                       <LinkCard
                         key={link.id}
@@ -657,7 +657,7 @@ const ProjectDetails = () => {
             </TabsContent>
 
             <TabsContent value="project" className="h-full overflow-auto bg-white dark:bg-[#0F1219]">
-              <div className="p-4 space-y-4">
+              <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
               {/* Project Name */}
               <Card className={`${T.panel} ${T.radius}`}>
                 <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
@@ -852,7 +852,7 @@ const ProjectDetails = () => {
             </TabsContent>
 
             <TabsContent value="client" className="h-full overflow-auto bg-white dark:bg-[#0F1219]">
-              <div className="p-4 space-y-4">
+              <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
               <Card className={`${T.panel} ${T.radius}`}>
                 <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
                   <div>
@@ -898,7 +898,7 @@ const ProjectDetails = () => {
             </TabsContent>
 
             <TabsContent value="notes" className="h-full overflow-auto bg-white dark:bg-[#0F1219]">
-              <div className="p-4 space-y-4">
+              <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
               <Card className={`${T.panel} ${T.radius}`}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-slate-200 dark:border-[#1d2230]">
                   <div>

@@ -30,7 +30,7 @@ export const NoteCard = ({ note, onUpdate, onDelete }: NoteCardProps) => {
   }
 
   return (
-    <Card className="group hover:shadow-md transition-all duration-200">
+    <Card className="group hover:shadow-lg transition-all duration-200">
       <CardContent className="pt-4">
         {isEditing ? (
           <div className="space-y-3">
