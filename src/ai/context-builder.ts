@@ -123,7 +123,10 @@ export async function buildWorkspaceContext(
 
 function formatProjectMetadata(metadata: ProjectMetadata, projectId: string, projectName: string): string {
   let text = `# Project Context\n\n`;
-  text += `**IMPORTANT - Project ID (use this for all tool calls):** ${projectId}\n`;
+  text += `════════════════════════════════════════\n`;
+  text += `⭐ IMPORTANT - Project ID (use this for all tool calls):\n`;
+  text += `${projectId}\n`;
+  text += `════════════════════════════════════════\n\n`;
   text += `**Project Name:** ${projectName}\n\n`;
   text += `## Summary\n${metadata.summary}\n\n`;
   

@@ -24,10 +24,23 @@ export function useAIChat(threadId: string, workspaceId: string, projectId?: str
 
       // Build AI context - always load at least workspace context
       let projectContext = "";
+      let projectName = "";
+      
       if (projectId && projectId !== "select" && projectId !== "all") {
         // Specific project selected - load detailed project context
         const context = await buildAIContext(workspaceId, projectId, userMessage);
         projectContext = context.contextString;
+        
+        // Fetch project name for edge function
+        const { data: project } = await supabase
+          .from("projects")
+          .select("name")
+          .eq("id", projectId)
+          .single();
+        
+        if (project) {
+          projectName = project.name;
+        }
       } else {
         // No specific project or "All Projects" - load workspace overview
         const context = await buildWorkspaceContext(workspaceId, userMessage);
@@ -47,6 +60,7 @@ export function useAIChat(threadId: string, workspaceId: string, projectId?: str
           threadId,
           workspaceId,
           projectId,
+          projectName,
           projectContext
         }),
       });

@@ -93,6 +93,116 @@ const tools = [
   }
 ];
 
+// UUID validation helper
+function validateUUID(value: string): { valid: boolean; error?: string } {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  
+  if (!value) {
+    return { valid: false, error: "Project ID is required" };
+  }
+  
+  if (value.includes(" ")) {
+    return { 
+      valid: false, 
+      error: `Invalid project_id: "${value}" looks like a project name (contains spaces). You must use the UUID from "⭐ IMPORTANT - Project ID" in the context.` 
+    };
+  }
+  
+  if (value.length < 32) {
+    return { 
+      valid: false, 
+      error: `Invalid project_id: "${value}" is too short. You must use the full UUID (36 characters with hyphens) from the Project Context.` 
+    };
+  }
+  
+  if (!uuidRegex.test(value)) {
+    return { 
+      valid: false, 
+      error: `Invalid project_id format: "${value}". Must be a UUID like "a1b2c3d4-e5f6-7890-abcd-ef1234567890". Check the "⭐ IMPORTANT - Project ID" line in the context.` 
+    };
+  }
+  
+  return { valid: true };
+}
+
+// Verify project exists
+async function verifyProjectExists(projectId: string, supabase: any): Promise<{ exists: boolean; error?: string }> {
+  const { data, error } = await supabase
+    .from("projects")
+    .select("id, name")
+    .eq("id", projectId)
+    .maybeSingle();
+  
+  if (error) {
+    return { exists: false, error: `Database error: ${error.message}` };
+  }
+  
+  if (!data) {
+    return { 
+      exists: false, 
+      error: `Project with ID "${projectId}" not found. Please use the exact UUID from the Project Context.` 
+    };
+  }
+  
+  return { exists: true };
+}
+
+// Generate system prompt with clear UUID instructions
+function generateSystemPrompt(projectId?: string, projectName?: string, projectContext?: string): string {
+  let prompt = `You are a helpful AI assistant for a project management workspace.
+
+════════════════════════════════════════
+⭐ ACTIVE PROJECT CONTEXT
+════════════════════════════════════════`;
+
+  if (projectId && projectName) {
+    prompt += `
+Project UUID: ${projectId}
+Project Name: ${projectName}
+**COPY THIS UUID FOR ALL TOOL CALLS**`;
+  } else {
+    prompt += `
+No specific project selected (viewing all projects)`;
+  }
+
+  prompt += `
+════════════════════════════════════════
+
+CRITICAL RULES FOR TOOL USAGE:
+1. Find the line "⭐ IMPORTANT - Project ID" in the context below
+2. Copy the UUID EXACTLY (format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+3. Use that UUID for project_id parameters - NEVER use project names
+
+EXAMPLES OF CORRECT ✅ vs WRONG ❌ USAGE:
+
+create_task:
+✅ CORRECT: { "project_id": "a7f3e2c1-9b4d-4e8a-b2f1-3c5d6e7f8a9b", "title": "Design review" }
+❌ WRONG: { "project_id": "1638 D Street", "title": "Design review" }
+❌ WRONG: { "project_id": "redline", "title": "Design review" }
+
+update_project_status:
+✅ CORRECT: { "project_id": "a7f3e2c1-9b4d-4e8a-b2f1-3c5d6e7f8a9b", "status": "active" }
+❌ WRONG: { "project_id": "Smith Project", "status": "active" }
+
+AFTER CALLING A TOOL:
+- Confirm the action naturally: "I've created the task..."
+- Do NOT repeat the UUID to the user
+- Focus on what was accomplished
+
+YOUR CAPABILITIES:
+- create_task: Create new tasks in projects
+- update_task_status: Update task status
+- update_project_status: Update project status or phase
+
+Keep responses clear, concise, and actionable.`;
+
+  if (projectContext) {
+    prompt += `\n\n${projectContext}`;
+  }
+
+  return prompt;
+}
+
 // Execute tool calls
 async function executeTool(toolName: string, args: any, supabase: any, userId: string) {
   console.log(`Executing tool: ${toolName}`, args);
@@ -100,6 +210,20 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
   switch (toolName) {
     case "create_task": {
       const { project_id, title, description, priority, assignee_id } = args;
+      
+      // Validate UUID format
+      const validation = validateUUID(project_id);
+      if (!validation.valid) {
+        console.error("UUID validation failed:", validation.error);
+        return { success: false, error: validation.error };
+      }
+      
+      // Verify project exists
+      const projectCheck = await verifyProjectExists(project_id, supabase);
+      if (!projectCheck.exists) {
+        console.error("Project verification failed:", projectCheck.error);
+        return { success: false, error: projectCheck.error };
+      }
       
       const taskData: any = {
         project_id,
@@ -121,8 +245,7 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
         console.error("Error creating task:", error);
         return { 
           success: false, 
-          error: error.message,
-          hint: "Make sure you're using the Project ID (UUID format like 'a1b2c3d4-...'), not the project name. Check the Project Context for the correct ID."
+          error: `Failed to create task: ${error.message}`
         };
       }
 
@@ -157,6 +280,38 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
 
     case "update_project_status": {
       const { project_id, status, phase } = args;
+      
+      // Validate UUID format
+      const validation = validateUUID(project_id);
+      if (!validation.valid) {
+        console.error("UUID validation failed:", validation.error);
+        return { success: false, error: validation.error };
+      }
+      
+      // Validate phase if provided
+      const validPhases = ["Pre-Design", "Design", "Permit", "Build"];
+      if (phase && !validPhases.includes(phase)) {
+        return { 
+          success: false, 
+          error: `Invalid phase: "${phase}". Must be one of: ${validPhases.join(", ")}` 
+        };
+      }
+      
+      // Validate status
+      const validStatuses = ["active", "pending", "completed", "archived"];
+      if (!validStatuses.includes(status)) {
+        return { 
+          success: false, 
+          error: `Invalid status: "${status}". Must be one of: ${validStatuses.join(", ")}` 
+        };
+      }
+      
+      // Verify project exists
+      const projectCheck = await verifyProjectExists(project_id, supabase);
+      if (!projectCheck.exists) {
+        console.error("Project verification failed:", projectCheck.error);
+        return { success: false, error: projectCheck.error };
+      }
 
       const updateData: any = { status, updated_by: userId };
       if (phase) updateData.phase = phase;
@@ -170,7 +325,7 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
 
       if (error) {
         console.error("Error updating project:", error);
-        return { success: false, error: error.message };
+        return { success: false, error: `Failed to update project: ${error.message}` };
       }
 
       return { 
@@ -189,7 +344,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, threadId, workspaceId, projectId, projectContext } = await req.json();
+    const { messages, threadId, workspaceId, projectId, projectName, projectContext } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -208,25 +363,8 @@ serve(async (req) => {
       throw new Error("User not authenticated");
     }
 
-    // System prompt with tool usage instructions
-    let systemPrompt = `You are a helpful AI assistant for a project management workspace. 
-You help users manage their projects, tasks, files, and team collaboration.
-
-You have access to tools that allow you to perform actions:
-- create_task: Create new tasks in projects
-- update_task_status: Update task status (mark as complete, in progress, etc.)
-- update_project_status: Update project status or phase
-
-CRITICAL: When using tools, you MUST use the exact Project ID (UUID format) provided in the context, NOT the project name.
-The context will show "IMPORTANT - Project ID (use this for all tool calls): <uuid>" - always use this UUID value for project_id parameters.
-
-When a user asks you to perform an action, use the appropriate tool. Always confirm what you've done in a natural, conversational way.
-
-Keep answers clear, concise, and actionable.`;
-
-    if (projectContext) {
-      systemPrompt += `\n\n${projectContext}`;
-    }
+    // Generate system prompt with clear UUID guidance
+    const systemPrompt = generateSystemPrompt(projectId, projectName, projectContext);
 
     // Initial AI call with tools
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
