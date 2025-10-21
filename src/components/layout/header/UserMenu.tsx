@@ -65,9 +65,9 @@ export function UserMenu({ onNavigateProfile, onNavigateTrash, onLogout }: UserM
       <DropdownMenuTrigger asChild>
         <Button 
           variant="ghost" 
-          className="h-8 px-2 gap-1.5 rounded-md hover:bg-accent"
+          className="h-8 w-8 rounded-full p-0"
         >
-          <Avatar className="h-6 w-6">
+          <Avatar className="h-8 w-8">
             <AvatarFallback 
               className="text-white text-xs font-semibold"
               style={{ background: user.avatar_url || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
@@ -75,7 +75,6 @@ export function UserMenu({ onNavigateProfile, onNavigateTrash, onLogout }: UserM
               {user.initials}
             </AvatarFallback>
           </Avatar>
-          <ChevronDown className="h-3 w-3 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
