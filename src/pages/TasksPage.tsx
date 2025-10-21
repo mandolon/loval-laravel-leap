@@ -3,11 +3,9 @@ import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom"
 import type { Task, User } from "@/lib/api/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, UserPlus, ChevronDown, ChevronRight, Upload, Paperclip } from "lucide-react";
+import { Plus, UserPlus, ChevronDown, ChevronRight, Upload } from "lucide-react";
 import { useUploadTaskFile } from "@/lib/api/hooks/useFiles";
 import { useToast } from "@/hooks/use-toast";
 import { TaskDetailDialog } from "@/components/TaskDetailDialog";
@@ -18,9 +16,10 @@ import { useProjects } from "@/lib/api/hooks/useProjects";
 import { useProjectMembers } from "@/lib/api/hooks/useProjectMembers";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/contexts/UserContext";
-import { PageHeader } from "@/components/layout/PageHeader";
-import { PageSubhead } from "@/components/layout/PageSubhead";
 import { DESIGN_TOKENS as T } from "@/lib/design-tokens";
+import { StatusDot } from "@/components/taskboard/StatusDot";
+import { QuickAddTaskRow } from "@/components/taskboard/QuickAddTaskRow";
+import { UserAvatar } from "@/components/UserAvatar";
 
 const TasksPage = () => {
   const { toast } = useToast();
@@ -224,111 +223,127 @@ const TasksPage = () => {
       e.target.value = '';
     };
 
+    const handleStatusClick = () => {
+      const nextStatus = task.status === 'task_redline' 
+        ? 'progress_update' 
+        : task.status === 'progress_update' 
+        ? 'done_completed' 
+        : 'task_redline';
+      handleTaskUpdate(task.id, { status: nextStatus });
+    };
+
     if (!creator) return null;
 
     return (
-      <TableRow 
+      <tr 
         onClick={() => handleTaskClick(task)}
-        className="cursor-pointer"
+        className="hover:bg-gray-50 transition-colors hover:shadow-[inset_-1000px_-1px_0px_0px_rgb(209,213,219),inset_-1000px_1px_0px_0px_rgb(209,213,219)] cursor-pointer"
       >
-        {/* Name & Address */}
-        <TableCell>
-          <div className="font-medium">{task.title}</div>
+        {/* Column 1: Status Dot */}
+        <td className="px-3 py-2 text-center">
+          <StatusDot 
+            status={task.status} 
+            onClick={handleStatusClick}
+          />
+        </td>
+
+        {/* Column 2: Name (Address above title) */}
+        <td className="px-3 py-2">
           {project ? (
             <Link 
               to={`/workspace/${project.workspaceId}/project/${project.id}`}
               onClick={(e) => e.stopPropagation()}
-              className="text-sm text-primary hover:underline truncate max-w-md block"
+              className="text-gray-500 text-xs leading-tight mb-1 select-text cursor-pointer hover:text-blue-600 hover:underline block"
             >
               {addressDisplay}
             </Link>
           ) : (
-            <div className="text-sm text-muted-foreground truncate max-w-md">{addressDisplay}</div>
+            <div className="text-gray-500 text-xs leading-tight mb-1">{addressDisplay}</div>
           )}
-        </TableCell>
+          <div className="text-gray-900 font-medium leading-tight" style={{ fontSize: '14px' }}>
+            {task.title}
+          </div>
+        </td>
 
-        {/* Files */}
-        <TableCell className="text-center w-[80px]" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center justify-center gap-1">
-            {fileCount > 0 && (
-              <div className="flex items-center gap-1">
-                <Paperclip className="h-3 w-3 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">{fileCount}</span>
+        {/* Column 3: Files */}
+        <td 
+          className="w-12 px-2 py-2 text-center hover:bg-gray-100 hover:border-2 hover:border-gray-400 hover:rounded transition-colors"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {fileCount > 0 && (
+            <span className="text-gray-600 text-xs mr-1">{fileCount}</span>
+          )}
+          <input
+            ref={(el) => fileInputRef || el}
+            type="file"
+            className="hidden"
+            onChange={handleFileUpload}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button 
+            className="text-gray-500 hover:text-gray-700 rounded p-0.5 transition-colors inline-flex items-center justify-center"
+            onClick={(e) => {
+              e.stopPropagation();
+              const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+              input?.click();
+            }}
+            disabled={uploadFileMutation.isPending}
+          >
+            {uploadFileMutation.isPending ? (
+              <Upload className="h-3.5 w-3.5 animate-pulse" />
+            ) : (
+              <Plus size={14} />
+            )}
+          </button>
+        </td>
+
+        {/* Column 4: Date Created */}
+        <td 
+          className="w-20 px-2 py-2 text-gray-600 hover:bg-gray-100 hover:border-2 hover:border-gray-400 hover:rounded transition-colors whitespace-nowrap" 
+          style={{ fontSize: '14px' }}
+        >
+          {formatDate(task.createdAt)}
+        </td>
+
+        {/* Column 5: Created By */}
+        <td className="w-16 px-2 py-2 text-center hover:bg-gray-100 hover:border-2 hover:border-gray-400 hover:rounded transition-colors">
+          <div className="flex justify-center">
+            <UserAvatar 
+              user={{
+                name: creator.name,
+                avatar_url: creator.avatarUrl,
+              }} 
+              size="xs" 
+            />
+          </div>
+        </td>
+
+        {/* Column 6: Assigned To */}
+        <td 
+          className="w-16 px-2 py-2 text-center hover:bg-gray-100 hover:border-2 hover:border-gray-400 hover:rounded transition-colors"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex gap-1 justify-center items-center">
+            {assignees.slice(0, 2).map((assignee) => (
+              <UserAvatar 
+                key={assignee.id} 
+                user={{
+                  name: assignee.name,
+                  avatar_url: assignee.avatarUrl,
+                }} 
+                size="xs" 
+              />
+            ))}
+            {assignees.length > 2 && (
+              <div className="w-6 h-6 rounded-full bg-gray-400 border-2 border-white flex items-center justify-center text-white font-semibold text-[9px]">
+                +{assignees.length - 2}
               </div>
             )}
-            <input
-              ref={(el) => fileInputRef || el}
-              type="file"
-              className="hidden"
-              onChange={handleFileUpload}
-              onClick={(e) => e.stopPropagation()}
-            />
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 w-8 p-0"
-              onClick={(e) => {
-                e.stopPropagation();
-                const input = document.querySelector(`input[type="file"]`) as HTMLInputElement;
-                input?.click();
-              }}
-              disabled={uploadFileMutation.isPending}
-            >
-              {uploadFileMutation.isPending ? (
-                <Upload className="h-4 w-4 animate-pulse" />
-              ) : (
-                <Plus className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-        </TableCell>
-
-        {/* Date Created */}
-        <TableCell className="text-center w-[120px]">
-          <span className="text-sm">{formatDate(task.createdAt)}</span>
-        </TableCell>
-
-        {/* Created By */}
-        <TableCell className="text-center w-[100px]">
-          <div className="flex justify-center">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback 
-                className="text-white text-xs"
-                style={{ background: creator.avatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
-              >
-                {creator.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-              </AvatarFallback>
-            </Avatar>
-          </div>
-        </TableCell>
-
-        {/* Assigned To */}
-        <TableCell className="text-center w-[140px]">
-          <div className="flex justify-center items-center gap-2">
-            <div className="flex gap-1">
-              {assignees.length > 0 ? (
-                assignees.slice(0, 3).map((assignee) => (
-                  <Avatar key={assignee.id} className="h-8 w-8">
-                    <AvatarFallback 
-                      className="text-white text-xs"
-                      style={{ background: assignee.avatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
-                    >
-                      {assignee.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
-                ))
-              ) : null}
-            </div>
             <Popover open={isAssignPopoverOpen} onOpenChange={setIsAssignPopoverOpen}>
               <PopoverTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <UserPlus className="h-4 w-4" />
-                </Button>
+                <button className="text-gray-400 hover:text-gray-600">
+                  <UserPlus size={16} />
+                </button>
               </PopoverTrigger>
               <PopoverContent 
                 className="w-64 p-3" 
@@ -353,14 +368,13 @@ const TasksPage = () => {
                             htmlFor={`assign-${task.id}-${member.userId}`}
                             className="flex items-center gap-2 cursor-pointer flex-1"
                           >
-                            <Avatar className="h-6 w-6">
-                              <AvatarFallback 
-                                className="text-white text-xs"
-                                style={{ background: member.userAvatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
-                              >
-                                {member.userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                              </AvatarFallback>
-                            </Avatar>
+                            <UserAvatar 
+                              user={{
+                                name: member.userName,
+                                avatar_url: member.userAvatarUrl,
+                              }} 
+                              size="xs" 
+                            />
                             <span className="text-sm">{member.userName}</span>
                           </label>
                         </div>
@@ -373,8 +387,11 @@ const TasksPage = () => {
               </PopoverContent>
             </Popover>
           </div>
-        </TableCell>
-      </TableRow>
+        </td>
+
+        {/* Column 7: Empty spacer */}
+        <td className="w-32 pr-8"></td>
+      </tr>
     );
   };
 
@@ -387,46 +404,103 @@ const TasksPage = () => {
   }) => {
     const config = statusConfig[status];
     const isCollapsed = collapsedSections[status];
+    const [showQuickAdd, setShowQuickAdd] = useState(false);
+
+    const handleQuickAddSave = (input: CreateTaskInput) => {
+      handleCreateTask(input);
+      setShowQuickAdd(false);
+    };
 
     return (
-      <div className="space-y-0 border rounded-lg overflow-hidden">
-        {/* Section Header */}
+      <div className="mb-6">
+        {/* Header - compact design matching taskboard */}
         <div 
-          className="flex items-center gap-3 p-3 bg-muted/30 cursor-pointer"
+          className="flex items-center gap-4 mb-3 cursor-pointer"
           onClick={() => toggleSection(status)}
         >
-          {isCollapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronDown className="h-4 w-4" />
-          )}
+          <button className="p-0 text-gray-600 hover:text-gray-900">
+            {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+          </button>
           <Badge className={config.color}>{config.label}</Badge>
-          <span className="text-sm font-medium">{config.count}</span>
+          <span className="text-gray-500 text-xs font-medium">{config.count}</span>
         </div>
 
         {/* Table */}
-        {!isCollapsed && sectionTasks.length > 0 && (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead className="text-center w-[80px]">Files</TableHead>
-                <TableHead className="text-center w-[120px]">Date Created</TableHead>
-                <TableHead className="text-center w-[100px]">Created by</TableHead>
-                <TableHead className="text-center w-[140px]">Assigned to</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sectionTasks.map(task => (
-                <TaskRow key={task.id} task={task} />
-              ))}
-            </TableBody>
-          </Table>
-        )}
+        {!isCollapsed && (
+          <div className="overflow-visible pl-8">
+            <table className="w-full border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="w-8 px-3 py-1.5 text-left font-semibold text-gray-700 text-xs"></th>
+                  <th className="px-3 py-1.5 text-left font-semibold text-gray-700 text-xs">Name</th>
+                  <th className="w-12 px-2 py-1.5 text-center font-semibold text-gray-700 text-xs whitespace-nowrap">Files</th>
+                  <th className="w-20 px-2 py-1.5 text-left font-semibold text-gray-700 text-xs whitespace-nowrap">Date</th>
+                  <th className="w-16 px-2 py-1.5 text-center font-semibold text-gray-700 text-xs whitespace-nowrap">Created</th>
+                  <th className="w-16 px-2 py-1.5 text-center font-semibold text-gray-700 text-xs whitespace-nowrap">Assigned</th>
+                  <th className="w-32 pr-8"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {sectionTasks.map(task => (
+                  <TaskRow key={task.id} task={task} />
+                ))}
+                
+                {/* Quick Add Row */}
+                {showQuickAdd && (
+                  <QuickAddTaskRow
+                    status={status}
+                    projects={projects}
+                    onSave={handleQuickAddSave}
+                    onCancel={() => setShowQuickAdd(false)}
+                  />
+                )}
+              </tbody>
+            </table>
 
-        {!isCollapsed && sectionTasks.length === 0 && (
-          <div className="text-center py-8 text-sm text-muted-foreground">
-            No tasks
+            {/* Add Task button */}
+            {sectionTasks.length > 0 && (
+              <div className="py-1.5" style={{ paddingLeft: '44px' }}>
+                {!showQuickAdd && (
+                  <button
+                    onClick={() => setShowQuickAdd(true)}
+                    className="flex items-center hover:text-gray-900 hover:bg-gray-100 px-2 py-1.5 rounded transition-colors group"
+                    style={{ fontSize: '14px' }}
+                  >
+                    <Plus size={14} className="text-gray-600 group-hover:text-gray-600 mr-3" />
+                    <span className="text-gray-400 group-hover:text-gray-900">Add Task</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Empty state */}
+            {sectionTasks.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-sm text-muted-foreground mb-4">No tasks</p>
+                {!showQuickAdd && (
+                  <button
+                    onClick={() => setShowQuickAdd(true)}
+                    className="flex items-center justify-center mx-auto hover:text-gray-900 hover:bg-gray-100 px-3 py-2 rounded transition-colors group"
+                    style={{ fontSize: '14px' }}
+                  >
+                    <Plus size={14} className="text-gray-600 group-hover:text-gray-600 mr-2" />
+                    <span className="text-gray-400 group-hover:text-gray-900">Add Task</span>
+                  </button>
+                )}
+                {showQuickAdd && (
+                  <table className="w-full border-collapse text-xs">
+                    <tbody>
+                      <QuickAddTaskRow
+                        status={status}
+                        projects={projects}
+                        onSave={handleQuickAddSave}
+                        onCancel={() => setShowQuickAdd(false)}
+                      />
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

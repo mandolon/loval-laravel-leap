@@ -13,10 +13,11 @@ interface UserAvatarUser {
 
 interface UserAvatarProps {
   user: UserAvatarUser;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
 }
 
 const sizeClasses = {
+  xs: "h-6 w-6 text-[9px]",
   sm: "h-6 w-6 text-xs",
   md: "h-8 w-8 text-sm",
   lg: "h-10 w-10 text-base",
