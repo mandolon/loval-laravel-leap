@@ -429,12 +429,12 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps)
   const showExplorerPanel = !isFullscreen && explorerHeightMode !== 'collapsed'
 
   const viewerBorderClass = !isFullscreen && explorerHeightMode !== 'collapsed'
-    ? (activePane === 'viewer' ? 'border-primary' : 'border-transparent shadow-[inset_0_-1px_0_hsl(var(--border))]')
-    : (activePane === 'viewer' && !isFullscreen ? 'border-primary' : 'border-transparent')
+    ? (activePane === 'viewer' ? 'border-primary' : 'border-border')
+    : (activePane === 'viewer' && !isFullscreen ? 'border-primary' : 'border-border')
 
   const explorerBorderClass = activePane === 'explorer'
     ? 'border-primary'
-    : 'border-transparent shadow-[inset_0_-1px_0_hsl(var(--border))]'
+    : 'border-border'
 
   const renderViewerForTab = (tab: ViewerTab, isActiveTab: boolean) => {
     if (tab.viewerMode === 'pdf' && tab.file) {
@@ -557,7 +557,7 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps)
       />
       
       <div
-        className={`relative flex flex-col border-t-[0.5px] border-l-[1.5px] border-r-[1.5px] border-b-[1.5px] transition-[border-color,box-shadow] duration-150 ${viewerBorderClass} bg-white dark:bg-[#0F1219]`}
+        className={`relative flex flex-col border-t transition-border-color duration-150 ${viewerBorderClass} bg-white dark:bg-[#0F1219]`}
         style={{ 
           flex: '1 1 0%',
           minHeight: 0,
@@ -596,7 +596,7 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps)
           </div>
 
           <div
-            className={`relative flex-shrink-0 border-t-[0.5px] border-l-[1.5px] border-r-[1.5px] border-b-[1.5px] transition-[border-color,box-shadow] duration-150 overflow-hidden ${explorerBorderClass}`}
+            className={`relative flex-shrink-0 border-t transition-border-color duration-150 overflow-hidden ${explorerBorderClass}`}
             style={{ height: explorerHeight, flex: '0 0 auto' }}
             onClick={() => setActivePane('explorer')}
           >
