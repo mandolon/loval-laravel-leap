@@ -16,6 +16,12 @@ export function useAIChat(threadId: string, workspaceId: string, projectId?: str
     setIsLoading(true);
 
     try {
+      // Get user session for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("You must be logged in to use AI chat");
+      }
+
       // Build AI context - always load at least workspace context
       let projectContext = "";
       if (projectId && projectId !== "select" && projectId !== "all") {
@@ -34,7 +40,7 @@ export function useAIChat(threadId: string, workspaceId: string, projectId?: str
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ 
           messages: [...messages, { role: "user", content: userMessage }],
