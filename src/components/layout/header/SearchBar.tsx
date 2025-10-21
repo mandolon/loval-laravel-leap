@@ -16,7 +16,7 @@ export function SearchBar({ onSearch }: SearchBarProps) {
       <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
       <Input
         placeholder="Search..."
-        className="pl-7 pr-2 py-1 h-7 text-[12px] bg-background border-border w-full"
+        className="pl-7 pr-2 py-0.5 h-6 text-[12px] bg-background border-border w-full"
         readOnly
       />
     </div>
