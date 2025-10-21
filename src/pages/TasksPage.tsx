@@ -253,7 +253,7 @@ const TasksPage = () => {
             <Link 
               to={`/workspace/${project.workspaceId}/project/${project.id}`}
               onClick={(e) => e.stopPropagation()}
-              className="text-gray-500 text-xs leading-tight mb-1 select-text cursor-pointer hover:text-blue-600 hover:underline block"
+              className="text-gray-500 text-xs leading-tight mb-1 select-text cursor-pointer hover:text-blue-600 hover:underline inline-block"
             >
               {addressDisplay}
             </Link>
