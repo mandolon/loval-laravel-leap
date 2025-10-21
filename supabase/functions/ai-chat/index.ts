@@ -158,6 +158,81 @@ const tools = [
         required: ["project_id", "content"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_recent_activity",
+      description: "Get recent activity across workspace or specific project. Shows task updates, status changes, notes created, etc.",
+      parameters: {
+        type: "object",
+        properties: {
+          workspace_id: {
+            type: "string",
+            description: "Workspace UUID to get activity from"
+          },
+          project_id: {
+            type: "string",
+            description: "Optional: Filter to specific project UUID"
+          },
+          limit: {
+            type: "number",
+            description: "Number of activities to return (default 20, max 100)"
+          },
+          resource_type: {
+            type: "string",
+            description: "Optional: Filter by resource type (task, project, file, note)"
+          }
+        },
+        required: ["workspace_id"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "summarize_tasks",
+      description: "Get summary of all tasks across workspace or project with their current status",
+      parameters: {
+        type: "object",
+        properties: {
+          workspace_id: {
+            type: "string",
+            description: "Workspace UUID"
+          },
+          project_id: {
+            type: "string",
+            description: "Optional: Filter to specific project UUID"
+          },
+          status_filter: {
+            type: "string",
+            description: "Optional: Filter by status (task_redline, in_progress, done_completed, etc.)"
+          }
+        },
+        required: ["workspace_id"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_project_timeline",
+      description: "Get chronological timeline of all events for a specific project",
+      parameters: {
+        type: "object",
+        properties: {
+          project_id: {
+            type: "string",
+            description: "Project UUID"
+          },
+          days: {
+            type: "number",
+            description: "Number of days to look back (default 30)"
+          }
+        },
+        required: ["project_id"]
+      }
+    }
   }
 ];
 
@@ -215,6 +290,36 @@ async function verifyProjectExists(projectId: string, supabase: any): Promise<{ 
   return { exists: true };
 }
 
+// Activity logger helper
+async function logActivity(
+  supabase: any,
+  workspaceId: string,
+  userId: string,
+  action: string,
+  resourceType: string,
+  resourceId: string,
+  changeSummary: string,
+  projectId?: string,
+  oldValue?: any,
+  newValue?: any
+) {
+  try {
+    await supabase.from('activity_log').insert({
+      workspace_id: workspaceId,
+      project_id: projectId,
+      user_id: userId,
+      action,
+      resource_type: resourceType,
+      resource_id: resourceId,
+      change_summary: changeSummary,
+      old_value: oldValue,
+      new_value: newValue
+    });
+  } catch (error) {
+    console.error('Failed to log activity:', error);
+  }
+}
+
 // Generate system prompt with clear UUID instructions
 function generateSystemPrompt(projectId?: string, projectName?: string, projectContext?: string): string {
   let prompt = `You are a helpful AI assistant for a project management workspace.
@@ -264,6 +369,9 @@ YOUR CAPABILITIES:
 - read_folder: Read and list files in a project folder (Pre-Design, Design, Permit, Build)
 - create_note: Create a note file in the Design folder
 - update_metadata: Update the project.meta.md file with decisions
+- get_recent_activity: View recent activity across workspace or project
+- summarize_tasks: Get task summary with status breakdown
+- get_project_timeline: Show chronological project history
 
 EXAMPLE TOOL CALLS:
 
@@ -278,6 +386,14 @@ You call: create_note(
   title="Zoning Constraints",
   content="## Key Constraints\\n- 15' front setback\\n- 8' side setback\\n- FAR 3.5 maximum"
 )
+
+Example 6 - Get recent activity:
+User: "What's been happening recently?"
+You call: get_recent_activity(workspace_id="WORKSPACE_UUID", limit=20)
+
+Example 7 - Summarize tasks:
+User: "Give me a summary of all tasks"
+You call: summarize_tasks(workspace_id="WORKSPACE_UUID")
 
 Keep responses clear, concise, and actionable.`;
 
@@ -332,6 +448,28 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
           success: false, 
           error: `Failed to create task: ${error.message}`
         };
+      }
+
+      // Get workspace_id for activity logging
+      const { data: project } = await supabase
+        .from("projects")
+        .select("workspace_id")
+        .eq("id", project_id)
+        .single();
+
+      if (project) {
+        await logActivity(
+          supabase,
+          project.workspace_id,
+          userId,
+          'created',
+          'task',
+          data.id,
+          `Created task: ${title}`,
+          project_id,
+          null,
+          { title, status: 'task_redline', priority }
+        );
       }
 
       return { 
@@ -391,11 +529,16 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
         };
       }
       
-      // Verify project exists
-      const projectCheck = await verifyProjectExists(project_id, supabase);
-      if (!projectCheck.exists) {
-        console.error("Project verification failed:", projectCheck.error);
-        return { success: false, error: projectCheck.error };
+      // Verify project exists and get old values before update
+      const { data: oldProject, error: fetchError } = await supabase
+        .from("projects")
+        .select("id, name, phase, status, workspace_id")
+        .eq("id", project_id)
+        .single();
+
+      if (fetchError || !oldProject) {
+        console.error("Project verification failed:", fetchError?.message);
+        return { success: false, error: `Project with ID "${project_id}" not found. Please use the exact UUID from the Project Context.` };
       }
 
       const updateData: any = { status, updated_by: userId };
@@ -412,6 +555,20 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
         console.error("Error updating project:", error);
         return { success: false, error: `Failed to update project: ${error.message}` };
       }
+
+      // Log activity with old and new values
+      await logActivity(
+        supabase,
+        oldProject.workspace_id,
+        userId,
+        'updated',
+        'project',
+        project_id,
+        `Changed ${phase ? 'phase to ' + phase : 'status to ' + status}`,
+        project_id,
+        { phase: oldProject.phase, status: oldProject.status },
+        { phase: phase || oldProject.phase, status: status || oldProject.status }
+      );
 
       return { 
         success: true, 
@@ -597,6 +754,28 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
           return { success: false, error: `Database record failed: ${dbError.message}` };
         }
 
+        // Get workspace_id for activity logging
+        const { data: project } = await supabase
+          .from("projects")
+          .select("workspace_id")
+          .eq("id", project_id)
+          .single();
+
+        if (project) {
+          await logActivity(
+            supabase,
+            project.workspace_id,
+            userId,
+            'created',
+            'note',
+            fileRecord.id,
+            `Created note: ${title}`,
+            project_id,
+            null,
+            { title, folder: 'Design' }
+          );
+        }
+
         return {
           success: true,
           data: {
@@ -746,6 +925,183 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
           error: `Error updating metadata: ${error.message}`
         };
       }
+    }
+
+    case 'get_recent_activity': {
+      const { workspace_id, project_id, limit = 20, resource_type } = args;
+      
+      let query = supabase
+        .from('activity_log')
+        .select(`
+          *,
+          user:users!activity_log_user_id_fkey(name, email),
+          project:projects(name, short_id)
+        `)
+        .eq('workspace_id', workspace_id)
+        .order('created_at', { ascending: false })
+        .limit(Math.min(limit, 100));
+      
+      if (project_id) {
+        query = query.eq('project_id', project_id);
+      }
+      
+      if (resource_type) {
+        query = query.eq('resource_type', resource_type);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        return { success: false, error: `Error fetching activity: ${error.message}` };
+      }
+      
+      if (!data || data.length === 0) {
+        return {
+          success: true,
+          message: 'No recent activity found',
+          data: []
+        };
+      }
+
+      const activityList = data.map((a: any) => 
+        `- ${a.user?.name || 'Unknown'} ${a.action} ${a.resource_type}` +
+        `${a.project ? ` in "${a.project.name}"` : ''}` +
+        `${a.change_summary ? ': ' + a.change_summary : ''}` +
+        ` (${new Date(a.created_at).toLocaleString()})`
+      ).join('\n');
+      
+      return {
+        success: true,
+        message: `Found ${data.length} recent activities:\n\n${activityList}`,
+        data
+      };
+    }
+
+    case 'summarize_tasks': {
+      const { workspace_id, project_id, status_filter } = args;
+      
+      // Get all projects in workspace
+      let projectQuery = supabase
+        .from('projects')
+        .select('id, name, short_id')
+        .eq('workspace_id', workspace_id)
+        .is('deleted_at', null);
+      
+      if (project_id) {
+        projectQuery = projectQuery.eq('id', project_id);
+      }
+      
+      const { data: projects, error: projectError } = await projectQuery;
+      
+      if (projectError) {
+        return { success: false, error: `Error fetching projects: ${projectError.message}` };
+      }
+
+      if (!projects || projects.length === 0) {
+        return {
+          success: true,
+          message: 'No projects found in workspace',
+          data: { total: 0, summary: {} }
+        };
+      }
+      
+      // Get tasks for these projects
+      const projectIds = projects.map((p: any) => p.id);
+      
+      let taskQuery = supabase
+        .from('tasks')
+        .select('*')
+        .in('project_id', projectIds)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false });
+      
+      if (status_filter) {
+        taskQuery = taskQuery.eq('status', status_filter);
+      }
+      
+      const { data: tasks, error: taskError } = await taskQuery;
+      
+      if (taskError) {
+        return { success: false, error: `Error fetching tasks: ${taskError.message}` };
+      }
+
+      if (!tasks || tasks.length === 0) {
+        return {
+          success: true,
+          message: 'No tasks found',
+          data: { total: 0, summary: {} }
+        };
+      }
+      
+      // Group by project and status
+      const projectMap = new Map(projects.map((p: any) => [p.id, p]));
+      const summary: Record<string, number> = {};
+      
+      tasks.forEach((task: any) => {
+        const project = projectMap.get(task.project_id);
+        const key = `${(project as any)?.name || 'Unknown'} (${task.status})`;
+        summary[key] = (summary[key] || 0) + 1;
+      });
+
+      const summaryText = Object.entries(summary)
+        .map(([key, count]) => `${key}: ${count} tasks`)
+        .join('\n');
+
+      const recentTasks = tasks.slice(0, 10).map((t: any) => 
+        `- ${t.title} (${t.status}) in ${(projectMap.get(t.project_id) as any)?.name}`
+      ).join('\n');
+      
+      return {
+        success: true,
+        message: `Task Summary:\n\nTotal tasks: ${tasks.length}\n\n${summaryText}\n\nRecent tasks:\n${recentTasks}`,
+        data: { total: tasks.length, summary, tasks }
+      };
+    }
+
+    case 'get_project_timeline': {
+      const { project_id, days = 30 } = args;
+      
+      const uuidValidation = validateUUID(project_id);
+      if (!uuidValidation.valid) {
+        return { success: false, error: uuidValidation.error };
+      }
+      
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - days);
+      
+      const { data, error } = await supabase
+        .from('activity_log')
+        .select(`
+          *,
+          user:users!activity_log_user_id_fkey(name)
+        `)
+        .eq('project_id', project_id)
+        .gte('created_at', cutoffDate.toISOString())
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        return { success: false, error: `Error fetching timeline: ${error.message}` };
+      }
+
+      if (!data || data.length === 0) {
+        return {
+          success: true,
+          message: `No activity in the last ${days} days`,
+          data: []
+        };
+      }
+
+      const timeline = data.map((a: any) => 
+        `${new Date(a.created_at).toLocaleDateString()} - ` +
+        `${a.user?.name || 'Unknown'} ${a.action} ${a.resource_type}: ` +
+        `${a.change_summary}`
+      ).join('\n');
+      
+      return {
+        success: true,
+        message: `Project Timeline (last ${days} days):\n\n${timeline}`,
+        data
+      };
     }
 
     default:
