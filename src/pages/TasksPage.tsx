@@ -260,9 +260,9 @@ const TasksPage = () => {
           ) : (
             <div className="text-gray-500 text-xs leading-tight mb-1">{addressDisplay}</div>
           )}
-          <div className="text-gray-900 font-medium leading-tight" style={{ fontSize: '14px' }}>
-            {task.title}
-          </div>
+                  <div className="text-gray-900 font-normal leading-tight" style={{ fontSize: '13px' }}>
+                    {task.title}
+                  </div>
         </td>
 
         {/* Column 3: Files */}
