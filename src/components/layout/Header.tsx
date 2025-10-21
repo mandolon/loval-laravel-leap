@@ -21,7 +21,7 @@ export function Header({ onNavigateProfile, onNavigateTrash, onLogout }: HeaderP
   }
 
   return (
-    <header className="h-[60px] bg-card flex items-center justify-between px-4 gap-4 flex-shrink-0">
+    <header className="h-[44px] bg-card flex items-center justify-between px-4 py-1 gap-4 flex-shrink-0">
       {/* Left spacer */}
       <div className="w-8"></div>
 
