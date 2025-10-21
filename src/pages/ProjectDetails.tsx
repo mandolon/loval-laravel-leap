@@ -414,13 +414,13 @@ const ProjectDetails = () => {
 
         {/* Main Content */}
         <div className="flex-1 min-h-0 flex flex-col">
-          <div className={activeTab === 'files' ? 'h-full flex flex-col bg-slate-50 dark:bg-[#0B0E14] p-1' : 'flex-1 min-h-0 p-4 space-y-4 overflow-auto'}>
+          <div className="h-full flex flex-col">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
-              <TabsContent value="files" className="mt-0 flex-1 min-h-0 p-0 flex flex-col">
+              <TabsContent value="files" className="mt-0 flex-1 min-h-0 flex flex-col bg-slate-50 dark:bg-[#0B0E14] p-1">
                 <FilesTab projectId={id || ''} />
               </TabsContent>
 
-            <TabsContent value="tasks" className="mt-0 flex-1 min-h-0 overflow-auto bg-white dark:bg-[#0F1219]">
+            <TabsContent value="tasks" className="mt-0 flex-1 min-h-0 p-4 space-y-4 overflow-auto bg-white dark:bg-[#0F1219]">
               <div className="space-y-4 mb-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold text-slate-700 dark:text-neutral-300">Tasks</h2>
@@ -500,7 +500,7 @@ const ProjectDetails = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="invoices" className="mt-0 flex-1 min-h-0 overflow-auto bg-white dark:bg-[#0F1219]">
+            <TabsContent value="invoices" className="mt-0 flex-1 min-h-0 p-4 space-y-4 overflow-auto bg-white dark:bg-[#0F1219]">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -607,7 +607,7 @@ const ProjectDetails = () => {
               />
             </TabsContent>
 
-            <TabsContent value="links" className="mt-0 flex-1 min-h-0 overflow-auto bg-white dark:bg-[#0F1219]">
+            <TabsContent value="links" className="mt-0 flex-1 min-h-0 p-4 space-y-4 overflow-auto bg-white dark:bg-[#0F1219]">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -657,7 +657,7 @@ const ProjectDetails = () => {
               />
             </TabsContent>
 
-            <TabsContent value="project" className="mt-0 flex-1 min-h-0 space-y-6 overflow-auto bg-white dark:bg-[#0F1219]">
+            <TabsContent value="project" className="mt-0 flex-1 min-h-0 p-4 space-y-4 overflow-auto bg-white dark:bg-[#0F1219]">
               {/* Project Name */}
               <Card className={`${T.panel} ${T.radius}`}>
                 <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
@@ -850,7 +850,7 @@ const ProjectDetails = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="client" className="mt-0 flex-1 min-h-0 overflow-auto bg-white dark:bg-[#0F1219]">
+            <TabsContent value="client" className="mt-0 flex-1 min-h-0 p-4 space-y-4 overflow-auto bg-white dark:bg-[#0F1219]">
               <Card className={`${T.panel} ${T.radius}`}>
                 <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
                   <div>
@@ -894,7 +894,7 @@ const ProjectDetails = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="notes" className="mt-0 flex-1 min-h-0 overflow-auto bg-white dark:bg-[#0F1219]">
+            <TabsContent value="notes" className="mt-0 flex-1 min-h-0 p-4 space-y-4 overflow-auto bg-white dark:bg-[#0F1219]">
               <Card className={`${T.panel} ${T.radius}`}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-slate-200 dark:border-[#1d2230]">
                   <div>
