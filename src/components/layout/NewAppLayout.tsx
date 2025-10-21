@@ -1,5 +1,7 @@
-import { NewAppSidebar } from "./NewAppSidebar";
 import { useState } from "react";
+import { Header } from "./Header";
+import { Sidebar } from "./Sidebar";
+import { LayoutProvider } from "@/contexts/LayoutContext";
 
 interface NewAppLayoutProps {
   children: React.ReactNode;
@@ -14,11 +16,16 @@ export function NewAppLayout({ children }: NewAppLayoutProps) {
   };
 
   return (
-    <div className="h-screen flex bg-background w-full">
-      <NewAppSidebar onWorkspaceChange={handleWorkspaceChange} />
-      <main key={workspaceKey} className="flex-1 min-h-0 flex flex-col">
-        {children}
-      </main>
-    </div>
+    <LayoutProvider>
+      <div className="h-screen flex flex-col bg-background w-full">
+        <Header />
+        <div className="flex-1 flex overflow-hidden">
+          <Sidebar />
+          <main key={workspaceKey} className="flex-1 min-h-0 flex flex-col">
+            {children}
+          </main>
+        </div>
+      </div>
+    </LayoutProvider>
   );
 }
