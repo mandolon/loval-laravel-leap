@@ -240,7 +240,7 @@ const TasksPage = () => {
         className="hover:bg-gray-100 cursor-pointer border-b border-gray-200"
       >
         {/* Column 1: Status Dot */}
-        <td className="px-3 py-2 text-center border-r border-gray-200">
+        <td className="px-3 py-2 text-center">
           <StatusDot 
             status={task.status} 
             onClick={handleStatusClick}
@@ -248,7 +248,7 @@ const TasksPage = () => {
         </td>
 
         {/* Column 2: Name (Address above title) */}
-        <td className="px-3 py-2 border-r border-gray-200">
+        <td className="px-3 py-2">
           {project ? (
             <Link 
               to={`/workspace/${project.workspaceId}/project/${project.id}`}
@@ -267,7 +267,7 @@ const TasksPage = () => {
 
         {/* Column 3: Files */}
         <td 
-          className="w-12 px-2 py-2 text-center border-r border-gray-200"
+          className="w-12 px-2 py-2 text-center hover:border-l hover:border-r hover:border-gray-300"
           onClick={(e) => e.stopPropagation()}
         >
           {fileCount > 0 && (
@@ -299,14 +299,14 @@ const TasksPage = () => {
 
         {/* Column 4: Date Created */}
         <td 
-          className="w-20 px-2 py-2 text-gray-600 whitespace-nowrap border-r border-gray-200" 
+          className="w-20 px-2 py-2 text-gray-600 whitespace-nowrap hover:border-l hover:border-r hover:border-gray-300" 
           style={{ fontSize: '14px' }}
         >
           {formatDate(task.createdAt)}
         </td>
 
         {/* Column 5: Created By */}
-        <td className="w-16 px-2 py-2 text-center border-r border-gray-200">
+        <td className="w-16 px-2 py-2 text-center hover:border-l hover:border-r hover:border-gray-300">
           <div className="flex justify-center">
             <UserAvatar 
               user={{
@@ -320,7 +320,7 @@ const TasksPage = () => {
 
         {/* Column 6: Assigned To */}
         <td 
-          className="w-16 px-2 py-2 text-center border-r border-gray-200"
+          className="w-16 px-2 py-2 text-center hover:border-l hover:border-r hover:border-gray-300"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex gap-1 justify-center items-center">
