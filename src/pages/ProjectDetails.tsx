@@ -420,8 +420,8 @@ const ProjectDetails = () => {
                 <FilesTab projectId={id || ''} />
               </TabsContent>
 
-            <TabsContent value="tasks" className="mt-0 flex-1 min-h-0 p-4 space-y-4 overflow-auto bg-white dark:bg-[#0F1219]">
-              <div className="space-y-4 mb-6">
+            <TabsContent value="tasks" className="h-full overflow-auto bg-white dark:bg-[#0F1219]">
+              <div className="p-4 space-y-4 mb-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold text-slate-700 dark:text-neutral-300">Tasks</h2>
                   <CreateTaskDialog projects={[project]} onCreateTask={handleCreateTask} />
@@ -500,8 +500,8 @@ const ProjectDetails = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="invoices" className="mt-0 flex-1 min-h-0 p-4 space-y-4 overflow-auto bg-white dark:bg-[#0F1219]">
-              <div className="space-y-4">
+            <TabsContent value="invoices" className="h-full overflow-auto bg-white dark:bg-[#0F1219]">
+              <div className="p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-2xl font-bold text-slate-700 dark:text-neutral-300">Invoices</h2>
@@ -607,8 +607,8 @@ const ProjectDetails = () => {
               />
             </TabsContent>
 
-            <TabsContent value="links" className="mt-0 flex-1 min-h-0 p-4 space-y-4 overflow-auto bg-white dark:bg-[#0F1219]">
-              <div className="space-y-4">
+            <TabsContent value="links" className="h-full overflow-auto bg-white dark:bg-[#0F1219]">
+              <div className="p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-2xl font-bold text-slate-700 dark:text-neutral-300">Links</h2>
@@ -657,7 +657,8 @@ const ProjectDetails = () => {
               />
             </TabsContent>
 
-            <TabsContent value="project" className="mt-0 flex-1 min-h-0 p-4 space-y-4 overflow-auto bg-white dark:bg-[#0F1219]">
+            <TabsContent value="project" className="h-full overflow-auto bg-white dark:bg-[#0F1219]">
+              <div className="p-4 space-y-4">
               {/* Project Name */}
               <Card className={`${T.panel} ${T.radius}`}>
                 <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
@@ -848,9 +849,11 @@ const ProjectDetails = () => {
                   </div>
                 </CardContent>
               </Card>
+              </div>
             </TabsContent>
 
-            <TabsContent value="client" className="mt-0 flex-1 min-h-0 p-4 space-y-4 overflow-auto bg-white dark:bg-[#0F1219]">
+            <TabsContent value="client" className="h-full overflow-auto bg-white dark:bg-[#0F1219]">
+              <div className="p-4 space-y-4">
               <Card className={`${T.panel} ${T.radius}`}>
                 <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
                   <div>
@@ -892,9 +895,11 @@ const ProjectDetails = () => {
                   </div>
                 </CardContent>
               </Card>
+              </div>
             </TabsContent>
 
-            <TabsContent value="notes" className="mt-0 flex-1 min-h-0 p-4 space-y-4 overflow-auto bg-white dark:bg-[#0F1219]">
+            <TabsContent value="notes" className="h-full overflow-auto bg-white dark:bg-[#0F1219]">
+              <div className="p-4 space-y-4">
               <Card className={`${T.panel} ${T.radius}`}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-slate-200 dark:border-[#1d2230]">
                   <div>
@@ -920,6 +925,7 @@ const ProjectDetails = () => {
                   )}
                 </CardContent>
               </Card>
+              </div>
             </TabsContent>
           </Tabs>
         </div>
