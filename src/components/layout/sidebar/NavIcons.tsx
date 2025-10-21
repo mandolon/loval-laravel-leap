@@ -43,10 +43,10 @@ export function NavIcons({ collapsed, activeTab, onTabChange }: NavIconsProps) {
                 className={cn(
                   sharedClasses,
                   isActive
-                    ? 'bg-slate-100 dark:bg-[#141C28] text-[#00639b] dark:text-blue-300'
-                    : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28]/60',
+                    ? 'bg-accent text-accent-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
                   collapsed
-                    ? 'border border-slate-200 dark:border-[#1a2030]/80 rounded-lg shadow-[0_0_0_0_rgba(0,0,0,0.04)] hover:shadow-[0_0_0_6px_rgba(59,130,246,0.08)]'
+                    ? 'border border-border rounded-lg shadow-sm hover:shadow-md'
                     : 'rounded'
                 )}
                 style={{ transitionDelay: collapsed ? `${index * 40}ms` : '0ms' }}

@@ -7,7 +7,9 @@ export type PageType = 'home' | 'projects' | 'taskboard' | 'completed' | 'ai'
 
 export type SidebarTab = 'home' | 'workspace' | 'taskboard' | 'ai'
 
-export type TaskTab = 'all' | 'my-tasks' | 'completed'
+export type TaskTab = 'all' | 'my' | 'completed'
+
+export type ProjectStatus = 'inProgress' | 'paused' | 'completed' | 'archived'
 
 export interface Workspace {
   id: string
@@ -39,12 +41,12 @@ export interface NavContentProps {
   onProjectClick?: (projectId: string) => void
   currentProjectId?: string | null
   activeWorkspace?: string
-  activeStatus?: 'inProgress' | 'paused' | 'completed' | 'archived'
+  activeStatus?: ProjectStatus
 }
 
 export interface ProjectFiltersProps {
-  activeStatus: 'inProgress' | 'paused' | 'completed' | 'archived'
-  onStatusChange: (status: 'inProgress' | 'paused' | 'completed' | 'archived') => void
+  activeStatus: ProjectStatus
+  onStatusChange: (status: ProjectStatus) => void
 }
 
 export interface SidebarFooterProps {

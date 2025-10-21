@@ -22,7 +22,7 @@ export function Header({ onNavigateProfile, onNavigateTrash, onLogout }: HeaderP
   }
 
   return (
-    <header className="h-[60px] w-full border-b border-border bg-card flex items-center px-4 gap-4 flex-shrink-0">
+    <header className="h-[60px] border-b border-border bg-card flex items-center px-4 gap-4 flex-shrink-0">
       {/* Centered Search Bar */}
       <div className="flex-1 flex justify-center">
         <SearchBar onSearch={handleSearch} />
