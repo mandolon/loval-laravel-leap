@@ -37,7 +37,7 @@ export function SidebarFooter({
   }
 
   return (
-    <div className="px-3 py-3 flex items-center justify-between border-t border-border bg-card flex-shrink-0 mt-auto">
+    <div className="px-4 py-3 bg-card flex-shrink-0 mt-auto">
       <WorkspaceSwitcher />
     </div>
   )

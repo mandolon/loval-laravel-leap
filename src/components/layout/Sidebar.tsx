@@ -81,7 +81,7 @@ export function Sidebar({
   return (
     <aside className={cn(
       isCollapsed ? 'w-16' : 'w-[200px]',
-      'bg-card flex flex-col h-screen transition-all duration-300 border-r border-border flex-shrink-0',
+      'bg-card flex flex-col h-screen transition-all duration-300 flex-shrink-0',
       className
     )}>
       {/* Sidebar Header with Avatar */}
@@ -91,7 +91,7 @@ export function Sidebar({
       />
 
       {/* Navigation Icons */}
-      <div className="border-b border-border">
+      <div className="">
         <NavIcons
           collapsed={isCollapsed}
           activeTab={activeTab}
@@ -109,7 +109,7 @@ export function Sidebar({
             onTaskTabChange={onTaskTabChange}
             onProjectClick={onProjectClick}
             currentProjectId={currentProjectId}
-            activeWorkspace={activeWorkspace}
+            activeWorkspace={workspaceId || activeWorkspace}
             activeStatus={activeStatus}
           />
         </div>

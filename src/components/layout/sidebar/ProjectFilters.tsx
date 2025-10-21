@@ -33,7 +33,7 @@ export function ProjectFilters({ activeStatus, onStatusChange }: ProjectFiltersP
   }
 
   return (
-    <div className="border-t border-border flex-shrink-0">
+    <div className="flex-shrink-0">
       <div className="flex flex-col items-start justify-start px-3 py-2 space-y-2">
         {statusFilters.map((filter) => (
           <button
