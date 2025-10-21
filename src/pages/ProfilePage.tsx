@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/UserContext";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageSubhead } from "@/components/layout/PageSubhead";
+import { DESIGN_TOKENS as T } from "@/lib/design-tokens";
 
 export default function ProfilePage() {
   const { toast } = useToast();
@@ -99,168 +100,171 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="p-4 space-y-4 max-w-7xl mx-auto">
+    <div className={`${T.panel} ${T.radius} min-h-0 min-w-0 grid grid-rows-[auto_1fr] overflow-hidden h-full`}>
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <PageHeader title="Profile Settings" />
-        <Button variant="outline" onClick={handleSignOut} className="gap-2">
-          <LogOut className="h-4 w-4" />
+      <div className="h-9 px-3 border-b border-slate-200 dark:border-[#1d2230] flex items-center justify-between bg-white dark:bg-[#0E1118]">
+        <span className="text-slate-700 dark:text-neutral-200 font-medium">Profile Settings</span>
+        <Button variant="outline" size="sm" onClick={handleSignOut} className="gap-2 h-7">
+          <LogOut className="h-3 w-3" />
           Sign Out
         </Button>
       </div>
 
-      {/* Avatar Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile Picture</CardTitle>
-          <CardDescription>Choose an avatar for your profile</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Current Avatar */}
-          <div className="flex items-center gap-6">
-            <Avatar className="h-24 w-24">
-              <AvatarFallback 
-                className="text-white text-2xl font-semibold"
-                style={{ background: user.avatar_url || avatarGradients[0] }}
-              >
-                {user.initials}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h3 className="font-semibold text-lg">{user.name}</h3>
-              <p className="text-base text-muted-foreground">{user.email}</p>
-              {user.is_admin && (
-                <Badge className="mt-2 bg-primary">
-                  Admin
-                </Badge>
-              )}
-            </div>
-          </div>
-
-          {/* Avatar Selector */}
-          <div>
-            <Label className="font-medium mb-3 block">Choose Avatar Color</Label>
-            <div className="grid grid-cols-6 gap-3">
-              {avatarGradients.map((gradient, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleAvatarChange(gradient)}
-                  className={`relative h-16 w-16 rounded-full border-2 transition-all hover:scale-110 ${
-                    user.avatar_url === gradient
-                      ? "border-primary ring-2 ring-primary ring-offset-2"
-                      : "border-border hover:border-primary"
-                  }`}
-                  style={{ background: gradient }}
+      {/* Content */}
+      <div className="flex-1 overflow-auto p-4 space-y-4">
+        {/* Avatar Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Profile Picture</CardTitle>
+            <CardDescription>Choose an avatar for your profile</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Current Avatar */}
+            <div className="flex items-center gap-6">
+              <Avatar className="h-24 w-24">
+                <AvatarFallback 
+                  className="text-white text-2xl font-semibold"
+                  style={{ background: user.avatar_url || avatarGradients[0] }}
                 >
-                  <div className="absolute inset-0 flex items-center justify-center text-white font-semibold text-base">
-                    {user.initials}
-                  </div>
-                  {user.avatar_url === gradient && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-full">
-                      <Camera className="h-5 w-5 text-white" />
-                    </div>
-                  )}
-                </button>
-              ))}
+                  {user.initials}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h3 className="font-semibold text-lg">{user.name}</h3>
+                <p className="text-base text-muted-foreground">{user.email}</p>
+                {user.is_admin && (
+                  <Badge className="mt-2 bg-primary">
+                    Admin
+                  </Badge>
+                )}
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Personal Information */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
+            {/* Avatar Selector */}
             <div>
-              <CardTitle>Personal Information</CardTitle>
-              <CardDescription>Update your personal details</CardDescription>
+              <Label className="font-medium mb-3 block">Choose Avatar Color</Label>
+              <div className="grid grid-cols-6 gap-3">
+                {avatarGradients.map((gradient, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleAvatarChange(gradient)}
+                    className={`relative h-16 w-16 rounded-full border-2 transition-all hover:scale-110 ${
+                      user.avatar_url === gradient
+                        ? "border-primary ring-2 ring-primary ring-offset-2"
+                        : "border-border hover:border-primary"
+                    }`}
+                    style={{ background: gradient }}
+                  >
+                    <div className="absolute inset-0 flex items-center justify-center text-white font-semibold text-base">
+                      {user.initials}
+                    </div>
+                    {user.avatar_url === gradient && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-full">
+                        <Camera className="h-5 w-5 text-white" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
-            {!isEditing && (
-              <Button variant="outline" onClick={() => setIsEditing(true)}>
-                Edit
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="first-name">
-              <UserIcon className="inline mr-2 h-4 w-4" />
-              First Name
-            </Label>
-            <Input
-              id="first-name"
-              value={formData.first_name}
-              onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-              disabled={!isEditing}
-            />
-          </div>
+          </CardContent>
+        </Card>
 
-          <div className="space-y-2">
-            <Label htmlFor="last-name">
-              <UserIcon className="inline mr-2 h-4 w-4" />
-              Last Name
-            </Label>
-            <Input
-              id="last-name"
-              value={formData.last_name}
-              onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-              disabled={!isEditing}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">
-              <Mail className="inline mr-2 h-4 w-4" />
-              Email Address
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              disabled={!isEditing}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>
-              <Shield className="inline mr-2 h-4 w-4" />
-              Admin Status
-            </Label>
-            <div className="flex items-center gap-2">
-              {user.is_admin ? (
-                <Badge className="bg-primary">Admin</Badge>
-              ) : (
-                <Badge variant="outline">User</Badge>
+        {/* Personal Information */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Personal Information</CardTitle>
+                <CardDescription>Update your personal details</CardDescription>
+              </div>
+              {!isEditing && (
+                <Button variant="outline" onClick={() => setIsEditing(true)}>
+                  Edit
+                </Button>
               )}
-              <span className="text-base text-muted-foreground">
-                Contact an admin to change your status
-              </span>
             </div>
-          </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="first-name">
+                <UserIcon className="inline mr-2 h-4 w-4" />
+                First Name
+              </Label>
+              <Input
+                id="first-name"
+                value={formData.first_name}
+                onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                disabled={!isEditing}
+              />
+            </div>
 
-          {isEditing && (
-            <div className="flex gap-2 pt-4">
-              <Button onClick={handleSaveProfile}>Save Changes</Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  const nameParts = user.name.split(' ');
-                  setFormData({ 
-                    first_name: nameParts[0] || '', 
-                    last_name: nameParts.slice(1).join(' ') || '',
-                    email: user.email 
-                  });
-                  setIsEditing(false);
-                }}
-              >
-                Cancel
-              </Button>
+            <div className="space-y-2">
+              <Label htmlFor="last-name">
+                <UserIcon className="inline mr-2 h-4 w-4" />
+                Last Name
+              </Label>
+              <Input
+                id="last-name"
+                value={formData.last_name}
+                onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                disabled={!isEditing}
+              />
             </div>
-          )}
-        </CardContent>
-      </Card>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">
+                <Mail className="inline mr-2 h-4 w-4" />
+                Email Address
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                disabled={!isEditing}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>
+                <Shield className="inline mr-2 h-4 w-4" />
+                Admin Status
+              </Label>
+              <div className="flex items-center gap-2">
+                {user.is_admin ? (
+                  <Badge className="bg-primary">Admin</Badge>
+                ) : (
+                  <Badge variant="outline">User</Badge>
+                )}
+                <span className="text-base text-muted-foreground">
+                  Contact an admin to change your status
+                </span>
+              </div>
+            </div>
+
+            {isEditing && (
+              <div className="flex gap-2 pt-4">
+                <Button onClick={handleSaveProfile}>Save Changes</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const nameParts = user.name.split(' ');
+                    setFormData({ 
+                      first_name: nameParts[0] || '', 
+                      last_name: nameParts.slice(1).join(' ') || '',
+                      email: user.email 
+                    });
+                    setIsEditing(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/contexts/UserContext";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageSubhead } from "@/components/layout/PageSubhead";
+import { DESIGN_TOKENS as T } from "@/lib/design-tokens";
 
 const TasksPage = () => {
   const { toast } = useToast();
@@ -433,22 +434,22 @@ const TasksPage = () => {
   };
 
   return (
-    <div className="flex h-full">
-      {/* Main Content */}
-      <div className="flex-1 p-4 space-y-4 overflow-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <PageHeader 
-            title={view === 'completed' ? 'Completed Tasks' : view === 'my-tasks' ? 'My Tasks' : 'All Tasks'}
+    <div className={`${T.panel} ${T.radius} min-h-0 min-w-0 grid grid-rows-[auto_1fr] overflow-hidden h-full`}>
+      {/* Header */}
+      <div className="h-9 px-3 border-b border-slate-200 dark:border-[#1d2230] flex items-center justify-between bg-white dark:border-[#0E1118]">
+        <span className="text-slate-700 dark:text-neutral-200 font-medium">
+          {view === 'completed' ? 'Completed Tasks' : view === 'my-tasks' ? 'My Tasks' : 'All Tasks'}
+        </span>
+        {workspaceId && projects.length > 0 && (
+          <CreateTaskDialog 
+            projects={projects} 
+            onCreateTask={handleCreateTask}
           />
-          {workspaceId && projects.length > 0 && (
-            <CreateTaskDialog 
-              projects={projects} 
-              onCreateTask={handleCreateTask}
-            />
-          )}
-        </div>
+        )}
+      </div>
 
+      {/* Content */}
+      <div className="flex-1 overflow-auto p-4 space-y-4">
         {/* Filters */}
         <div className="flex items-center gap-4">
           <span className="text-sm font-medium">Group by:</span>
@@ -470,18 +471,14 @@ const TasksPage = () => {
           </div>
         ) : !workspaceId ? (
           <div className="text-center py-20">
-            <p className="text-muted-foreground text-lg">
+            <p className="text-muted-foreground text-lg mb-2">No workspace selected</p>
+            <p className="text-sm text-muted-foreground">
               Please select a workspace from the sidebar to view tasks
             </p>
           </div>
-        ) : projects.length === 0 ? (
+        ) : filteredTasks.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-muted-foreground text-lg mb-4">
-              No projects in this workspace yet
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Create a project first to start adding tasks
-            </p>
+            <p className="text-muted-foreground">No tasks found</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -504,8 +501,8 @@ const TasksPage = () => {
           open={!!selectedTask}
           onOpenChange={(open) => !open && setSelectedTask(null)}
           onUpdate={(updates) => handleTaskUpdate(selectedTask.id, updates)}
-          assignees={[]} // TODO: Load task assignees from user IDs
-          createdBy={null} // TODO: Load creator from user ID
+          assignees={[]}
+          createdBy={null}
         />
       )}
     </div>
