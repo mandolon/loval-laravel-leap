@@ -656,37 +656,33 @@ const ProjectDetails = () => {
               />
             </TabsContent>
 
-            <TabsContent value="project" className="h-full overflow-auto bg-white dark:bg-[#0F1219]">
-              <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
+            <TabsContent value="project" className="h-full overflow-auto">
+              <div className="max-w-5xl mx-auto px-8 py-8 space-y-8">
               {/* Project Name */}
-              <Card className={`${T.panel} ${T.radius}`}>
-                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
-                  <div>
-                    <CardTitle>Project Name</CardTitle>
-                  </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-slate-700 dark:text-neutral-300">Project Name</h3>
                   <EditProjectNameDialog
                     name={project.name}
                     onUpdate={(name) => handleUpdateProject({ name })}
                   />
-                </CardHeader>
-                <CardContent className="bg-white dark:bg-[#0F1219]">
-                  <p className="font-medium text-lg text-slate-700 dark:text-neutral-300">{project.name}</p>
-                </CardContent>
-              </Card>
+                </div>
+                <div className="p-6 rounded-lg bg-slate-50 dark:bg-[#0B0E14] border border-slate-200/60 dark:border-[#1d2230]/40">
+                  <p className="font-medium text-base text-slate-700 dark:text-neutral-300">{project.name}</p>
+                </div>
+              </div>
 
               {/* Project Address */}
-              <Card className={`${T.panel} ${T.radius}`}>
-                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
-                  <div>
-                    <CardTitle>Project Address</CardTitle>
-                  </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-slate-700 dark:text-neutral-300">Project Address</h3>
                   <EditProjectAddressDialog
                     address={project.address}
                     onUpdate={(address) => handleUpdateProject({ address })}
                   />
-                </CardHeader>
-                <CardContent className="bg-white dark:bg-[#0F1219]">
-                  <p className="font-medium text-slate-700 dark:text-neutral-300">
+                </div>
+                <div className="p-6 rounded-lg bg-slate-50 dark:bg-[#0B0E14] border border-slate-200/60 dark:border-[#1d2230]/40">
+                  <p className="text-base text-slate-700 dark:text-neutral-300">
                     {typeof project.address === 'object' && project.address 
                       ? (() => {
                           const { streetNumber, streetName, city, state, zipCode } = project.address;
@@ -697,38 +693,34 @@ const ProjectDetails = () => {
                         })()
                       : 'No address provided'}
                   </p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
-              {/* Project Narrative */}
-              <Card className={`${T.panel} ${T.radius}`}>
-                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
-                  <div>
-                    <CardTitle>Project Description</CardTitle>
-                  </div>
+              {/* Project Description */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-slate-700 dark:text-neutral-300">Project Description</h3>
                   <EditProjectDetailsDialog
                     description={project.description}
                     onUpdate={(description) => handleUpdateProject({ description })}
                   />
-                </CardHeader>
-                <CardContent className="bg-white dark:bg-[#0F1219]">
-                  <p className="text-slate-500 dark:text-neutral-400">{project.description || "No description provided yet. Click edit to add project details."}</p>
-                </CardContent>
-              </Card>
+                </div>
+                <div className="p-6 rounded-lg bg-slate-50 dark:bg-[#0B0E14] border border-slate-200/60 dark:border-[#1d2230]/40">
+                  <p className="text-base text-slate-500 dark:text-neutral-400">{project.description || "No description provided yet. Click edit to add project details."}</p>
+                </div>
+              </div>
 
-              {/* Project Status, Phase, and Design Fee in a row */}
+              {/* Project Status, Phase, and Design Fee */}
               <div className="grid grid-cols-3 gap-6">
-                <Card className={`${T.panel} ${T.radius}`}>
-                  <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
-                    <div>
-                      <CardTitle>Status</CardTitle>
-                    </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-slate-700 dark:text-neutral-300">Status</h3>
                     <EditProjectStatusDialog
                       status={project.status}
                       onUpdate={(status) => handleUpdateProject({ status: status as any })}
                     />
-                  </CardHeader>
-                  <CardContent className="bg-white dark:bg-[#0F1219]">
+                  </div>
+                  <div className="p-6 rounded-lg bg-slate-50 dark:bg-[#0B0E14] border border-slate-200/60 dark:border-[#1d2230]/40">
                     <Badge variant={
                       project.status === 'active' ? 'default' : 
                       project.status === 'completed' ? 'secondary' : 
@@ -740,190 +732,174 @@ const ProjectDetails = () => {
                        project.status === 'completed' ? 'Completed' : 
                        'Archived'}
                     </Badge>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
 
-                <Card className={`${T.panel} ${T.radius}`}>
-                  <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
-                    <div>
-                      <CardTitle>Phase</CardTitle>
-                    </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-slate-700 dark:text-neutral-300">Phase</h3>
                     <EditProjectPhaseDialog
                       phase={project.phase}
                       onUpdate={(phase) => handleUpdateProject({ phase: phase as any })}
                     />
-                  </CardHeader>
-                  <CardContent className="bg-white dark:bg-[#0F1219]">
-                    <p className="font-medium text-slate-700 dark:text-neutral-300">{project.phase}</p>
-                  </CardContent>
-                </Card>
+                  </div>
+                  <div className="p-6 rounded-lg bg-slate-50 dark:bg-[#0B0E14] border border-slate-200/60 dark:border-[#1d2230]/40">
+                    <p className="font-medium text-base text-slate-700 dark:text-neutral-300">{project.phase}</p>
+                  </div>
+                </div>
 
-                <Card className={`${T.panel} ${T.radius}`}>
-                  <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
-                    <div>
-                      <CardTitle>Design Fee</CardTitle>
-                    </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-slate-700 dark:text-neutral-300">Design Fee</h3>
                     <EditProjectEstimatedAmountDialog
                       estimatedAmount={project.estimatedAmount}
                       onUpdate={(estimatedAmount) => handleUpdateProject({ estimatedAmount })}
                     />
-                  </CardHeader>
-                  <CardContent className="bg-white dark:bg-[#0F1219]">
-                    <p className="font-medium text-lg text-slate-700 dark:text-neutral-300">
+                  </div>
+                  <div className="p-6 rounded-lg bg-slate-50 dark:bg-[#0B0E14] border border-slate-200/60 dark:border-[#1d2230]/40">
+                    <p className="font-medium text-base text-slate-700 dark:text-neutral-300">
                       {project.estimatedAmount 
                         ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(project.estimatedAmount)
                         : '—'}
                     </p>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </div>
 
-              {/* Team Section */}
-              <Card className={`${T.panel} ${T.radius}`}>
-                <CardHeader className="border-b border-slate-200 dark:border-[#1d2230]">
-                  <CardTitle>Team</CardTitle>
-                </CardHeader>
-                <CardContent className="bg-white dark:bg-[#0F1219]">
+              {/* Team */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-slate-700 dark:text-neutral-300">Team</h3>
+                <div className="p-6 rounded-lg bg-slate-50 dark:bg-[#0B0E14] border border-slate-200/60 dark:border-[#1d2230]/40">
                   <ProjectMembersTable projectId={id || ''} workspaceId={workspaceId || ''} />
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
               {/* Assessor Parcel Information */}
-              <Card className={`${T.panel} ${T.radius}`}>
-                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
-                  <div>
-                    <CardTitle>Assessor Parcel Information</CardTitle>
-                  </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-slate-700 dark:text-neutral-300">Assessor Parcel Information</h3>
                   <EditAssessorParcelDialog
                     data={project.assessorParcelInfo}
                     onUpdate={(data) => handleUpdateProject({ assessorParcelInfo: data })}
                   />
-                </CardHeader>
-                <CardContent className="bg-white dark:bg-[#0F1219]">
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-4 gap-4">
-                      <div>
-                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Assessor's Parcel #</p>
-                        <p className="font-medium text-[#00639b] dark:text-blue-300">{project.assessorParcelInfo?.parcelNumber || '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Occupancy Class</p>
-                        <p className="font-medium text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.occupancyClass || '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Zoning Designation</p>
-                        <p className="font-medium text-[#00639b] dark:text-blue-300">{project.assessorParcelInfo?.zoningDesignation || '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Construction</p>
-                        <p className="font-medium text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.construction || '—'}</p>
-                      </div>
+                </div>
+                <div className="p-6 rounded-lg bg-slate-50 dark:bg-[#0B0E14] border border-slate-200/60 dark:border-[#1d2230]/40 space-y-6">
+                  <div className="grid grid-cols-4 gap-6">
+                    <div>
+                      <p className="text-base text-slate-500 dark:text-neutral-500 mb-2">Assessor's Parcel #</p>
+                      <p className="font-medium text-base text-[#00639b] dark:text-blue-300">{project.assessorParcelInfo?.parcelNumber || '—'}</p>
                     </div>
-                    <div className="grid grid-cols-6 gap-4">
-                      <div>
-                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Stories</p>
-                        <p className="font-medium text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.stories || '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Plate Height</p>
-                        <p className="font-medium text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.plateHeight || '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Roof Height</p>
-                        <p className="font-medium text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.roofHeight || '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Year Built</p>
-                        <p className="font-medium text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.yearBuilt || '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Approx Lot Area</p>
-                        <p className="font-medium text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.lotArea || '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Acres</p>
-                        <p className="font-medium text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.acres || '—'}</p>
-                      </div>
+                    <div>
+                      <p className="text-base text-slate-500 dark:text-neutral-500 mb-2">Occupancy Class</p>
+                      <p className="font-medium text-base text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.occupancyClass || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-base text-slate-500 dark:text-neutral-500 mb-2">Zoning Designation</p>
+                      <p className="font-medium text-base text-[#00639b] dark:text-blue-300">{project.assessorParcelInfo?.zoningDesignation || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-base text-slate-500 dark:text-neutral-500 mb-2">Construction</p>
+                      <p className="font-medium text-base text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.construction || '—'}</p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="grid grid-cols-6 gap-6">
+                    <div>
+                      <p className="text-base text-slate-500 dark:text-neutral-500 mb-2">Stories</p>
+                      <p className="font-medium text-base text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.stories || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-base text-slate-500 dark:text-neutral-500 mb-2">Plate Height</p>
+                      <p className="font-medium text-base text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.plateHeight || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-base text-slate-500 dark:text-neutral-500 mb-2">Roof Height</p>
+                      <p className="font-medium text-base text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.roofHeight || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-base text-slate-500 dark:text-neutral-500 mb-2">Year Built</p>
+                      <p className="font-medium text-base text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.yearBuilt || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-base text-slate-500 dark:text-neutral-500 mb-2">Approx Lot Area</p>
+                      <p className="font-medium text-base text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.lotArea || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-base text-slate-500 dark:text-neutral-500 mb-2">Acres</p>
+                      <p className="font-medium text-base text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.acres || '—'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
               </div>
             </TabsContent>
 
-            <TabsContent value="client" className="h-full overflow-auto bg-white dark:bg-[#0F1219]">
-              <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
-              <Card className={`${T.panel} ${T.radius}`}>
-                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
-                  <div>
-                    <CardTitle>Client Information</CardTitle>
-                  </div>
+            <TabsContent value="client" className="h-full overflow-auto">
+              <div className="max-w-5xl mx-auto px-8 py-8 space-y-8">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-slate-700 dark:text-neutral-300">Client Information</h3>
                   <EditClientDialog
                     project={project}
                     onUpdate={(data) => handleUpdateProject(data)}
                   />
-                </CardHeader>
-                <CardContent className="bg-white dark:bg-[#0F1219]">
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm text-slate-500 dark:text-neutral-500">Primary Client</p>
-                      <p className="font-medium text-lg text-slate-700 dark:text-neutral-300">
-                        {project.primaryClient.firstName} {project.primaryClient.lastName}
-                      </p>
-                      {project.primaryClient.email && (
-                        <p className="text-sm text-slate-500 dark:text-neutral-400">{project.primaryClient.email}</p>
-                      )}
-                      {project.primaryClient.phone && (
-                        <p className="text-sm text-slate-500 dark:text-neutral-400">{project.primaryClient.phone}</p>
-                      )}
-                    </div>
-                    {project.secondaryClient && (
-                      <div>
-                        <p className="text-sm text-slate-500 dark:text-neutral-500">Secondary Client</p>
-                        <p className="font-medium text-lg text-slate-700 dark:text-neutral-300">
-                          {project.secondaryClient.firstName} {project.secondaryClient.lastName}
-                        </p>
-                        {project.secondaryClient.email && (
-                          <p className="text-sm text-slate-500 dark:text-neutral-400">{project.secondaryClient.email}</p>
-                        )}
-                        {project.secondaryClient.phone && (
-                          <p className="text-sm text-slate-500 dark:text-neutral-400">{project.secondaryClient.phone}</p>
-                        )}
-                      </div>
+                </div>
+                <div className="p-6 rounded-lg bg-slate-50 dark:bg-[#0B0E14] border border-slate-200/60 dark:border-[#1d2230]/40 space-y-6">
+                  <div>
+                    <p className="text-base text-slate-500 dark:text-neutral-500 mb-2">Primary Client</p>
+                    <p className="font-medium text-base text-slate-700 dark:text-neutral-300">
+                      {project.primaryClient.firstName} {project.primaryClient.lastName}
+                    </p>
+                    {project.primaryClient.email && (
+                      <p className="text-base text-slate-500 dark:text-neutral-400 mt-1">{project.primaryClient.email}</p>
+                    )}
+                    {project.primaryClient.phone && (
+                      <p className="text-base text-slate-500 dark:text-neutral-400">{project.primaryClient.phone}</p>
                     )}
                   </div>
-                </CardContent>
-              </Card>
+                  {project.secondaryClient && (
+                    <div>
+                      <p className="text-base text-slate-500 dark:text-neutral-500 mb-2">Secondary Client</p>
+                      <p className="font-medium text-base text-slate-700 dark:text-neutral-300">
+                        {project.secondaryClient.firstName} {project.secondaryClient.lastName}
+                      </p>
+                      {project.secondaryClient.email && (
+                        <p className="text-base text-slate-500 dark:text-neutral-400 mt-1">{project.secondaryClient.email}</p>
+                      )}
+                      {project.secondaryClient.phone && (
+                        <p className="text-base text-slate-500 dark:text-neutral-400">{project.secondaryClient.phone}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
               </div>
             </TabsContent>
 
-            <TabsContent value="notes" className="h-full overflow-auto bg-white dark:bg-[#0F1219]">
-              <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
-              <Card className={`${T.panel} ${T.radius}`}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-slate-200 dark:border-[#1d2230]">
+            <TabsContent value="notes" className="h-full overflow-auto">
+              <div className="max-w-5xl mx-auto px-8 py-8 space-y-6">
+                <div className="flex items-center justify-between mb-2">
                   <div>
-                    <CardTitle>Notes</CardTitle>
-                    <CardDescription className="text-slate-500 dark:text-neutral-400">Project notes and comments</CardDescription>
+                    <h3 className="text-lg font-semibold text-slate-700 dark:text-neutral-300">Notes</h3>
+                    <p className="text-base text-slate-500 dark:text-neutral-400">Project notes and comments</p>
                   </div>
                   <CreateNoteDialog onCreateNote={(content) => createNoteMutation.mutate({ content })} />
-                </CardHeader>
-                <CardContent className="space-y-4 bg-white dark:bg-[#0F1219]">
-                  {notesLoading ? (
-                    <p className="text-sm text-slate-500 dark:text-neutral-400 text-center py-8">Loading notes...</p>
-                  ) : notes.length === 0 ? (
-                    <p className="text-sm text-slate-500 dark:text-neutral-400 text-center py-8">No notes yet. Create your first note above.</p>
-                  ) : (
-                    notes.map(note => (
+                </div>
+                {notesLoading ? (
+                  <p className="text-base text-slate-500 dark:text-neutral-400 text-center py-12">Loading notes...</p>
+                ) : notes.length === 0 ? (
+                  <p className="text-base text-slate-500 dark:text-neutral-400 text-center py-12">No notes yet. Create your first note above.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {notes.map(note => (
                       <NoteCard
                         key={note.id}
                         note={note}
                         onUpdate={(id, content) => updateNoteMutation.mutate({ id, content })}
                         onDelete={(id) => deleteNoteMutation.mutate(id)}
                       />
-                    ))
-                  )}
-                </CardContent>
-              </Card>
+                    ))}
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>

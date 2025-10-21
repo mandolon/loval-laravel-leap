@@ -30,8 +30,7 @@ export const NoteCard = ({ note, onUpdate, onDelete }: NoteCardProps) => {
   }
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-200">
-      <CardContent className="pt-4">
+    <div className="group p-6 rounded-lg bg-slate-50 dark:bg-[#0B0E14] border border-slate-200/60 dark:border-[#1d2230]/40 hover:border-slate-300 dark:hover:border-[#1d2230]/60 transition-all duration-200">
         {isEditing ? (
           <div className="space-y-3">
             <Textarea
@@ -92,7 +91,6 @@ export const NoteCard = ({ note, onUpdate, onDelete }: NoteCardProps) => {
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+    </div>
   )
 }
