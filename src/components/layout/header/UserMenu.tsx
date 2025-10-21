@@ -65,11 +65,11 @@ export function UserMenu({ onNavigateProfile, onNavigateTrash, onLogout }: UserM
       <DropdownMenuTrigger asChild>
         <Button 
           variant="ghost" 
-          className="h-8 w-8 rounded-full p-0"
+          className="h-7 w-7 rounded-full p-0"
         >
-          <Avatar className="h-8 w-8">
+          <Avatar className="h-6 w-6">
             <AvatarFallback 
-              className="text-white text-xs font-semibold"
+              className="text-white text-[10px] font-semibold"
               style={{ background: user.avatar_url || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
             >
               {user.initials}
