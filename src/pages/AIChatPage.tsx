@@ -1,19 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { Send, Bot, User, FileText, Plus } from "lucide-react";
-import ChatSummarizer from "@/components/chat/ChatSummarizer";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAIChat } from "@/hooks/useAIChat";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/contexts/UserContext";
 import { useProjects } from "@/lib/api/hooks/useProjects";
-import { PageHeader } from "@/components/layout/PageHeader";
-import { PageSubhead } from "@/components/layout/PageSubhead";
-import { DESIGN_TOKENS as T } from "@/lib/design-tokens";
+import { ChatHeader } from "@/components/chat/ChatHeader";
+import { ChatFooter } from "@/components/chat/ChatFooter";
+import { QuickActions } from "@/components/chat/QuickActions";
+import { MessageList } from "@/components/chat/MessageList";
+import { NewChatInput } from "@/components/chat/NewChatInput";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -26,11 +22,13 @@ export default function AIChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [threadId, setThreadId] = useState<string>("");
-  const [selectedProject, setSelectedProject] = useState<string>("select");
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [selectedProject, setSelectedProject] = useState<string>("all");
+  const bottomRef = useRef<HTMLDivElement>(null);
   
-  const { sendMessage, isLoading } = useAIChat(threadId, workspaceId || "", selectedProject);
+  const { sendMessage, isLoading } = useAIChat(threadId, workspaceId || "", selectedProject === "all" ? "" : selectedProject);
   const { data: projects = [] } = useProjects(workspaceId || "");
+  
+  const chatOpened = !!threadId && messages.length > 0;
 
   // Load or create thread
   useEffect(() => {
@@ -66,8 +64,8 @@ export default function AIChatPage() {
 
   // Auto-scroll to bottom
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
 
@@ -97,7 +95,13 @@ export default function AIChatPage() {
   };
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading || !threadId || !user) return;
+    // Create thread if it doesn't exist
+    if (!threadId) {
+      await handleNewChat();
+      return;
+    }
+    
+    if (!input.trim() || isLoading || !user) return;
 
     const userMessage = input.trim();
     setInput("");
@@ -153,121 +157,62 @@ export default function AIChatPage() {
     }
   };
 
+  const handleQuickAction = (description: string) => {
+    setInput(description);
+  };
+
   return (
-    <div className="h-screen w-full overflow-hidden bg-slate-50 dark:bg-[#0B0E14] text-slate-700 dark:text-neutral-200 flex gap-1 p-1">
-      <div className="relative min-h-0 flex-1 w-full overflow-hidden">
-        <div className={`${T.panel} ${T.radius} min-h-0 min-w-0 grid grid-rows-[auto_1fr_auto] overflow-hidden h-full`}>
-          {/* Header */}
-          <div className="h-9 px-3 border-b border-slate-200 dark:border-[#1d2230] flex items-center justify-between bg-white dark:bg-[#0E1118]">
-            <span className="text-[12px] font-medium">AI Assistant</span>
-            <div className="flex gap-2">
-              <Button
-                onClick={handleNewChat}
-                variant="outline"
-                size="sm"
-                className="gap-2 h-7 text-xs"
-              >
-                <Plus className="h-3 w-3" />
-                New Chat
-              </Button>
-              {messages.length > 0 && threadId && workspaceId && selectedProject !== "select" && (
-                <ChatSummarizer
-                  threadId={threadId}
-                  workspaceId={workspaceId}
-                  projectId={selectedProject === "all" ? workspaceId : selectedProject}
-                  userId={user?.id || ""}
-                  messages={messages}
-                />
-              )}
-            </div>
+    <div className="flex h-full flex-col bg-slate-50 dark:bg-slate-950">
+      {/* Center container for all chat content */}
+      <div className="relative flex h-full flex-col overflow-hidden">
+        
+        {/* Message display area */}
+        <div className="flex-1 min-h-0">
+          <MessageList
+            messages={messages}
+            isLoading={isLoading}
+            bottomRef={bottomRef}
+            chatOpened={chatOpened}
+          />
+        </div>
+        
+        {/* Floating input area with dynamic positioning */}
+        <div className={`absolute left-1/2 bottom-0 z-10 w-full max-w-3xl -translate-x-1/2 transition-transform duration-700 ease-out ${
+          chatOpened ? 'translate-y-0' : '-translate-y-[32vh]'
+        }`}>
+          
+          {/* Header and Quick Actions - fade out when chat opens */}
+          <div className={`relative z-20 flex flex-col items-center gap-2 transition-all duration-500 ${
+            chatOpened ? 'opacity-0 translate-y-2 pointer-events-none' : 'opacity-100 translate-y-0'
+          }`}>
+            <ChatHeader chatOpened={chatOpened} />
+            <QuickActions 
+              chatOpened={chatOpened} 
+              onActionClick={handleQuickAction}
+            />
           </div>
-
-          {/* Content */}
-          <ScrollArea ref={scrollRef} className="flex-1 overflow-auto bg-white dark:bg-[#0F1219]">
-            <div className="max-w-3xl mx-auto p-4 space-y-4">
-              {!threadId ? (
-                <div className="text-center py-20">
-                  <Bot className="h-16 w-16 mx-auto mb-6 opacity-50" />
-                  <h3 className="text-xl font-semibold mb-2">No Chat Selected</h3>
-                  <p className="text-muted-foreground mb-6">
-                    Start a new conversation or select an existing chat from the sidebar
-                  </p>
-                  <Button onClick={handleNewChat} className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Start New Chat
-                  </Button>
-                </div>
-              ) : messages.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Start a conversation with your AI assistant</p>
-                </div>
-              ) : (
-                messages.map((msg, i) => (
-                  <div
-                    key={i}
-                    className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                  >
-                    {msg.role === "assistant" && (
-                      <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                        <Bot className="h-5 w-5 text-primary-foreground" />
-                      </div>
-                    )}
-                    
-                    <div
-                      className={`rounded-lg px-4 py-2 max-w-[80%] ${
-                        msg.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
-                      }`}
-                    >
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
-                    </div>
-
-                    {msg.role === "user" && (
-                      <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center flex-shrink-0">
-                        <User className="h-5 w-5" />
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </ScrollArea>
-
-          {/* Input */}
-          <div className="border-t border-slate-200 dark:border-[#1d2230] p-4 bg-white dark:bg-[#0E1118]">
-            <div className="max-w-3xl mx-auto space-y-2">
-              <div className="flex gap-2">
-                <Input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-                  placeholder={threadId ? "Ask me anything..." : "Create a new chat to start messaging"}
-                  disabled={isLoading || !threadId}
-                  className="flex-1"
-                />
-                <Button onClick={handleSend} disabled={isLoading || !input.trim() || !threadId}>
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-              {threadId && (
-                <Select value={selectedProject} onValueChange={setSelectedProject}>
-                  <SelectTrigger className="w-48 h-8 text-sm">
-                    <SelectValue placeholder="Select Project" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="select">Select Project</SelectItem>
-                    <SelectItem value="all">All Projects</SelectItem>
-                    {projects.map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
+          
+          {/* Input component */}
+          <NewChatInput
+            message={input}
+            setMessage={setInput}
+            onSubmit={handleSend}
+            isLoading={isLoading}
+            chatOpened={chatOpened}
+            selectedProject={selectedProject}
+            setSelectedProject={setSelectedProject}
+            projectLocked={!!threadId && messages.length > 0}
+            projects={projects}
+            wrapperClassName={
+              chatOpened
+                ? 'relative z-10 px-4 pb-4 pt-3'
+                : 'relative z-10 px-0 mt-12'
+            }
+          />
+          
+          {/* Footer */}
+          <div className="relative z-10">
+            <ChatFooter chatOpened={chatOpened} />
           </div>
         </div>
       </div>
