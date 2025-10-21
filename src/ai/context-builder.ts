@@ -18,10 +18,17 @@ export async function buildAIContext(
   const sources: string[] = [];
   let context = "";
 
+  // Get project details
+  const { data: project } = await supabase
+    .from("projects")
+    .select("id, name")
+    .eq("id", projectId)
+    .single();
+
   // Always load project metadata first
   const metadata = await loadMeta(workspaceId, projectId);
-  if (metadata) {
-    context += formatProjectMetadata(metadata);
+  if (metadata && project) {
+    context += formatProjectMetadata(metadata, project.id, project.name);
     sources.push("project.meta.md");
   }
 
@@ -96,7 +103,7 @@ export async function buildWorkspaceContext(
   if (projects && projects.length > 0) {
     context += `## Projects (${projects.length} total)\n`;
     projects.forEach((p) => {
-      context += `- **${p.name}** (${p.phase}): ${p.status}, ${p.completed_tasks}/${p.total_tasks} tasks completed`;
+      context += `- **${p.name}** [ID: ${p.id}] (${p.phase}): ${p.status}, ${p.completed_tasks}/${p.total_tasks} tasks completed`;
       if (p.due_date) context += `, due ${p.due_date}`;
       context += `\n`;
     });
@@ -114,8 +121,10 @@ export async function buildWorkspaceContext(
 
 // Helper functions to fetch specific data types
 
-function formatProjectMetadata(metadata: ProjectMetadata): string {
+function formatProjectMetadata(metadata: ProjectMetadata, projectId: string, projectName: string): string {
   let text = `# Project Context\n\n`;
+  text += `**IMPORTANT - Project ID (use this for all tool calls):** ${projectId}\n`;
+  text += `**Project Name:** ${projectName}\n\n`;
   text += `## Summary\n${metadata.summary}\n\n`;
   
   if (metadata.tags.length > 0) {
