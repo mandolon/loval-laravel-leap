@@ -27,7 +27,7 @@ export function Header({ onNavigateProfile, onNavigateTrash, onLogout }: HeaderP
 
       {/* Center: Compact Search Bar */}
       <div className="flex justify-center">
-        <div className="w-40">
+        <div className="w-56">
           <SearchBar onSearch={handleSearch} />
         </div>
       </div>

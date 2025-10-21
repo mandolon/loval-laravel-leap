@@ -5,6 +5,9 @@
 
 import { NavLink, useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import { Plus, Folder, CheckSquare } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { supabase } from '@/integrations/supabase/client'
 import { AIChatThreadsList } from '@/components/chat/AIChatThreadsList'
 import type { NavContentProps } from '@/types/layout.types'
@@ -94,19 +97,29 @@ export function NavContent({
   // Home Tab Content
   if (activeTab === 'home') {
     return (
-      <div className="flex flex-col items-start justify-start px-3 pb-3 space-y-2">
-        {homeLinks.map((link) => (
-          <NavLink
-            key={link.label}
-            to={link.path}
-            className={({ isActive }) => `
-              px-2.5 py-1 ${T.radius} w-full text-left transition-colors
-              ${isActive ? 'bg-accent text-accent-foreground font-medium' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'} ${T.focus}
-            `}
-          >
-            {link.label}
-          </NavLink>
-        ))}
+      <div className="p-3">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Home
+          </span>
+        </div>
+        
+        <ScrollArea className="max-h-[300px]">
+          <div className="space-y-1">
+            {homeLinks.map((link) => (
+              <NavLink
+                key={link.label}
+                to={link.path}
+                className={({ isActive }) => `
+                  group flex items-center gap-2 px-2 py-1.5 rounded text-xs transition-colors
+                  ${isActive ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/30'}
+                `}
+              >
+                <span className="truncate">{link.label}</span>
+              </NavLink>
+            ))}
+          </div>
+        </ScrollArea>
       </div>
     )
   }
@@ -122,36 +135,52 @@ export function NavContent({
     const filteredProjects = projects.filter(project => project.status === statusMap[activeStatus])
 
     return (
-      <div className="flex flex-col items-start justify-start px-3 py-2 space-y-2">
-        <div className="w-full space-y-2 max-h-[200px] overflow-y-auto">
-          {filteredProjects.length === 0 ? (
-            <div className={`${T.text} text-muted-foreground py-1 px-2.5`}>
-              No {activeStatus} projects
-            </div>
-          ) : (
-            filteredProjects.slice(0, 5).map((project) => {
-              const isActive = projectId === project.id
-              return (
-                <button
-                  key={project.id}
-                  type="button"
-                  onClick={() => {
-                    navigate(`/workspace/${currentWorkspaceId}/project/${project.id}`)
-                    onProjectClick?.(project.id)
-                  }}
-                  className={`px-2.5 py-1 ${T.radius} w-full text-left transition-colors ${
-                    isActive 
-                      ? 'bg-accent text-accent-foreground font-medium' 
-                      : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
-                  } ${T.focus}`}
-                  aria-current={isActive ? 'true' : undefined}
-                >
-                  <span className="truncate">{project.name}</span>
-                </button>
-              )
-            })
-          )}
+      <div className="p-3">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Projects
+          </span>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-5 w-5"
+            onClick={() => navigate(getNavPath('/projects'))}
+          >
+            <Plus className="h-3 w-3" />
+          </Button>
         </div>
+        
+        <ScrollArea className="max-h-[300px]">
+          <div className="space-y-1">
+            {filteredProjects.length === 0 ? (
+              <div className="text-xs text-muted-foreground py-2">
+                No {activeStatus} projects
+              </div>
+            ) : (
+              filteredProjects.slice(0, 5).map((project) => {
+                const isActive = projectId === project.id
+                return (
+                  <button
+                    key={project.id}
+                    type="button"
+                    onClick={() => {
+                      navigate(`/workspace/${currentWorkspaceId}/project/${project.id}`)
+                      onProjectClick?.(project.id)
+                    }}
+                    className={`group flex items-center gap-2 px-2 py-1.5 rounded text-xs transition-colors w-full text-left ${
+                      isActive 
+                        ? 'bg-accent text-accent-foreground' 
+                        : 'text-muted-foreground hover:bg-accent/30'
+                    }`}
+                  >
+                    <Folder className="h-3 w-3 flex-shrink-0" />
+                    <span className="truncate">{project.name}</span>
+                  </button>
+                )
+              })
+            )}
+          </div>
+        </ScrollArea>
       </div>
     )
   }
@@ -159,34 +188,55 @@ export function NavContent({
   // TaskBoard Tab Content
   if (activeTab === 'taskboard') {
     return (
-      <div className="flex flex-col items-start justify-start px-3 pb-3 space-y-2">
-        <NavLink
-          to={getNavPath('/tasks')}
-          className={({ isActive }) => `
-            px-2.5 py-1 ${T.radius} w-full text-left transition-colors
-            ${isActive && !location.search ? 'bg-accent text-accent-foreground font-medium' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'} ${T.focus}
-          `}
-        >
-          <span>All Tasks</span>
-        </NavLink>
-        <NavLink
-          to={getNavPath('/tasks?view=my-tasks')}
-          className={({ isActive }) => `
-            px-2.5 py-1 ${T.radius} w-full text-left transition-colors
-            ${location.search.includes('my-tasks') ? 'bg-accent text-accent-foreground font-medium' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'} ${T.focus}
-          `}
-        >
-          <span>My Tasks</span>
-        </NavLink>
-        <NavLink
-          to={getNavPath('/tasks?view=completed')}
-          className={({ isActive }) => `
-            px-2.5 py-1 ${T.radius} w-full text-left transition-colors
-            ${location.search.includes('completed') ? 'bg-accent text-accent-foreground font-medium' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'} ${T.focus}
-          `}
-        >
-          <span>Completed</span>
-        </NavLink>
+      <div className="p-3">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Tasks
+          </span>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-5 w-5"
+            onClick={() => navigate(getNavPath('/tasks'))}
+          >
+            <Plus className="h-3 w-3" />
+          </Button>
+        </div>
+        
+        <ScrollArea className="max-h-[300px]">
+          <div className="space-y-1">
+            <NavLink
+              to={getNavPath('/tasks')}
+              className={({ isActive }) => `
+                group flex items-center gap-2 px-2 py-1.5 rounded text-xs transition-colors
+                ${isActive && !location.search ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/30'}
+              `}
+            >
+              <CheckSquare className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">All Tasks</span>
+            </NavLink>
+            <NavLink
+              to={getNavPath('/tasks?view=my-tasks')}
+              className={({ isActive }) => `
+                group flex items-center gap-2 px-2 py-1.5 rounded text-xs transition-colors
+                ${location.search.includes('my-tasks') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/30'}
+              `}
+            >
+              <CheckSquare className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">My Tasks</span>
+            </NavLink>
+            <NavLink
+              to={getNavPath('/tasks?view=completed')}
+              className={({ isActive }) => `
+                group flex items-center gap-2 px-2 py-1.5 rounded text-xs transition-colors
+                ${location.search.includes('completed') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/30'}
+              `}
+            >
+              <CheckSquare className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">Completed</span>
+            </NavLink>
+          </div>
+        </ScrollArea>
       </div>
     )
   }
