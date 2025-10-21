@@ -133,14 +133,8 @@ const ProjectsPage = () => {
   return (
     <div className={`${T.panel} ${T.radius} min-h-0 min-w-0 grid grid-rows-[auto_1fr] overflow-hidden h-full`}>
       {/* Header */}
-      <div className="h-9 px-3 border-b border-slate-200 dark:border-[#1d2230] flex items-center justify-between bg-white dark:bg-[#0E1118]">
-        <span className="text-slate-700 dark:text-neutral-200 font-medium">Projects</span>
-        <CreateProjectDialog onCreateProject={handleCreateProject}>
-          <Button size="sm" className="gap-2 h-7">
-            <Plus className="h-3 w-3" />
-            New Project
-          </Button>
-        </CreateProjectDialog>
+      <div className="h-9 px-3 border-b border-slate-200 dark:border-[#1d2230] flex items-center bg-white dark:bg-[#0E1118]">
+        <span className="text-[12px] font-medium">Projects</span>
       </div>
 
       {/* Content */}

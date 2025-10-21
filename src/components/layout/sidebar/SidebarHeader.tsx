@@ -30,23 +30,19 @@ export function SidebarHeader({ collapsed, onToggleCollapse }: SidebarHeaderProp
   }
 
   return (
-    <div className="py-2 px-3">
-      <div className="flex items-center gap-2">
+    <div className="p-3">
+      <div className="flex items-center justify-between mb-3">
         {user && (
-          <div className="flex-1 min-w-0">
-            <p className="text-[14px] font-medium truncate text-foreground">
-              {user.name}
-            </p>
-          </div>
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            {user.name}
+          </span>
         )}
         <button
           onClick={onToggleCollapse}
-          className={cn(
-            "p-2 rounded hover:bg-accent transition-colors flex-shrink-0"
-          )}
+          className="h-5 w-5 flex items-center justify-center rounded hover:bg-accent transition-colors flex-shrink-0"
           title="Collapse sidebar"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-3 w-3" />
         </button>
       </div>
     </div>

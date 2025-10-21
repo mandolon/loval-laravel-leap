@@ -436,16 +436,10 @@ const TasksPage = () => {
   return (
     <div className={`${T.panel} ${T.radius} min-h-0 min-w-0 grid grid-rows-[auto_1fr] overflow-hidden h-full`}>
       {/* Header */}
-      <div className="h-9 px-3 border-b border-slate-200 dark:border-[#1d2230] flex items-center justify-between bg-white dark:border-[#0E1118]">
-        <span className="text-slate-700 dark:text-neutral-200 font-medium">
+      <div className="h-9 px-3 border-b border-slate-200 dark:border-[#1d2230] flex items-center bg-white dark:bg-[#0E1118]">
+        <span className="text-[12px] font-medium">
           {view === 'completed' ? 'Completed Tasks' : view === 'my-tasks' ? 'My Tasks' : 'All Tasks'}
         </span>
-        {workspaceId && projects.length > 0 && (
-          <CreateTaskDialog 
-            projects={projects} 
-            onCreateTask={handleCreateTask}
-          />
-        )}
       </div>
 
       {/* Content */}

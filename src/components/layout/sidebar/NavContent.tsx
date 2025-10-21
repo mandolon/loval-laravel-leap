@@ -8,8 +8,13 @@ import { useState, useEffect } from 'react'
 import { Plus, Folder, CheckSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { CreateProjectDialog } from '@/components/CreateProjectDialog'
+import { CreateTaskDialog } from '@/components/CreateTaskDialog'
 import { supabase } from '@/integrations/supabase/client'
 import { AIChatThreadsList } from '@/components/chat/AIChatThreadsList'
+import { useProjects } from '@/lib/api/hooks/useProjects'
+import { useToast } from '@/hooks/use-toast'
+import { useUser } from '@/contexts/UserContext'
 import type { NavContentProps } from '@/types/layout.types'
 import { DESIGN_TOKENS as T } from '@/lib/design-tokens'
 
@@ -25,8 +30,11 @@ export function NavContent({
 }: NavContentProps) {
   const navigate = useNavigate()
   const location = useLocation()
+  const { toast } = useToast()
+  const { user } = useUser()
   const { workspaceId, id: projectId } = useParams<{ workspaceId: string; id: string }>()
   const [projects, setProjects] = useState<any[]>([])
+  const { data: allProjects = [] } = useProjects(workspaceId || '')
 
   const currentWorkspaceId = workspaceId
 
@@ -134,20 +142,71 @@ export function NavContent({
     }
     const filteredProjects = projects.filter(project => project.status === statusMap[activeStatus])
 
+    const handleCreateProject = async (input: any) => {
+      if (!currentWorkspaceId || !user?.id) {
+        toast({
+          title: "No workspace selected",
+          description: "Please select a workspace first",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      try {
+        const { data: newProject, error } = await supabase
+          .from("projects")
+          .insert({
+            workspace_id: currentWorkspaceId,
+            name: input.name,
+            description: input.description || null,
+            status: input.status || "active",
+            phase: input.phase || "Pre-Design",
+            address: input.address || {},
+            primary_client_first_name: input.primaryClient?.firstName || null,
+            primary_client_last_name: input.primaryClient?.lastName || null,
+            primary_client_email: input.primaryClient?.email || null,
+            primary_client_phone: input.primaryClient?.phone || null,
+            secondary_client_first_name: input.secondaryClient?.firstName || null,
+            secondary_client_last_name: input.secondaryClient?.lastName || null,
+            secondary_client_email: input.secondaryClient?.email || null,
+            secondary_client_phone: input.secondaryClient?.phone || null,
+            created_by: user.id,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        toast({
+          title: "Project created",
+          description: `${newProject.name} has been created successfully`,
+        });
+        loadProjects();
+      } catch (error) {
+        console.error("Error creating project:", error);
+        toast({
+          title: "Error",
+          description: "Failed to create project",
+          variant: "destructive",
+        });
+      }
+    };
+
     return (
       <div className="p-3">
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
             Projects
           </span>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-5 w-5"
-            onClick={() => navigate(getNavPath('/projects'))}
-          >
-            <Plus className="h-3 w-3" />
-          </Button>
+          <CreateProjectDialog onCreateProject={handleCreateProject}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-5 w-5"
+            >
+              <Plus className="h-3 w-3" />
+            </Button>
+          </CreateProjectDialog>
         </div>
         
         <ScrollArea className="max-h-[300px]">
@@ -187,20 +246,34 @@ export function NavContent({
 
   // TaskBoard Tab Content
   if (activeTab === 'taskboard') {
+    const handleCreateTask = (input: any) => {
+      // Task creation is handled by the CreateTaskDialog mutation
+      toast({
+        title: "Task created",
+        description: "Task has been created successfully",
+      });
+    };
+
     return (
       <div className="p-3">
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
             Tasks
           </span>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-5 w-5"
-            onClick={() => navigate(getNavPath('/tasks'))}
-          >
-            <Plus className="h-3 w-3" />
-          </Button>
+          {allProjects.length > 0 && (
+            <CreateTaskDialog 
+              projects={allProjects} 
+              onCreateTask={handleCreateTask}
+            >
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-5 w-5"
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
+            </CreateTaskDialog>
+          )}
         </div>
         
         <ScrollArea className="max-h-[300px]">

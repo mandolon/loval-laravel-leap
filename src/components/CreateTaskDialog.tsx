@@ -11,9 +11,10 @@ import type { CreateTaskInput, Task, Project } from "@/lib/api/types";
 interface CreateTaskDialogProps {
   projects: Project[];
   onCreateTask: (input: CreateTaskInput) => void;
+  children?: React.ReactNode;
 }
 
-export const CreateTaskDialog = ({ projects, onCreateTask }: CreateTaskDialogProps) => {
+export const CreateTaskDialog = ({ projects, onCreateTask, children }: CreateTaskDialogProps) => {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -45,10 +46,12 @@ export const CreateTaskDialog = ({ projects, onCreateTask }: CreateTaskDialogPro
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Task
-        </Button>
+        {children || (
+          <Button size="sm" className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Task
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
