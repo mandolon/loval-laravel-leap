@@ -294,7 +294,7 @@ const ProjectDetails = () => {
         <ResizablePanel defaultSize={chatOpen ? 75 : 100} minSize={50}>
           <div className={`${T.panel} ${T.radius} flex flex-col h-full min-h-0 overflow-hidden`}>
         {/* Header */}
-        <div className="h-12 text-[12px] grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 bg-white dark:bg-[#0E1118]">
+        <div className="h-12 text-[12px] grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 bg-white dark:bg-[#0E1118] border-b border-slate-200 dark:border-[#1a2030]/60">
           {/* Left: Back button */}
           <button
             type="button"
@@ -414,8 +414,7 @@ const ProjectDetails = () => {
 
         {/* Main Content */}
         <div className="flex-1 min-h-0 flex flex-col bg-white dark:bg-[#0F1219]">
-          <div className="h-full flex flex-col">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
               <TabsContent value="files" className="mt-0 flex-1 min-h-0 flex flex-col bg-slate-50 dark:bg-[#0B0E14] p-1">
                 <FilesTab projectId={id || ''} />
               </TabsContent>
@@ -929,7 +928,6 @@ const ProjectDetails = () => {
             </TabsContent>
           </Tabs>
         </div>
-      </div>
       </div>
         </ResizablePanel>
 
