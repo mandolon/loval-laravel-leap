@@ -545,7 +545,7 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps)
 
   // Debug: Log container dimensions
   return (
-    <div ref={containerRef} className="h-full flex flex-col overflow-hidden">
+    <div ref={containerRef} className="h-full flex flex-col overflow-hidden bg-transparent">
       {/* Tab Bar */}
       <TabBar
         tabs={tabs}
@@ -557,7 +557,7 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps)
       />
       
       <div
-        className={`relative flex flex-col border-t-[0.5px] border-l-[1.5px] border-r-[1.5px] border-b-[1.5px] transition-[border-color,box-shadow] duration-150 ${viewerBorderClass}`}
+        className={`relative flex flex-col border-t-[0.5px] border-l-[1.5px] border-r-[1.5px] border-b-[1.5px] transition-[border-color,box-shadow] duration-150 ${viewerBorderClass} bg-white dark:bg-[#0F1219]`}
         style={{ 
           flex: '1 1 0%',
           minHeight: 0,
