@@ -237,7 +237,7 @@ const TasksPage = () => {
     return (
       <tr 
         onClick={() => handleTaskClick(task)}
-        className="hover:bg-gray-100 cursor-pointer border-b border-gray-200"
+        className="hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer border-b border-gray-200 dark:border-gray-700"
       >
         {/* Column 1: Status Dot */}
         <td className="px-3 py-2 text-center">
@@ -253,25 +253,25 @@ const TasksPage = () => {
             <Link 
               to={`/workspace/${project.workspaceId}/project/${project.id}`}
               onClick={(e) => e.stopPropagation()}
-              className="text-gray-500 text-xs leading-tight mb-1 select-text cursor-pointer hover:text-blue-600 hover:underline inline-block"
+              className="text-gray-500 dark:text-gray-400 text-xs leading-tight mb-1 select-text cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline inline-block"
             >
               {addressDisplay}
             </Link>
           ) : (
-            <div className="text-gray-500 text-xs leading-tight mb-1">{addressDisplay}</div>
+            <div className="text-gray-500 dark:text-gray-400 text-xs leading-tight mb-1">{addressDisplay}</div>
           )}
-                  <div className="text-gray-900 font-normal leading-tight" style={{ fontSize: '13px' }}>
+                  <div className="text-gray-900 dark:text-gray-100 font-normal leading-tight" style={{ fontSize: '13px' }}>
                     {task.title}
                   </div>
         </td>
 
         {/* Column 3: Files */}
         <td 
-          className="w-12 px-2 py-2 text-center hover:border-l hover:border-r hover:border-gray-300"
+          className="w-12 px-2 py-2 text-center hover:border-l hover:border-r hover:border-gray-300 dark:hover:border-gray-600"
           onClick={(e) => e.stopPropagation()}
         >
           {fileCount > 0 && (
-            <span className="text-gray-600 text-xs mr-1">{fileCount}</span>
+            <span className="text-gray-600 dark:text-gray-400 text-xs mr-1">{fileCount}</span>
           )}
           <input
             ref={(el) => fileInputRef || el}
@@ -281,7 +281,7 @@ const TasksPage = () => {
             onClick={(e) => e.stopPropagation()}
           />
           <button 
-            className="text-gray-500 hover:text-gray-700 rounded p-0.5 transition-colors inline-flex items-center justify-center"
+            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded p-0.5 transition-colors inline-flex items-center justify-center"
             onClick={(e) => {
               e.stopPropagation();
               const input = e.currentTarget.previousElementSibling as HTMLInputElement;
@@ -299,14 +299,14 @@ const TasksPage = () => {
 
         {/* Column 4: Date Created */}
         <td 
-          className="w-20 px-2 py-2 text-gray-600 whitespace-nowrap hover:border-l hover:border-r hover:border-gray-300" 
+          className="w-20 px-2 py-2 text-gray-600 dark:text-gray-400 whitespace-nowrap hover:border-l hover:border-r hover:border-gray-300 dark:hover:border-gray-600" 
           style={{ fontSize: '14px' }}
         >
           {formatDate(task.createdAt)}
         </td>
 
         {/* Column 5: Created By */}
-        <td className="w-16 px-2 py-2 text-center hover:border-l hover:border-r hover:border-gray-300">
+        <td className="w-16 px-2 py-2 text-center hover:border-l hover:border-r hover:border-gray-300 dark:hover:border-gray-600">
           <div className="flex justify-center">
             <UserAvatar 
               user={{
@@ -320,7 +320,7 @@ const TasksPage = () => {
 
         {/* Column 6: Assigned To */}
         <td 
-          className="w-16 px-2 py-2 text-center hover:border-l hover:border-r hover:border-gray-300"
+          className="w-16 px-2 py-2 text-center hover:border-l hover:border-r hover:border-gray-300 dark:hover:border-gray-600"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex gap-1 justify-center items-center">
@@ -335,13 +335,13 @@ const TasksPage = () => {
               />
             ))}
             {assignees.length > 2 && (
-              <div className="w-6 h-6 rounded-full bg-gray-400 border-2 border-white flex items-center justify-center text-white font-semibold text-[9px]">
+              <div className="w-6 h-6 rounded-full bg-gray-400 dark:bg-gray-600 border-2 border-white dark:border-gray-800 flex items-center justify-center text-white font-semibold text-[9px]">
                 +{assignees.length - 2}
               </div>
             )}
             <Popover open={isAssignPopoverOpen} onOpenChange={setIsAssignPopoverOpen}>
               <PopoverTrigger asChild>
-                <button className="text-gray-400 hover:text-gray-600">
+                <button className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
                   <UserPlus size={16} />
                 </button>
               </PopoverTrigger>
@@ -418,11 +418,11 @@ const TasksPage = () => {
           className="flex items-center gap-4 mb-3 cursor-pointer"
           onClick={() => toggleSection(status)}
         >
-          <button className="p-0 text-gray-600 hover:text-gray-900">
+          <button className="p-0 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
             {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
           </button>
           <Badge className={config.color}>{config.label}</Badge>
-          <span className="text-gray-500 text-xs font-medium">{config.count}</span>
+          <span className="text-gray-500 dark:text-gray-400 text-xs font-medium">{config.count}</span>
         </div>
 
         {/* Table */}
@@ -430,13 +430,13 @@ const TasksPage = () => {
           <div className="overflow-visible pl-8">
             <table className="w-full border-collapse text-xs">
               <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="w-8 px-3 py-1.5 text-left font-semibold text-gray-700 text-xs"></th>
-                  <th className="px-3 py-1.5 text-left font-semibold text-gray-700 text-xs">Name</th>
-                  <th className="w-12 px-2 py-1.5 text-center font-semibold text-gray-700 text-xs whitespace-nowrap">Files</th>
-                  <th className="w-20 px-2 py-1.5 text-left font-semibold text-gray-700 text-xs whitespace-nowrap">Date</th>
-                  <th className="w-16 px-2 py-1.5 text-center font-semibold text-gray-700 text-xs whitespace-nowrap">Created</th>
-                  <th className="w-16 px-2 py-1.5 text-center font-semibold text-gray-700 text-xs whitespace-nowrap">Assigned</th>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <th className="w-8 px-3 py-1.5 text-left font-semibold text-gray-700 dark:text-gray-300 text-xs"></th>
+                  <th className="px-3 py-1.5 text-left font-semibold text-gray-700 dark:text-gray-300 text-xs">Name</th>
+                  <th className="w-12 px-2 py-1.5 text-center font-semibold text-gray-700 dark:text-gray-300 text-xs whitespace-nowrap">Files</th>
+                  <th className="w-20 px-2 py-1.5 text-left font-semibold text-gray-700 dark:text-gray-300 text-xs whitespace-nowrap">Date</th>
+                  <th className="w-16 px-2 py-1.5 text-center font-semibold text-gray-700 dark:text-gray-300 text-xs whitespace-nowrap">Created</th>
+                  <th className="w-16 px-2 py-1.5 text-center font-semibold text-gray-700 dark:text-gray-300 text-xs whitespace-nowrap">Assigned</th>
                   <th className="w-32 pr-8"></th>
                 </tr>
               </thead>
@@ -463,11 +463,11 @@ const TasksPage = () => {
                 {!showQuickAdd && (
                   <button
                     onClick={() => setShowQuickAdd(true)}
-                    className="flex items-center hover:text-gray-900 hover:bg-gray-100 px-2 py-1.5 rounded transition-colors group"
+                    className="flex items-center hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 px-2 py-1.5 rounded transition-colors group"
                     style={{ fontSize: '14px' }}
                   >
-                    <Plus size={14} className="text-gray-600 group-hover:text-gray-600 mr-3" />
-                    <span className="text-gray-400 group-hover:text-gray-900">Add Task</span>
+                    <Plus size={14} className="text-gray-600 dark:text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 mr-3" />
+                    <span className="text-gray-400 dark:text-gray-500 group-hover:text-gray-900 dark:group-hover:text-gray-100">Add Task</span>
                   </button>
                 )}
               </div>
