@@ -5,7 +5,7 @@
 
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
-import { SidebarHeader, NavIcons, NavContent, ProjectFilters, SidebarFooter } from './sidebar'
+import { SidebarHeader, NavIcons, NavContent, ProjectFilters, SidebarFooter } from './sidebar/index'
 import { useLayout } from '@/contexts/LayoutContext'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { PageType, TaskTab, SidebarTab, ProjectStatus } from '@/types/layout.types'
