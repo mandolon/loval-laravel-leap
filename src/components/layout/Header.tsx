@@ -21,31 +21,23 @@ export function Header({ onNavigateProfile, onNavigateTrash, onLogout }: HeaderP
   }
 
   return (
-    <header className="h-[60px] bg-card flex items-center px-4 gap-4 flex-shrink-0">
-      {/* Left: User Name */}
-      <div className="flex items-center gap-3 min-w-0">
-        {user && (
-          <span className="text-[14px] font-medium text-foreground truncate">
-            {user.name}
-          </span>
-        )}
-      </div>
+    <header className="h-[60px] bg-card flex items-center justify-between px-4 gap-4 flex-shrink-0">
+      {/* Left spacer */}
+      <div className="w-8"></div>
 
       {/* Center: Compact Search Bar */}
-      <div className="flex-1 flex justify-center">
-        <div className="w-64">
+      <div className="flex justify-center">
+        <div className="w-48">
           <SearchBar onSearch={handleSearch} />
         </div>
       </div>
 
       {/* Right: Avatar Menu */}
-      <div className="flex items-center gap-2">
-        <UserMenu
-          onNavigateProfile={onNavigateProfile}
-          onNavigateTrash={onNavigateTrash}
-          onLogout={onLogout}
-        />
-      </div>
+      <UserMenu
+        onNavigateProfile={onNavigateProfile}
+        onNavigateTrash={onNavigateTrash}
+        onLogout={onLogout}
+      />
     </header>
   )
 }
