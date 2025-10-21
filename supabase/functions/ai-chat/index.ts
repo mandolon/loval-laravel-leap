@@ -90,6 +90,74 @@ const tools = [
         required: ["project_id", "status"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "read_folder",
+      description: "Read and list files in a project folder. Use this when the user asks about files in a specific phase folder.",
+      parameters: {
+        type: "object",
+        properties: {
+          project_id: {
+            type: "string",
+            description: "UUID of the project"
+          },
+          folder: {
+            type: "string",
+            enum: ["Pre-Design", "Design", "Permit", "Build"],
+            description: "Which project folder to read"
+          }
+        },
+        required: ["project_id", "folder"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_note",
+      description: "Create a note file in the project Design folder. Use this when the user wants to document decisions or findings.",
+      parameters: {
+        type: "object",
+        properties: {
+          project_id: {
+            type: "string",
+            description: "UUID of the project"
+          },
+          title: {
+            type: "string",
+            description: "Title of the note"
+          },
+          content: {
+            type: "string",
+            description: "Markdown content of the note"
+          }
+        },
+        required: ["project_id", "title", "content"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_metadata",
+      description: "Update the project.meta.md file with new decisions or information.",
+      parameters: {
+        type: "object",
+        properties: {
+          project_id: {
+            type: "string",
+            description: "UUID of the project"
+          },
+          content: {
+            type: "string",
+            description: "Full markdown content for project.meta.md"
+          }
+        },
+        required: ["project_id", "content"]
+      }
+    }
   }
 ];
 
@@ -193,6 +261,23 @@ YOUR CAPABILITIES:
 - create_task: Create new tasks in projects
 - update_task_status: Update task status
 - update_project_status: Update project status or phase
+- read_folder: Read and list files in a project folder (Pre-Design, Design, Permit, Build)
+- create_note: Create a note file in the Design folder
+- update_metadata: Update the project.meta.md file with decisions
+
+EXAMPLE TOOL CALLS:
+
+Example 4 - Read project files:
+User: "What files do we have in the Design folder?"
+You call: read_folder(project_id="${projectId || 'PROJECT_UUID_HERE'}", folder="Design")
+
+Example 5 - Create a note:
+User: "Create a note about the zoning constraints we discussed"
+You call: create_note(
+  project_id="${projectId || 'PROJECT_UUID_HERE'}",
+  title="Zoning Constraints",
+  content="## Key Constraints\\n- 15' front setback\\n- 8' side setback\\n- FAR 3.5 maximum"
+)
 
 Keep responses clear, concise, and actionable.`;
 
@@ -333,6 +418,334 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
         project: data,
         message: `Project has been updated to ${status}${phase ? ` in ${phase} phase` : ""}.`
       };
+    }
+
+    case "read_folder": {
+      const { project_id, folder } = args;
+
+      // Validate UUID
+      const uuidValidation = validateUUID(project_id);
+      if (!uuidValidation.valid) {
+        return {
+          success: false,
+          error: `❌ ${uuidValidation.error}`
+        };
+      }
+
+      // Verify project exists
+      const projectCheck = await verifyProjectExists(project_id, supabase);
+      if (!projectCheck.exists) {
+        return { success: false, error: projectCheck.error };
+      }
+
+      try {
+        // Query files in folder
+        const { data: folderRecord } = await supabase
+          .from("folders")
+          .select("id")
+          .eq("project_id", project_id)
+          .eq("name", folder)
+          .single();
+
+        if (!folderRecord) {
+          return {
+            success: true,
+            data: {
+              message: `No files in ${folder} folder`,
+              content: `No files in ${folder} folder`
+            }
+          };
+        }
+
+        const { data: files } = await supabase
+          .from("files")
+          .select("*")
+          .eq("folder_id", folderRecord.id)
+          .is("deleted_at", null)
+          .order("created_at");
+
+        if (!files || files.length === 0) {
+          return {
+            success: true,
+            data: {
+              message: `No files in ${folder} folder`,
+              content: `No files in ${folder} folder`
+            }
+          };
+        }
+
+        let summary = `\n## Files in ${folder} Folder\n`;
+        summary += `Total files: ${files.length}\n\n`;
+
+        for (const file of files) {
+          summary += `### ${file.filename}\n`;
+          summary += `- Version: ${file.version_number || 1}\n`;
+          summary += `- Size: ${((file.filesize || 0) / 1024).toFixed(2)} KB\n`;
+          summary += `- Modified: ${new Date(file.updated_at).toLocaleDateString()}\n\n`;
+        }
+
+        return {
+          success: true,
+          data: {
+            message: `✅ Retrieved ${files.length} file(s) from ${folder}`,
+            content: summary
+          }
+        };
+      } catch (error: any) {
+        return {
+          success: false,
+          error: `Failed to read folder: ${error.message}`
+        };
+      }
+    }
+
+    case "create_note": {
+      const { project_id, title, content } = args;
+
+      // Validate UUID
+      const uuidValidation = validateUUID(project_id);
+      if (!uuidValidation.valid) {
+        return {
+          success: false,
+          error: `❌ ${uuidValidation.error}`
+        };
+      }
+
+      // Verify project exists
+      const projectCheck = await verifyProjectExists(project_id, supabase);
+      if (!projectCheck.exists) {
+        return { success: false, error: projectCheck.error };
+      }
+
+      try {
+        // Generate filename from title
+        const filename = `${title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "")}.md`;
+
+        // Format content as markdown
+        const markdownContent = `# ${title}\n\n${content}\n\n---\n_Created: ${new Date().toISOString()}_`;
+
+        // Get Design folder
+        let { data: folderRecord } = await supabase
+          .from("folders")
+          .select("id")
+          .eq("project_id", project_id)
+          .eq("name", "Design")
+          .single();
+
+        if (!folderRecord) {
+          const createFolderResult = await supabase
+            .from("folders")
+            .insert({
+              project_id,
+              name: "Design",
+              is_system_folder: true,
+              path: "/Design",
+              created_by: userId
+            })
+            .select()
+            .single();
+
+          if (createFolderResult.error) {
+            return {
+              success: false,
+              error: `Failed to create folder: ${createFolderResult.error.message}`
+            };
+          }
+
+          folderRecord = createFolderResult.data;
+        }
+
+        // Upload to storage
+        const storagePath = `${project_id}/Design/${filename}`;
+        const { error: uploadError } = await supabase.storage
+          .from("project-files")
+          .upload(storagePath, markdownContent, { upsert: false });
+
+        if (uploadError) {
+          if (uploadError.message.includes("already exists")) {
+            return {
+              success: false,
+              error: `File "${filename}" already exists in Design folder`
+            };
+          }
+          return { success: false, error: `Upload failed: ${uploadError.message}` };
+        }
+
+        // Record in database
+        const size = new Blob([markdownContent]).size;
+        const { data: fileRecord, error: dbError } = await supabase
+          .from("files")
+          .insert({
+            project_id,
+            folder_id: folderRecord.id,
+            filename,
+            storage_path: storagePath,
+            filesize: size,
+            mimetype: "text/markdown",
+            uploaded_by: userId,
+            version_number: 1
+          })
+          .select()
+          .single();
+
+        if (dbError) {
+          // Clean up uploaded file if DB insert fails
+          await supabase.storage.from("project-files").remove([storagePath]);
+          return { success: false, error: `Database record failed: ${dbError.message}` };
+        }
+
+        return {
+          success: true,
+          data: {
+            fileId: fileRecord.id,
+            message: `✅ Created note: "${title}" in Design folder`
+          }
+        };
+      } catch (error: any) {
+        return {
+          success: false,
+          error: `Error creating note: ${error.message}`
+        };
+      }
+    }
+
+    case "update_metadata": {
+      const { project_id, content } = args;
+
+      // Validate UUID
+      const uuidValidation = validateUUID(project_id);
+      if (!uuidValidation.valid) {
+        return {
+          success: false,
+          error: `❌ ${uuidValidation.error}`
+        };
+      }
+
+      // Verify project exists
+      const projectCheck = await verifyProjectExists(project_id, supabase);
+      if (!projectCheck.exists) {
+        return { success: false, error: projectCheck.error };
+      }
+
+      try {
+        // Check if project.meta.md exists
+        const { data: existing } = await supabase
+          .from("files")
+          .select("id, storage_path, version_number")
+          .eq("project_id", project_id)
+          .eq("filename", "project.meta.md")
+          .single();
+
+        if (existing) {
+          // Update existing file
+          const { error: uploadError } = await supabase.storage
+            .from("project-files")
+            .update(existing.storage_path, content, { upsert: true });
+
+          if (uploadError) {
+            return { success: false, error: `Upload failed: ${uploadError.message}` };
+          }
+
+          const newVersion = (existing.version_number || 1) + 1;
+          const size = new Blob([content]).size;
+
+          const { error: dbError } = await supabase
+            .from("files")
+            .update({
+              version_number: newVersion,
+              filesize: size,
+              updated_at: new Date().toISOString()
+            })
+            .eq("id", existing.id);
+
+          if (dbError) {
+            return { success: false, error: `Version update failed: ${dbError.message}` };
+          }
+
+          return {
+            success: true,
+            data: {
+              message: `✅ Updated project.meta.md (version ${newVersion})`
+            }
+          };
+        } else {
+          // Create new in Pre-Design folder
+          let { data: folderRecord } = await supabase
+            .from("folders")
+            .select("id")
+            .eq("project_id", project_id)
+            .eq("name", "Pre-Design")
+            .single();
+
+          if (!folderRecord) {
+            const createFolderResult = await supabase
+              .from("folders")
+              .insert({
+                project_id,
+                name: "Pre-Design",
+                is_system_folder: true,
+                path: "/Pre-Design",
+                created_by: userId
+              })
+              .select()
+              .single();
+
+            if (createFolderResult.error) {
+              return {
+                success: false,
+                error: `Failed to create folder: ${createFolderResult.error.message}`
+              };
+            }
+
+            folderRecord = createFolderResult.data;
+          }
+
+          const storagePath = `${project_id}/Pre-Design/project.meta.md`;
+          const { error: uploadError } = await supabase.storage
+            .from("project-files")
+            .upload(storagePath, content, { upsert: false });
+
+          if (uploadError) {
+            return { success: false, error: `Upload failed: ${uploadError.message}` };
+          }
+
+          const size = new Blob([content]).size;
+          const { error: dbError } = await supabase
+            .from("files")
+            .insert({
+              project_id,
+              folder_id: folderRecord.id,
+              filename: "project.meta.md",
+              storage_path: storagePath,
+              filesize: size,
+              mimetype: "text/markdown",
+              uploaded_by: userId,
+              version_number: 1
+            })
+            .select()
+            .single();
+
+          if (dbError) {
+            await supabase.storage.from("project-files").remove([storagePath]);
+            return { success: false, error: `Database record failed: ${dbError.message}` };
+          }
+
+          return {
+            success: true,
+            data: {
+              message: `✅ Created project.meta.md in Pre-Design folder`
+            }
+          };
+        }
+      } catch (error: any) {
+        return {
+          success: false,
+          error: `Error updating metadata: ${error.message}`
+        };
+      }
     }
 
     default:
