@@ -119,7 +119,11 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
 
       if (error) {
         console.error("Error creating task:", error);
-        return { success: false, error: error.message };
+        return { 
+          success: false, 
+          error: error.message,
+          hint: "Make sure you're using the Project ID (UUID format like 'a1b2c3d4-...'), not the project name. Check the Project Context for the correct ID."
+        };
       }
 
       return { 
@@ -212,6 +216,9 @@ You have access to tools that allow you to perform actions:
 - create_task: Create new tasks in projects
 - update_task_status: Update task status (mark as complete, in progress, etc.)
 - update_project_status: Update project status or phase
+
+CRITICAL: When using tools, you MUST use the exact Project ID (UUID format) provided in the context, NOT the project name.
+The context will show "IMPORTANT - Project ID (use this for all tool calls): <uuid>" - always use this UUID value for project_id parameters.
 
 When a user asks you to perform an action, use the appropriate tool. Always confirm what you've done in a natural, conversational way.
 
