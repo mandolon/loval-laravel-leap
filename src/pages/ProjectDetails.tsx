@@ -46,6 +46,7 @@ import { EditProjectPhaseDialog } from "@/components/project/EditProjectPhaseDia
 import { EditProjectEstimatedAmountDialog } from "@/components/project/EditProjectEstimatedAmountDialog";
 import { EditProjectNameDialog } from "@/components/project/EditProjectNameDialog";
 import { ProjectMembersTable } from "@/components/project/ProjectMembersTable";
+import ProjectClientSettingsReal from "@/components/project/ProjectClientSettingsReal";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
@@ -293,601 +294,100 @@ const ProjectDetails = () => {
       <ResizablePanelGroup direction="horizontal" className="h-full">
         <ResizablePanel defaultSize={chatOpen ? 75 : 100} minSize={50}>
           <div className={`${T.panel} ${T.radius} flex flex-col h-full min-h-0 overflow-hidden`}>
-        {/* Header */}
-        <div className="h-12 text-[12px] grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 bg-white dark:bg-[#0E1118] border-b border-slate-200 dark:border-[#1a2030]/60">
-          {/* Left: Back button */}
-          <button
-            type="button"
-            title="Back"
-            onClick={() => navigate(workspaceId ? `/workspace/${workspaceId}/projects` : "/projects")}
-            className="h-8 w-8 grid place-items-center rounded-[8px] text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28] focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
-
-          {/* Center: Tabs (centered) */}
-          <div className="min-w-0 flex justify-center">
-            <div className="px-1 py-0.5 bg-slate-100 dark:bg-[#0E1118] rounded-[8px] flex gap-1">
-              <button
-                type="button"
-                onClick={() => setActiveTab("files")}
-                className={`px-2.5 py-1 rounded-[8px] transition-colors focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 ${
-                  activeTab === "files"
-                    ? "bg-white dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium"
-                    : "text-slate-500 dark:text-neutral-400 hover:bg-white/60 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300"
-                }`}
-              >
-                Files
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("tasks")}
-                className={`px-2.5 py-1 rounded-[8px] transition-colors focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 ${
-                  activeTab === "tasks"
-                    ? "bg-white dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium"
-                    : "text-slate-500 dark:text-neutral-400 hover:bg-white/60 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300"
-                }`}
-              >
-                Tasks
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("invoices")}
-                className={`px-2.5 py-1 rounded-[8px] transition-colors focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 ${
-                  activeTab === "invoices"
-                    ? "bg-white dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium"
-                    : "text-slate-500 dark:text-neutral-400 hover:bg-white/60 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300"
-                }`}
-              >
-                Invoices
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("links")}
-                className={`px-2.5 py-1 rounded-[8px] transition-colors focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 ${
-                  activeTab === "links"
-                    ? "bg-white dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium"
-                    : "text-slate-500 dark:text-neutral-400 hover:bg-white/60 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300"
-                }`}
-              >
-                Links
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("project")}
-                className={`px-2.5 py-1 rounded-[8px] transition-colors focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 ${
-                  activeTab === "project"
-                    ? "bg-white dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium"
-                    : "text-slate-500 dark:text-neutral-400 hover:bg-white/60 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300"
-                }`}
-              >
-                Project
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("client")}
-                className={`px-2.5 py-1 rounded-[8px] transition-colors focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 ${
-                  activeTab === "client"
-                    ? "bg-white dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium"
-                    : "text-slate-500 dark:text-neutral-400 hover:bg-white/60 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300"
-                }`}
-              >
-                Client
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("notes")}
-                className={`px-2.5 py-1 rounded-[8px] transition-colors focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 ${
-                  activeTab === "notes"
-                    ? "bg-white dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium"
-                    : "text-slate-500 dark:text-neutral-400 hover:bg-white/60 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300"
-                }`}
-              >
-                Notes
-              </button>
+            {/* Main Content - Using new ProjectClientSettingsReal component */}
+            <div className="flex-1 min-h-0 overflow-auto">
+              <ProjectClientSettingsReal
+                project={project}
+                onUpdate={handleUpdateProject}
+                onBack={() => navigate(workspaceId ? `/workspace/${workspaceId}/projects` : "/projects")}
+                onToggleChat={setChatOpen}
+                defaultChatOpen={chatOpen}
+                filesContent={<FilesTab projectId={id || ''} />}
+                tasksContent={
+                  <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-2xl font-bold text-slate-700 dark:text-neutral-300">Tasks</h2>
+                      <CreateTaskDialog projects={[project]} onCreateTask={handleCreateTask} />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold text-lg text-slate-700 dark:text-neutral-300">Task/Redline</h3>
+                          <Badge className="bg-red-500 text-white border-0">{taskRedlineTasks.length}</Badge>
+                        </div>
+                        <div className="space-y-3">
+                          {taskRedlineTasks.map(task => (
+                            <TaskItem key={task.id} task={task} assignees={getTaskAssignees(task.assignees)} onStatusChange={handleStatusChange} onDelete={handleDeleteTask} />
+                          ))}
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold text-lg text-slate-700 dark:text-neutral-300">Progress/Update</h3>
+                          <Badge className="bg-[#00639b] text-white border-0">{progressUpdateTasks.length}</Badge>
+                        </div>
+                        <div className="space-y-3">
+                          {progressUpdateTasks.map(task => (
+                            <TaskItem key={task.id} task={task} assignees={getTaskAssignees(task.assignees)} onStatusChange={handleStatusChange} onDelete={handleDeleteTask} />
+                          ))}
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold text-lg text-slate-700 dark:text-neutral-300">Complete</h3>
+                          <Badge className="bg-green-500 text-white border-0">{completeTasks.length}</Badge>
+                        </div>
+                        <div className="space-y-3">
+                          {completeTasks.map(task => (
+                            <TaskItem key={task.id} task={task} assignees={getTaskAssignees(task.assignees)} onStatusChange={handleStatusChange} onDelete={handleDeleteTask} />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                }
+                invoicesContent={
+                  <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div><h2 className="text-2xl font-bold">Invoices</h2></div>
+                      <CreateInvoiceDialog projectId={id || ''} />
+                    </div>
+                    {invoiceViewMode === 'card' ? (
+                      <div className="grid gap-6 md:grid-cols-2">
+                        {invoices.map(invoice => (
+                          <InvoiceCard key={invoice.id} invoice={invoice} project={{ name: project.name, address: project.address }} onView={(inv) => { setSelectedInvoice(inv); setViewInvoiceOpen(true); }} onEdit={(inv) => { setSelectedInvoice(inv); setEditInvoiceOpen(true); }} onDelete={(id) => deleteInvoiceMutation.mutate(id)} onDownloadPDF={handleDownloadPDF} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="space-y-2">{invoices.map(invoice => <InvoiceListItem key={invoice.id} invoice={invoice} project={{ name: project.name, address: project.address }} onView={(inv) => { setSelectedInvoice(inv); setViewInvoiceOpen(true); }} onEdit={(inv) => { setSelectedInvoice(inv); setEditInvoiceOpen(true); }} onDelete={(id) => deleteInvoiceMutation.mutate(id)} onDownloadPDF={handleDownloadPDF} />)}</div>
+                    )}
+                  </div>
+                }
+                linksContent={
+                  <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div><h2 className="text-2xl font-bold">Links</h2></div>
+                      <CreateLinkDialog projectId={id || ''} />
+                    </div>
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                      {links.map(link => <LinkCard key={link.id} link={link} onEdit={(link) => { setSelectedLink(link); setEditLinkOpen(true); }} onDelete={(id) => deleteLinkMutation.mutate({ id, projectId: id || '' })} />)}
+                    </div>
+                  </div>
+                }
+                notesContent={
+                  <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div><h2 className="text-2xl font-bold">Notes</h2></div>
+                      <CreateNoteDialog onCreateNote={(content) => createNoteMutation.mutate({ projectId: id || '', content })} />
+                    </div>
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                      {notes.map(note => <NoteCard key={note.id} note={note} onUpdate={(id, content) => updateNoteMutation.mutate({ id, content })} onDelete={(id) => deleteNoteMutation.mutate(id)} />)}
+                    </div>
+                  </div>
+                }
+              />
             </div>
           </div>
-
-          {/* Right: Chat toggle button */}
-          <button
-            type="button"
-            title={chatOpen ? "Collapse chat" : "Expand chat"}
-            onClick={() => setChatOpen(!chatOpen)}
-            className="h-8 w-8 grid place-items-center rounded-[8px] text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28] focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 relative"
-          >
-            {chatOpen ? (
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6l6 6-6 6" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3h9m-9 3h5.25M21 12c0 4.97-4.03 9-9 9a8.96 8.96 0 01-4.49-1.18L3 21l1.18-4.49A8.96 8.96 0 013 12c0-4.97 4.03-9 9-9s9 4.03 9 9z" />
-              </svg>
-            )}
-            {messages.length > 0 && (
-              <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-[10px] bg-red-500 text-white rounded-full font-medium">
-                {messages.length}
-              </span>
-            )}
-          </button>
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 min-h-0 flex flex-col">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
-              <TabsContent value="files" className="mt-0 flex-1 min-h-0 flex flex-col">
-                <FilesTab projectId={id || ''} />
-              </TabsContent>
-
-            <TabsContent value="tasks" className="h-full overflow-auto">
-              <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-slate-700 dark:text-neutral-300">Tasks</h2>
-                  <CreateTaskDialog projects={[project]} onCreateTask={handleCreateTask} />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Task/Redline Column */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-lg text-slate-700 dark:text-neutral-300">Task/Redline</h3>
-                    <Badge className="bg-red-500 dark:bg-red-500/20 text-white dark:text-red-300 border-0">{taskRedlineTasks.length}</Badge>
-                  </div>
-                  <div className="space-y-3">
-                    {taskRedlineTasks.length === 0 ? (
-                      <p className="text-sm text-slate-500 dark:text-neutral-400 text-center py-8">No tasks</p>
-                    ) : (
-                      taskRedlineTasks.map(task => (
-                        <TaskItem
-                          key={task.id}
-                          task={task}
-                          assignees={getTaskAssignees(task.assignees)}
-                          onStatusChange={handleStatusChange}
-                          onDelete={handleDeleteTask}
-                        />
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* Progress/Update Column */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-lg text-slate-700 dark:text-neutral-300">Progress/Update</h3>
-                    <Badge className="bg-[#00639b] dark:bg-blue-500/20 text-white dark:text-blue-300 border-0">{progressUpdateTasks.length}</Badge>
-                  </div>
-                  <div className="space-y-3">
-                    {progressUpdateTasks.length === 0 ? (
-                      <p className="text-sm text-slate-500 dark:text-neutral-400 text-center py-8">No tasks</p>
-                    ) : (
-                      progressUpdateTasks.map(task => (
-                        <TaskItem
-                          key={task.id}
-                          task={task}
-                          assignees={getTaskAssignees(task.assignees)}
-                          onStatusChange={handleStatusChange}
-                          onDelete={handleDeleteTask}
-                        />
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* Complete Column */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-lg text-slate-700 dark:text-neutral-300">Complete</h3>
-                    <Badge className="bg-green-500 dark:bg-green-500/20 text-white dark:text-green-300 border-0">{completeTasks.length}</Badge>
-                  </div>
-                  <div className="space-y-3">
-                    {completeTasks.length === 0 ? (
-                      <p className="text-sm text-slate-500 dark:text-neutral-400 text-center py-8">No tasks</p>
-                    ) : (
-                      completeTasks.map(task => (
-                        <TaskItem
-                          key={task.id}
-                          task={task}
-                          assignees={getTaskAssignees(task.assignees)}
-                          onStatusChange={handleStatusChange}
-                          onDelete={handleDeleteTask}
-                        />
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="invoices" className="h-full overflow-auto">
-              <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-2xl font-bold text-slate-700 dark:text-neutral-300">Invoices</h2>
-                    <p className="text-slate-500 dark:text-neutral-400">Manage project invoices and billing</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="flex border rounded-md">
-                      <Button
-                        variant={invoiceViewMode === 'card' ? 'default' : 'ghost'}
-                        size="sm"
-                        onClick={() => setInvoiceViewMode('card')}
-                        className={`rounded-r-none ${invoiceViewMode === 'card' ? 'bg-[#00639b] dark:bg-[#141C28] text-white dark:text-blue-300' : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28]'}`}
-                      >
-                        <LayoutGrid className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant={invoiceViewMode === 'list' ? 'default' : 'ghost'}
-                        size="sm"
-                        onClick={() => setInvoiceViewMode('list')}
-                        className={`rounded-l-none ${invoiceViewMode === 'list' ? 'bg-[#00639b] dark:bg-[#141C28] text-white dark:text-blue-300' : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28]'}`}
-                      >
-                        <List className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <CreateInvoiceDialog projectId={id || ''} />
-                  </div>
-                </div>
-
-                {invoicesLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <p className="text-slate-500 dark:text-neutral-400">Loading invoices...</p>
-                  </div>
-                ) : invoices.length === 0 ? (
-                  <Card className={`${T.panel} ${T.radius}`}>
-                    <CardContent className="py-12">
-                      <p className="text-center text-slate-500 dark:text-neutral-400">No invoices yet. Create your first invoice to get started.</p>
-                    </CardContent>
-                  </Card>
-                ) : invoiceViewMode === 'card' ? (
-                  <div className="grid gap-6 md:grid-cols-2">
-                    {invoices.map((invoice) => (
-                      <InvoiceCard
-                        key={invoice.id}
-                        invoice={invoice}
-                        project={{ name: project.name, address: project.address }}
-                        onView={(inv) => {
-                          setSelectedInvoice(inv);
-                          setViewInvoiceOpen(true);
-                        }}
-                        onEdit={(inv) => {
-                          setSelectedInvoice(inv);
-                          setEditInvoiceOpen(true);
-                        }}
-                        onDelete={(invoiceId) => {
-                          if (confirm('Are you sure you want to delete this invoice?')) {
-                            deleteInvoiceMutation.mutate(invoiceId);
-                          }
-                        }}
-                        onDownloadPDF={handleDownloadPDF}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {invoices.map((invoice) => (
-                      <InvoiceListItem
-                        key={invoice.id}
-                        invoice={invoice}
-                        project={{ name: project.name, address: project.address }}
-                        onView={(inv) => {
-                          setSelectedInvoice(inv);
-                          setViewInvoiceOpen(true);
-                        }}
-                        onEdit={(inv) => {
-                          setSelectedInvoice(inv);
-                          setEditInvoiceOpen(true);
-                        }}
-                        onDelete={(invoiceId) => {
-                          if (confirm('Are you sure you want to delete this invoice?')) {
-                            deleteInvoiceMutation.mutate(invoiceId);
-                          }
-                        }}
-                        onDownloadPDF={handleDownloadPDF}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <ViewInvoiceDialog
-                invoice={selectedInvoice}
-                open={viewInvoiceOpen}
-                onOpenChange={setViewInvoiceOpen}
-                project={{ name: project.name, address: project.address }}
-              />
-
-              <EditInvoiceDialog
-                invoice={selectedInvoice}
-                open={editInvoiceOpen}
-                onOpenChange={setEditInvoiceOpen}
-                projectId={id || ''}
-                project={{ name: project.name, address: project.address }}
-              />
-            </TabsContent>
-
-            <TabsContent value="links" className="h-full overflow-auto">
-              <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-2xl font-bold text-slate-700 dark:text-neutral-300">Links</h2>
-                    <p className="text-slate-500 dark:text-neutral-400">Reference links and resources</p>
-                  </div>
-                  <CreateLinkDialog projectId={id || ''} />
-                </div>
-
-                {linksLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <p className="text-slate-500 dark:text-neutral-400">Loading links...</p>
-                  </div>
-                ) : links.length === 0 ? (
-                  <Card className={`${T.panel} ${T.radius}`}>
-                    <CardContent className="py-12">
-                      <p className="text-center text-slate-500 dark:text-neutral-400">
-                        No links yet. Add your first reference link to get started.
-                      </p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {links.map((link) => (
-                      <LinkCard
-                        key={link.id}
-                        link={link}
-                        onEdit={(link) => {
-                          setSelectedLink(link);
-                          setEditLinkOpen(true);
-                        }}
-                        onDelete={(linkId) => {
-                          if (confirm('Are you sure you want to delete this link?')) {
-                            deleteLinkMutation.mutate({ id: linkId, projectId: id || '' });
-                          }
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <EditLinkDialog
-                link={selectedLink}
-                open={editLinkOpen}
-                onOpenChange={setEditLinkOpen}
-              />
-            </TabsContent>
-
-            <TabsContent value="project" className="h-full overflow-auto">
-              <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
-              {/* Project Name */}
-              <Card className={`${T.panel} ${T.radius}`}>
-                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
-                  <div>
-                    <CardTitle>Project Name</CardTitle>
-                  </div>
-                  <EditProjectNameDialog
-                    name={project.name}
-                    onUpdate={(name) => handleUpdateProject({ name })}
-                  />
-                </CardHeader>
-                <CardContent>
-                  <p className="font-medium text-lg text-slate-700 dark:text-neutral-300">{project.name}</p>
-                </CardContent>
-              </Card>
-
-              {/* Project Address */}
-              <Card className={`${T.panel} ${T.radius}`}>
-                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
-                  <div>
-                    <CardTitle>Project Address</CardTitle>
-                  </div>
-                  <EditProjectAddressDialog
-                    address={project.address}
-                    onUpdate={(address) => handleUpdateProject({ address })}
-                  />
-                </CardHeader>
-                <CardContent>
-                  <p className="font-medium text-slate-700 dark:text-neutral-300">
-                    {typeof project.address === 'object' && project.address 
-                      ? (() => {
-                          const { streetNumber, streetName, city, state, zipCode } = project.address;
-                          const street = [streetNumber, streetName].filter(Boolean).join(' ');
-                          const cityState = [city, state].filter(Boolean).join(', ');
-                          const parts = [street, cityState, zipCode].filter(Boolean);
-                          return parts.length > 0 ? parts.join(', ') : 'No address provided';
-                        })()
-                      : 'No address provided'}
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* Project Narrative */}
-              <Card className={`${T.panel} ${T.radius}`}>
-                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
-                  <div>
-                    <CardTitle>Project Description</CardTitle>
-                  </div>
-                  <EditProjectDetailsDialog
-                    description={project.description}
-                    onUpdate={(description) => handleUpdateProject({ description })}
-                  />
-                </CardHeader>
-                <CardContent>
-                  <p className="text-slate-500 dark:text-neutral-400">{project.description || "No description provided yet. Click edit to add project details."}</p>
-                </CardContent>
-              </Card>
-
-              {/* Project Status, Phase, and Design Fee in a row */}
-              <div className="grid grid-cols-3 gap-6">
-                <Card className={`${T.panel} ${T.radius}`}>
-                  <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
-                    <div>
-                      <CardTitle>Status</CardTitle>
-                    </div>
-                    <EditProjectStatusDialog
-                      status={project.status}
-                      onUpdate={(status) => handleUpdateProject({ status: status as any })}
-                    />
-                  </CardHeader>
-                  <CardContent>
-                    <Badge variant={
-                      project.status === 'active' ? 'default' : 
-                      project.status === 'completed' ? 'secondary' : 
-                      project.status === 'archived' ? 'outline' : 
-                      'outline'
-                    }>
-                      {project.status === 'active' ? 'In Progress' : 
-                       project.status === 'pending' ? 'Pending' :
-                       project.status === 'completed' ? 'Completed' : 
-                       'Archived'}
-                    </Badge>
-                  </CardContent>
-                </Card>
-
-                <Card className={`${T.panel} ${T.radius}`}>
-                  <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
-                    <div>
-                      <CardTitle>Phase</CardTitle>
-                    </div>
-                    <EditProjectPhaseDialog
-                      phase={project.phase}
-                      onUpdate={(phase) => handleUpdateProject({ phase: phase as any })}
-                    />
-                  </CardHeader>
-                  <CardContent>
-                    <p className="font-medium text-slate-700 dark:text-neutral-300">{project.phase}</p>
-                  </CardContent>
-                </Card>
-
-                <Card className={`${T.panel} ${T.radius}`}>
-                  <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
-                    <div>
-                      <CardTitle>Design Fee</CardTitle>
-                    </div>
-                    <EditProjectEstimatedAmountDialog
-                      estimatedAmount={project.estimatedAmount}
-                      onUpdate={(estimatedAmount) => handleUpdateProject({ estimatedAmount })}
-                    />
-                  </CardHeader>
-                  <CardContent>
-                    <p className="font-medium text-lg text-slate-700 dark:text-neutral-300">
-                      {project.estimatedAmount 
-                        ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(project.estimatedAmount)
-                        : '—'}
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Team Section */}
-              <Card className={`${T.panel} ${T.radius}`}>
-                <CardHeader className="border-b border-slate-200 dark:border-[#1d2230]">
-                  <CardTitle>Team</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ProjectMembersTable projectId={id || ''} workspaceId={workspaceId || ''} />
-                </CardContent>
-              </Card>
-
-              {/* Assessor Parcel Information */}
-              <Card className={`${T.panel} ${T.radius}`}>
-                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
-                  <div>
-                    <CardTitle>Assessor Parcel Information</CardTitle>
-                  </div>
-                  <EditAssessorParcelDialog
-                    data={project.assessorParcelInfo}
-                    onUpdate={(data) => handleUpdateProject({ assessorParcelInfo: data })}
-                  />
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-4 gap-4">
-...
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="client" className="h-full overflow-auto">
-              <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
-              <Card className={`${T.panel} ${T.radius}`}>
-                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
-                  <div>
-                    <CardTitle>Client Information</CardTitle>
-                  </div>
-                  <EditClientDialog
-                    project={project}
-                    onUpdate={(data) => handleUpdateProject(data)}
-                  />
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm text-slate-500 dark:text-neutral-500">Primary Client</p>
-                      <p className="font-medium text-lg text-slate-700 dark:text-neutral-300">
-                        {project.primaryClient.firstName} {project.primaryClient.lastName}
-                      </p>
-                      {project.primaryClient.email && (
-                        <p className="text-sm text-slate-500 dark:text-neutral-400">{project.primaryClient.email}</p>
-                      )}
-                      {project.primaryClient.phone && (
-                        <p className="text-sm text-slate-500 dark:text-neutral-400">{project.primaryClient.phone}</p>
-                      )}
-                    </div>
-                    {project.secondaryClient && (
-                      <div>
-                        <p className="text-sm text-slate-500 dark:text-neutral-500">Secondary Client</p>
-                        <p className="font-medium text-lg text-slate-700 dark:text-neutral-300">
-                          {project.secondaryClient.firstName} {project.secondaryClient.lastName}
-                        </p>
-                        {project.secondaryClient.email && (
-                          <p className="text-sm text-slate-500 dark:text-neutral-400">{project.secondaryClient.email}</p>
-                        )}
-                        {project.secondaryClient.phone && (
-                          <p className="text-sm text-slate-500 dark:text-neutral-400">{project.secondaryClient.phone}</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="notes" className="h-full overflow-auto">
-              <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
-              <Card className={`${T.panel} ${T.radius}`}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-slate-200 dark:border-[#1d2230]">
-                  <div>
-                    <CardTitle>Notes</CardTitle>
-                    <CardDescription className="text-slate-500 dark:text-neutral-400">Project notes and comments</CardDescription>
-                  </div>
-                  <CreateNoteDialog onCreateNote={(content) => createNoteMutation.mutate({ content })} />
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {notesLoading ? (
-                    <p className="text-sm text-slate-500 dark:text-neutral-400 text-center py-8">Loading notes...</p>
-                  ) : notes.length === 0 ? (
-                    <p className="text-sm text-slate-500 dark:text-neutral-400 text-center py-8">No notes yet. Create your first note above.</p>
-                  ) : (
-                    notes.map(note => (
-                      <NoteCard
-                        key={note.id}
-                        note={note}
-                        onUpdate={(id, content) => updateNoteMutation.mutate({ id, content })}
-                        onDelete={(id) => deleteNoteMutation.mutate(id)}
-                      />
-                    ))
-                  )}
-                </CardContent>
-              </Card>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-      </div>
         </ResizablePanel>
 
       {/* Project Chat Sidebar - Resizable */}
