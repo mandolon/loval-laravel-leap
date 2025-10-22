@@ -230,7 +230,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
   }
 
   return (
-    <div className="w-full bg-slate-50 dark:bg-[#0A0E14] p-1.5 sm:p-2 md:p-3">
+    <div className="w-full p-1.5 sm:p-2 md:p-3">
       <div className="grid grid-cols-1 gap-2 sm:gap-3 md:grid-cols-[140px_1fr] lg:grid-cols-[145px_1fr] md:min-h-[60vh] md:items-start">
         <nav className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0E1118] p-1 sm:p-1.5 text-[12px] shadow-sm md:sticky md:top-1 md:h-[calc(100vh-120px)] md:max-h-[70vh] md:overflow-auto md:w-[140px] lg:w-[145px]">
           <MenuItem id="profile" label="Project profile" active={menu} setActive={setMenu} />
