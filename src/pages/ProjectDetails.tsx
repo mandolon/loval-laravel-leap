@@ -8,6 +8,7 @@ import { PDFDownloadLink } from '@react-pdf/renderer';
 import { TaskItem } from "@/components/TaskItem";
 import { CreateTaskDialog } from "@/components/CreateTaskDialog";
 import { UserAvatar } from "@/components/UserAvatar";
+import ProjectTabContent from "@/components/project/ProjectTabContent";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,15 +38,6 @@ import { EditLinkDialog } from "@/components/links/EditLinkDialog";
 import { useLinks, useDeleteLink } from "@/lib/api/hooks/useLinks";
 import { ChatMessage } from "@/components/chat/ChatMessage";
 import { ChatInput } from "@/components/chat/ChatInput";
-import { EditClientDialog } from "@/components/project/EditClientDialog";
-import { EditProjectDetailsDialog } from "@/components/project/EditProjectDetailsDialog";
-import { EditProjectAddressDialog } from "@/components/project/EditProjectAddressDialog";
-import { EditAssessorParcelDialog } from "@/components/project/EditAssessorParcelDialog";
-import { EditProjectStatusDialog } from "@/components/project/EditProjectStatusDialog";
-import { EditProjectPhaseDialog } from "@/components/project/EditProjectPhaseDialog";
-import { EditProjectEstimatedAmountDialog } from "@/components/project/EditProjectEstimatedAmountDialog";
-import { EditProjectNameDialog } from "@/components/project/EditProjectNameDialog";
-import { ProjectMembersTable } from "@/components/project/ProjectMembersTable";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
@@ -365,17 +357,6 @@ const ProjectDetails = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab("client")}
-                className={`px-2.5 py-1 rounded-[8px] transition-colors focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 ${
-                  activeTab === "client"
-                    ? "bg-white dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium"
-                    : "text-slate-500 dark:text-neutral-400 hover:bg-white/60 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300"
-                }`}
-              >
-                Client
-              </button>
-              <button
-                type="button"
                 onClick={() => setActiveTab("notes")}
                 className={`px-2.5 py-1 rounded-[8px] transition-colors focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 ${
                   activeTab === "notes"
@@ -657,203 +638,12 @@ const ProjectDetails = () => {
             </TabsContent>
 
             <TabsContent value="project" className="h-full overflow-auto">
-              <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
-              {/* Project Name */}
-              <Card className={`${T.panel} ${T.radius}`}>
-                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
-                  <div>
-                    <CardTitle>Project Name</CardTitle>
-                  </div>
-                  <EditProjectNameDialog
-                    name={project.name}
-                    onUpdate={(name) => handleUpdateProject({ name })}
-                  />
-                </CardHeader>
-                <CardContent>
-                  <p className="font-medium text-lg text-slate-700 dark:text-neutral-300">{project.name}</p>
-                </CardContent>
-              </Card>
-
-              {/* Project Address */}
-              <Card className={`${T.panel} ${T.radius}`}>
-                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
-                  <div>
-                    <CardTitle>Project Address</CardTitle>
-                  </div>
-                  <EditProjectAddressDialog
-                    address={project.address}
-                    onUpdate={(address) => handleUpdateProject({ address })}
-                  />
-                </CardHeader>
-                <CardContent>
-                  <p className="font-medium text-slate-700 dark:text-neutral-300">
-                    {typeof project.address === 'object' && project.address 
-                      ? (() => {
-                          const { streetNumber, streetName, city, state, zipCode } = project.address;
-                          const street = [streetNumber, streetName].filter(Boolean).join(' ');
-                          const cityState = [city, state].filter(Boolean).join(', ');
-                          const parts = [street, cityState, zipCode].filter(Boolean);
-                          return parts.length > 0 ? parts.join(', ') : 'No address provided';
-                        })()
-                      : 'No address provided'}
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* Project Narrative */}
-              <Card className={`${T.panel} ${T.radius}`}>
-                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
-                  <div>
-                    <CardTitle>Project Description</CardTitle>
-                  </div>
-                  <EditProjectDetailsDialog
-                    description={project.description}
-                    onUpdate={(description) => handleUpdateProject({ description })}
-                  />
-                </CardHeader>
-                <CardContent>
-                  <p className="text-slate-500 dark:text-neutral-400">{project.description || "No description provided yet. Click edit to add project details."}</p>
-                </CardContent>
-              </Card>
-
-              {/* Project Status, Phase, and Design Fee in a row */}
-              <div className="grid grid-cols-3 gap-6">
-                <Card className={`${T.panel} ${T.radius}`}>
-                  <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
-                    <div>
-                      <CardTitle>Status</CardTitle>
-                    </div>
-                    <EditProjectStatusDialog
-                      status={project.status}
-                      onUpdate={(status) => handleUpdateProject({ status: status as any })}
-                    />
-                  </CardHeader>
-                  <CardContent>
-                    <Badge variant={
-                      project.status === 'active' ? 'default' : 
-                      project.status === 'completed' ? 'secondary' : 
-                      project.status === 'archived' ? 'outline' : 
-                      'outline'
-                    }>
-                      {project.status === 'active' ? 'In Progress' : 
-                       project.status === 'pending' ? 'Pending' :
-                       project.status === 'completed' ? 'Completed' : 
-                       'Archived'}
-                    </Badge>
-                  </CardContent>
-                </Card>
-
-                <Card className={`${T.panel} ${T.radius}`}>
-                  <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
-                    <div>
-                      <CardTitle>Phase</CardTitle>
-                    </div>
-                    <EditProjectPhaseDialog
-                      phase={project.phase}
-                      onUpdate={(phase) => handleUpdateProject({ phase: phase as any })}
-                    />
-                  </CardHeader>
-                  <CardContent>
-                    <p className="font-medium text-slate-700 dark:text-neutral-300">{project.phase}</p>
-                  </CardContent>
-                </Card>
-
-                <Card className={`${T.panel} ${T.radius}`}>
-                  <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
-                    <div>
-                      <CardTitle>Design Fee</CardTitle>
-                    </div>
-                    <EditProjectEstimatedAmountDialog
-                      estimatedAmount={project.estimatedAmount}
-                      onUpdate={(estimatedAmount) => handleUpdateProject({ estimatedAmount })}
-                    />
-                  </CardHeader>
-                  <CardContent>
-                    <p className="font-medium text-lg text-slate-700 dark:text-neutral-300">
-                      {project.estimatedAmount 
-                        ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(project.estimatedAmount)
-                        : '—'}
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Team Section */}
-              <Card className={`${T.panel} ${T.radius}`}>
-                <CardHeader className="border-b border-slate-200 dark:border-[#1d2230]">
-                  <CardTitle>Team</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ProjectMembersTable projectId={id || ''} workspaceId={workspaceId || ''} />
-                </CardContent>
-              </Card>
-
-              {/* Assessor Parcel Information */}
-              <Card className={`${T.panel} ${T.radius}`}>
-                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
-                  <div>
-                    <CardTitle>Assessor Parcel Information</CardTitle>
-                  </div>
-                  <EditAssessorParcelDialog
-                    data={project.assessorParcelInfo}
-                    onUpdate={(data) => handleUpdateProject({ assessorParcelInfo: data })}
-                  />
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-4 gap-4">
-...
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="client" className="h-full overflow-auto">
-              <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
-              <Card className={`${T.panel} ${T.radius}`}>
-                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
-                  <div>
-                    <CardTitle>Client Information</CardTitle>
-                  </div>
-                  <EditClientDialog
-                    project={project}
-                    onUpdate={(data) => handleUpdateProject(data)}
-                  />
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm text-slate-500 dark:text-neutral-500">Primary Client</p>
-                      <p className="font-medium text-lg text-slate-700 dark:text-neutral-300">
-                        {project.primaryClient.firstName} {project.primaryClient.lastName}
-                      </p>
-                      {project.primaryClient.email && (
-                        <p className="text-sm text-slate-500 dark:text-neutral-400">{project.primaryClient.email}</p>
-                      )}
-                      {project.primaryClient.phone && (
-                        <p className="text-sm text-slate-500 dark:text-neutral-400">{project.primaryClient.phone}</p>
-                      )}
-                    </div>
-                    {project.secondaryClient && (
-                      <div>
-                        <p className="text-sm text-slate-500 dark:text-neutral-500">Secondary Client</p>
-                        <p className="font-medium text-lg text-slate-700 dark:text-neutral-300">
-                          {project.secondaryClient.firstName} {project.secondaryClient.lastName}
-                        </p>
-                        {project.secondaryClient.email && (
-                          <p className="text-sm text-slate-500 dark:text-neutral-400">{project.secondaryClient.email}</p>
-                        )}
-                        {project.secondaryClient.phone && (
-                          <p className="text-sm text-slate-500 dark:text-neutral-400">{project.secondaryClient.phone}</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-              </div>
+              <ProjectTabContent
+                project={project}
+                onUpdate={(input) => {
+                  updateProjectMutation.mutate({ id: id || '', input });
+                }}
+              />
             </TabsContent>
 
             <TabsContent value="notes" className="h-full overflow-auto">
