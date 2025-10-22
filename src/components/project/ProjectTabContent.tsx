@@ -52,7 +52,7 @@ function Input(props: InputProps) {
   return (
     <input
       {...props}
-      className={`w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-[#0E1118] px-2.5 py-1.5 text-[12px] text-slate-900 dark:text-neutral-200 outline-none focus:border-slate-400 dark:focus:border-slate-500 ${props.className || ''}`}
+      className={`w-full rounded-md border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50 px-2.5 py-1.5 text-[12px] text-slate-900 dark:text-neutral-200 outline-none focus:border-slate-400 dark:focus:border-slate-500 ${props.className || ''}`}
     />
   )
 }
@@ -63,7 +63,7 @@ function TextArea(props: TextAreaProps) {
   return (
     <textarea
       {...props}
-      className={`w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-[#0E1118] px-2.5 py-1.5 text-[12px] text-slate-900 dark:text-neutral-200 outline-none focus:border-slate-400 dark:focus:border-slate-500 ${props.className || ''}`}
+      className={`w-full rounded-md border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50 px-2.5 py-1.5 text-[12px] text-slate-900 dark:text-neutral-200 outline-none focus:border-slate-400 dark:focus:border-slate-500 ${props.className || ''}`}
     />
   )
 }
@@ -99,7 +99,7 @@ function PhoneInput({ digits, onDigitsChange, ...props }: PhoneInputProps) {
       inputMode="numeric"
       value={formatPhone(digits)}
       onChange={(e) => onDigitsChange(onlyDigits(e.target.value))}
-      className={`w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-[#0E1118] px-2.5 py-1.5 text-[12px] text-slate-900 dark:text-neutral-200 outline-none focus:border-slate-400 dark:focus:border-slate-500 ${props.className || ''}`}
+      className={`w-full rounded-md border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50 px-2.5 py-1.5 text-[12px] text-slate-900 dark:text-neutral-200 outline-none focus:border-slate-400 dark:focus:border-slate-500 ${props.className || ''}`}
       {...props}
     />
   )
@@ -232,7 +232,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
   return (
     <div className="w-full p-1.5 sm:p-2 md:p-3">
       <div className="grid grid-cols-1 gap-2 sm:gap-3 md:grid-cols-[140px_1fr] lg:grid-cols-[145px_1fr] md:min-h-[60vh] md:items-start">
-        <nav className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0E1118] p-1 sm:p-1.5 text-[12px] shadow-sm md:sticky md:top-1 md:h-[calc(100vh-120px)] md:max-h-[70vh] md:overflow-auto md:w-[140px] lg:w-[145px]">
+        <nav className="rounded-lg bg-white dark:bg-[#0E1118] p-1 sm:p-1.5 text-[12px] shadow-sm md:sticky md:top-1 md:h-[calc(100vh-120px)] md:max-h-[70vh] md:overflow-auto md:w-[140px] lg:w-[145px]">
           <MenuItem id="profile" label="Project profile" active={menu} setActive={setMenu} />
           <MenuItem id="client" label="Client profile" active={menu} setActive={setMenu} />
           <MenuItem id="parcel" label="Parcel information" active={menu} setActive={setMenu} />
@@ -315,7 +315,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
               <Row label="Status & Phase">
                 <div className="grid grid-cols-1 gap-1 sm:gap-1.5 sm:grid-cols-2">
                   <select
-                    className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-[#0E1118] px-2.5 py-1.5 text-[12px] text-slate-900 dark:text-neutral-200"
+                    className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50 px-2.5 py-1.5 text-[12px] text-slate-900 dark:text-neutral-200"
                     value={draft.status}
                     onChange={(e) => setDraft({ ...draft, status: e.target.value as 'pending' | 'active' | 'completed' | 'archived' })}
                   >
@@ -325,7 +325,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
                     <option value="archived">Archived</option>
                   </select>
                   <select
-                    className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-[#0E1118] px-2.5 py-1.5 text-[12px] text-slate-900 dark:text-neutral-200"
+                    className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50 px-2.5 py-1.5 text-[12px] text-slate-900 dark:text-neutral-200"
                     value={draft.phase}
                     onChange={(e) => setDraft({ ...draft, phase: e.target.value as 'Pre-Design' | 'Design' | 'Permit' | 'Build' })}
                   >
