@@ -26,20 +26,20 @@ const METADATA_FIELDS: Omit<MetadataRow, 'value'>[] = [
   { field: 'address.zipCode', label: 'Zip Code', type: 'text', editable: true },
   
   // Primary Client
-  { field: 'primary_client_first_name', label: 'Primary Client First', type: 'text', editable: true },
-  { field: 'primary_client_last_name', label: 'Primary Client Last', type: 'text', editable: true },
-  { field: 'primary_client_email', label: 'Primary Client Email', type: 'email', editable: true },
-  { field: 'primary_client_phone', label: 'Primary Client Phone', type: 'phone', editable: true },
+  { field: 'primaryClient.firstName', label: 'Primary Client First', type: 'text', editable: true },
+  { field: 'primaryClient.lastName', label: 'Primary Client Last', type: 'text', editable: true },
+  { field: 'primaryClient.email', label: 'Primary Client Email', type: 'email', editable: true },
+  { field: 'primaryClient.phone', label: 'Primary Client Phone', type: 'phone', editable: true },
   
   // Secondary Client
-  { field: 'secondary_client_first_name', label: 'Secondary Client First', type: 'text', editable: true },
-  { field: 'secondary_client_last_name', label: 'Secondary Client Last', type: 'text', editable: true },
-  { field: 'secondary_client_email', label: 'Secondary Client Email', type: 'email', editable: true },
-  { field: 'secondary_client_phone', label: 'Secondary Client Phone', type: 'phone', editable: true },
+  { field: 'secondaryClient.firstName', label: 'Secondary Client First', type: 'text', editable: true },
+  { field: 'secondaryClient.lastName', label: 'Secondary Client Last', type: 'text', editable: true },
+  { field: 'secondaryClient.email', label: 'Secondary Client Email', type: 'email', editable: true },
+  { field: 'secondaryClient.phone', label: 'Secondary Client Phone', type: 'phone', editable: true },
   
   // Project Details
-  { field: 'estimated_amount', label: 'Budget', type: 'number', editable: true },
-  { field: 'due_date', label: 'Due Date', type: 'date', editable: true },
+  { field: 'estimatedAmount', label: 'Budget', type: 'number', editable: true },
+  { field: 'dueDate', label: 'Due Date', type: 'date', editable: true },
   { field: 'phase', label: 'Phase', type: 'select', editable: true, selectOptions: ['Pre-Design', 'Design', 'Permit', 'Build'] },
   { field: 'status', label: 'Status', type: 'select', editable: true, selectOptions: ['pending', 'active', 'completed', 'archived'] },
   { field: 'progress', label: 'Progress %', type: 'number', editable: true }
@@ -101,11 +101,25 @@ export function ExcelTab({ projectId }: { projectId: string }) {
 
     setIsSaving(true);
     try {
-      // Build updates object from rows
+      // Build updates object from rows - convert nested Project type back to flat database columns
       const updates: any = {};
       rows.forEach(row => {
-        if (row.field.includes('.')) {
-          // Handle nested fields (e.g., address.streetNumber)
+        if (row.field.startsWith('primaryClient.')) {
+          // Convert primaryClient.firstName -> primary_client_first_name
+          const clientField = row.field.replace('primaryClient.', '');
+          const dbField = `primary_client_${clientField.replace(/([A-Z])/g, '_$1').toLowerCase()}`;
+          updates[dbField] = row.value;
+        } else if (row.field.startsWith('secondaryClient.')) {
+          // Convert secondaryClient.firstName -> secondary_client_first_name
+          const clientField = row.field.replace('secondaryClient.', '');
+          const dbField = `secondary_client_${clientField.replace(/([A-Z])/g, '_$1').toLowerCase()}`;
+          updates[dbField] = row.value;
+        } else if (row.field === 'estimatedAmount') {
+          updates.estimated_amount = row.value;
+        } else if (row.field === 'dueDate') {
+          updates.due_date = row.value;
+        } else if (row.field.includes('.')) {
+          // Handle other nested fields (e.g., address.streetNumber)
           const parts = row.field.split('.');
           if (!updates[parts[0]]) {
             updates[parts[0]] = {};
