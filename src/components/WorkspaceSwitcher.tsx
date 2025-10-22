@@ -17,6 +17,7 @@ import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { WorkspaceMembersTable } from "@/components/workspace/WorkspaceMembersTable";
+import { ExcelExportImport } from "@/components/workspace/ExcelExportImport";
 import { DialogFooter } from "@/components/ui/dialog";
 import { 
   AlertDialog, 
@@ -304,6 +305,12 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
             <div className="space-y-4 pt-4 border-t">
               {currentWorkspaceId && (
                 <WorkspaceMembersTable workspaceId={currentWorkspaceId} />
+              )}
+            </div>
+            
+            <div className="space-y-4 pt-4 border-t">
+              {currentWorkspaceId && (
+                <ExcelExportImport workspaceId={currentWorkspaceId} />
               )}
             </div>
             
