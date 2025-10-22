@@ -671,6 +671,28 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
           summary += `- Modified: ${new Date(file.updated_at).toLocaleDateString()}\n\n`;
         }
 
+        // Log activity for folder access
+        const { data: project } = await supabase
+          .from("projects")
+          .select("workspace_id")
+          .eq("id", project_id)
+          .single();
+
+        if (project) {
+          await logActivity(
+            supabase,
+            project.workspace_id,
+            userId,
+            'read',
+            'folder',
+            project_id, // Using project_id as resource_id for folder access
+            `Viewed ${folder} folder (${files.length} files)`,
+            project_id,
+            null,
+            { folder, file_count: files.length }
+          );
+        }
+
         return {
           success: true,
           data: {
@@ -874,6 +896,28 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
             return { success: false, error: `Version update failed: ${dbError.message}` };
           }
 
+          // Log activity for metadata update
+          const { data: project } = await supabase
+            .from("projects")
+            .select("workspace_id")
+            .eq("id", project_id)
+            .single();
+
+          if (project) {
+            await logActivity(
+              supabase,
+              project.workspace_id,
+              userId,
+              'updated',
+              'file',
+              existing.id,
+              `Updated project.meta.md to version ${newVersion}`,
+              project_id,
+              { version: existing.version_number },
+              { version: newVersion }
+            );
+          }
+
           return {
             success: true,
             data: {
@@ -922,7 +966,7 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
           }
 
           const size = new Blob([content]).size;
-          const { error: dbError } = await supabase
+          const { data: fileRecord, error: dbError } = await supabase
             .from("files")
             .insert({
               project_id,
@@ -940,6 +984,28 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
           if (dbError) {
             await supabase.storage.from("project-files").remove([storagePath]);
             return { success: false, error: `Database record failed: ${dbError.message}` };
+          }
+
+          // Log activity for metadata creation
+          const { data: project } = await supabase
+            .from("projects")
+            .select("workspace_id")
+            .eq("id", project_id)
+            .single();
+
+          if (project && fileRecord) {
+            await logActivity(
+              supabase,
+              project.workspace_id,
+              userId,
+              'created',
+              'file',
+              fileRecord.id,
+              `Created project.meta.md in Pre-Design folder`,
+              project_id,
+              null,
+              { filename: "project.meta.md", folder: "Pre-Design" }
+            );
           }
 
           return {
