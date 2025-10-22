@@ -1,1 +1,4 @@
 project_id = "npphriqbofeaiblczoee"
+
+[functions.sync-project-metadata]
+verify_jwt = true

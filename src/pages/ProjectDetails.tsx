@@ -43,6 +43,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
 import { useLayout } from "@/contexts/LayoutContext";
 import { DESIGN_TOKENS as T, UTILITY_CLASSES } from "@/lib/design-tokens";
+import { ExcelTab } from "@/components/excel/ExcelTab";
 
 // PanelRightClose icon import
 import { PanelRightClose } from "lucide-react";
@@ -343,6 +344,17 @@ const ProjectDetails = () => {
               </button>
               <button
                 type="button"
+                onClick={() => setActiveTab("excel")}
+                className={`px-2.5 py-1 rounded-[8px] transition-colors focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 ${
+                  activeTab === "excel"
+                    ? "bg-white dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium"
+                    : "text-slate-500 dark:text-neutral-400 hover:bg-white/60 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300"
+                }`}
+              >
+                Excel
+              </button>
+              <button
+                type="button"
                 onClick={() => setActiveTab("links")}
                 className={`px-2.5 py-1 rounded-[8px] transition-colors focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 ${
                   activeTab === "links"
@@ -596,6 +608,10 @@ const ProjectDetails = () => {
                 projectId={id || ''}
                 project={{ name: project.name, address: project.address }}
               />
+            </TabsContent>
+
+            <TabsContent value="excel" className="h-full overflow-auto">
+              <ExcelTab projectId={id || ''} />
             </TabsContent>
 
             <TabsContent value="links" className="h-full overflow-auto">
