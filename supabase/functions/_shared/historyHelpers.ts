@@ -123,6 +123,7 @@ export async function appendChatHistory(
   
   let entry = `### [${timestamp}] CHAT SESSION: "${chatThread.title}"`;
   entry += `\n- Participant: ${user.name}`;
+  entry += `\n- Duration: ${calculateChatDuration(chatThread)}`;
   
   if (summary) {
     entry += `\n\n**Summary:**\n${summary}`;
@@ -170,6 +171,16 @@ function calculateDuration(startDate: string, endDate: string): string {
   const end = new Date(endDate);
   const days = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
   return `${days} days`;
+}
+
+function calculateChatDuration(chatThread: any): string {
+  const created = new Date(chatThread.created_at);
+  const updated = new Date(chatThread.updated_at);
+  const minutes = Math.floor((updated.getTime() - created.getTime()) / (1000 * 60));
+  
+  if (minutes < 60) return `${minutes} minutes`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours} hour${hours > 1 ? 's' : ''} ${minutes % 60} minutes`;
 }
 
 async function upsertFileRecord(projectId: string, filename: string, size: number) {
