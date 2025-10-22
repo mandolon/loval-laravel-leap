@@ -3,7 +3,7 @@
  * Manages theme, workspaces, and layout state
  */
 
-import { createContext, useContext, ReactNode } from 'react'
+import { createContext, useContext, ReactNode, useState } from 'react'
 import { useTheme } from 'next-themes'
 import { useWorkspaces } from '@/hooks/useWorkspaces'
 import type { Workspace } from '@/types/layout.types'
@@ -19,6 +19,10 @@ interface LayoutContextType {
   activeWorkspace: string
   setActiveWorkspace: (name: string) => void
   addWorkspace: (workspace: Workspace) => void
+  
+  // Sidebar
+  sidebarCollapsed: boolean
+  setSidebarCollapsed: (collapsed: boolean) => void
 }
 
 const LayoutContext = createContext<LayoutContextType | undefined>(undefined)
@@ -26,6 +30,7 @@ const LayoutContext = createContext<LayoutContextType | undefined>(undefined)
 export function LayoutProvider({ children }: { children: ReactNode }) {
   const { theme, setTheme } = useTheme()
   const { workspaces, currentWorkspace, switchWorkspace, createWorkspace } = useWorkspaces()
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark')
@@ -60,6 +65,8 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
         activeWorkspace,
         setActiveWorkspace,
         addWorkspace,
+        sidebarCollapsed,
+        setSidebarCollapsed,
       }}
     >
       {children}

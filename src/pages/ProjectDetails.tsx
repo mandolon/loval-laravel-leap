@@ -41,6 +41,7 @@ import { ChatInput } from "@/components/chat/ChatInput";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/UserContext";
+import { useLayout } from "@/contexts/LayoutContext";
 import { DESIGN_TOKENS as T, UTILITY_CLASSES } from "@/lib/design-tokens";
 
 // PanelRightClose icon import
@@ -52,6 +53,7 @@ const ProjectDetails = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useUser();
+  const { setSidebarCollapsed } = useLayout();
   const [activeTab, setActiveTab] = useState("project");
   const [chatOpen, setChatOpen] = useState(true);
   const [replyingTo, setReplyingTo] = useState<ProjectChatMessageWithUser | null>(null);
@@ -61,6 +63,12 @@ const ProjectDetails = () => {
   const [invoiceViewMode, setInvoiceViewMode] = useState<'card' | 'list'>('card');
   const [selectedLink, setSelectedLink] = useState<any>(null);
   const [editLinkOpen, setEditLinkOpen] = useState(false);
+  const [isFillPageActive, setIsFillPageActive] = useState(false);
+
+  const handleFillPageChange = (fillPage: boolean) => {
+    setIsFillPageActive(fillPage);
+    setSidebarCollapsed(fillPage);
+  };
   
   const { data: project, isLoading: projectLoading } = useProject(id || "");
   const { data: tasks = [], isLoading: tasksLoading } = useTasks(id || "");
@@ -286,7 +294,7 @@ const ProjectDetails = () => {
         <ResizablePanel defaultSize={chatOpen ? 75 : 100} minSize={50}>
           <div className={`${T.panel} ${T.radius} flex flex-col h-full min-h-0 overflow-hidden`}>
         {/* Header */}
-        <div className="h-12 text-[12px] grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 bg-white dark:bg-[#0E1118] border-b border-slate-200 dark:border-[#1a2030]/60">
+        <div className={`h-12 text-[12px] grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 bg-white dark:bg-[#0E1118] border-b border-slate-200 dark:border-[#1a2030]/60 transition-all duration-200 ${isFillPageActive && activeTab === 'files' ? 'opacity-0 h-0 overflow-hidden' : ''}`}>
           {/* Left: Back button */}
           <button
             type="button"
@@ -397,7 +405,10 @@ const ProjectDetails = () => {
         <div className="flex-1 min-h-0 flex flex-col">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
               <TabsContent value="files" className="mt-0 flex-1 min-h-0 flex flex-col">
-                <FilesTab projectId={id || ''} />
+                <FilesTab 
+                  projectId={id || ''} 
+                  onFillPageChange={handleFillPageChange}
+                />
               </TabsContent>
 
             <TabsContent value="tasks" className="h-full overflow-auto">

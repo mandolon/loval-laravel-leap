@@ -2,16 +2,17 @@ import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
-import { LayoutProvider } from "@/contexts/LayoutContext";
+import { LayoutProvider, useLayout } from "@/contexts/LayoutContext";
 import type { PageType } from "@/types/layout.types";
 
 interface NewAppLayoutProps {
   children: React.ReactNode;
 }
 
-export function NewAppLayout({ children }: NewAppLayoutProps) {
+function LayoutContent({ children }: NewAppLayoutProps) {
   const [workspaceKey, setWorkspaceKey] = useState(0);
   const location = useLocation();
+  const { sidebarCollapsed } = useLayout();
 
   const handleWorkspaceChange = () => {
     // Force re-render of children when workspace changes
@@ -31,16 +32,24 @@ export function NewAppLayout({ children }: NewAppLayoutProps) {
   };
 
   return (
-    <LayoutProvider>
-      <div className="h-screen flex flex-row bg-background w-full">
+    <div className="h-screen flex flex-row bg-background w-full">
+      <div className={`transition-all duration-200 ${sidebarCollapsed ? 'w-0 overflow-hidden' : ''}`}>
         <Sidebar currentPage={getCurrentPage()} />
-        <div className="flex-1 flex flex-col min-w-0">
-          <Header />
-          <main key={workspaceKey} className="flex-1 min-h-0 overflow-auto">
-            {children}
-          </main>
-        </div>
       </div>
+      <div className="flex-1 flex flex-col min-w-0">
+        <Header />
+        <main key={workspaceKey} className="flex-1 min-h-0 overflow-auto">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+export function NewAppLayout({ children }: NewAppLayoutProps) {
+  return (
+    <LayoutProvider>
+      <LayoutContent>{children}</LayoutContent>
     </LayoutProvider>
   );
 }

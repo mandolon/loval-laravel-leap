@@ -84,9 +84,10 @@ interface FilesTabProps {
   projectId: string
   fileToOpen?: any
   onFileOpened?: () => void
+  onFillPageChange?: (isFillPage: boolean) => void
 }
 
-export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps) {
+export function FilesTab({ projectId, fileToOpen, onFileOpened, onFillPageChange }: FilesTabProps) {
   const { toast } = useToast()
   const uploadFilesMutation = useUploadProjectFiles(projectId)
   
@@ -106,9 +107,6 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps)
   const [viewerStatus, setViewerStatus] = useState<any>(null)
   const [activePane, setActivePane] = useState<'viewer' | 'explorer' | null>('viewer')
   const isDark = false // TODO: implement theme detection
-  const sidebarCollapsed = false
-  const setSidebarCollapsed = (_: boolean) => {} // TODO: implement sidebar context
-  const previousSidebarCollapsedRef = useRef(sidebarCollapsed)
   const previousExplorerModeRef = useRef<'compact' | 'tall' | 'custom' | 'collapsed'>(explorerHeightMode)
 
   const clampExplorerHeight = useCallback((height: number) => {
@@ -189,8 +187,6 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps)
   }, [])
 
   const restoreFillPage = useCallback(() => {
-    setSidebarCollapsed(previousSidebarCollapsedRef.current)
-
     const previousMode = previousExplorerModeRef.current
     if (previousMode === 'compact') {
       setExplorerHeightMode('compact')
@@ -208,23 +204,23 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps)
     setActivePane('viewer')
     setIsResizingExplorer(false)
     setIsFillPage(false)
-  }, [clampExplorerHeight, setSidebarCollapsed])
+  }, [clampExplorerHeight])
 
   const handleToggleFillPage = () => {
     if (isFillPage) {
       restoreFillPage()
+      onFillPageChange?.(false)
       return
     }
 
-    previousSidebarCollapsedRef.current = sidebarCollapsed
     previousExplorerModeRef.current = explorerHeightMode
     lastExplorerHeightRef.current = explorerHeight
 
-    setSidebarCollapsed(true)
     setExplorerHeightMode('collapsed')
     setActivePane('viewer')
     setIsResizingExplorer(false)
     setIsFillPage(true)
+    onFillPageChange?.(true)
   }
 
   const handleCloseViewer = () => {
@@ -303,12 +299,6 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened }: FilesTabProps)
       previousExplorerModeRef.current = explorerHeightMode
     }
   }, [explorerHeightMode, isFillPage])
-
-  useEffect(() => {
-    if (!isFillPage) {
-      previousSidebarCollapsedRef.current = sidebarCollapsed
-    }
-  }, [sidebarCollapsed, isFillPage])
 
   useEffect(() => {
     const handleWindowResize = () => {
