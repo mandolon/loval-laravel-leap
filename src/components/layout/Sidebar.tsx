@@ -31,7 +31,7 @@ export function Sidebar({
   currentProjectId,
   collapsed: externalCollapsed
 }: SidebarProps) {
-  const { workspaces, activeWorkspace, setActiveWorkspace, addWorkspace } = useLayout()
+  const { workspaces, activeWorkspace, setActiveWorkspace, addWorkspace, setSidebarCollapsed } = useLayout()
   const navigate = useNavigate()
   const { workspaceId } = useParams<{ workspaceId: string }>()
   const [activeStatus, setActiveStatus] = useState<ProjectStatus>('inProgress')
@@ -39,6 +39,16 @@ export function Sidebar({
   
   // Use external collapsed state if provided, otherwise use internal state
   const effectiveCollapsed = externalCollapsed ?? isCollapsed
+
+  const handleToggleCollapse = () => {
+    if (externalCollapsed !== undefined) {
+      // Update external state from context
+      setSidebarCollapsed(!externalCollapsed)
+    } else {
+      // Update internal state
+      setIsCollapsed(!isCollapsed)
+    }
+  }
 
   // Map currentPage to activeTab (projects -> workspace, completed -> taskboard)
   const getActiveTab = (): SidebarTab => {
@@ -92,7 +102,7 @@ export function Sidebar({
       {/* Sidebar Header with Avatar */}
       <SidebarHeader 
         collapsed={effectiveCollapsed}
-        onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+        onToggleCollapse={handleToggleCollapse}
       />
 
       {/* Navigation Icons */}
