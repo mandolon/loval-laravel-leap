@@ -16,8 +16,8 @@ interface SectionProps {
 
 function Section({ title, helper, children, action, disabled = false }: SectionProps) {
   return (
-    <section className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0E1118] shadow-sm">
-      <header className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-2 sm:px-3 py-1.5 sm:py-2">
+    <section className="rounded-lg">
+      <header className="flex items-center justify-between px-2 sm:px-3 py-1.5 sm:py-2">
         <div className="min-w-0 flex-1 mr-2">
           <h3 className="text-[13px] font-semibold text-slate-900 dark:text-neutral-200 truncate">{title}</h3>
           {helper && <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-0.5 truncate">{helper}</p>}
