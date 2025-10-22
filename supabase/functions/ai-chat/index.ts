@@ -482,6 +482,14 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
     case "update_task_status": {
       const { task_id, status } = args;
 
+      // Get old task data first (for change tracking)
+      const { data: oldTask } = await supabase
+        .from("tasks")
+        .select("status, title, project_id")
+        .eq("id", task_id)
+        .single();
+
+      // Update task
       const { data, error } = await supabase
         .from("tasks")
         .update({ status, updated_by: userId })
@@ -492,6 +500,28 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
       if (error) {
         console.error("Error updating task:", error);
         return { success: false, error: error.message };
+      }
+
+      // Get workspace_id and log activity
+      const { data: project } = await supabase
+        .from("projects")
+        .select("workspace_id")
+        .eq("id", data.project_id)
+        .single();
+
+      if (project && oldTask) {
+        await logActivity(
+          supabase,
+          project.workspace_id,
+          userId,
+          'updated',
+          'task',
+          task_id,
+          `Changed status from ${oldTask.status} to ${status}`,
+          data.project_id,
+          { status: oldTask.status },
+          { status: status }
+        );
       }
 
       return { 
