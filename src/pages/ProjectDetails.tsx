@@ -637,7 +637,7 @@ const ProjectDetails = () => {
               />
             </TabsContent>
 
-            <TabsContent value="project" className="h-full overflow-auto">
+            <TabsContent value="project" className="h-full overflow-auto p-0">
               <ProjectTabContent
                 project={project}
                 onUpdate={(input) => {

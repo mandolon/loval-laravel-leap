@@ -16,15 +16,15 @@ interface SectionProps {
 
 function Section({ title, helper, children, action, disabled = false }: SectionProps) {
   return (
-    <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0E1118] shadow-sm">
-      <header className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-3 py-2">
-        <div>
-          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-neutral-200">{title}</h3>
-          {helper && <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-0.5">{helper}</p>}
+    <section className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0E1118] shadow-sm">
+      <header className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-2 sm:px-3 py-1.5 sm:py-2">
+        <div className="min-w-0 flex-1 mr-2">
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-neutral-200 truncate">{title}</h3>
+          {helper && <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-0.5 truncate">{helper}</p>}
         </div>
-        {action}
+        <div className="flex-shrink-0">{action}</div>
       </header>
-      <div className="relative p-3">
+      <div className="relative p-2 sm:p-3">
         {children}
         {disabled && <div className="absolute inset-0 pointer-events-auto" />}
       </div>
@@ -39,9 +39,9 @@ interface RowProps {
 
 function Row({ label, children }: RowProps) {
   return (
-    <div className="grid grid-cols-1 items-center gap-0.5 py-1.5 sm:grid-cols-[140px_1fr] sm:gap-x-1">
-      <label className="text-[12px] font-medium text-slate-700 dark:text-neutral-300 sm:pr-1">{label}</label>
-      <div>{children}</div>
+    <div className="grid grid-cols-1 items-start gap-0.5 py-1 sm:py-1.5 sm:grid-cols-[120px_1fr] md:grid-cols-[140px_1fr] sm:gap-x-1 md:gap-x-2">
+      <label className="text-[12px] font-medium text-slate-700 dark:text-neutral-300 sm:pr-1 pt-1.5">{label}</label>
+      <div className="min-w-0">{children}</div>
     </div>
   )
 }
@@ -230,9 +230,9 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
   }
 
   return (
-    <div className="w-full bg-slate-50 dark:bg-[#0A0E14] p-2 sm:p-3">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-[180px_1fr] lg:grid-cols-[200px_1fr] xl:grid-cols-[220px_1fr] md:min-h-[65vh] md:items-start">
-        <nav className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0E1118] p-1.5 text-[12px] shadow-sm md:sticky md:top-2 md:h-[65vh] md:overflow-auto">
+    <div className="w-full bg-slate-50 dark:bg-[#0A0E14] p-1.5 sm:p-2 md:p-3">
+      <div className="grid grid-cols-1 gap-2 sm:gap-3 md:grid-cols-[160px_1fr] lg:grid-cols-[180px_1fr] xl:grid-cols-[200px_1fr] md:min-h-[60vh] md:items-start">
+        <nav className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0E1118] p-1 sm:p-1.5 text-[12px] shadow-sm md:sticky md:top-1 md:h-[calc(100vh-120px)] md:max-h-[70vh] md:overflow-auto">
           <MenuItem id="profile" label="Project profile" active={menu} setActive={setMenu} />
           <MenuItem id="client" label="Client profile" active={menu} setActive={setMenu} />
           <MenuItem id="parcel" label="Parcel information" active={menu} setActive={setMenu} />
@@ -241,7 +241,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
           <MenuItem id="activity" label="Activity" active={menu} setActive={setMenu} />
         </nav>
 
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           {menu === 'profile' && (
             <Section
               title="Project profile"
@@ -251,21 +251,21 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
                 !mode.profile ? (
                   <button
                     onClick={() => beginEdit('profile')}
-                    className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#141C28] px-2.5 py-1 text-[12px] text-slate-900 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-[#1a2433]"
+                    className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#141C28] px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-[12px] text-slate-900 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-[#1a2433] whitespace-nowrap"
                   >
                     Edit
                   </button>
                 ) : (
-                  <div className="flex gap-2">
+                  <div className="flex gap-1 sm:gap-2">
                     <button
                       onClick={() => cancelEdit('profile')}
-                      className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#141C28] px-2.5 py-1 text-[12px] text-slate-900 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-[#1a2433]"
+                      className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#141C28] px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-[12px] text-slate-900 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-[#1a2433] whitespace-nowrap"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={() => saveEdit('profile')}
-                      className="rounded-md bg-slate-900 dark:bg-[#3b82f6] px-2.5 py-1 text-[12px] text-white hover:bg-slate-800 dark:hover:bg-[#2563eb]"
+                      className="rounded-md bg-slate-900 dark:bg-[#3b82f6] px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-[12px] text-white hover:bg-slate-800 dark:hover:bg-[#2563eb] whitespace-nowrap"
                     >
                       Save
                     </button>
@@ -281,7 +281,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
               </Row>
 
               <Row label="Address">
-                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-[60px_140px_1fr_160px]">
+                <div className="grid grid-cols-1 gap-1 sm:gap-1.5 md:grid-cols-[50px_1fr_1fr_140px]">
                   <Input
                     placeholder="#"
                     value={draft.address.streetNumber || ''}
@@ -297,7 +297,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
                     value={draft.address.city || ''}
                     onChange={(e) => setDraft({ ...draft, address: { ...draft.address, city: e.target.value } })}
                   />
-                  <div className="grid grid-cols-2 gap-1.5">
+                  <div className="grid grid-cols-2 gap-1 sm:gap-1.5">
                     <Input
                       placeholder="State"
                       value={draft.address.state || ''}
@@ -313,7 +313,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
               </Row>
 
               <Row label="Status & Phase">
-                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-1 sm:gap-1.5 sm:grid-cols-2">
                   <select
                     className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-[#0E1118] px-2.5 py-1.5 text-[12px] text-slate-900 dark:text-neutral-200"
                     value={draft.status}
@@ -338,7 +338,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
               </Row>
 
               <Row label="Budget, Due, Progress">
-                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-1 sm:gap-1.5 sm:grid-cols-2 md:grid-cols-3">
                   <Input
                     type="number"
                     value={draft.estimatedAmount ?? ''}
@@ -383,22 +383,22 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
                 !mode.client ? (
                   <button
                     onClick={() => beginEdit('client')}
-                    className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#141C28] px-2.5 py-1 text-[12px] text-slate-900 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-[#1a2433]"
+                    className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#141C28] px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-[12px] text-slate-900 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-[#1a2433] whitespace-nowrap"
                   >
                     Edit
                   </button>
                 ) : (
-                  <div className="flex gap-2">
+                  <div className="flex gap-1 sm:gap-2">
                     <button
                       onClick={() => cancelEdit('client')}
-                      className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#141C28] px-2.5 py-1 text-[12px] text-slate-900 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-[#1a2433]"
+                      className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#141C28] px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-[12px] text-slate-900 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-[#1a2433] whitespace-nowrap"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={() => saveEdit('client')}
                       disabled={!clientPhonesValid}
-                      className={`rounded-md px-2.5 py-1 text-[12px] text-white ${
+                      className={`rounded-md px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-[12px] text-white whitespace-nowrap ${
                         !clientPhonesValid
                           ? 'bg-slate-400 dark:bg-slate-600 cursor-not-allowed'
                           : 'bg-slate-900 dark:bg-[#3b82f6] hover:bg-slate-800 dark:hover:bg-[#2563eb]'
@@ -411,7 +411,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
               }
             >
               <Row label="Primary client">
-                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-[120px_120px_1fr_160px]">
+                <div className="grid grid-cols-1 gap-1 sm:gap-1.5 sm:grid-cols-2 md:grid-cols-[1fr_1fr_1.5fr_140px]">
                   <Input
                     placeholder="First"
                     value={draft.primaryClient.firstName || ''}
@@ -445,7 +445,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
               </Row>
 
               <Row label="Secondary client">
-                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-[120px_120px_1fr_160px]">
+                <div className="grid grid-cols-1 gap-1 sm:gap-1.5 sm:grid-cols-2 md:grid-cols-[1fr_1fr_1.5fr_140px]">
                   <Input
                     placeholder="First"
                     value={draft.secondaryClient?.firstName || ''}
@@ -514,7 +514,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
 
           {menu === 'parcel' && (
             <Section title="Parcel information" helper="Assessor & zoning data">
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div className="grid grid-cols-1 gap-2 sm:gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <Field label="Assessor's Parcel #" value={project.assessorParcelInfo?.parcelNumber} />
                 <Field label="Occupancy Class" value={project.assessorParcelInfo?.occupancyClass} />
                 <Field label="Zoning Designation" value={project.assessorParcelInfo?.zoningDesignation} />
@@ -538,21 +538,21 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
                 !mode.billing ? (
                   <button
                     onClick={() => beginEdit('billing')}
-                    className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#141C28] px-2.5 py-1 text-[12px] text-slate-900 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-[#1a2433]"
+                    className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#141C28] px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-[12px] text-slate-900 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-[#1a2433] whitespace-nowrap"
                   >
                     Edit
                   </button>
                 ) : (
-                  <div className="flex gap-2">
+                  <div className="flex gap-1 sm:gap-2">
                     <button
                       onClick={() => cancelEdit('billing')}
-                      className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#141C28] px-2.5 py-1 text-[12px] text-slate-900 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-[#1a2433]"
+                      className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#141C28] px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-[12px] text-slate-900 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-[#1a2433] whitespace-nowrap"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={() => saveEdit('billing')}
-                      className="rounded-md bg-slate-900 dark:bg-[#3b82f6] px-2.5 py-1 text-[12px] text-white hover:bg-slate-800 dark:hover:bg-[#2563eb]"
+                      className="rounded-md bg-slate-900 dark:bg-[#3b82f6] px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-[12px] text-white hover:bg-slate-800 dark:hover:bg-[#2563eb] whitespace-nowrap"
                     >
                       Save
                     </button>
@@ -561,21 +561,19 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
               }
             >
               <Row label="Estimated amount & Notes">
-                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-1 sm:gap-1.5 sm:grid-cols-1 md:grid-cols-[1fr_2fr]">
                   <Input
                     type="number"
                     value={draft.estimatedAmount ?? ''}
                     onChange={(e) => setDraft({ ...draft, estimatedAmount: e.target.value })}
                     placeholder="$ Amount"
                   />
-                  <div className="sm:col-span-2">
-                    <TextArea
-                      rows={2}
-                      value={draft.invoiceNotes}
-                      onChange={(e) => setDraft({ ...draft, invoiceNotes: e.target.value })}
-                      placeholder="Internal notes for invoicing"
-                    />
-                  </div>
+                  <TextArea
+                    rows={2}
+                    value={draft.invoiceNotes}
+                    onChange={(e) => setDraft({ ...draft, invoiceNotes: e.target.value })}
+                    placeholder="Internal notes for invoicing"
+                  />
                 </div>
               </Row>
             </Section>
@@ -668,15 +666,15 @@ function MenuItem({ id, label, active, setActive }: MenuItemProps) {
   const isActive = active === id
   return (
     <button
-      className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left ${
+      className={`flex w-full items-center justify-between rounded-md px-1.5 sm:px-2 py-1 sm:py-1.5 text-left transition-colors ${
         isActive
           ? 'bg-slate-100 dark:bg-[#141C28] text-slate-900 dark:text-blue-300'
           : 'text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-[#141C28]'
       }`}
       onClick={() => setActive(id)}
     >
-      <span className="text-[12px]">{label}</span>
-      {isActive && <span className="text-[11px]">●</span>}
+      <span className="text-[11px] sm:text-[12px] truncate">{label}</span>
+      {isActive && <span className="text-[10px] sm:text-[11px] flex-shrink-0 ml-1">●</span>}
     </button>
   )
 }
