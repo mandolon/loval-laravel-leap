@@ -231,8 +231,8 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
 
   return (
     <div className="w-full bg-slate-50 dark:bg-[#0A0E14] p-1.5 sm:p-2 md:p-3">
-      <div className="grid grid-cols-1 gap-2 sm:gap-3 md:grid-cols-[160px_1fr] lg:grid-cols-[180px_1fr] xl:grid-cols-[200px_1fr] md:min-h-[60vh] md:items-start">
-        <nav className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0E1118] p-1 sm:p-1.5 text-[12px] shadow-sm md:sticky md:top-1 md:h-[calc(100vh-120px)] md:max-h-[70vh] md:overflow-auto">
+      <div className="grid grid-cols-1 gap-2 sm:gap-3 md:grid-cols-[140px_1fr] lg:grid-cols-[145px_1fr] md:min-h-[60vh] md:items-start">
+        <nav className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0E1118] p-1 sm:p-1.5 text-[12px] shadow-sm md:sticky md:top-1 md:h-[calc(100vh-120px)] md:max-h-[70vh] md:overflow-auto md:w-[140px] lg:w-[145px]">
           <MenuItem id="profile" label="Project profile" active={menu} setActive={setMenu} />
           <MenuItem id="client" label="Client profile" active={menu} setActive={setMenu} />
           <MenuItem id="parcel" label="Parcel information" active={menu} setActive={setMenu} />
@@ -666,15 +666,14 @@ function MenuItem({ id, label, active, setActive }: MenuItemProps) {
   const isActive = active === id
   return (
     <button
-      className={`flex w-full items-center justify-between rounded-md px-1.5 sm:px-2 py-1 sm:py-1.5 text-left transition-colors ${
+      className={`flex w-full items-center rounded-md px-1.5 sm:px-2 py-1 sm:py-1.5 text-left transition-colors ${
         isActive
-          ? 'bg-slate-100 dark:bg-[#141C28] text-slate-900 dark:text-blue-300'
+          ? 'bg-slate-100 dark:bg-[#141C28] text-slate-900 dark:text-blue-300 font-medium'
           : 'text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-[#141C28]'
       }`}
       onClick={() => setActive(id)}
     >
-      <span className="text-[11px] sm:text-[12px] truncate">{label}</span>
-      {isActive && <span className="text-[10px] sm:text-[11px] flex-shrink-0 ml-1">●</span>}
+      <span className="text-[11px] sm:text-[12px]">{label}</span>
     </button>
   )
 }
