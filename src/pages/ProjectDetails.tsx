@@ -290,9 +290,9 @@ const ProjectDetails = () => {
 
   return (
     <div className={UTILITY_CLASSES.outerContainer}>
-      <ResizablePanelGroup direction="horizontal" className="h-full gap-1">
+      <ResizablePanelGroup direction="horizontal" className="h-full">
         <ResizablePanel defaultSize={chatOpen ? 75 : 100} minSize={50}>
-          <div className="flex flex-col h-full min-h-0 overflow-hidden">
+          <div className={`${T.panel} ${T.radius} flex flex-col h-full min-h-0 overflow-hidden`}>
         {/* Header */}
         <div className="h-12 text-[12px] grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 bg-white dark:bg-[#0E1118] border-b border-slate-200 dark:border-[#1a2030]/60">
           {/* Left: Back button */}
@@ -893,9 +893,9 @@ const ProjectDetails = () => {
       {/* Project Chat Sidebar - Resizable */}
       {chatOpen && (
         <>
-          <ResizableHandle withHandle className="w-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors" />
+          <ResizableHandle withHandle />
           <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
-            <div className="flex flex-col h-full overflow-hidden">
+            <div className={`${T.panel} ${T.radius} flex flex-col h-full overflow-hidden`}>
           <div className="h-10 px-3 flex items-center justify-between border-b border-slate-200 dark:border-[#1d2230] bg-white dark:bg-[#0E1118]">
             <span className="text-[12px] text-slate-700 dark:text-neutral-300">Project Chat</span>
             <button
