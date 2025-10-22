@@ -292,7 +292,7 @@ const ProjectDetails = () => {
     <div className={UTILITY_CLASSES.outerContainer}>
       <ResizablePanelGroup direction="horizontal" className="h-full gap-1">
         <ResizablePanel defaultSize={chatOpen ? 75 : 100} minSize={50}>
-          <div className={`${T.panel} ${T.radius} flex flex-col h-full min-h-0 overflow-hidden`}>
+          <div className="flex flex-col h-full min-h-0 overflow-hidden">
         {/* Header */}
         <div className="h-12 text-[12px] grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 bg-white dark:bg-[#0E1118] border-b border-slate-200 dark:border-[#1a2030]/60">
           {/* Left: Back button */}
@@ -413,13 +413,13 @@ const ProjectDetails = () => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 min-h-0 flex flex-col bg-white dark:bg-[#0F1219]">
+        <div className="flex-1 min-h-0 flex flex-col">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
               <TabsContent value="files" className="mt-0 flex-1 min-h-0 flex flex-col">
                 <FilesTab projectId={id || ''} />
               </TabsContent>
 
-            <TabsContent value="tasks" className="h-full overflow-auto bg-white dark:bg-[#0F1219]">
+            <TabsContent value="tasks" className="h-full overflow-auto">
               <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold text-slate-700 dark:text-neutral-300">Tasks</h2>
@@ -499,7 +499,7 @@ const ProjectDetails = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="invoices" className="h-full overflow-auto bg-white dark:bg-[#0F1219]">
+            <TabsContent value="invoices" className="h-full overflow-auto">
               <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -535,7 +535,7 @@ const ProjectDetails = () => {
                   </div>
                 ) : invoices.length === 0 ? (
                   <Card className={`${T.panel} ${T.radius}`}>
-                    <CardContent className="py-12 bg-white dark:bg-[#0F1219]">
+                    <CardContent className="py-12">
                       <p className="text-center text-slate-500 dark:text-neutral-400">No invoices yet. Create your first invoice to get started.</p>
                     </CardContent>
                   </Card>
@@ -606,7 +606,7 @@ const ProjectDetails = () => {
               />
             </TabsContent>
 
-            <TabsContent value="links" className="h-full overflow-auto bg-white dark:bg-[#0F1219]">
+            <TabsContent value="links" className="h-full overflow-auto">
               <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -622,7 +622,7 @@ const ProjectDetails = () => {
                   </div>
                 ) : links.length === 0 ? (
                   <Card className={`${T.panel} ${T.radius}`}>
-                    <CardContent className="py-12 bg-white dark:bg-[#0F1219]">
+                    <CardContent className="py-12">
                       <p className="text-center text-slate-500 dark:text-neutral-400">
                         No links yet. Add your first reference link to get started.
                       </p>
@@ -656,7 +656,7 @@ const ProjectDetails = () => {
               />
             </TabsContent>
 
-            <TabsContent value="project" className="h-full overflow-auto bg-white dark:bg-[#0F1219]">
+            <TabsContent value="project" className="h-full overflow-auto">
               <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
               {/* Project Name */}
               <Card className={`${T.panel} ${T.radius}`}>
@@ -669,7 +669,7 @@ const ProjectDetails = () => {
                     onUpdate={(name) => handleUpdateProject({ name })}
                   />
                 </CardHeader>
-                <CardContent className="bg-white dark:bg-[#0F1219]">
+                <CardContent>
                   <p className="font-medium text-lg text-slate-700 dark:text-neutral-300">{project.name}</p>
                 </CardContent>
               </Card>
@@ -685,7 +685,7 @@ const ProjectDetails = () => {
                     onUpdate={(address) => handleUpdateProject({ address })}
                   />
                 </CardHeader>
-                <CardContent className="bg-white dark:bg-[#0F1219]">
+                <CardContent>
                   <p className="font-medium text-slate-700 dark:text-neutral-300">
                     {typeof project.address === 'object' && project.address 
                       ? (() => {
@@ -711,7 +711,7 @@ const ProjectDetails = () => {
                     onUpdate={(description) => handleUpdateProject({ description })}
                   />
                 </CardHeader>
-                <CardContent className="bg-white dark:bg-[#0F1219]">
+                <CardContent>
                   <p className="text-slate-500 dark:text-neutral-400">{project.description || "No description provided yet. Click edit to add project details."}</p>
                 </CardContent>
               </Card>
@@ -728,7 +728,7 @@ const ProjectDetails = () => {
                       onUpdate={(status) => handleUpdateProject({ status: status as any })}
                     />
                   </CardHeader>
-                  <CardContent className="bg-white dark:bg-[#0F1219]">
+                  <CardContent>
                     <Badge variant={
                       project.status === 'active' ? 'default' : 
                       project.status === 'completed' ? 'secondary' : 
@@ -753,7 +753,7 @@ const ProjectDetails = () => {
                       onUpdate={(phase) => handleUpdateProject({ phase: phase as any })}
                     />
                   </CardHeader>
-                  <CardContent className="bg-white dark:bg-[#0F1219]">
+                  <CardContent>
                     <p className="font-medium text-slate-700 dark:text-neutral-300">{project.phase}</p>
                   </CardContent>
                 </Card>
@@ -768,7 +768,7 @@ const ProjectDetails = () => {
                       onUpdate={(estimatedAmount) => handleUpdateProject({ estimatedAmount })}
                     />
                   </CardHeader>
-                  <CardContent className="bg-white dark:bg-[#0F1219]">
+                  <CardContent>
                     <p className="font-medium text-lg text-slate-700 dark:text-neutral-300">
                       {project.estimatedAmount 
                         ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(project.estimatedAmount)
@@ -783,7 +783,7 @@ const ProjectDetails = () => {
                 <CardHeader className="border-b border-slate-200 dark:border-[#1d2230]">
                   <CardTitle>Team</CardTitle>
                 </CardHeader>
-                <CardContent className="bg-white dark:bg-[#0F1219]">
+                <CardContent>
                   <ProjectMembersTable projectId={id || ''} workspaceId={workspaceId || ''} />
                 </CardContent>
               </Card>
@@ -799,51 +799,10 @@ const ProjectDetails = () => {
                     onUpdate={(data) => handleUpdateProject({ assessorParcelInfo: data })}
                   />
                 </CardHeader>
-                <CardContent className="bg-white dark:bg-[#0F1219]">
+                <CardContent>
                   <div className="space-y-4">
                     <div className="grid grid-cols-4 gap-4">
-                      <div>
-                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Assessor's Parcel #</p>
-                        <p className="font-medium text-[#00639b] dark:text-blue-300">{project.assessorParcelInfo?.parcelNumber || '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Occupancy Class</p>
-                        <p className="font-medium text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.occupancyClass || '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Zoning Designation</p>
-                        <p className="font-medium text-[#00639b] dark:text-blue-300">{project.assessorParcelInfo?.zoningDesignation || '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Construction</p>
-                        <p className="font-medium text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.construction || '—'}</p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-6 gap-4">
-                      <div>
-                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Stories</p>
-                        <p className="font-medium text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.stories || '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Plate Height</p>
-                        <p className="font-medium text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.plateHeight || '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Roof Height</p>
-                        <p className="font-medium text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.roofHeight || '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Year Built</p>
-                        <p className="font-medium text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.yearBuilt || '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Approx Lot Area</p>
-                        <p className="font-medium text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.lotArea || '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500 dark:text-neutral-500 mb-1">Acres</p>
-                        <p className="font-medium text-slate-700 dark:text-neutral-300">{project.assessorParcelInfo?.acres || '—'}</p>
-                      </div>
+...
                     </div>
                   </div>
                 </CardContent>
@@ -851,7 +810,7 @@ const ProjectDetails = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="client" className="h-full overflow-auto bg-white dark:bg-[#0F1219]">
+            <TabsContent value="client" className="h-full overflow-auto">
               <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
               <Card className={`${T.panel} ${T.radius}`}>
                 <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1d2230]">
@@ -863,7 +822,7 @@ const ProjectDetails = () => {
                     onUpdate={(data) => handleUpdateProject(data)}
                   />
                 </CardHeader>
-                <CardContent className="bg-white dark:bg-[#0F1219]">
+                <CardContent>
                   <div className="space-y-4">
                     <div>
                       <p className="text-sm text-slate-500 dark:text-neutral-500">Primary Client</p>
@@ -897,7 +856,7 @@ const ProjectDetails = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="notes" className="h-full overflow-auto bg-white dark:bg-[#0F1219]">
+            <TabsContent value="notes" className="h-full overflow-auto">
               <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
               <Card className={`${T.panel} ${T.radius}`}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-slate-200 dark:border-[#1d2230]">
@@ -907,7 +866,7 @@ const ProjectDetails = () => {
                   </div>
                   <CreateNoteDialog onCreateNote={(content) => createNoteMutation.mutate({ content })} />
                 </CardHeader>
-                <CardContent className="space-y-4 bg-white dark:bg-[#0F1219]">
+                <CardContent className="space-y-4">
                   {notesLoading ? (
                     <p className="text-sm text-slate-500 dark:text-neutral-400 text-center py-8">Loading notes...</p>
                   ) : notes.length === 0 ? (
@@ -936,7 +895,7 @@ const ProjectDetails = () => {
         <>
           <ResizableHandle withHandle className="w-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors" />
           <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
-            <div className={`${T.panel} ${T.radius} flex flex-col h-full overflow-hidden`}>
+            <div className="flex flex-col h-full overflow-hidden">
           <div className="h-10 px-3 flex items-center justify-between border-b border-slate-200 dark:border-[#1d2230] bg-white dark:bg-[#0E1118]">
             <span className="text-[12px] text-slate-700 dark:text-neutral-300">Project Chat</span>
             <button
