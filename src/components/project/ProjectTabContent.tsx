@@ -17,14 +17,14 @@ interface SectionProps {
 function Section({ title, helper, children, action, disabled = false }: SectionProps) {
   return (
     <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0E1118] shadow-sm">
-      <header className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 py-3">
+      <header className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-3 py-2">
         <div>
-          <h3 className="text-[15px] font-semibold text-slate-900 dark:text-neutral-200">{title}</h3>
-          {helper && <p className="text-[12px] text-slate-500 dark:text-neutral-400">{helper}</p>}
+          <h3 className="text-[13px] font-semibold text-slate-900 dark:text-neutral-200">{title}</h3>
+          {helper && <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-0.5">{helper}</p>}
         </div>
         {action}
       </header>
-      <div className="relative p-4">
+      <div className="relative p-3">
         {children}
         {disabled && <div className="absolute inset-0 pointer-events-auto" />}
       </div>
@@ -39,8 +39,8 @@ interface RowProps {
 
 function Row({ label, children }: RowProps) {
   return (
-    <div className="grid grid-cols-1 items-center gap-0.5 py-2 sm:grid-cols-[160px_1fr] sm:gap-x-1">
-      <label className="text-[13px] font-medium text-slate-700 dark:text-neutral-300 sm:pr-1">{label}</label>
+    <div className="grid grid-cols-1 items-center gap-0.5 py-1.5 sm:grid-cols-[140px_1fr] sm:gap-x-1">
+      <label className="text-[12px] font-medium text-slate-700 dark:text-neutral-300 sm:pr-1">{label}</label>
       <div>{children}</div>
     </div>
   )
@@ -52,7 +52,7 @@ function Input(props: InputProps) {
   return (
     <input
       {...props}
-      className={`w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-[#0E1118] px-3 py-2 text-[14px] text-slate-900 dark:text-neutral-200 outline-none focus:border-slate-400 dark:focus:border-slate-500 ${props.className || ''}`}
+      className={`w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-[#0E1118] px-2.5 py-1.5 text-[12px] text-slate-900 dark:text-neutral-200 outline-none focus:border-slate-400 dark:focus:border-slate-500 ${props.className || ''}`}
     />
   )
 }
@@ -63,7 +63,7 @@ function TextArea(props: TextAreaProps) {
   return (
     <textarea
       {...props}
-      className={`w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-[#0E1118] px-3 py-2 text-[14px] text-slate-900 dark:text-neutral-200 outline-none focus:border-slate-400 dark:focus:border-slate-500 ${props.className || ''}`}
+      className={`w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-[#0E1118] px-2.5 py-1.5 text-[12px] text-slate-900 dark:text-neutral-200 outline-none focus:border-slate-400 dark:focus:border-slate-500 ${props.className || ''}`}
     />
   )
 }
@@ -99,7 +99,7 @@ function PhoneInput({ digits, onDigitsChange, ...props }: PhoneInputProps) {
       inputMode="numeric"
       value={formatPhone(digits)}
       onChange={(e) => onDigitsChange(onlyDigits(e.target.value))}
-      className={`w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-[#0E1118] px-3 py-2 text-[14px] text-slate-900 dark:text-neutral-200 outline-none focus:border-slate-400 dark:focus:border-slate-500 ${props.className || ''}`}
+      className={`w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-[#0E1118] px-2.5 py-1.5 text-[12px] text-slate-900 dark:text-neutral-200 outline-none focus:border-slate-400 dark:focus:border-slate-500 ${props.className || ''}`}
       {...props}
     />
   )
@@ -230,9 +230,9 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl bg-slate-50 dark:bg-[#0A0E14] p-6">
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-[240px_1fr] md:min-h-[70vh] md:items-start">
-        <nav className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0E1118] p-2 text-[14px] shadow-sm md:sticky md:top-2 md:h-[70vh] md:overflow-auto">
+    <div className="w-full bg-slate-50 dark:bg-[#0A0E14] p-2 sm:p-3">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-[180px_1fr] lg:grid-cols-[200px_1fr] xl:grid-cols-[220px_1fr] md:min-h-[65vh] md:items-start">
+        <nav className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0E1118] p-1.5 text-[12px] shadow-sm md:sticky md:top-2 md:h-[65vh] md:overflow-auto">
           <MenuItem id="profile" label="Project profile" active={menu} setActive={setMenu} />
           <MenuItem id="client" label="Client profile" active={menu} setActive={setMenu} />
           <MenuItem id="parcel" label="Parcel information" active={menu} setActive={setMenu} />
@@ -241,7 +241,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
           <MenuItem id="activity" label="Activity" active={menu} setActive={setMenu} />
         </nav>
 
-        <div className="space-y-6">
+        <div className="space-y-3">
           {menu === 'profile' && (
             <Section
               title="Project profile"
@@ -251,7 +251,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
                 !mode.profile ? (
                   <button
                     onClick={() => beginEdit('profile')}
-                    className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#141C28] px-3 py-1.5 text-[13px] text-slate-900 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-[#1a2433]"
+                    className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#141C28] px-2.5 py-1 text-[12px] text-slate-900 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-[#1a2433]"
                   >
                     Edit
                   </button>
@@ -259,13 +259,13 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
                   <div className="flex gap-2">
                     <button
                       onClick={() => cancelEdit('profile')}
-                      className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#141C28] px-3 py-1.5 text-[13px] text-slate-900 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-[#1a2433]"
+                      className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#141C28] px-2.5 py-1 text-[12px] text-slate-900 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-[#1a2433]"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={() => saveEdit('profile')}
-                      className="rounded-md bg-slate-900 dark:bg-[#3b82f6] px-3 py-1.5 text-[13px] text-white hover:bg-slate-800 dark:hover:bg-[#2563eb]"
+                      className="rounded-md bg-slate-900 dark:bg-[#3b82f6] px-2.5 py-1 text-[12px] text-white hover:bg-slate-800 dark:hover:bg-[#2563eb]"
                     >
                       Save
                     </button>
@@ -281,7 +281,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
               </Row>
 
               <Row label="Address">
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[72px_160px_1fr_180px]">
+                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-[60px_140px_1fr_160px]">
                   <Input
                     placeholder="#"
                     value={draft.address.streetNumber || ''}
@@ -297,7 +297,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
                     value={draft.address.city || ''}
                     onChange={(e) => setDraft({ ...draft, address: { ...draft.address, city: e.target.value } })}
                   />
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-1.5">
                     <Input
                       placeholder="State"
                       value={draft.address.state || ''}
@@ -313,9 +313,9 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
               </Row>
 
               <Row label="Status & Phase">
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                   <select
-                    className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-[#0E1118] px-3 py-2 text-[14px] text-slate-900 dark:text-neutral-200"
+                    className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-[#0E1118] px-2.5 py-1.5 text-[12px] text-slate-900 dark:text-neutral-200"
                     value={draft.status}
                     onChange={(e) => setDraft({ ...draft, status: e.target.value as 'pending' | 'active' | 'completed' | 'archived' })}
                   >
@@ -325,7 +325,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
                     <option value="archived">Archived</option>
                   </select>
                   <select
-                    className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-[#0E1118] px-3 py-2 text-[14px] text-slate-900 dark:text-neutral-200"
+                    className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-[#0E1118] px-2.5 py-1.5 text-[12px] text-slate-900 dark:text-neutral-200"
                     value={draft.phase}
                     onChange={(e) => setDraft({ ...draft, phase: e.target.value as 'Pre-Design' | 'Design' | 'Permit' | 'Build' })}
                   >
@@ -338,7 +338,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
               </Row>
 
               <Row label="Budget, Due, Progress">
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
                   <Input
                     type="number"
                     value={draft.estimatedAmount ?? ''}
@@ -359,7 +359,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
                       onChange={(e) => setDraft({ ...draft, progress: Number(e.target.value) })}
                       className="w-full"
                     />
-                    <span className="w-10 text-right text-[13px] text-slate-700 dark:text-neutral-300">{draft.progress}%</span>
+                    <span className="w-10 text-right text-[12px] text-slate-700 dark:text-neutral-300">{draft.progress}%</span>
                   </div>
                 </div>
               </Row>
@@ -383,7 +383,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
                 !mode.client ? (
                   <button
                     onClick={() => beginEdit('client')}
-                    className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#141C28] px-3 py-1.5 text-[13px] text-slate-900 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-[#1a2433]"
+                    className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#141C28] px-2.5 py-1 text-[12px] text-slate-900 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-[#1a2433]"
                   >
                     Edit
                   </button>
@@ -391,14 +391,14 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
                   <div className="flex gap-2">
                     <button
                       onClick={() => cancelEdit('client')}
-                      className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#141C28] px-3 py-1.5 text-[13px] text-slate-900 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-[#1a2433]"
+                      className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#141C28] px-2.5 py-1 text-[12px] text-slate-900 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-[#1a2433]"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={() => saveEdit('client')}
                       disabled={!clientPhonesValid}
-                      className={`rounded-md px-3 py-1.5 text-[13px] text-white ${
+                      className={`rounded-md px-2.5 py-1 text-[12px] text-white ${
                         !clientPhonesValid
                           ? 'bg-slate-400 dark:bg-slate-600 cursor-not-allowed'
                           : 'bg-slate-900 dark:bg-[#3b82f6] hover:bg-slate-800 dark:hover:bg-[#2563eb]'
@@ -411,7 +411,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
               }
             >
               <Row label="Primary client">
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[120px_120px_1fr_160px]">
+                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-[120px_120px_1fr_160px]">
                   <Input
                     placeholder="First"
                     value={draft.primaryClient.firstName || ''}
@@ -445,7 +445,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
               </Row>
 
               <Row label="Secondary client">
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[120px_120px_1fr_160px]">
+                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-[120px_120px_1fr_160px]">
                   <Input
                     placeholder="First"
                     value={draft.secondaryClient?.firstName || ''}
@@ -514,7 +514,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
 
           {menu === 'parcel' && (
             <Section title="Parcel information" helper="Assessor & zoning data">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                 <Field label="Assessor's Parcel #" value={project.assessorParcelInfo?.parcelNumber} />
                 <Field label="Occupancy Class" value={project.assessorParcelInfo?.occupancyClass} />
                 <Field label="Zoning Designation" value={project.assessorParcelInfo?.zoningDesignation} />
@@ -538,7 +538,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
                 !mode.billing ? (
                   <button
                     onClick={() => beginEdit('billing')}
-                    className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#141C28] px-3 py-1.5 text-[13px] text-slate-900 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-[#1a2433]"
+                    className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#141C28] px-2.5 py-1 text-[12px] text-slate-900 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-[#1a2433]"
                   >
                     Edit
                   </button>
@@ -546,13 +546,13 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
                   <div className="flex gap-2">
                     <button
                       onClick={() => cancelEdit('billing')}
-                      className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#141C28] px-3 py-1.5 text-[13px] text-slate-900 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-[#1a2433]"
+                      className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-[#141C28] px-2.5 py-1 text-[12px] text-slate-900 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-[#1a2433]"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={() => saveEdit('billing')}
-                      className="rounded-md bg-slate-900 dark:bg-[#3b82f6] px-3 py-1.5 text-[13px] text-white hover:bg-slate-800 dark:hover:bg-[#2563eb]"
+                      className="rounded-md bg-slate-900 dark:bg-[#3b82f6] px-2.5 py-1 text-[12px] text-white hover:bg-slate-800 dark:hover:bg-[#2563eb]"
                     >
                       Save
                     </button>
@@ -561,7 +561,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
               }
             >
               <Row label="Estimated amount & Notes">
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
                   <Input
                     type="number"
                     value={draft.estimatedAmount ?? ''}
@@ -583,7 +583,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
 
           {menu === 'preferences' && (
             <Section title="Preferences" helper="Small project options">
-              <div className="space-y-3 text-[14px] text-slate-700 dark:text-neutral-300">
+              <div className="space-y-2 text-[12px] text-slate-700 dark:text-neutral-300">
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -602,7 +602,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
 
           {menu === 'activity' && (
             <Section title="Activity" helper="Recent project events">
-              <div className="mb-3 flex flex-wrap gap-2">
+              <div className="mb-2 flex flex-wrap gap-1.5">
                 {[
                   { id: 'all', label: 'All' },
                   { id: 'file', label: 'Files' },
@@ -613,7 +613,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
                   <button
                     key={f.id}
                     onClick={() => setActivityFilter(f.id)}
-                    className={`rounded-full px-3 py-1 text-[12px] ${
+                    className={`rounded-full px-2.5 py-0.5 text-[11px] ${
                       activityFilter === f.id
                         ? 'bg-slate-900 dark:bg-[#3b82f6] text-white'
                         : 'bg-slate-100 dark:bg-[#141C28] text-slate-700 dark:text-neutral-300 hover:bg-slate-200 dark:hover:bg-[#1a2433]'
@@ -628,13 +628,13 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
                 {activities
                   .filter((a) => activityFilter === 'all' || a.type === activityFilter)
                   .map((a) => (
-                    <li key={a.id} className="flex items-start gap-3 py-3">
+                    <li key={a.id} className="flex items-start gap-2 py-2">
                       <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 dark:bg-[#141C28]">
                         <TypeIcon type={a.type} />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <div className="text-[14px] text-slate-900 dark:text-neutral-200">{a.message}</div>
-                        <div className="text-[12px] text-slate-500 dark:text-neutral-400">
+                        <div className="text-[12px] text-slate-900 dark:text-neutral-200">{a.message}</div>
+                        <div className="text-[11px] text-slate-500 dark:text-neutral-400">
                           {a.user} • {formatLocal(a.when)}
                         </div>
                       </div>
@@ -643,7 +643,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
               </ul>
 
               {activities.length === 0 && (
-                <div className="py-8 text-center text-sm text-slate-500 dark:text-neutral-400">
+                <div className="py-6 text-center text-[12px] text-slate-500 dark:text-neutral-400">
                   No activity yet for this project
                 </div>
               )}
@@ -668,15 +668,15 @@ function MenuItem({ id, label, active, setActive }: MenuItemProps) {
   const isActive = active === id
   return (
     <button
-      className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left ${
+      className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left ${
         isActive
           ? 'bg-slate-100 dark:bg-[#141C28] text-slate-900 dark:text-blue-300'
           : 'text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-[#141C28]'
       }`}
       onClick={() => setActive(id)}
     >
-      <span className="text-[14px]">{label}</span>
-      {isActive && <span className="text-[12px]">●</span>}
+      <span className="text-[12px]">{label}</span>
+      {isActive && <span className="text-[11px]">●</span>}
     </button>
   )
 }
@@ -689,10 +689,10 @@ interface FieldProps {
 function Field({ label, value }: FieldProps) {
   return (
     <div>
-      <div className="text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-neutral-400">
+      <div className="text-[10px] font-medium uppercase tracking-wide text-slate-500 dark:text-neutral-400">
         {label}
       </div>
-      <div className="mt-1 text-[14px] text-slate-900 dark:text-neutral-200">{value ?? '—'}</div>
+      <div className="mt-0.5 text-[12px] text-slate-900 dark:text-neutral-200">{value ?? '—'}</div>
     </div>
   )
 }
