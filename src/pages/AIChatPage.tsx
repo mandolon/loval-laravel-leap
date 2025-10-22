@@ -162,7 +162,7 @@ export default function AIChatPage() {
   };
 
   return (
-    <div className="flex h-full flex-col bg-slate-50 dark:bg-slate-950">
+    <div className="flex h-full flex-col">
       {/* Center container for all chat content */}
       <div className="relative flex h-full flex-col overflow-hidden">
         

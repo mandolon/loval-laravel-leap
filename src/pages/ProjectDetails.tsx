@@ -289,7 +289,7 @@ const ProjectDetails = () => {
   };
 
   return (
-    <div className="h-full w-full text-[12px] overflow-hidden text-slate-700 dark:text-neutral-200">
+    <div className="h-full w-full text-[12px] overflow-hidden">
       <ResizablePanelGroup direction="horizontal" className="h-full">
         <ResizablePanel defaultSize={chatOpen ? 75 : 100} minSize={50}>
           <div className={`${T.panel} ${T.radius} flex flex-col h-full min-h-0 overflow-hidden`}>
