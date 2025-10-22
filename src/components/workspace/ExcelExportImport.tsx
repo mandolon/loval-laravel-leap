@@ -55,7 +55,7 @@ export function ExcelExportImport({ workspaceId }: ExcelExportImportProps) {
 
       toast({
         title: 'Export Successful',
-        description: `Exported ${projects.length} projects to Excel file.`
+        description: `Exported ${projects.length} projects (each in its own sheet).`
       });
     } catch (error: any) {
       console.error('Export error:', error);

@@ -73,11 +73,183 @@ function parseNumericValue(value: any): number | undefined {
   return isNaN(parsed) ? undefined : parsed;
 }
 
-function parseDate(value: any): string | undefined {
+function parseDateValue(value: any): string | undefined {
   if (!value) return undefined;
   const date = new Date(value);
   if (isNaN(date.getTime())) return undefined;
   return date.toISOString().split('T')[0];
+}
+
+// Detect file format (single-sheet vs multi-sheet)
+function detectFileFormat(workbook: XLSX.WorkBook): 'single' | 'multi' {
+  if (workbook.SheetNames.includes('Summary')) {
+    return 'multi';
+  } else if (workbook.SheetNames.includes('Projects')) {
+    return 'single';
+  }
+  throw new Error('Unrecognized file format. Expected "Projects" sheet or "Summary" sheet.');
+}
+
+// Find the value of a field in a key-value sheet layout
+function findFieldValue(sheet: XLSX.WorkSheet, labelText: string): string {
+  const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
+  
+  for (let row = range.s.r; row <= range.e.r; row++) {
+    const labelAddress = XLSX.utils.encode_cell({ r: row, c: 0 }); // Column A
+    const cell = sheet[labelAddress];
+    
+    if (cell?.v && String(cell.v).includes(labelText)) {
+      // Found label, get value from column B
+      const valueAddress = XLSX.utils.encode_cell({ r: row, c: 1 });
+      const valueCell = sheet[valueAddress];
+      return valueCell?.v ? String(valueCell.v) : '';
+    }
+  }
+  return '';
+}
+
+// Extract project data from a key-value sheet layout
+function extractProjectFromSheet(sheet: XLSX.WorkSheet, sheetName: string, rowNumber: number): ImportRow {
+  // Helper to parse numeric values from sheet
+  const parseNumeric = (value: string): number | undefined => {
+    if (!value) return undefined;
+    // Remove currency symbols, commas, and percentage signs
+    const cleaned = value.replace(/[$,%]/g, '');
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? undefined : num;
+  };
+  
+  // Helper to parse dates from sheet
+  const parseDate = (value: string): string | undefined => {
+    if (!value) return undefined;
+    const date = new Date(value);
+    return isNaN(date.getTime()) ? undefined : date.toISOString().split('T')[0];
+  };
+  
+  // Helper to strip emoji prefix from status/phase
+  const stripEmoji = (value: string): string => {
+    if (!value) return '';
+    return value.replace(/^[\u{1F000}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]\s*/u, '').trim();
+  };
+  
+  // Find section row numbers to distinguish PRIMARY vs SECONDARY clients
+  const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
+  let primaryClientRow = -1;
+  let secondaryClientRow = -1;
+  
+  for (let row = range.s.r; row <= range.e.r; row++) {
+    const cellAddress = XLSX.utils.encode_cell({ r: row, c: 0 });
+    const cell = sheet[cellAddress];
+    if (cell?.v) {
+      const text = String(cell.v);
+      if (text === 'PRIMARY CLIENT') primaryClientRow = row;
+      if (text === 'SECONDARY CLIENT') secondaryClientRow = row;
+    }
+  }
+  
+  // Parse fields with section context for client data
+  const findFieldInRange = (label: string, startRow: number, endRow: number): string => {
+    for (let row = startRow; row <= endRow; row++) {
+      const labelAddress = XLSX.utils.encode_cell({ r: row, c: 0 });
+      const cell = sheet[labelAddress];
+      
+      if (cell?.v && String(cell.v) === label) {
+        const valueAddress = XLSX.utils.encode_cell({ r: row, c: 1 });
+        const valueCell = sheet[valueAddress];
+        return valueCell?.v ? String(valueCell.v) : '';
+      }
+    }
+    return '';
+  };
+  
+  return {
+    rowNumber,
+    projectId: findFieldValue(sheet, 'Project ID:') || findFieldValue(sheet, 'Project ID (for import):') || undefined,
+    name: findFieldValue(sheet, 'Project Name:'),
+    address: {
+      streetNumber: findFieldValue(sheet, 'Street Number:'),
+      streetName: findFieldValue(sheet, 'Street Name:'),
+      city: findFieldValue(sheet, 'City:'),
+      state: findFieldValue(sheet, 'State:'),
+      zipCode: findFieldValue(sheet, 'Zip Code:'),
+    },
+    primaryClient: primaryClientRow >= 0 ? {
+      firstName: findFieldInRange('First Name:', primaryClientRow, secondaryClientRow > 0 ? secondaryClientRow : range.e.r) || undefined,
+      lastName: findFieldInRange('Last Name:', primaryClientRow, secondaryClientRow > 0 ? secondaryClientRow : range.e.r) || undefined,
+      email: findFieldInRange('Email:', primaryClientRow, secondaryClientRow > 0 ? secondaryClientRow : range.e.r) || undefined,
+      phone: findFieldInRange('Phone:', primaryClientRow, secondaryClientRow > 0 ? secondaryClientRow : range.e.r) || undefined,
+    } : undefined,
+    secondaryClient: secondaryClientRow >= 0 ? {
+      firstName: findFieldInRange('First Name:', secondaryClientRow, range.e.r) || undefined,
+      lastName: findFieldInRange('Last Name:', secondaryClientRow, range.e.r) || undefined,
+      email: findFieldInRange('Email:', secondaryClientRow, range.e.r) || undefined,
+      phone: findFieldInRange('Phone:', secondaryClientRow, range.e.r) || undefined,
+    } : undefined,
+    estimatedAmount: parseNumeric(findFieldValue(sheet, 'Budget:')),
+    dueDate: parseDate(findFieldValue(sheet, 'Due Date:')),
+    phase: stripEmoji(findFieldValue(sheet, 'Phase:')) || undefined,
+    status: stripEmoji(findFieldValue(sheet, 'Status:')) || undefined,
+    progress: parseNumeric(findFieldValue(sheet, 'Progress:')),
+  };
+}
+
+// Parse multi-sheet format (one sheet per project)
+function parseMultiSheetFormat(workbook: XLSX.WorkBook): ImportRow[] {
+  const rows: ImportRow[] = [];
+  let rowNumber = 0;
+  
+  for (const sheetName of workbook.SheetNames) {
+    if (sheetName === 'Summary') continue; // Skip summary sheet
+    
+    const sheet = workbook.Sheets[sheetName];
+    const projectData = extractProjectFromSheet(sheet, sheetName, ++rowNumber);
+    rows.push(projectData);
+  }
+  
+  return rows;
+}
+
+// Parse single-sheet format (legacy, all projects in "Projects" sheet)
+function parseSingleSheetFormat(workbook: XLSX.WorkBook): ImportRow[] {
+  const worksheet = workbook.Sheets['Projects'];
+  const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+  if (jsonData.length === 0) {
+    throw new Error('File contains no data');
+  }
+
+  // Parse rows
+  const rows: ImportRow[] = jsonData.map((row: any, index: number) => ({
+    rowNumber: index + 2, // +2 because Excel is 1-indexed and has header row
+    projectId: row['Project ID'] || undefined,
+    name: row['Project Name'] || '',
+    address: {
+      streetNumber: row['Street Number'] || '',
+      streetName: row['Street Name'] || '',
+      city: row['City'] || '',
+      state: row['State'] || '',
+      zipCode: row['Zip Code'] || '',
+    },
+    primaryClient: {
+      firstName: row['Primary Client First'] || undefined,
+      lastName: row['Primary Client Last'] || undefined,
+      email: row['Primary Client Email'] || undefined,
+      phone: row['Primary Client Phone'] || undefined,
+    },
+    secondaryClient: {
+      firstName: row['Secondary Client First'] || undefined,
+      lastName: row['Secondary Client Last'] || undefined,
+      email: row['Secondary Client Email'] || undefined,
+      phone: row['Secondary Client Phone'] || undefined,
+    },
+    estimatedAmount: parseNumericValue(row['Budget']),
+    dueDate: parseDateValue(row['Due Date']),
+    phase: row['Phase'] || undefined,
+    status: row['Status'] || undefined,
+    progress: parseNumericValue(row['Progress %']),
+  }));
+
+  return rows;
 }
 
 export async function parseExcelFile(file: File): Promise<ImportRow[]> {
@@ -89,54 +261,16 @@ export async function parseExcelFile(file: File): Promise<ImportRow[]> {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
 
-        // Check if "Projects" sheet exists
-        if (!workbook.SheetNames.includes('Projects')) {
-          reject(new Error('Expected "Projects" sheet not found in file'));
-          return;
+        // Detect format and parse accordingly
+        const format = detectFileFormat(workbook);
+        
+        if (format === 'single') {
+          resolve(parseSingleSheetFormat(workbook));
+        } else {
+          resolve(parseMultiSheetFormat(workbook));
         }
-
-        const worksheet = workbook.Sheets['Projects'];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
-
-        if (jsonData.length === 0) {
-          reject(new Error('File contains no data'));
-          return;
-        }
-
-        // Parse rows
-        const rows: ImportRow[] = jsonData.map((row: any, index: number) => ({
-          rowNumber: index + 2, // +2 because Excel is 1-indexed and has header row
-          projectId: row['Project ID'] || undefined,
-          name: row['Project Name'] || '',
-          address: {
-            streetNumber: row['Street Number'] || '',
-            streetName: row['Street Name'] || '',
-            city: row['City'] || '',
-            state: row['State'] || '',
-            zipCode: row['Zip Code'] || '',
-          },
-          primaryClient: {
-            firstName: row['Primary Client First'] || undefined,
-            lastName: row['Primary Client Last'] || undefined,
-            email: row['Primary Client Email'] || undefined,
-            phone: row['Primary Client Phone'] || undefined,
-          },
-          secondaryClient: {
-            firstName: row['Secondary Client First'] || undefined,
-            lastName: row['Secondary Client Last'] || undefined,
-            email: row['Secondary Client Email'] || undefined,
-            phone: row['Secondary Client Phone'] || undefined,
-          },
-          estimatedAmount: parseNumericValue(row['Budget']),
-          dueDate: parseDate(row['Due Date']),
-          phase: row['Phase'] || undefined,
-          status: row['Status'] || undefined,
-          progress: parseNumericValue(row['Progress %']),
-        }));
-
-        resolve(rows);
-      } catch (error) {
-        reject(new Error('Failed to parse Excel file'));
+      } catch (error: any) {
+        reject(new Error(error.message || 'Failed to parse Excel file'));
       }
     };
 
