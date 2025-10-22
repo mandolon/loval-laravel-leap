@@ -378,7 +378,7 @@ const ProjectDetails = () => {
                   <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
                     <div className="flex items-center justify-between">
                       <div><h2 className="text-2xl font-bold">Notes</h2></div>
-                      <CreateNoteDialog onCreateNote={(content) => createNoteMutation.mutate({ projectId: id || '', content })} />
+                      <CreateNoteDialog onCreateNote={(content) => createNoteMutation.mutate({ content })} />
                     </div>
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                       {notes.map(note => <NoteCard key={note.id} note={note} onUpdate={(id, content) => updateNoteMutation.mutate({ id, content })} onDelete={(id) => deleteNoteMutation.mutate(id)} />)}
