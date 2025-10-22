@@ -39,8 +39,8 @@ interface RowProps {
 
 function Row({ label, children }: RowProps) {
   return (
-    <div className="grid grid-cols-1 items-start gap-0.5 py-1 sm:py-1.5 sm:grid-cols-[120px_1fr] md:grid-cols-[140px_1fr] sm:gap-x-1 md:gap-x-2">
-      <label className="text-[12px] font-medium text-slate-700 dark:text-neutral-300 sm:pr-1 pt-1.5">{label}</label>
+    <div className="flex flex-col gap-1.5 py-1 sm:py-1.5">
+      <label className="text-[12px] font-medium text-slate-700 dark:text-neutral-300">{label}</label>
       <div className="min-w-0">{children}</div>
     </div>
   )
