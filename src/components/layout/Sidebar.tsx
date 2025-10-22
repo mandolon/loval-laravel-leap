@@ -18,6 +18,7 @@ interface SidebarProps {
   activeTaskTab?: TaskTab
   onProjectClick?: (projectId: string) => void
   currentProjectId?: string | null
+  collapsed?: boolean
 }
 
 export function Sidebar({
@@ -27,13 +28,17 @@ export function Sidebar({
   onTaskTabChange,
   activeTaskTab,
   onProjectClick,
-  currentProjectId
+  currentProjectId,
+  collapsed: externalCollapsed
 }: SidebarProps) {
   const { workspaces, activeWorkspace, setActiveWorkspace, addWorkspace } = useLayout()
   const navigate = useNavigate()
   const { workspaceId } = useParams<{ workspaceId: string }>()
   const [activeStatus, setActiveStatus] = useState<ProjectStatus>('inProgress')
   const [isCollapsed, setIsCollapsed] = useState(false)
+  
+  // Use external collapsed state if provided, otherwise use internal state
+  const effectiveCollapsed = externalCollapsed ?? isCollapsed
 
   // Map currentPage to activeTab (projects -> workspace, completed -> taskboard)
   const getActiveTab = (): SidebarTab => {
@@ -80,31 +85,31 @@ export function Sidebar({
 
   return (
     <aside className={cn(
-      isCollapsed ? 'w-16' : 'w-[200px]',
+      effectiveCollapsed ? 'w-16' : 'w-[200px]',
       'bg-card flex flex-col h-screen transition-all duration-300 flex-shrink-0',
       className
     )}>
       {/* Sidebar Header with Avatar */}
       <SidebarHeader 
-        collapsed={isCollapsed}
+        collapsed={effectiveCollapsed}
         onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
       />
 
       {/* Navigation Icons */}
       <div className="">
         <NavIcons
-          collapsed={isCollapsed}
+          collapsed={effectiveCollapsed}
           activeTab={activeTab}
           onTabChange={handleTabChange}
         />
       </div>
 
       {/* Main Content Area */}
-      {!isCollapsed && (
+      {!effectiveCollapsed && (
         <div className="flex-1 overflow-y-auto min-h-0">
           <NavContent
             activeTab={activeTab}
-            collapsed={isCollapsed}
+            collapsed={effectiveCollapsed}
             activeTaskTab={activeTaskTab}
             onTaskTabChange={onTaskTabChange}
             onProjectClick={onProjectClick}
@@ -116,7 +121,7 @@ export function Sidebar({
       )}
 
       {/* Project Status Filters - Only show in workspace tab */}
-      {!isCollapsed && activeTab === 'workspace' && (
+      {!effectiveCollapsed && activeTab === 'workspace' && (
         <ProjectFilters
           activeStatus={activeStatus}
           onStatusChange={setActiveStatus}
@@ -125,7 +130,7 @@ export function Sidebar({
 
       {/* Footer with Workspace Selector */}
       <SidebarFooter
-        collapsed={isCollapsed}
+        collapsed={effectiveCollapsed}
         currentWorkspace={currentWorkspace}
         workspaces={workspaces}
         onWorkspaceChange={handleWorkspaceChange}

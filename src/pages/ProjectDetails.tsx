@@ -294,7 +294,7 @@ const ProjectDetails = () => {
         <ResizablePanel defaultSize={chatOpen ? 75 : 100} minSize={50}>
           <div className={`${T.panel} ${T.radius} flex flex-col h-full min-h-0 overflow-hidden`}>
         {/* Header */}
-        <div className={`h-12 text-[12px] grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 bg-white dark:bg-[#0E1118] border-b border-slate-200 dark:border-[#1a2030]/60 transition-all duration-200 ${isFillPageActive && activeTab === 'files' ? 'opacity-0 h-0 overflow-hidden' : ''}`}>
+        <div className={`h-12 text-[12px] grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 bg-white dark:bg-[#0E1118] border-b border-slate-200 dark:border-[#1a2030]/60 transition-all duration-200 ${isFillPageActive && activeTab === 'files' ? 'hidden' : ''}`}>
           {/* Left: Back button */}
           <button
             type="button"
