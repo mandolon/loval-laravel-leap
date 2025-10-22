@@ -140,12 +140,38 @@ export const useCreateTask = (projectId?: string) => {
       return transformTask(data);
     },
     onSuccess: async (task) => {
-      // Get workspace_id from project to invalidate workspace queries
+      // Get workspace_id and user for history logging
       const { data: project } = await supabase
         .from('projects')
         .select('workspace_id')
         .eq('id', task.projectId)
         .single();
+      
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', userData.user!.id)
+        .single();
+      
+      // Regenerate current state + append to history
+      supabase.functions.invoke('sync-project-tasks', {
+        body: { 
+          projectId: task.projectId, 
+          action: 'regenerate',
+          userId: userProfile?.id 
+        }
+      }).catch(err => console.error('Failed to regenerate tasks:', err));
+      
+      supabase.functions.invoke('sync-project-tasks', {
+        body: {
+          projectId: task.projectId,
+          action: 'log_change',
+          task: task,
+          actionType: 'CREATED',
+          userId: userProfile?.id
+        }
+      }).catch(err => console.error('Failed to log task history:', err));
       
       // Invalidate both project and workspace queries
       queryClient.invalidateQueries({ queryKey: taskKeys.list(projectId) })
@@ -217,12 +243,49 @@ export const useUpdateTask = (projectId?: string) => {
       return { previousTasks }
     },
     onSuccess: async (task, variables) => {
-      // Get workspace_id from project to invalidate workspace queries
+      // Get workspace_id and user for history logging
       const { data: project } = await supabase
         .from('projects')
         .select('workspace_id')
         .eq('id', task.projectId)
         .single();
+      
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', userData.user!.id)
+        .single();
+      
+      // Detect changes for history
+      const changes: any[] = [];
+      const input = variables.input;
+      if (input.status !== undefined) changes.push({ field: 'status', oldValue: 'previous', newValue: input.status });
+      if (input.priority !== undefined) changes.push({ field: 'priority', oldValue: 'previous', newValue: input.priority });
+      if (input.title !== undefined) changes.push({ field: 'title', oldValue: 'previous', newValue: input.title });
+      
+      // Regenerate current state + append to history
+      supabase.functions.invoke('sync-project-tasks', {
+        body: { 
+          projectId: task.projectId, 
+          action: 'regenerate',
+          userId: userProfile?.id 
+        }
+      }).catch(err => console.error('Failed to regenerate tasks:', err));
+      
+      if (changes.length > 0) {
+        const actionType = input.status === 'done_completed' ? 'COMPLETED' : 'UPDATED';
+        supabase.functions.invoke('sync-project-tasks', {
+          body: {
+            projectId: task.projectId,
+            action: 'log_change',
+            task: task,
+            actionType: actionType,
+            userId: userProfile?.id,
+            changes
+          }
+        }).catch(err => console.error('Failed to log task history:', err));
+      }
       
       // Invalidate both project and workspace queries
       queryClient.invalidateQueries({ queryKey: taskKeys.list(projectId) })
@@ -269,7 +332,7 @@ export const useDeleteTask = (projectId?: string) => {
       // Get task's project to find workspace_id
       const { data: task } = await supabase
         .from('tasks')
-        .select('project_id')
+        .select('*, project_id')
         .eq('id', taskId)
         .single();
       
@@ -279,6 +342,32 @@ export const useDeleteTask = (projectId?: string) => {
           .select('workspace_id')
           .eq('id', task.project_id)
           .single();
+        
+        const { data: userData } = await supabase.auth.getUser();
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('id')
+          .eq('auth_id', userData.user!.id)
+          .single();
+        
+        // Regenerate current state + append to history
+        supabase.functions.invoke('sync-project-tasks', {
+          body: { 
+            projectId: task.project_id, 
+            action: 'regenerate',
+            userId: userProfile?.id 
+          }
+        }).catch(err => console.error('Failed to regenerate tasks:', err));
+        
+        supabase.functions.invoke('sync-project-tasks', {
+          body: {
+            projectId: task.project_id,
+            action: 'log_change',
+            task: task,
+            actionType: 'DELETED',
+            userId: userProfile?.id
+          }
+        }).catch(err => console.error('Failed to log task history:', err));
         
         // Invalidate both project and workspace queries
         queryClient.invalidateQueries({ queryKey: taskKeys.list(projectId) })

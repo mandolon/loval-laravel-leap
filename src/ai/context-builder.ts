@@ -18,6 +18,14 @@ export async function buildAIContext(
   const sources: string[] = [];
   let context = "";
 
+  // Helper to read file from storage
+  const readFile = async (filename: string) => {
+    const { data } = await supabase.storage
+      .from('project-files')
+      .download(`${projectId}/${filename}`);
+    return data ? await data.text() : null;
+  };
+
   // Get project details
   const { data: project } = await supabase
     .from("projects")
@@ -25,36 +33,43 @@ export async function buildAIContext(
     .eq("id", projectId)
     .single();
 
-  // Always load project metadata first
+  // 1. Always load project metadata first
   const metadata = await loadMeta(workspaceId, projectId);
   if (metadata && project) {
     context += formatProjectMetadata(metadata, project.id, project.name);
     sources.push("project.meta.md");
   }
 
-  // Analyze query to determine what additional data to fetch
-  const needsTasks = /task|todo|deadline|assignee|status/i.test(userQuery);
-  const needsNotes = /note|document|decision|discussion/i.test(userQuery);
+  // 2. Always read current tasks file (pre-generated)
+  const tasksContent = await readFile('project.tasks.md');
+  if (tasksContent) {
+    context += '\n\n' + tasksContent;
+    sources.push("project.tasks.md");
+  }
+
+  // 3. Always read current chats file (pre-generated)
+  const chatsContent = await readFile('project.chats.md');
+  if (chatsContent) {
+    context += '\n\n' + chatsContent;
+    sources.push("project.chats.md");
+  }
+
+  // 4. Always read task history for deeper context
+  const tasksHistory = await readFile('project.tasks.history.md');
+  if (tasksHistory) {
+    context += '\n\n' + tasksHistory;
+    sources.push("project.tasks.history.md");
+  }
+
+  // 5. Always read chat history for deeper context
+  const chatsHistory = await readFile('project.chats.history.md');
+  if (chatsHistory) {
+    context += '\n\n' + chatsHistory;
+    sources.push("project.chats.history.md");
+  }
+
+  // 6. Conditionally read files inventory
   const needsFiles = /file|attachment|document|photo/i.test(userQuery);
-  const needsTeam = /team|member|people|who/i.test(userQuery);
-
-  // Fetch relevant data based on query intent
-  if (needsTasks) {
-    const tasks = await fetchRecentTasks(projectId);
-    if (tasks) {
-      context += `\n\n## Recent Tasks\n${tasks}`;
-      sources.push("tasks");
-    }
-  }
-
-  if (needsNotes) {
-    const notes = await fetchRecentNotes(projectId);
-    if (notes) {
-      context += `\n\n## Recent Notes\n${notes}`;
-      sources.push("notes");
-    }
-  }
-
   if (needsFiles) {
     const files = await fetchRecentFiles(projectId);
     if (files) {
@@ -63,6 +78,8 @@ export async function buildAIContext(
     }
   }
 
+  // 7. Conditionally read team info
+  const needsTeam = /team|member|people|who/i.test(userQuery);
   if (needsTeam) {
     const team = await fetchProjectTeam(projectId);
     if (team) {

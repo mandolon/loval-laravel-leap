@@ -144,6 +144,38 @@ export default function AIChatPage() {
             content: assistantContent,
             model: "google/gemini-2.5-flash",
           });
+          
+          // If this is a project-specific chat, log to history
+          if (selectedProject && selectedProject !== "all") {
+            const { data: thread } = await supabase
+              .from("ai_chat_threads")
+              .select('*')
+              .eq('id', threadId)
+              .single();
+            
+            if (thread) {
+              // Regenerate chats file
+              supabase.functions.invoke('sync-project-chats', {
+                body: { 
+                  projectId: selectedProject, 
+                  action: 'regenerate',
+                  userId: user?.id 
+                }
+              }).catch(err => console.error('Failed to regenerate chats:', err));
+              
+              // Log to history with simple summary
+              supabase.functions.invoke('sync-project-chats', {
+                body: {
+                  projectId: selectedProject,
+                  action: 'log_completion',
+                  chatThread: thread,
+                  summary: `Discussion about: ${userMessage.substring(0, 100)}`,
+                  keyDecisions: [],
+                  actionItems: []
+                }
+              }).catch(err => console.error('Failed to log chat history:', err));
+            }
+          }
         }
       );
     } catch (error: any) {

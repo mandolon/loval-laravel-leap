@@ -2,3 +2,12 @@ project_id = "npphriqbofeaiblczoee"
 
 [functions.sync-project-metadata]
 verify_jwt = true
+
+[functions.sync-project-tasks]
+verify_jwt = true
+
+[functions.sync-project-chats]
+verify_jwt = true
+
+[functions.initialize-history-files]
+verify_jwt = true
