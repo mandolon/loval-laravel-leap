@@ -73,24 +73,34 @@ export const ProjectCard = ({
         role="button"
         aria-label={`Open project ${formatAddress()}`}
       >
-        {/* Three-dot menu (top-right) */}
-        {(onDelete || onHardDelete) && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  "absolute right-3 top-4 h-8 w-8 rounded-full",
-                  "hover:bg-accent hover:text-accent-foreground",
-                  "opacity-0 group-hover:opacity-100 transition-opacity",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                )}
-                aria-label="Open menu"
-              >
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
+        {/* Top-right corner: Three-dot menu + Chat notification */}
+        <div className="absolute right-3 top-4 flex items-center gap-2">
+          {/* Message notification badge - only show if there are messages */}
+          {messageCount > 0 && (
+            <div className="inline-flex items-center gap-1.5 rounded-full font-medium px-2.5 py-1 text-xs bg-muted text-muted-foreground ring ring-border">
+              <MessageSquare className="h-4 w-4" />
+              <span>{messageCount}</span>
+            </div>
+          )}
+          
+          {/* Three-dot menu */}
+          {(onDelete || onHardDelete) && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "h-8 w-8 rounded-full",
+                    "hover:bg-accent hover:text-accent-foreground",
+                    "opacity-0 group-hover:opacity-100 transition-opacity",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  )}
+                  aria-label="Open menu"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-popover z-50">
               {onDelete && (
                 <DropdownMenuItem
@@ -113,9 +123,10 @@ export const ProjectCard = ({
                   Delete Permanently
                 </DropdownMenuItem>
               )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
 
         {/* Header: Address (main) + Client (secondary) */}
         <div className="space-y-0.5">
@@ -127,8 +138,8 @@ export const ProjectCard = ({
           </p>
         </div>
 
-        {/* Footer: Avatars (left) + Messages (right) */}
-        <div className="mt-auto flex items-center justify-between pt-5">
+        {/* Footer: Avatars */}
+        <div className="mt-auto pt-5">
           {/* Team member avatars */}
           <div className="flex -space-x-2">
             {projectMembers.slice(0, 4).map((member) => (
@@ -154,14 +165,6 @@ export const ProjectCard = ({
               <span className="text-xs text-muted-foreground">No team members</span>
             )}
           </div>
-
-          {/* Message notification badge - only show if there are messages */}
-          {messageCount > 0 && (
-            <div className="inline-flex items-center gap-1.5 rounded-full font-medium px-2.5 py-1 text-xs bg-muted text-muted-foreground ring ring-border ml-auto">
-              <MessageSquare className="h-4 w-4" />
-              <span>{messageCount}</span>
-            </div>
-          )}
         </div>
       </div>
 
