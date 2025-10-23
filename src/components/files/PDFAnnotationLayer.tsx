@@ -32,8 +32,26 @@ export const PDFAnnotationLayer = ({
   const { snapToPdfGrid, gridPoints } = useGridSnapping(gridSize, gridVisible);
   const annotationTools = useAnnotationTools();
 
+  // Component mount/unmount logging
+  useEffect(() => {
+    console.log('[PDFAnnotationLayer] Component mounted', {
+      pageNumber,
+      visible,
+      viewport
+    });
+    
+    return () => {
+      console.log('[PDFAnnotationLayer] Component unmounting');
+    };
+  }, []);
+
   // Initialize Fabric.js canvas
   useEffect(() => {
+    console.log('[PDFAnnotationLayer] Init effect triggered', { 
+      hasCanvasRef: !!canvasRef.current, 
+      visible 
+    });
+    
     if (!canvasRef.current || !visible) return;
 
     const fabricCanvas = new fabric.Canvas(canvasRef.current, {
@@ -42,9 +60,16 @@ export const PDFAnnotationLayer = ({
       selection: false,
     });
 
+    console.log('[PDFAnnotationLayer] Fabric canvas created', {
+      width: fabricCanvas.width,
+      height: fabricCanvas.height,
+      canvasElement: canvasRef.current
+    });
+
     fabricCanvasRef.current = fabricCanvas;
 
     return () => {
+      console.log('[PDFAnnotationLayer] Disposing fabric canvas');
       fabricCanvas.dispose();
       fabricCanvasRef.current = null;
     };
@@ -52,10 +77,20 @@ export const PDFAnnotationLayer = ({
 
   // Update canvas dimensions when viewport changes
   useEffect(() => {
+    console.log('[PDFAnnotationLayer] Dimensions effect triggered', {
+      hasCanvasRef: !!canvasRef.current,
+      hasGridCanvasRef: !!gridCanvasRef.current,
+      viewport,
+      scale,
+      rotation
+    });
+    
     if (!canvasRef.current || !gridCanvasRef.current || !viewport) return;
 
     const width = viewport.width;
     const height = viewport.height;
+
+    console.log('[PDFAnnotationLayer] Setting canvas dimensions', { width, height });
 
     // Set annotation canvas size
     canvasRef.current.width = width;
@@ -71,6 +106,10 @@ export const PDFAnnotationLayer = ({
 
     if (fabricCanvasRef.current) {
       fabricCanvasRef.current.setDimensions({ width, height });
+      console.log('[PDFAnnotationLayer] Fabric dimensions updated', {
+        fabricWidth: fabricCanvasRef.current.width,
+        fabricHeight: fabricCanvasRef.current.height
+      });
       fabricCanvasRef.current.renderAll();
     }
   }, [viewport, scale, rotation]);
@@ -84,14 +123,29 @@ export const PDFAnnotationLayer = ({
   }, [scale, rotation, viewport, annotationTools]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    console.log('[PDFAnnotationLayer] MOUSEDOWN', {
+      tool: annotationTools.activeTool,
+      clientX: e.clientX,
+      clientY: e.clientY,
+      viewport,
+      hasFabricCanvas: !!fabricCanvasRef.current
+    });
     annotationTools.handleMouseDown(e, viewport, fabricCanvasRef.current, snapToPdfGrid);
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    console.log('[PDFAnnotationLayer] MOUSEMOVE', {
+      tool: annotationTools.activeTool,
+      isDrawing: annotationTools.annotations.length
+    });
     annotationTools.handleMouseMove(e, viewport, fabricCanvasRef.current, snapToPdfGrid);
   };
 
   const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    console.log('[PDFAnnotationLayer] MOUSEUP', {
+      tool: annotationTools.activeTool,
+      annotationsCount: annotationTools.annotations.length
+    });
     annotationTools.handleMouseUp(e, viewport, fabricCanvasRef.current, snapToPdfGrid);
   };
 

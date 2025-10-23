@@ -234,8 +234,19 @@ export const AnnotationEditorModal = ({
   const onPageLoadSuccess = useCallback((page: any) => {
     const intrinsic = typeof page.rotate === 'number' ? page.rotate : 0;
     const viewport = page.getViewport({ scale: 1, rotation: intrinsic });
-    setPageSize({ width: viewport.width, height: viewport.height });
-  }, []);
+    const newPageSize = { width: viewport.width, height: viewport.height };
+    
+    console.log('[AnnotationEditorModal] Page loaded, setting size', {
+      newPageSize,
+      scale,
+      computedViewport: {
+        width: newPageSize.width * scale,
+        height: newPageSize.height * scale
+      }
+    });
+    
+    setPageSize(newPageSize);
+  }, [scale]);
 
   const onDocumentLoadError = (err: any) => {
     logger.error('[AnnotationEditorModal] Document load error:', {
@@ -412,19 +423,30 @@ export const AnnotationEditorModal = ({
               />
               
               {/* Annotation Layer - positioned absolutely over the PDF */}
-              {!loading && !error && pageSize.width > 0 && (
-                <PDFAnnotationLayer
-                  pageNumber={pageNumber}
-                  pdfPage={null}
-                  scale={scale}
-                  rotation={rotation}
-                  visible={true}
-                  viewport={{
+              {!loading && !error && pageSize.width > 0 && (() => {
+                console.log('[AnnotationEditorModal] Rendering PDFAnnotationLayer', {
+                  pageSize,
+                  scale,
+                  viewport: {
                     width: pageSize.width * scale,
                     height: pageSize.height * scale
-                  }}
-                />
-              )}
+                  }
+                });
+                
+                return (
+                  <PDFAnnotationLayer
+                    pageNumber={pageNumber}
+                    pdfPage={null}
+                    scale={scale}
+                    rotation={rotation}
+                    visible={true}
+                    viewport={{
+                      width: pageSize.width * scale,
+                      height: pageSize.height * scale
+                    }}
+                  />
+                );
+              })()}
             </>
           )}
           {documentFileSource === '__MISSING_LOCAL_PDF__' && (
