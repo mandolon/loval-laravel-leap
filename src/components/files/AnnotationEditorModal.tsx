@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { pdfjs, Document, Page } from 'react-pdf';
+import { Document, Page } from 'react-pdf';
 import { PDFAnnotationLayer } from './PDFAnnotationLayer';
 import { AnnotationToolbar } from './AnnotationToolbar';
 import { useAnnotationTools } from '@/hooks/useAnnotationTools';
@@ -15,11 +15,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
+import '@/lib/pdf-config'; // Ensure PDF worker is configured
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-
-// Configure worker
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface AnnotationEditorModalProps {
   file: any;
@@ -69,6 +67,7 @@ export const AnnotationEditorModal = ({
   }, [pdfPageRef, scale, rotation]);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+    console.log('[AnnotationEditorModal] PDF loaded successfully, pages:', numPages);
     setNumPages(numPages);
   };
 
@@ -98,6 +97,8 @@ export const AnnotationEditorModal = ({
   };
 
   const documentFileSource = file?.url || file?.name;
+  
+  console.log('[AnnotationEditorModal] Rendering modal, isOpen:', isOpen, 'file:', file, 'documentFileSource:', documentFileSource);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleCancel}>
