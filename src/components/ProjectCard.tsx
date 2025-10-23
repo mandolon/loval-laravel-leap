@@ -73,16 +73,8 @@ export const ProjectCard = ({
         role="button"
         aria-label={`Open project ${formatAddress()}`}
       >
-        {/* Top-right corner: Three-dot menu + Chat notification */}
+        {/* Top-right corner: Three-dot menu */}
         <div className="absolute right-3 top-4 flex items-center gap-2">
-          {/* Message notification badge - only show if there are messages */}
-          {messageCount > 0 && (
-            <div className="inline-flex items-center gap-1.5 rounded-full font-medium px-2.5 py-1 text-xs bg-muted text-muted-foreground ring ring-border">
-              <MessageSquare className="h-4 w-4" />
-              <span>{messageCount}</span>
-            </div>
-          )}
-          
           {/* Three-dot menu */}
           {(onDelete || onHardDelete) && (
             <DropdownMenu>
@@ -138,8 +130,8 @@ export const ProjectCard = ({
           </p>
         </div>
 
-        {/* Footer: Avatars */}
-        <div className="mt-auto pt-5">
+        {/* Footer: Avatars (left) + Messages (right) */}
+        <div className="mt-auto flex items-center justify-between pt-5">
           {/* Team member avatars */}
           <div className="flex -space-x-2">
             {projectMembers.slice(0, 4).map((member) => (
@@ -165,6 +157,14 @@ export const ProjectCard = ({
               <span className="text-xs text-muted-foreground">No team members</span>
             )}
           </div>
+
+          {/* Message notification badge - only show if there are messages */}
+          {messageCount > 0 && (
+            <div className="inline-flex items-center gap-1.5 rounded-full font-medium px-2.5 py-1 text-xs bg-muted text-muted-foreground ring ring-border">
+              <MessageSquare className="h-4 w-4" />
+              <span>{messageCount}</span>
+            </div>
+          )}
         </div>
       </div>
 
