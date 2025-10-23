@@ -1,5 +1,5 @@
 import { useRef, useCallback, useState } from 'react';
-import { Canvas, Path, Line, Rect, Circle as FabricCircle, IText } from 'fabric';
+import { fabric } from 'fabric';
 import type { AnnotationTool, AnnotationData } from '@/types/annotations';
 
 export const useAnnotationTools = () => {
@@ -48,7 +48,7 @@ export const useAnnotationTools = () => {
   const handleMouseDown = useCallback((
     e: React.MouseEvent<HTMLCanvasElement>,
     viewport: any,
-    fabricCanvas: Canvas | null,
+    fabricCanvas: fabric.Canvas | null,
     snapToPdfGrid: (x: number, y: number) => [number, number]
   ) => {
     if (!fabricCanvas || !viewport) return;
@@ -94,7 +94,7 @@ export const useAnnotationTools = () => {
   const handleMouseMove = useCallback((
     e: React.MouseEvent<HTMLCanvasElement>,
     viewport: any,
-    fabricCanvas: Canvas | null,
+    fabricCanvas: fabric.Canvas | null,
     snapToPdfGrid: (x: number, y: number) => [number, number]
   ) => {
     if (!isDrawingRef.current || !fabricCanvas || !viewport) return;
@@ -121,7 +121,7 @@ export const useAnnotationTools = () => {
         `${i === 0 ? 'M' : 'L'} ${p[0]} ${p[1]}`
       ).join(' ');
       
-      const path = new Path(pathString, {
+      const path = new fabric.Path(pathString, {
         stroke: activeColor,
         strokeWidth,
         fill: undefined,
@@ -134,7 +134,7 @@ export const useAnnotationTools = () => {
   const handleMouseUp = useCallback((
     e: React.MouseEvent<HTMLCanvasElement>,
     viewport: any,
-    fabricCanvas: Canvas | null,
+    fabricCanvas: fabric.Canvas | null,
     snapToPdfGrid: (x: number, y: number) => [number, number]
   ) => {
     if (!isDrawingRef.current || !fabricCanvas || !viewport) return;
@@ -204,7 +204,7 @@ export const useAnnotationTools = () => {
 
   const renderAnnotationOnFabric = useCallback((
     annotation: AnnotationData,
-    fabricCanvas: Canvas,
+    fabricCanvas: fabric.Canvas,
     viewport: any
   ) => {
     if (!viewport) return;
@@ -217,7 +217,7 @@ export const useAnnotationTools = () => {
       const pathString = screenCoords.map((p, i) =>
         `${i === 0 ? 'M' : 'L'} ${p[0]} ${p[1]}`
       ).join(' ');
-      const path = new Path(pathString, {
+      const path = new fabric.Path(pathString, {
         stroke: annotation.color,
         strokeWidth: annotation.strokeWidth,
         fill: undefined,
@@ -227,7 +227,7 @@ export const useAnnotationTools = () => {
     } else if (annotation.type === 'line' && screenCoords.length >= 2) {
       const [x1, y1] = screenCoords[0];
       const [x2, y2] = screenCoords[1];
-      const line = new Line([x1, y1, x2, y2], {
+      const line = new fabric.Line([x1, y1, x2, y2], {
         stroke: annotation.color,
         strokeWidth: annotation.strokeWidth,
         selectable: false,
@@ -236,7 +236,7 @@ export const useAnnotationTools = () => {
     } else if (annotation.type === 'rectangle' && screenCoords.length >= 2) {
       const [x1, y1] = screenCoords[0];
       const [x2, y2] = screenCoords[1];
-      const rect = new Rect({
+      const rect = new fabric.Rect({
         left: Math.min(x1, x2),
         top: Math.min(y1, y2),
         width: Math.abs(x2 - x1),
@@ -251,7 +251,7 @@ export const useAnnotationTools = () => {
       const [cx, cy] = screenCoords[0];
       const [ex, ey] = screenCoords[1];
       const radius = Math.sqrt((ex - cx) ** 2 + (ey - cy) ** 2);
-      const circle = new FabricCircle({
+      const circle = new fabric.Circle({
         left: cx - radius,
         top: cy - radius,
         radius,
@@ -263,7 +263,7 @@ export const useAnnotationTools = () => {
       fabricCanvas.add(circle);
     } else if (annotation.type === 'text' && screenCoords.length >= 1) {
       const [x, y] = screenCoords[0];
-      const text = new IText(annotation.text || 'Text', {
+      const text = new fabric.IText(annotation.text || 'Text', {
         left: x,
         top: y,
         fill: annotation.color,
@@ -275,7 +275,7 @@ export const useAnnotationTools = () => {
   }, [convertPdfToScreen]);
 
   const renderAllAnnotations = useCallback((
-    fabricCanvas: Canvas,
+    fabricCanvas: fabric.Canvas,
     viewport: any
   ) => {
     annotationsRef.current.forEach(annotation => {
@@ -284,7 +284,7 @@ export const useAnnotationTools = () => {
     fabricCanvas.renderAll();
   }, [renderAnnotationOnFabric]);
 
-  const undo = useCallback((fabricCanvas: Canvas | null, viewport: any) => {
+  const undo = useCallback((fabricCanvas: fabric.Canvas | null, viewport: any) => {
     if (undoStackRef.current.length > 0 && fabricCanvas && viewport) {
       redoStackRef.current.push([...annotationsRef.current]);
       annotationsRef.current = undoStackRef.current.pop() || [];
@@ -293,7 +293,7 @@ export const useAnnotationTools = () => {
     }
   }, [renderAllAnnotations]);
 
-  const redo = useCallback((fabricCanvas: Canvas | null, viewport: any) => {
+  const redo = useCallback((fabricCanvas: fabric.Canvas | null, viewport: any) => {
     if (redoStackRef.current.length > 0 && fabricCanvas && viewport) {
       undoStackRef.current.push([...annotationsRef.current]);
       annotationsRef.current = redoStackRef.current.pop() || [];

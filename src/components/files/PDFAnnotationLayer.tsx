@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
-import { Canvas } from 'fabric';
+import { fabric } from 'fabric';
 import { useGridSnapping } from '@/hooks/useGridSnapping';
 import { useAnnotationTools } from '@/hooks/useAnnotationTools';
 import { GridOverlay } from './GridOverlay';
@@ -24,7 +24,7 @@ export const PDFAnnotationLayer = ({
 }: PDFAnnotationLayerProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gridCanvasRef = useRef<HTMLCanvasElement>(null);
-  const fabricCanvasRef = useRef<Canvas | null>(null);
+  const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
   
   const [gridSize, setGridSize] = useState<GridSizeKey>('12"');
   const [gridVisible, setGridVisible] = useState(true);
@@ -36,7 +36,7 @@ export const PDFAnnotationLayer = ({
   useEffect(() => {
     if (!canvasRef.current || !visible) return;
 
-    const fabricCanvas = new Canvas(canvasRef.current, {
+    const fabricCanvas = new fabric.Canvas(canvasRef.current, {
       backgroundColor: undefined,
       enableRetinaScaling: true,
       selection: false,
