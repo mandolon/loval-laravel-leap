@@ -165,20 +165,18 @@ export const PDFAnnotationLayer = ({
   if (!visible) return null;
 
   return (
-    <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 5 }}>
+    <div className="absolute inset-0" style={{ zIndex: 5 }}>
       {/* Grid overlay canvas (below annotations) */}
       <canvas
         ref={gridCanvasRef}
-        className="absolute inset-0"
-        style={{
-          pointerEvents: 'none',
-        }}
+        className="absolute inset-0 pointer-events-none"
       />
       
       {/* Annotation canvas (on top) */}
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 pointer-events-auto cursor-crosshair"
+        className="absolute inset-0 cursor-crosshair"
+        style={{ pointerEvents: 'auto' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
