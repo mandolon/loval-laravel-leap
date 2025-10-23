@@ -413,9 +413,9 @@ const FolderList = ({ phase, folders, selectedFolder, keyboardFocused, keyboardS
                   isKeyboardFocused ? "text-[#00639b]/80 dark:text-blue-300/80" :
                   "text-slate-700 dark:text-neutral-300"
                 }`}>
-                  <span className="truncate text-[12px]">{f.name}</span>
+                  <span className="truncate text-[12px] whitespace-nowrap">{f.name}</span>
                 </div>
-                <span className="flex-[1] text-[12px] text-muted-foreground tabular-nums hidden lg:block">
+                <span className="flex-[1] text-[12px] text-muted-foreground tabular-nums whitespace-nowrap hidden lg:block">
                   {getMostRecentFileDate(phase?.name, f.name)}
                 </span>
                 <div className="h-5 w-5 flex items-center justify-center">
@@ -753,11 +753,11 @@ const FileList = ({ folder, files, viewMode, selectedFile, keyboardFocused, keyb
                     fileName={file.name}
                     className="h-3.5 w-3.5 mr-2 text-muted-foreground"
                   />
-                  <span className="truncate text-[12px]">{file.name}</span>
+                  <span className="truncate text-[12px] whitespace-nowrap">{file.name}</span>
                 </div>
-                <span className="w-20 shrink-0 text-[12px] text-muted-foreground tabular-nums pr-1 hidden md:inline">{file.size}</span>
-                <span className="w-28 shrink-0 text-[12px] text-muted-foreground tabular-nums pr-1 hidden lg:inline">{formatFileModified(file.modified)}</span>
-                <span className="w-16 shrink-0 text-[12px] text-muted-foreground hidden xl:inline">{getFileExtension(file.name)}</span>
+                <span className="w-20 shrink-0 text-[12px] text-muted-foreground tabular-nums pr-1 whitespace-nowrap hidden md:inline">{file.size}</span>
+                <span className="w-28 shrink-0 text-[12px] text-muted-foreground tabular-nums pr-1 whitespace-nowrap hidden lg:inline">{formatFileModified(file.modified)}</span>
+                <span className="w-16 shrink-0 text-[12px] text-muted-foreground whitespace-nowrap hidden xl:inline">{getFileExtension(file.name)}</span>
               </div>
             );
           })
@@ -813,8 +813,14 @@ export default function FileExplorer({
     // Get root folders (no parent) - these are our phases
     const rootFolders = foldersData.filter(f => f.parent_folder_id === null)
     
+    // Filter and order phases: only show Pre-Design, Design, Permit, Build in that order
+    const allowedPhases = ['Pre-Design', 'Design', 'Permit', 'Build']
+    const filteredAndOrderedRootFolders = allowedPhases
+      .map(phaseName => rootFolders.find(f => f.name === phaseName))
+      .filter(Boolean) as typeof rootFolders
+    
     // Get child folders for each root folder
-    const rootWithChildren = rootFolders.map(rootFolder => ({
+    const rootWithChildren = filteredAndOrderedRootFolders.map(rootFolder => ({
       id: rootFolder.id,
       name: rootFolder.name,
       type: 'phase',
@@ -1427,7 +1433,7 @@ export default function FileExplorer({
             <ResizableHandle className="w-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors" />
 
             {/* Folders Panel */}
-            <ResizablePanel defaultSize={18} minSize={15} maxSize={30}>
+            <ResizablePanel defaultSize={25} minSize={15} maxSize={30}>
               <div className="h-full border-r border-slate-200 dark:border-[#1d2230]/60 bg-white dark:bg-[#0F1219]">
                 <FolderList 
                   phase={selectedPhase} 
@@ -1451,7 +1457,7 @@ export default function FileExplorer({
             <ResizableHandle className="w-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors" />
 
             {/* Files Panel */}
-            <ResizablePanel defaultSize={68} minSize={40}>
+            <ResizablePanel defaultSize={50} minSize={40}>
               <FileList 
                 folder={selectedFolder} 
                 files={currentFiles} 

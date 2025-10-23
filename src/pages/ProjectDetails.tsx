@@ -55,7 +55,7 @@ const ProjectDetails = () => {
   const queryClient = useQueryClient();
   const { user } = useUser();
   const { setSidebarCollapsed } = useLayout();
-  const [activeTab, setActiveTab] = useState("project");
+  const [activeTab, setActiveTab] = useState("files");
   const [chatOpen, setChatOpen] = useState(true);
   const [replyingTo, setReplyingTo] = useState<ProjectChatMessageWithUser | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
