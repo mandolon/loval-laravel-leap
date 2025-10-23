@@ -127,37 +127,39 @@ export const AnnotationEditorModal = ({
           </div>
 
           {/* PDF Viewer with Annotation Layer */}
-          <div className="flex-1 overflow-auto p-6 bg-muted/10">
-            <div className="flex justify-center">
-              <div className="relative inline-block">
-                <Document
-                  file={documentFileSource}
-                  onLoadSuccess={onDocumentLoadSuccess}
-                  onLoadError={(error) => {
-                    console.error('PDF load error:', error);
-                    toast.error('Failed to load PDF');
-                  }}
-                >
-                  <Page
-                    pageNumber={pageNumber}
-                    scale={scale}
-                    onLoadSuccess={onPageLoadSuccess}
-                    renderTextLayer={false}
-                    renderAnnotationLayer={false}
-                  />
-                </Document>
+          <div className="flex-1 relative min-h-0 bg-muted/10">
+            <div className="absolute inset-0 overflow-auto">
+              <div className="flex items-center justify-center min-h-full p-6">
+                <div className="relative">
+                  <Document
+                    file={documentFileSource}
+                    onLoadSuccess={onDocumentLoadSuccess}
+                    onLoadError={(error) => {
+                      console.error('PDF load error:', error);
+                      toast.error('Failed to load PDF');
+                    }}
+                  >
+                    <Page
+                      pageNumber={pageNumber}
+                      scale={scale}
+                      onLoadSuccess={onPageLoadSuccess}
+                      renderTextLayer={false}
+                      renderAnnotationLayer={false}
+                    />
+                  </Document>
 
-                {/* Annotation Layer */}
-                {currentViewport && pdfPageRef && (
-                  <PDFAnnotationLayer
-                    pageNumber={pageNumber}
-                    pdfPage={pdfPageRef}
-                    scale={scale}
-                    rotation={rotation}
-                    visible={true}
-                    viewport={currentViewport}
-                  />
-                )}
+                  {/* Annotation Layer */}
+                  {currentViewport && pdfPageRef && (
+                    <PDFAnnotationLayer
+                      pageNumber={pageNumber}
+                      pdfPage={pdfPageRef}
+                      scale={scale}
+                      rotation={rotation}
+                      visible={true}
+                      viewport={currentViewport}
+                    />
+                  )}
+                </div>
               </div>
             </div>
           </div>
