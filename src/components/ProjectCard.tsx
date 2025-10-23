@@ -64,7 +64,7 @@ export const ProjectCard = ({
     <>
       <div
         className={cn(
-          "relative flex flex-col rounded-2xl shadow-sm transition-shadow hover:shadow-md",
+          "relative flex flex-col rounded-2xl transition-colors hover:border-primary",
           "h-44 p-5 pr-10",
           "overflow-hidden select-none bg-background text-foreground border border-border",
           "cursor-pointer group"
@@ -155,11 +155,13 @@ export const ProjectCard = ({
             )}
           </div>
 
-          {/* Message notification badge */}
-          <div className="inline-flex items-center gap-1.5 rounded-full font-medium px-2.5 py-1 text-xs bg-muted text-muted-foreground ring ring-border">
-            <MessageSquare className="h-4 w-4" />
-            <span>{messageCount}</span>
-          </div>
+          {/* Message notification badge - only show if there are messages */}
+          {messageCount > 0 && (
+            <div className="inline-flex items-center gap-1.5 rounded-full font-medium px-2.5 py-1 text-xs bg-muted text-muted-foreground ring ring-border ml-auto">
+              <MessageSquare className="h-4 w-4" />
+              <span>{messageCount}</span>
+            </div>
+          )}
         </div>
       </div>
 
