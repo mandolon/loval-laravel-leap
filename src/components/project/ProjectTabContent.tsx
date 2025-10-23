@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
-import { Clock, FileText, CheckCircle2, StickyNote } from 'lucide-react'
+import { Clock, FileText, CheckCircle2, StickyNote, Users } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import type { Project, UpdateProjectInput } from '@/lib/api/types'
+import { ProjectMembersTable } from '@/components/project/ProjectMembersTable'
 
 // ============= HELPER COMPONENTS =============
 
@@ -123,7 +124,7 @@ interface ProjectTabContentProps {
 }
 
 export default function ProjectTabContent({ project, onUpdate }: ProjectTabContentProps) {
-  const [menu, setMenu] = useState<'profile' | 'client' | 'parcel' | 'billing' | 'preferences' | 'activity'>('profile')
+  const [menu, setMenu] = useState<'profile' | 'client' | 'parcel' | 'billing' | 'preferences' | 'team' | 'activity'>('profile')
   const [draft, setDraft] = useState({
     name: project.name || '',
     address: project.address || {},
@@ -237,6 +238,7 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
           <MenuItem id="client" label="Client profile" active={menu} setActive={setMenu} />
           <MenuItem id="parcel" label="Parcel information" active={menu} setActive={setMenu} />
           <MenuItem id="billing" label="Billing & fees" active={menu} setActive={setMenu} />
+          <MenuItem id="team" label="Team members" active={menu} setActive={setMenu} />
           <MenuItem id="preferences" label="Preferences" active={menu} setActive={setMenu} />
           <MenuItem id="activity" label="Activity" active={menu} setActive={setMenu} />
         </nav>
@@ -576,6 +578,12 @@ export default function ProjectTabContent({ project, onUpdate }: ProjectTabConte
                   />
                 </div>
               </Row>
+            </Section>
+          )}
+
+          {menu === 'team' && (
+            <Section title="Team members" helper="Assign users to this project">
+              <ProjectMembersTable projectId={project.id} workspaceId={project.workspaceId} />
             </Section>
           )}
 
