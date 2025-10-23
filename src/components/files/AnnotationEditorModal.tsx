@@ -423,30 +423,19 @@ export const AnnotationEditorModal = ({
               />
               
               {/* Annotation Layer - positioned absolutely over the PDF */}
-              {!loading && !error && pageSize.width > 0 && (() => {
-                console.log('[AnnotationEditorModal] Rendering PDFAnnotationLayer', {
-                  pageSize,
-                  scale,
-                  viewport: {
+              {!loading && !error && pageSize.width > 0 && (
+                <PDFAnnotationLayer
+                  pageNumber={pageNumber}
+                  pdfPage={null}
+                  scale={scale}
+                  rotation={rotation}
+                  visible={true}
+                  viewport={{
                     width: pageSize.width * scale,
                     height: pageSize.height * scale
-                  }
-                });
-                
-                return (
-                  <PDFAnnotationLayer
-                    pageNumber={pageNumber}
-                    pdfPage={null}
-                    scale={scale}
-                    rotation={rotation}
-                    visible={true}
-                    viewport={{
-                      width: pageSize.width * scale,
-                      height: pageSize.height * scale
-                    }}
-                  />
-                );
-              })()}
+                  }}
+                />
+              )}
             </>
           )}
           {documentFileSource === '__MISSING_LOCAL_PDF__' && (
