@@ -84,6 +84,7 @@ const PDFViewer = ({
 }: PDFViewerProps) => {
   console.log('[PDFViewer] Rendering with file:', file)
   console.log('[PDFViewer] isActive:', isActive, 'isFullscreen:', isFullscreen)
+  console.log('[PDFViewer] annotationMode:', annotationMode, 'onAnnotationModeChange:', !!onAnnotationModeChange)
   
   const [numPages, setNumPages] = useState<number | null>(initialState?.numPages ?? null);
   const [pageNumber, setPageNumber] = useState(initialState?.pageNumber ?? 1);
@@ -819,7 +820,11 @@ const PDFViewer = ({
             <>
               {/* Annotate Button */}
               <button
-                onClick={() => onAnnotationModeChange?.(!annotationMode)}
+                onClick={() => {
+                  console.log('[Button Click] Annotate button clicked! Current mode:', annotationMode);
+                  console.log('[Button Click] Calling onAnnotationModeChange with:', !annotationMode);
+                  onAnnotationModeChange?.(!annotationMode);
+                }}
                 className={`h-5 px-2 text-[11px] rounded hover:bg-muted flex items-center gap-1 ${annotationMode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}
                 title={annotationMode ? 'Exit annotation mode' : 'Enter annotation mode'}
               >

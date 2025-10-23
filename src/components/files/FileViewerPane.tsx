@@ -19,6 +19,8 @@ export default function FileViewerPane({
 }: FileViewerPaneProps) {
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [annotationMode, setAnnotationMode] = useState(false);
+  
+  console.log('[FileViewerPane] Rendering. annotationMode:', annotationMode);
 
   useEffect(() => {
     if (!file) {
