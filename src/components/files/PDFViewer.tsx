@@ -198,6 +198,49 @@ const PDFViewer = ({
     return () => clearTimeout(timeoutId);
   }, [initialState?.scrollPosition, numPages, loading]);
 
+  // Ensure viewport refs are available when annotation mode activates
+  useEffect(() => {
+    if (annotationMode) {
+      console.log('[Annotation Refs] Mode activated. Checking refs:', { 
+        pdfPageRef: !!pdfPageRef, 
+        currentViewport: !!currentViewport,
+        pageSize 
+      });
+      
+      // If refs aren't set but we have page dimensions, create a fallback viewport
+      if (!currentViewport && pageSize && pageSize.width > 0) {
+        console.log('[Annotation Refs] Creating fallback viewport from pageSize');
+        const basicViewport = {
+          width: pageSize.width * scale,
+          height: pageSize.height * scale,
+          scale: scale,
+          rotation: rotation,
+          // Simplified viewport conversions for fallback
+          convertToPdfPoint: (screenX: number, screenY: number): [number, number] => {
+            return [screenX / scale, screenY / scale];
+          },
+          convertToViewportPoint: (pdfX: number, pdfY: number): [number, number] => {
+            return [pdfX * scale, pdfY * scale];
+          }
+        };
+        setCurrentViewport(basicViewport);
+        console.log('[Annotation Refs] Fallback viewport created');
+      }
+    }
+  }, [annotationMode, currentViewport, pageSize, scale]);
+
+  // Keep viewport in sync when scale/rotation changes
+  useEffect(() => {
+    if (annotationMode && pdfPageRef) {
+      console.log('[Annotation Refs] Updating viewport for scale/rotation change');
+      const updatedViewport = pdfPageRef.getViewport({
+        scale: scale,
+        rotation: rotation
+      });
+      setCurrentViewport(updatedViewport);
+    }
+  }, [annotationMode, scale, rotation, pdfPageRef]);
+
   // Report state changes back to parent for caching
   const lastReportedStateRef = useRef<string>('');
 
