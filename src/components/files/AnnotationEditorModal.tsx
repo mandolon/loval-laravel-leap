@@ -387,9 +387,10 @@ export const AnnotationEditorModal = ({
             </div>
           </div>
 
-          {/* PDF Content (using PDFCanvas like PDFViewer) */}
-          <div className="relative flex-1 min-h-0">
-            {documentFileSource !== '__MISSING_LOCAL_PDF__' && (
+        {/* PDF Content (using PDFCanvas like PDFViewer) */}
+        <div className="relative flex-1 min-h-0">
+          {documentFileSource !== '__MISSING_LOCAL_PDF__' && (
+            <>
               <PDFCanvas
                 ref={containerRef}
                 file={file}
@@ -409,13 +410,29 @@ export const AnnotationEditorModal = ({
                 numPages={numPages}
                 scrollMode={scrollMode}
               />
-            )}
-            {documentFileSource === '__MISSING_LOCAL_PDF__' && (
-              <div className="flex-1 flex items-center justify-center text-[10px] text-muted-foreground">
-                PDF asset not included in demo build.
-              </div>
-            )}
-          </div>
+              
+              {/* Annotation Layer - positioned absolutely over the PDF */}
+              {!loading && !error && pageSize.width > 0 && (
+                <PDFAnnotationLayer
+                  pageNumber={pageNumber}
+                  pdfPage={null}
+                  scale={scale}
+                  rotation={rotation}
+                  visible={true}
+                  viewport={{
+                    width: pageSize.width * scale,
+                    height: pageSize.height * scale
+                  }}
+                />
+              )}
+            </>
+          )}
+          {documentFileSource === '__MISSING_LOCAL_PDF__' && (
+            <div className="flex-1 flex items-center justify-center text-[10px] text-muted-foreground">
+              PDF asset not included in demo build.
+            </div>
+          )}
+        </div>
         </div>
 
         <DialogFooter className="px-6 py-4 border-t">
