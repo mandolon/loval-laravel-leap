@@ -10,6 +10,12 @@ export interface ProjectMember {
   userName: string;
   userEmail: string;
   userAvatarUrl: string | null;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    avatar_url: string | null;
+  };
 }
 
 const transformDbToProjectMember = (row: any): ProjectMember => ({
@@ -61,6 +67,12 @@ export const useProjectMembers = (projectId: string) => {
           userName: user?.name || 'Unknown User',
           userEmail: user?.email || '',
           userAvatarUrl: user?.avatar_url || null,
+          user: user ? {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            avatar_url: user.avatar_url,
+          } : undefined,
         };
       });
     },

@@ -107,6 +107,7 @@ export interface Project {
   totalTasks: number;
   completedTasks: number;
   teamMemberCount: number;
+  unreadChatCount?: number; // Count of unread AI chat messages
   createdBy: string;
   createdAt: string;
   updatedAt: string;

@@ -200,14 +200,14 @@ const ProjectsPage = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid gap-6 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
             {filteredProjects.map(project => (
               <ProjectCard
                 key={project.id}
                 project={project}
                 onClick={() => navigate(`/workspace/${workspaceId}/project/${project.id}`)}
-                onDelete={handleDeleteProject}
-                onHardDelete={handleHardDeleteProject}
+                onDelete={statusFilter !== 'archived' ? handleDeleteProject : undefined}
+                onHardDelete={statusFilter === 'archived' ? handleHardDeleteProject : undefined}
               />
             ))}
           </div>

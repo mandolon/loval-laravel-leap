@@ -1,23 +1,28 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { MoreVertical, MessageSquare } from "lucide-react";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Trash2, MapPin, Users, Archive } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { 
-  AlertDialog, 
-  AlertDialogAction, 
-  AlertDialogCancel, 
-  AlertDialogContent, 
-  AlertDialogDescription, 
-  AlertDialogFooter, 
-  AlertDialogHeader, 
-  AlertDialogTitle 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
 } from "@/components/ui/alert-dialog";
 import type { Project } from "@/lib/api/types";
+import { useProjectMembers } from "@/lib/api/hooks/useProjectMembers";
+import { cn } from "@/lib/utils";
 
 interface ProjectCardProps {
   project: Project;
@@ -26,136 +31,137 @@ interface ProjectCardProps {
   onHardDelete?: (id: string) => void;
 }
 
-const phaseColors = {
-  'Pre-Design': 'secondary',
-  'Design': 'default',
-  'Permit': 'secondary',
-  'Build': 'default',
-} as const;
-
-const statusColors = {
-  pending: 'secondary',
-  active: 'default',
-  completed: 'outline',
-  archived: 'outline',
-} as const;
-
-const statusLabels = {
-  pending: 'Pending',
-  active: 'In Progress',
-  completed: 'Completed',
-  archived: 'Archived',
-} as const;
-
-export const ProjectCard = ({ project, onDelete, onHardDelete, onClick }: ProjectCardProps) => {
+export const ProjectCard = ({ 
+  project, 
+  onClick, 
+  onDelete, 
+  onHardDelete 
+}: ProjectCardProps) => {
   const [hardDeleteDialogOpen, setHardDeleteDialogOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   
+  // Fetch project members with user data
+  const { data: projectMembers = [] } = useProjectMembers(project.id);
+  
+  // Format address for main heading
   const formatAddress = () => {
     const addr = project.address;
-    if (!addr.streetNumber && !addr.streetName && !addr.city) return 'No address';
-    return `${addr.streetNumber || ''} ${addr.streetName || ''}, ${addr.city || ''}, ${addr.state || ''} ${addr.zipCode || ''}`.trim();
+    if (!addr.streetNumber && !addr.streetName) {
+      return project.name; // Fallback to project name if no address
+    }
+    return `${addr.streetNumber || ''} ${addr.streetName || ''}`.trim();
   };
 
+  // Format client name
   const clientName = project.primaryClient.firstName && project.primaryClient.lastName
     ? `${project.primaryClient.firstName} ${project.primaryClient.lastName}`
     : project.primaryClient.email || 'No client';
 
+  // Get unread message count (default to 0 if not available)
+  const messageCount = project.unreadChatCount || 0;
+
   return (
-    <Card 
-      className="hover:shadow-lg transition-all duration-300 cursor-pointer border-border group"
-      onClick={onClick}
-    >
-      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
-        <div className="space-y-1 flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <CardTitle className="text-lg truncate">{project.name}</CardTitle>
-            <Badge variant="outline" className="font-mono">
-              {project.shortId}
-            </Badge>
-            <Badge variant={phaseColors[project.phase]}>
-              {project.phase}
-            </Badge>
-            <Badge variant={statusColors[project.status]}>
-              {statusLabels[project.status]}
-            </Badge>
-          </div>
-          <CardDescription className="line-clamp-2">
-            {project.description}
-          </CardDescription>
-        </div>
+    <>
+      <div
+        className={cn(
+          "relative flex flex-col rounded-2xl shadow-sm transition-shadow hover:shadow-md",
+          "h-44 p-5 pr-10",
+          "overflow-hidden select-none bg-background text-foreground border border-border",
+          "cursor-pointer group"
+        )}
+        onClick={onClick}
+        role="button"
+        aria-label={`Open project ${formatAddress()}`}
+      >
+        {/* Three-dot menu (top-right) */}
         {(onDelete || onHardDelete) && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "absolute right-3 top-4 h-8 w-8 rounded-full",
+                  "hover:bg-accent hover:text-accent-foreground",
+                  "opacity-0 group-hover:opacity-100 transition-opacity",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                )}
+                aria-label="Open menu"
               >
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="bg-popover z-50">
               {onDelete && (
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
                     onDelete(project.id);
                   }}
                 >
-                  <Archive className="mr-2 h-4 w-4" />
                   Move to Trash
                 </DropdownMenuItem>
               )}
               {onHardDelete && (
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
                     setHardDeleteDialogOpen(true);
                   }}
                   className="text-destructive"
                 >
-                  <Trash2 className="mr-2 h-4 w-4" />
                   Delete Permanently
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {/* Progress */}
-        <div className="space-y-2">
-          <div className="flex justify-between text-base text-muted-foreground">
-            <span>Progress</span>
-            <span>{project.progress}%</span>
-          </div>
-          <Progress value={project.progress} className="h-2" />
+
+        {/* Header: Address (main) + Client (secondary) */}
+        <div className="space-y-0.5">
+          <h3 className="text-lg/6 font-medium tracking-[-0.01em] truncate">
+            {formatAddress()}
+          </h3>
+          <p className="text-sm/6 text-muted-foreground truncate">
+            {clientName}
+          </p>
         </div>
 
-        {/* Address */}
-        <div className="flex items-start gap-2 text-base text-muted-foreground">
-          <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
-          <span className="line-clamp-1">{formatAddress()}</span>
-        </div>
-
-        {/* Client */}
-        <div className="text-base">
-          <span className="text-muted-foreground">Client: </span>
-          <span className="font-medium">{clientName}</span>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between pt-2 border-t text-base text-muted-foreground">
-          <div>
-            {project.completedTasks}/{project.totalTasks} tasks
+        {/* Footer: Avatars (left) + Messages (right) */}
+        <div className="mt-auto flex items-center justify-between pt-5">
+          {/* Team member avatars */}
+          <div className="flex -space-x-2">
+            {projectMembers.slice(0, 4).map((member) => (
+              <div key={member.id} className="relative">
+                <UserAvatar
+                  user={{
+                    name: member.user?.name || member.userName,
+                    first_name: member.user?.name?.split(' ')[0],
+                    last_name: member.user?.name?.split(' ').slice(1).join(' '),
+                    avatar_url: member.user?.avatar_url || member.userAvatarUrl,
+                    role: member.title
+                  }}
+                  size="sm"
+                />
+              </div>
+            ))}
+            {projectMembers.length > 4 && (
+              <div className="ml-2 inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-[10px] bg-muted text-muted-foreground ring ring-border">
+                +{projectMembers.length - 4}
+              </div>
+            )}
+            {projectMembers.length === 0 && (
+              <span className="text-xs text-muted-foreground">No team members</span>
+            )}
           </div>
-          <div className="flex items-center gap-1">
-            <Users className="h-3.5 w-3.5" />
-            {project.teamMemberCount} team
+
+          {/* Message notification badge */}
+          <div className="inline-flex items-center gap-1.5 rounded-full font-medium px-2.5 py-1 text-xs bg-muted text-muted-foreground ring ring-border">
+            <MessageSquare className="h-4 w-4" />
+            <span>{messageCount}</span>
           </div>
         </div>
-      </CardContent>
+      </div>
 
       {/* Hard Delete Confirmation Dialog */}
       <AlertDialog open={hardDeleteDialogOpen} onOpenChange={setHardDeleteDialogOpen}>
@@ -190,10 +196,12 @@ export const ProjectCard = ({ project, onDelete, onHardDelete, onClick }: Projec
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={(e) => {
-              e.stopPropagation();
-              setDeleteConfirmText("");
-            }}>
+            <AlertDialogCancel
+              onClick={(e) => {
+                e.stopPropagation();
+                setDeleteConfirmText("");
+              }}
+            >
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
@@ -211,6 +219,6 @@ export const ProjectCard = ({ project, onDelete, onHardDelete, onClick }: Projec
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Card>
+    </>
   );
 };

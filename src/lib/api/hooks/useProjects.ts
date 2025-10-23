@@ -67,7 +67,24 @@ export const useProjects = (workspaceId: string, query?: ListQuery) => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data.map(transformProject);
+      
+      // For each project, count unread project chat messages
+      const projectsWithChatCounts = await Promise.all(
+        data.map(async (project) => {
+          const { count } = await supabase
+            .from('project_chat_messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('project_id', project.id)
+            .is('deleted_at', null);
+          
+          return {
+            ...transformProject(project),
+            unreadChatCount: count || 0
+          };
+        })
+      );
+      
+      return projectsWithChatCounts;
     },
     enabled: !!workspaceId,
   })
