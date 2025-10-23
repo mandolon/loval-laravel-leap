@@ -1,11 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { pdfjs } from 'react-pdf';
 import PDFCanvas from './PDFCanvas';
-import { PDFAnnotationLayer } from './PDFAnnotationLayer';
-import { AnnotationToolbar } from './AnnotationToolbar';
-import { useAnnotationTools } from '@/hooks/useAnnotationTools';
-import { useGridSnapping } from '@/hooks/useGridSnapping';
-import type { GridSizeKey } from '@/types/annotations';
 import { 
   ZoomIn, 
   ZoomOut, 
@@ -15,8 +10,7 @@ import {
   ChevronRight,
   Maximize2,
   Minimize2,
-  Maximize,
-  PenTool
+  Maximize
 } from 'lucide-react';
 import { logger } from '@/utils/logger';
 
@@ -41,8 +35,6 @@ interface PDFViewerProps {
   darkMode?: boolean;
   onClick?: () => void;
   className?: string;
-  annotationMode?: boolean;
-  onAnnotationModeChange?: (mode: boolean) => void;
   initialState?: {
     pageNumber?: number;
     scale?: number;
@@ -77,14 +69,11 @@ const PDFViewer = ({
   darkMode: _darkMode = false, 
   onClick, 
   className = '',
-  annotationMode = false,
-  onAnnotationModeChange,
   initialState,
   onStateChange
 }: PDFViewerProps) => {
   console.log('[PDFViewer] Rendering with file:', file)
   console.log('[PDFViewer] isActive:', isActive, 'isFullscreen:', isFullscreen)
-  console.log('[PDFViewer] annotationMode:', annotationMode, 'onAnnotationModeChange:', !!onAnnotationModeChange)
   
   const [numPages, setNumPages] = useState<number | null>(initialState?.numPages ?? null);
   const [pageNumber, setPageNumber] = useState(initialState?.pageNumber ?? 1);
@@ -108,16 +97,6 @@ const PDFViewer = ({
   const hasSuppressedInitialFitRef = useRef(false);
   const hasInitialState = Boolean(initialState);
   const skipAutoFitRef = useRef(Boolean(initialState));
-
-  // Annotation mode state
-  const [previousScrollMode, setPreviousScrollMode] = useState<'centered' | 'continuous'>('centered');
-  const [gridSize, setGridSize] = useState<GridSizeKey>('12"');
-  const [gridVisible, setGridVisible] = useState(true);
-  const [pdfPageRef, setPdfPageRef] = useState<any>(null);
-  const [currentViewport, setCurrentViewport] = useState<any>(null);
-  
-  const annotationTools = useAnnotationTools();
-  const { snapToPdfGrid } = useGridSnapping(gridSize, gridVisible);
 
   // Use BASE_URL for proper path resolution in all environments
   // Whitelist the PDFs we actually ship locally to avoid attempting to load non-existent placeholders
@@ -198,49 +177,6 @@ const PDFViewer = ({
     
     return () => clearTimeout(timeoutId);
   }, [initialState?.scrollPosition, numPages, loading]);
-
-  // Ensure viewport refs are available when annotation mode activates
-  useEffect(() => {
-    if (annotationMode) {
-      console.log('[Annotation Refs] Mode activated. Checking refs:', { 
-        pdfPageRef: !!pdfPageRef, 
-        currentViewport: !!currentViewport,
-        pageSize 
-      });
-      
-      // If refs aren't set but we have page dimensions, create a fallback viewport
-      if (!currentViewport && pageSize && pageSize.width > 0) {
-        console.log('[Annotation Refs] Creating fallback viewport from pageSize');
-        const basicViewport = {
-          width: pageSize.width * scale,
-          height: pageSize.height * scale,
-          scale: scale,
-          rotation: rotation,
-          // Simplified viewport conversions for fallback
-          convertToPdfPoint: (screenX: number, screenY: number): [number, number] => {
-            return [screenX / scale, screenY / scale];
-          },
-          convertToViewportPoint: (pdfX: number, pdfY: number): [number, number] => {
-            return [pdfX * scale, pdfY * scale];
-          }
-        };
-        setCurrentViewport(basicViewport);
-        console.log('[Annotation Refs] Fallback viewport created');
-      }
-    }
-  }, [annotationMode, currentViewport, pageSize, scale]);
-
-  // Keep viewport in sync when scale/rotation changes
-  useEffect(() => {
-    if (annotationMode && pdfPageRef) {
-      console.log('[Annotation Refs] Updating viewport for scale/rotation change');
-      const updatedViewport = pdfPageRef.getViewport({
-        scale: scale,
-        rotation: rotation
-      });
-      setCurrentViewport(updatedViewport);
-    }
-  }, [annotationMode, scale, rotation, pdfPageRef]);
 
   // Report state changes back to parent for caching
   const lastReportedStateRef = useRef<string>('');
@@ -818,26 +754,11 @@ const PDFViewer = ({
         <div className="flex items-center gap-1 min-w-0 flex-1">
           {numPages && (
             <>
-              {/* Annotate Button */}
-              <button
-                onClick={() => {
-                  console.log('[Button Click] Annotate button clicked! Current mode:', annotationMode);
-                  console.log('[Button Click] Calling onAnnotationModeChange with:', !annotationMode);
-                  onAnnotationModeChange?.(!annotationMode);
-                }}
-                className={`h-5 px-2 text-[11px] rounded hover:bg-muted flex items-center gap-1 ${annotationMode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}
-                title={annotationMode ? 'Exit annotation mode' : 'Enter annotation mode'}
-              >
-                <PenTool className="h-3 w-3" />
-                {annotationMode ? 'Annotating' : 'Annotate'}
-              </button>
-              
               {/* Scroll Mode Toggle */}
               <button
                 onClick={() => setScrollMode(prev => prev === 'centered' ? 'continuous' : 'centered')}
-                disabled={annotationMode}
-                className={`h-5 px-2 text-[11px] rounded hover:bg-muted ${scrollMode === 'continuous' ? 'bg-muted text-foreground' : 'text-muted-foreground'} ${annotationMode ? 'opacity-50 cursor-not-allowed' : ''}`}
-                title={annotationMode ? 'Disabled during annotation' : (scrollMode === 'centered' ? 'Switch to continuous scrolling' : 'Switch to single-page mode')}
+                className={`h-5 px-2 text-[11px] rounded hover:bg-muted ${scrollMode === 'continuous' ? 'bg-muted text-foreground' : 'text-muted-foreground'}`}
+                title={scrollMode === 'centered' ? 'Switch to continuous scrolling' : 'Switch to single-page mode'}
               >
                 {scrollMode === 'centered' ? 'Single' : 'Continuous'}
               </button>
@@ -971,25 +892,6 @@ const PDFViewer = ({
         </div>
       </div>
 
-      {/* Annotation Toolbar (appears when annotation mode is active) */}
-      {annotationMode && (
-        <AnnotationToolbar
-          onToolChange={annotationTools.setActiveTool}
-          onColorChange={annotationTools.setActiveColor}
-          onStrokeWidthChange={annotationTools.setStrokeWidth}
-          onGridSizeChange={setGridSize}
-          onGridToggle={setGridVisible}
-          onUndo={() => annotationTools.undo(null, currentViewport)}
-          onRedo={() => annotationTools.redo(null, currentViewport)}
-          onSave={() => console.log('Save annotations:', annotationTools.annotations)}
-          currentTool={annotationTools.activeTool}
-          currentColor={annotationTools.activeColor}
-          currentStrokeWidth={annotationTools.strokeWidth}
-          currentGridSize={gridSize}
-          gridVisible={gridVisible}
-        />
-      )}
-
       {/* PDF Content (rotation passed here is user-applied only; intrinsic page rotation handled inside PDFCanvas/React-PDF) */}
       <div className="relative flex-1 min-h-0">
         {documentFileSource !== '__MISSING_LOCAL_PDF__' && (
@@ -1006,28 +908,11 @@ const PDFViewer = ({
             workerOk={workerOk}
             onDocumentLoadSuccess={onDocumentLoadSuccess}
             onDocumentLoadError={onDocumentLoadError}
-            onPageLoadSuccess={(page: any) => {
-              onPageLoadSuccess(page);
-              setPdfPageRef(page);
-              const viewport = page.getViewport({ scale, rotation });
-              setCurrentViewport(viewport);
-            }}
+            onPageLoadSuccess={onPageLoadSuccess}
             viewerSize={viewerSize}
             pageSize={pageSize}
             numPages={numPages}
             scrollMode={scrollMode}
-          />
-        )}
-        
-        {/* Annotation Layer Overlay */}
-        {annotationMode && pdfPageRef && currentViewport && (
-          <PDFAnnotationLayer
-            pageNumber={pageNumber}
-            pdfPage={pdfPageRef}
-            scale={scale}
-            rotation={rotation}
-            visible={annotationMode}
-            viewport={currentViewport}
           />
         )}
       </div>
