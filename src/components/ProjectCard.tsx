@@ -160,7 +160,7 @@ export const ProjectCard = ({
 
           {/* Message notification badge - only show if there are messages */}
           {messageCount > 0 && (
-            <div className="inline-flex items-center gap-1.5 rounded-full font-medium px-2.5 py-1 text-xs bg-muted text-muted-foreground ring ring-border">
+            <div className="inline-flex items-center gap-1.5 rounded-full font-medium px-2.5 py-1 text-xs bg-muted text-muted-foreground ring ring-border ml-auto">
               <MessageSquare className="h-4 w-4" />
               <span>{messageCount}</span>
             </div>
