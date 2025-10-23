@@ -32,6 +32,7 @@ interface ViewerTab {
   file: any | null
   viewerMode: ViewerMode
   viewerState?: ViewerState
+  annotationMode?: boolean
 }
 
 const SUPPORTED_IMAGE_EXTENSIONS = new Set([
@@ -67,6 +68,7 @@ const createTab = (file: any | null = null): ViewerTab => {
     id: generateFileId(),
     file,
     viewerMode: getViewerModeForFile(file),
+    annotationMode: false,
     viewerState: file ? {
       pageNumber: 1,
       scale: 1.0,
@@ -245,6 +247,17 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened, onFillPageChange
     }
     setIsFullscreen(prev => !prev)
   }
+
+  const handleAnnotationModeChange = useCallback((tabId: string, annotationMode: boolean) => {
+    console.log('[FilesTab] Annotation mode change for tab:', tabId, 'mode:', annotationMode);
+    setTabs(prev =>
+      prev.map(t =>
+        t.id === tabId
+          ? { ...t, annotationMode }
+          : t
+      )
+    )
+  }, [])
 
   const handleUploadFiles = async (files: File[], folderId?: string) => {
     if (!folderId) {
@@ -442,6 +455,8 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened, onFillPageChange
           className="flex-1 min-h-0"
           initialState={tab.viewerState}
           onStateChange={state => handleViewerStateChange(tab.id, state)}
+          annotationMode={tab.annotationMode ?? false}
+          onAnnotationModeChange={(mode) => handleAnnotationModeChange(tab.id, mode)}
         />
       )
     }
