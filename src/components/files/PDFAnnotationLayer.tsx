@@ -30,8 +30,6 @@ export const PDFAnnotationLayer = ({
   
   const [gridSize, setGridSize] = useState<GridSizeKey>('12"');
   const [gridVisible, setGridVisible] = useState(true);
-  const [stableDimensions, setStableDimensions] = useState<{ width: number; height: number } | null>(null);
-  const dimensionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const { snapToPdfGrid, gridPoints } = useGridSnapping(gridSize, gridVisible);
   const annotationTools = useAnnotationTools();
@@ -112,61 +110,25 @@ export const PDFAnnotationLayer = ({
     };
   }, [visible, MOUNT_ID]);
 
-  // Debounce dimension changes to prevent rapid canvas resets
+  // Update canvas dimensions when viewport changes
   useEffect(() => {
     console.log(`[PDFAnnotationLayer:${MOUNT_ID}] 📏 Dimensions effect triggered`, {
+      hasCanvasRef: !!canvasRef.current,
+      hasGridCanvasRef: !!gridCanvasRef.current,
       viewport: viewport ? `${viewport.width}x${viewport.height}` : 'null',
       scale,
       rotation
     });
     
-    if (!viewport) {
-      console.log(`[PDFAnnotationLayer:${MOUNT_ID}] ⚠️  No viewport - skipping dimension update`);
+    if (!canvasRef.current || !gridCanvasRef.current || !viewport) {
+      console.log(`[PDFAnnotationLayer:${MOUNT_ID}] ⚠️  Cannot update dimensions - missing refs or viewport`);
       return;
     }
 
     const width = viewport.width;
     const height = viewport.height;
 
-    // Clear any pending dimension update
-    if (dimensionTimeoutRef.current) {
-      clearTimeout(dimensionTimeoutRef.current);
-      console.log(`[PDFAnnotationLayer:${MOUNT_ID}] ⏱️  Cleared previous dimension timeout`);
-    }
-
-    // Wait 150ms for dimensions to stabilize
-    dimensionTimeoutRef.current = setTimeout(() => {
-      console.log(`[PDFAnnotationLayer:${MOUNT_ID}] ✅ Dimensions stabilized, applying update`, {
-        width,
-        height
-      });
-      setStableDimensions({ width, height });
-    }, 150);
-
-    return () => {
-      if (dimensionTimeoutRef.current) {
-        clearTimeout(dimensionTimeoutRef.current);
-      }
-    };
-  }, [viewport, scale, rotation, MOUNT_ID]);
-
-  // Apply stable dimensions to canvas (only runs once dimensions stabilize)
-  useEffect(() => {
-    if (!canvasRef.current || !gridCanvasRef.current || !stableDimensions) {
-      console.log(`[PDFAnnotationLayer:${MOUNT_ID}] ⚠️  Cannot apply dimensions`, {
-        hasCanvasRef: !!canvasRef.current,
-        hasGridCanvasRef: !!gridCanvasRef.current,
-        hasStableDimensions: !!stableDimensions
-      });
-      return;
-    }
-
-    const { width, height } = stableDimensions;
-
-    console.log(`[PDFAnnotationLayer:${MOUNT_ID}] ✅ Applying stable dimensions to canvas`, {
-      width,
-      height
-    });
+    console.log(`[PDFAnnotationLayer:${MOUNT_ID}] ✅ Setting canvas dimensions to ${width}x${height}`);
 
     // Set annotation canvas size
     canvasRef.current.width = width;
@@ -190,7 +152,7 @@ export const PDFAnnotationLayer = ({
     } else {
       console.log(`[PDFAnnotationLayer:${MOUNT_ID}] ⚠️  Cannot update fabric dimensions - fabricCanvas is null`);
     }
-  }, [stableDimensions, MOUNT_ID]);
+  }, [viewport, scale, rotation, MOUNT_ID]);
 
   // Track viewport changes specifically
   useEffect(() => {
