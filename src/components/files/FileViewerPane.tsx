@@ -18,6 +18,7 @@ export default function FileViewerPane({
   onMaximize 
 }: FileViewerPaneProps) {
   const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [annotationMode, setAnnotationMode] = useState(false);
 
   useEffect(() => {
     if (!file) {
@@ -75,6 +76,8 @@ export default function FileViewerPane({
     return (
       <PDFViewer
         file={{ url: fileUrl, name: file.filename, size: file.filesize, modified: file.updated_at }}
+        annotationMode={annotationMode}
+        onAnnotationModeChange={setAnnotationMode}
       />
     );
   }

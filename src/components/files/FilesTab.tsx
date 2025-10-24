@@ -4,12 +4,9 @@ import FileExplorer from './FileExplorer'
 import PDFViewer from './PDFViewer'
 import ImageViewer from './ImageViewer'
 import { TabBar } from './TabBar'
-import { AnnotationEditorModal } from './AnnotationEditorModal'
 import { generateFileId } from '@/lib/utils/uuid'
 import { useUploadProjectFiles } from '@/lib/api/hooks/useProjectFiles'
 import { useToast } from '@/hooks/use-toast'
-import { Button } from '@/components/ui/button'
-import { PenTool } from 'lucide-react'
 
 const VIEWER_MIN_HEIGHT = 200
 const EXPLORER_MIN_HEIGHT = 140
@@ -99,10 +96,6 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened, onFillPageChange
     initialTabRef.current = createTab()
   }
   const [tabs, setTabs] = useState<ViewerTab[]>(() => [initialTabRef.current!])
-  
-  // Annotation modal state
-  const [annotationModalOpen, setAnnotationModalOpen] = useState(false)
-  const [fileForAnnotation, setFileForAnnotation] = useState<any | null>(null)
   const [activeTabId, setActiveTabId] = useState<string>(() => initialTabRef.current!.id)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isFillPage, setIsFillPage] = useState(false)
@@ -252,19 +245,6 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened, onFillPageChange
     }
     setIsFullscreen(prev => !prev)
   }
-
-  const handleOpenAnnotationEditor = useCallback(() => {
-    const activeTab = tabs.find(t => t.id === activeTabId)
-    if (activeTab?.file && activeTab.viewerMode === 'pdf') {
-      setFileForAnnotation(activeTab.file)
-      setAnnotationModalOpen(true)
-    }
-  }, [tabs, activeTabId])
-
-  const handleSaveAnnotations = useCallback((annotations: any) => {
-    console.log('Annotations saved:', annotations)
-    // TODO: Save to database via API hook
-  }, [])
 
   const handleUploadFiles = async (files: File[], folderId?: string) => {
     if (!folderId) {
@@ -554,33 +534,17 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened, onFillPageChange
   }
 
   // Debug: Log container dimensions
-  const activeTab = tabs.find(t => t.id === activeTabId)
-  const showAnnotateButton = activeTab?.viewerMode === 'pdf' && activeTab?.file
-
   return (
     <div ref={containerRef} className="h-full flex flex-col overflow-hidden bg-transparent">
-      {/* Tab Bar with Annotate Button */}
-      <div className="flex items-center gap-2 border-b bg-background">
-        <TabBar
-          tabs={tabs}
-          activeTabId={activeTabId}
-          onSwitchTab={handleSwitchTab}
-          onCloseTab={handleCloseTab}
-          onAddTab={handleAddTab}
-          darkMode={isDark}
-        />
-        {showAnnotateButton && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleOpenAnnotationEditor}
-            className="mr-2 h-7 text-xs"
-          >
-            <PenTool className="h-3.5 w-3.5 mr-1" />
-            Edit Annotations
-          </Button>
-        )}
-      </div>
+      {/* Tab Bar */}
+      <TabBar
+        tabs={tabs}
+        activeTabId={activeTabId}
+        onSwitchTab={handleSwitchTab}
+        onCloseTab={handleCloseTab}
+        onAddTab={handleAddTab}
+        darkMode={isDark}
+      />
       
       <div
         className={`relative flex flex-col border-t transition-border-color duration-150 ${viewerBorderClass} bg-white dark:bg-[#0F1219]`}
@@ -661,19 +625,6 @@ export function FilesTab({ projectId, fileToOpen, onFileOpened, onFillPageChange
             className="h-full"
           />
         </div>
-      )}
-
-      {/* Annotation Editor Modal */}
-      {fileForAnnotation && (
-        <AnnotationEditorModal
-          file={fileForAnnotation}
-          isOpen={annotationModalOpen}
-          onClose={() => {
-            setAnnotationModalOpen(false)
-            setFileForAnnotation(null)
-          }}
-          onSave={handleSaveAnnotations}
-        />
       )}
     </div>
   )
