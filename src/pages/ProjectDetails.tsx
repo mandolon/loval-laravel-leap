@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import type { Task } from "@/lib/api/types";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,9 @@ import { useUser } from "@/contexts/UserContext";
 import { useLayout } from "@/contexts/LayoutContext";
 import { DESIGN_TOKENS as T, UTILITY_CLASSES } from "@/lib/design-tokens";
 import { ExcelTab } from "@/components/excel/ExcelTab";
+import { TasksTableTab } from "@/components/taskboard/TasksTableTab";
+import { TaskDetailDialog } from "@/components/TaskDetailDialog";
+import { useProjectMembers } from "@/lib/api/hooks/useProjectMembers";
 
 // PanelRightClose icon import
 import { PanelRightClose } from "lucide-react";
@@ -65,6 +68,7 @@ const ProjectDetails = () => {
   const [selectedLink, setSelectedLink] = useState<any>(null);
   const [editLinkOpen, setEditLinkOpen] = useState(false);
   const [isFillPageActive, setIsFillPageActive] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const handleFillPageChange = (fillPage: boolean) => {
     setIsFillPageActive(fillPage);
@@ -93,6 +97,27 @@ const ProjectDetails = () => {
 
   const { data: links = [], isLoading: linksLoading } = useLinks(id || "");
   const deleteLinkMutation = useDeleteLink();
+
+  // User data resolution for TaskDetailDialog
+  const { data: projectMembers = [] } = useProjectMembers(id || '');
+
+  const userMap = useMemo(() => {
+    return new Map(
+      projectMembers.map(m => [m.userId, m.user])
+    );
+  }, [projectMembers]);
+
+  const selectedTaskAssignees = useMemo(() => {
+    if (!selectedTask) return [];
+    return selectedTask.assignees
+      .map(id => userMap.get(id))
+      .filter(Boolean);
+  }, [selectedTask, userMap]);
+
+  const selectedTaskCreator = useMemo(() => {
+    if (!selectedTask) return null;
+    return userMap.get(selectedTask.createdBy) || null;
+  }, [selectedTask, userMap]);
 
   // Realtime subscriptions for all project data
   useEffect(() => {
@@ -290,12 +315,12 @@ const ProjectDetails = () => {
   };
 
   return (
-    <div className="h-full w-full text-[12px] overflow-hidden">
+    <div className="h-full w-full text-[12px] overflow-hidden pb-6">
       <ResizablePanelGroup direction="horizontal" className="h-full">
-        <ResizablePanel defaultSize={chatOpen ? 75 : 100} minSize={50}>
+        <ResizablePanel defaultSize={chatOpen ? 75 : 100} minSize={50} className={!chatOpen ? "mr-1" : ""}>
           <div className={`${T.panel} ${T.radius} flex flex-col h-full min-h-0 overflow-hidden`}>
         {/* Header */}
-        <div className={`h-12 text-[12px] grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 bg-white dark:bg-[#0E1118] border-b border-slate-200 dark:border-[#1a2030]/60 transition-all duration-200 ${isFillPageActive && activeTab === 'files' ? 'hidden' : ''}`}>
+        <div className={`h-12 text-[12px] grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 bg-white dark:bg-[#0E1118] border-b border-[#bbbbbb] dark:border-[#1a2030]/60 transition-all duration-200 ${isFillPageActive && activeTab === 'files' ? 'hidden' : ''}`}>
           {/* Left: Back button */}
           <button
             type="button"
@@ -423,84 +448,14 @@ const ProjectDetails = () => {
                 />
               </TabsContent>
 
-            <TabsContent value="tasks" className="h-full overflow-auto">
-              <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-slate-700 dark:text-neutral-300">Tasks</h2>
-                  <CreateTaskDialog projects={[project]} onCreateTask={handleCreateTask} />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Task/Redline Column */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-lg text-slate-700 dark:text-neutral-300">Task/Redline</h3>
-                    <Badge className="bg-red-500 dark:bg-red-500/20 text-white dark:text-red-300 border-0">{taskRedlineTasks.length}</Badge>
-                  </div>
-                  <div className="space-y-3">
-                    {taskRedlineTasks.length === 0 ? (
-                      <p className="text-sm text-slate-500 dark:text-neutral-400 text-center py-8">No tasks</p>
-                    ) : (
-                      taskRedlineTasks.map(task => (
-                        <TaskItem
-                          key={task.id}
-                          task={task}
-                          assignees={getTaskAssignees(task.assignees)}
-                          onStatusChange={handleStatusChange}
-                          onDelete={handleDeleteTask}
-                        />
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* Progress/Update Column */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-lg text-slate-700 dark:text-neutral-300">Progress/Update</h3>
-                    <Badge className="bg-[#00639b] dark:bg-blue-500/20 text-white dark:text-blue-300 border-0">{progressUpdateTasks.length}</Badge>
-                  </div>
-                  <div className="space-y-3">
-                    {progressUpdateTasks.length === 0 ? (
-                      <p className="text-sm text-slate-500 dark:text-neutral-400 text-center py-8">No tasks</p>
-                    ) : (
-                      progressUpdateTasks.map(task => (
-                        <TaskItem
-                          key={task.id}
-                          task={task}
-                          assignees={getTaskAssignees(task.assignees)}
-                          onStatusChange={handleStatusChange}
-                          onDelete={handleDeleteTask}
-                        />
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* Complete Column */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-lg text-slate-700 dark:text-neutral-300">Complete</h3>
-                    <Badge className="bg-green-500 dark:bg-green-500/20 text-white dark:text-green-300 border-0">{completeTasks.length}</Badge>
-                  </div>
-                  <div className="space-y-3">
-                    {completeTasks.length === 0 ? (
-                      <p className="text-sm text-slate-500 dark:text-neutral-400 text-center py-8">No tasks</p>
-                    ) : (
-                      completeTasks.map(task => (
-                        <TaskItem
-                          key={task.id}
-                          task={task}
-                          assignees={getTaskAssignees(task.assignees)}
-                          onStatusChange={handleStatusChange}
-                          onDelete={handleDeleteTask}
-                        />
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
-              </div>
+            <TabsContent value="tasks" className="h-full overflow-auto bg-[#f9f9f9] dark:bg-[#0E1118]">
+              <TasksTableTab 
+                projectId={id || ''}
+                tasks={tasks}
+                onTaskClick={(task) => setSelectedTask(task)}
+                onCreateTask={handleCreateTask}
+                onStatusChange={handleStatusChange}
+              />
             </TabsContent>
 
             <TabsContent value="invoices" className="h-full overflow-auto">
@@ -710,9 +665,9 @@ const ProjectDetails = () => {
       {/* Project Chat Sidebar - Resizable */}
       {chatOpen && (
         <>
-          <ResizableHandle withHandle />
+          <ResizableHandle withHandle className="mx-1" />
           <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
-            <div className={`${T.panel} ${T.radius} flex flex-col h-full overflow-hidden`}>
+            <div className={`${T.panel} ${T.radius} flex flex-col h-full overflow-hidden mr-1`}>
           <div className="h-10 px-3 flex items-center justify-between border-b border-slate-200 dark:border-[#1d2230] bg-white dark:bg-[#0E1118]">
             <span className="text-[12px] text-slate-700 dark:text-neutral-300">Project Chat</span>
             <button
@@ -774,6 +729,21 @@ const ProjectDetails = () => {
         </>
       )}
       </ResizablePanelGroup>
+
+      {/* Task Detail Dialog */}
+      {selectedTask && (
+        <TaskDetailDialog
+          task={selectedTask}
+          open={!!selectedTask}
+          onOpenChange={(open) => !open && setSelectedTask(null)}
+          onUpdate={(updates) => updateTaskMutation.mutate({ 
+            id: selectedTask.id, 
+            input: updates 
+          })}
+          assignees={selectedTaskAssignees}
+          createdBy={selectedTaskCreator}
+        />
+      )}
     </div>
   );
 };

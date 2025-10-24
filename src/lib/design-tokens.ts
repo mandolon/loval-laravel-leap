@@ -39,9 +39,9 @@ export const COLORS = {
   // Border colors
   border: {
     light: {
-      default: '#e2e8f0',    // slate-200
-      subtle: '#e2e8f0',     // slate-200
-      input: '#e2e8f0',      // slate-200
+      default: '#bbbbbb',    // Updated to #bbbbbb
+      subtle: '#bbbbbb',     // Updated to #bbbbbb
+      input: '#e2e8f0',      // slate-200 (keeping input borders as they were)
     },
     dark: {
       default: 'rgba(29, 34, 48, 0.6)',  // #1d2230/60
@@ -108,15 +108,15 @@ export const DESIGN_TOKENS = {
   focus: 'focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40',
   
   // Panel backgrounds (composite classes)
-  panel: 'bg-white dark:bg-[#0F1219] border border-slate-200 dark:border-[#1d2230]/60',
-  panelSoft: 'bg-slate-50 dark:bg-[#10141D] border border-slate-200 dark:border-[#1a1f2c]/50',
-  panelElev: 'bg-white dark:bg-[#0E1118] border border-slate-200 dark:border-[#1a2030]/50',
+  panel: 'bg-white dark:bg-[#0F1219] border border-[#bbbbbb] dark:border-[#1d2230]/60',
+  panelSoft: 'bg-slate-50 dark:bg-[#10141D] border border-[#bbbbbb] dark:border-[#1a1f2c]/50',
+  panelElev: 'bg-white dark:bg-[#0E1118] border border-[#bbbbbb] dark:border-[#1a2030]/50',
   
   // Borders only
-  borderDefault: 'border-slate-200 dark:border-[#1d2230]',
-  borderSubtle: 'border-slate-200 dark:border-[#1d2230]/60',
-  borderSubtle2: 'border-slate-200 dark:border-[#1a2030]/60',
-  borderSubtle3: 'border-slate-200 dark:border-[#1a2030]/40',
+  borderDefault: 'border-[#bbbbbb] dark:border-[#1d2230]',
+  borderSubtle: 'border-[#bbbbbb] dark:border-[#1d2230]/60',
+  borderSubtle2: 'border-[#bbbbbb] dark:border-[#1a2030]/60',
+  borderSubtle3: 'border-[#bbbbbb] dark:border-[#1a2030]/40',
   borderInput: 'border-slate-200 dark:border-[#283046]/60',
   borderInput2: 'border-[#283046] dark:border-[#283046]',
 };
@@ -127,8 +127,8 @@ export const UTILITY_CLASSES = {
   outerContainer: 'h-full w-full text-[12px] overflow-hidden bg-slate-50 dark:bg-[#0B0E14] text-slate-700 dark:text-neutral-200 flex gap-1 p-1',
   
   // Headers
-  sectionHeader: 'h-9 px-3 border-b border-slate-200 dark:border-[#1d2230] flex items-center justify-between text-slate-500 dark:text-neutral-500 bg-white dark:bg-[#0E1118]',
-  pageHeader: 'h-12 text-[12px] grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 bg-white dark:bg-[#0E1118] border-b border-slate-200 dark:border-[#1a2030]/60',
+  sectionHeader: 'h-9 px-3 border-b border-[#bbbbbb] dark:border-[#1d2230] flex items-center justify-between text-slate-500 dark:text-neutral-500 bg-white dark:bg-[#0E1118]',
+  pageHeader: 'h-12 text-[12px] grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 bg-white dark:bg-[#0E1118] border-b border-[#bbbbbb] dark:border-[#1a2030]/60',
   
   // Buttons
   buttonBase: 'px-2.5 py-1 rounded-[8px] transition-colors focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40',
@@ -151,8 +151,8 @@ export const UTILITY_CLASSES = {
   inputSearch: 'w-full h-7 px-2 bg-[#0E1118] dark:bg-[#0E1118] border border-[#1d2230] dark:border-[#1d2230] rounded-[6px] text-[11px] text-neutral-300 dark:text-neutral-300 placeholder:text-neutral-500 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40',
   
   // Chat specific
-  chatBubble: 'bg-slate-50 dark:bg-[#141C28] border border-slate-200 dark:border-[#1a2030]/60 p-2 rounded-[6px] max-w-[85%]',
-  chatFooter: 'p-3 border-t border-slate-200 dark:border-[#1d2230] bg-white dark:bg-[#0E1118] mt-auto',
+  chatBubble: 'bg-slate-50 dark:bg-[#141C28] border border-[#bbbbbb] dark:border-[#1a2030]/60 p-2 rounded-[6px] max-w-[85%]',
+  chatFooter: 'p-3 border-t border-[#bbbbbb] dark:border-[#1d2230] bg-white dark:bg-[#0E1118] mt-auto',
   
   // ResizableHandles
   handleVertical: 'h-px bg-slate-200 dark:bg-[#1a2030]/60 hover:bg-[#00639b] dark:hover:bg-[#3b82f6]/40 transition-colors',
