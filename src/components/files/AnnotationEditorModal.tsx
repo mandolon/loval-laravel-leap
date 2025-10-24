@@ -61,7 +61,6 @@ export const AnnotationEditorModal = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewerSize, setViewerSize] = useState({ width: 0, height: 0 });
   const [pageSize, setPageSize] = useState({ width: 0, height: 0 });
-  const [pdfPage, setPdfPage] = useState<any>(null); // Store real PDF.js page object
   const [fitWidthScale, setFitWidthScale] = useState(1.0);
   const [fitHeightScale, setFitHeightScale] = useState(1.0);
   const [fitPageScale, setFitPageScale] = useState(1.0);
@@ -273,20 +272,9 @@ export const AnnotationEditorModal = ({
   };
 
   const onPageLoadSuccess = useCallback((page: any) => {
-    setPdfPage(page); // Store the real page object
     const intrinsic = typeof page.rotate === 'number' ? page.rotate : 0;
     const viewport = page.getViewport({ scale: 1, rotation: intrinsic });
     const newPageSize = { width: viewport.width, height: viewport.height };
-    
-    console.log('[AnnotationEditorModal] Page loaded, setting size', {
-      newPageSize,
-      scale,
-      computedViewport: {
-        width: newPageSize.width * scale,
-        height: newPageSize.height * scale
-      }
-    });
-    
     setPageSize(newPageSize);
   }, [scale]);
 
@@ -343,13 +331,6 @@ export const AnnotationEditorModal = ({
     annotationTools.clearAll();
     onClose();
   };
-
-  // Calculate real PDF.js viewport (CRITICAL: must have convertToPdfPoint method)
-  const computedViewport = useMemo(() => {
-    if (!pdfPage) return null;
-    const intrinsic = typeof pdfPage.rotate === 'number' ? pdfPage.rotate : 0;
-    return pdfPage.getViewport({ scale, rotation: intrinsic + rotation });
-  }, [pdfPage, scale, rotation]);
 
   console.log('[AnnotationEditorModal] Rendering modal, isOpen:', isOpen, 'file:', file, 'documentFileSource:', documentFileSource);
 
@@ -474,33 +455,33 @@ export const AnnotationEditorModal = ({
               
               {/* Annotation Layer - positioned absolutely over the PDF */}
               {(() => {
-                const shouldRender = !loading && !error && computedViewport !== null;
+                const shouldRender = !loading && !error && pageSize.width > 0;
                 if (shouldRender) {
                   console.log(`[AnnotationEditorModal:${MODAL_ID}] ✅ About to render PDFAnnotationLayer`, {
                     loading,
                     error,
                     pageSize,
                     scale,
-                    viewport: computedViewport ? {
-                      width: computedViewport.width,
-                      height: computedViewport.height
-                    } : null
+                    viewport: {
+                      width: pageSize.width * scale,
+                      height: pageSize.height * scale
+                    }
                   });
                   return (
                     <PDFAnnotationLayer
                       pageNumber={pageNumber}
-                      pdfPage={pdfPage}
+                      pdfPage={null}
                       scale={scale}
                       rotation={rotation}
                       visible={true}
-                      viewport={computedViewport}
+                      viewport={{ width: pageSize.width * scale, height: pageSize.height * scale }}
                     />
                   );
                 } else {
                   console.log(`[AnnotationEditorModal:${MODAL_ID}] ⚠️  NOT rendering PDFAnnotationLayer`, {
                     loading,
                     error,
-                    hasViewport: computedViewport !== null
+                    hasPageSize: pageSize.width > 0
                   });
                   return null;
                 }
