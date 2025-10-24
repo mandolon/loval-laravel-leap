@@ -1,11 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { pdfjs } from 'react-pdf';
 import PDFCanvas from './PDFCanvas';
-import { PDFAnnotationLayer } from './PDFAnnotationLayer';
-import { AnnotationToolbar } from './AnnotationToolbar';
-import { useAnnotationTools } from '@/hooks/useAnnotationTools';
-import { useGridSnapping } from '@/hooks/useGridSnapping';
-import type { GridSizeKey } from '@/types/annotations';
 import { 
   ZoomIn, 
   ZoomOut, 
@@ -15,8 +10,7 @@ import {
   ChevronRight,
   Maximize2,
   Minimize2,
-  Maximize,
-  PenTool
+  Maximize
 } from 'lucide-react';
 import { logger } from '@/utils/logger';
 
@@ -41,8 +35,6 @@ interface PDFViewerProps {
   darkMode?: boolean;
   onClick?: () => void;
   className?: string;
-  annotationMode?: boolean;
-  onAnnotationModeChange?: (mode: boolean) => void;
   initialState?: {
     pageNumber?: number;
     scale?: number;
@@ -77,8 +69,6 @@ const PDFViewer = ({
   darkMode: _darkMode = false, 
   onClick, 
   className = '',
-  annotationMode = false,
-  onAnnotationModeChange,
   initialState,
   onStateChange
 }: PDFViewerProps) => {
@@ -107,16 +97,6 @@ const PDFViewer = ({
   const hasSuppressedInitialFitRef = useRef(false);
   const hasInitialState = Boolean(initialState);
   const skipAutoFitRef = useRef(Boolean(initialState));
-
-  // Annotation mode state
-  const [previousScrollMode, setPreviousScrollMode] = useState<'centered' | 'continuous'>('centered');
-  const [gridSize, setGridSize] = useState<GridSizeKey>('12"');
-  const [gridVisible, setGridVisible] = useState(true);
-  const [pdfPageRef, setPdfPageRef] = useState<any>(null);
-  const [currentViewport, setCurrentViewport] = useState<any>(null);
-  
-  const annotationTools = useAnnotationTools();
-  const { snapToPdfGrid } = useGridSnapping(gridSize, gridVisible);
 
   // Use BASE_URL for proper path resolution in all environments
   // Whitelist the PDFs we actually ship locally to avoid attempting to load non-existent placeholders
@@ -774,22 +754,11 @@ const PDFViewer = ({
         <div className="flex items-center gap-1 min-w-0 flex-1">
           {numPages && (
             <>
-              {/* Annotate Button */}
-              <button
-                onClick={() => onAnnotationModeChange?.(!annotationMode)}
-                className={`h-5 px-2 text-[11px] rounded hover:bg-muted flex items-center gap-1 ${annotationMode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}
-                title={annotationMode ? 'Exit annotation mode' : 'Enter annotation mode'}
-              >
-                <PenTool className="h-3 w-3" />
-                {annotationMode ? 'Annotating' : 'Annotate'}
-              </button>
-              
               {/* Scroll Mode Toggle */}
               <button
                 onClick={() => setScrollMode(prev => prev === 'centered' ? 'continuous' : 'centered')}
-                disabled={annotationMode}
-                className={`h-5 px-2 text-[11px] rounded hover:bg-muted ${scrollMode === 'continuous' ? 'bg-muted text-foreground' : 'text-muted-foreground'} ${annotationMode ? 'opacity-50 cursor-not-allowed' : ''}`}
-                title={annotationMode ? 'Disabled during annotation' : (scrollMode === 'centered' ? 'Switch to continuous scrolling' : 'Switch to single-page mode')}
+                className={`h-5 px-2 text-[11px] rounded hover:bg-muted ${scrollMode === 'continuous' ? 'bg-muted text-foreground' : 'text-muted-foreground'}`}
+                title={scrollMode === 'centered' ? 'Switch to continuous scrolling' : 'Switch to single-page mode'}
               >
                 {scrollMode === 'centered' ? 'Single' : 'Continuous'}
               </button>
@@ -923,66 +892,28 @@ const PDFViewer = ({
         </div>
       </div>
 
-      {/* Annotation Toolbar (appears when annotation mode is active) */}
-      {annotationMode && (
-        <AnnotationToolbar
-          onToolChange={annotationTools.setActiveTool}
-          onColorChange={annotationTools.setActiveColor}
-          onStrokeWidthChange={annotationTools.setStrokeWidth}
-          onGridSizeChange={setGridSize}
-          onGridToggle={setGridVisible}
-          onUndo={() => annotationTools.undo(null, currentViewport)}
-          onRedo={() => annotationTools.redo(null, currentViewport)}
-          onSave={() => console.log('Save annotations:', annotationTools.annotations)}
-          currentTool={annotationTools.activeTool}
-          currentColor={annotationTools.activeColor}
-          currentStrokeWidth={annotationTools.strokeWidth}
-          currentGridSize={gridSize}
-          gridVisible={gridVisible}
+      {/* PDF Content (rotation passed here is user-applied only; intrinsic page rotation handled inside PDFCanvas/React-PDF) */}
+      {documentFileSource !== '__MISSING_LOCAL_PDF__' && (
+        <PDFCanvas
+          ref={containerRef}
+          file={file}
+          pageNumber={pageNumber}
+          scale={scale}
+          rotation={rotation}
+          fetchStatus={fetchStatus}
+          loading={loading}
+          error={error}
+          documentFileSource={documentFileSource === '__MISSING_LOCAL_PDF__' ? null : documentFileSource}
+          workerOk={workerOk}
+          onDocumentLoadSuccess={onDocumentLoadSuccess}
+          onDocumentLoadError={onDocumentLoadError}
+          onPageLoadSuccess={onPageLoadSuccess}
+          viewerSize={viewerSize}
+          pageSize={pageSize}
+          numPages={numPages}
+          scrollMode={scrollMode}
         />
       )}
-
-      {/* PDF Content (rotation passed here is user-applied only; intrinsic page rotation handled inside PDFCanvas/React-PDF) */}
-      <div className="relative flex-1 min-h-0">
-        {documentFileSource !== '__MISSING_LOCAL_PDF__' && (
-          <PDFCanvas
-            ref={containerRef}
-            file={file}
-            pageNumber={pageNumber}
-            scale={scale}
-            rotation={rotation}
-            fetchStatus={fetchStatus}
-            loading={loading}
-            error={error}
-            documentFileSource={documentFileSource === '__MISSING_LOCAL_PDF__' ? null : documentFileSource}
-            workerOk={workerOk}
-            onDocumentLoadSuccess={onDocumentLoadSuccess}
-            onDocumentLoadError={onDocumentLoadError}
-            onPageLoadSuccess={(page: any) => {
-              onPageLoadSuccess(page);
-              setPdfPageRef(page);
-              const viewport = page.getViewport({ scale, rotation });
-              setCurrentViewport(viewport);
-            }}
-            viewerSize={viewerSize}
-            pageSize={pageSize}
-            numPages={numPages}
-            scrollMode={scrollMode}
-          />
-        )}
-        
-        {/* Annotation Layer Overlay */}
-        {annotationMode && pdfPageRef && currentViewport && (
-          <PDFAnnotationLayer
-            pageNumber={pageNumber}
-            pdfPage={pdfPageRef}
-            scale={scale}
-            rotation={rotation}
-            visible={annotationMode}
-            viewport={currentViewport}
-          />
-        )}
-      </div>
       {documentFileSource === '__MISSING_LOCAL_PDF__' && (
         <div className={`flex-1 flex items-center justify-center text-[10px] text-muted-foreground`}>
           PDF asset not included in demo build.

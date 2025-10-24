@@ -198,54 +198,6 @@ export type Database = {
           },
         ]
       }
-      file_annotations: {
-        Row: {
-          annotation_data: Json
-          created_at: string | null
-          created_by: string | null
-          file_id: string
-          id: string
-          project_id: string
-          updated_at: string | null
-          version_number: number | null
-        }
-        Insert: {
-          annotation_data: Json
-          created_at?: string | null
-          created_by?: string | null
-          file_id: string
-          id?: string
-          project_id: string
-          updated_at?: string | null
-          version_number?: number | null
-        }
-        Update: {
-          annotation_data?: Json
-          created_at?: string | null
-          created_by?: string | null
-          file_id?: string
-          id?: string
-          project_id?: string
-          updated_at?: string | null
-          version_number?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "file_annotations_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "files"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_annotations_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       files: {
         Row: {
           created_at: string | null
@@ -1473,8 +1425,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      generate_file_share_token: { Args: never; Returns: string }
-      generate_short_id: { Args: { prefix: string }; Returns: string }
+      generate_file_share_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_short_id: {
+        Args: { prefix: string }
+        Returns: string
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
