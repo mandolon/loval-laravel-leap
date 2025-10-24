@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState, useMemo } from 'react';
+import { useRef, useCallback, useState } from 'react';
 import { fabric } from 'fabric';
 import type { AnnotationTool, AnnotationData } from '@/types/annotations';
 
@@ -307,7 +307,7 @@ export const useAnnotationTools = () => {
     annotationsRef.current = [];
   }, [saveUndoState]);
 
-  return useMemo(() => ({
+  return {
     activeTool,
     setActiveTool,
     activeColor,
@@ -322,16 +322,5 @@ export const useAnnotationTools = () => {
     clearAll,
     renderAllAnnotations,
     annotations: annotationsRef.current,
-  }), [
-    activeTool,
-    activeColor,
-    strokeWidth,
-    handleMouseDown,
-    handleMouseMove,
-    handleMouseUp,
-    undo,
-    redo,
-    clearAll,
-    renderAllAnnotations,
-  ]);
+  };
 };

@@ -25,8 +25,6 @@ export const PDFAnnotationLayer = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gridCanvasRef = useRef<HTMLCanvasElement>(null);
   const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
-  const mountIdRef = useRef(Math.random().toString(36).slice(2, 8)); // Unique ID for this mount
-  const renderCountRef = useRef(0);
   
   const [gridSize, setGridSize] = useState<GridSizeKey>('12"');
   const [gridVisible, setGridVisible] = useState(true);
@@ -34,101 +32,65 @@ export const PDFAnnotationLayer = ({
   const { snapToPdfGrid, gridPoints } = useGridSnapping(gridSize, gridVisible);
   const annotationTools = useAnnotationTools();
 
-  const MOUNT_ID = mountIdRef.current;
-
-  // ===== COMPREHENSIVE LIFECYCLE TRACKING =====
-  
-  // Track every single render
-  renderCountRef.current++;
-  console.log(`[PDFAnnotationLayer:${MOUNT_ID}] 🔄 RENDER #${renderCountRef.current}`, {
-    scale,
-    rotation,
-    pageNumber,
-    visible,
-    hasViewport: !!viewport,
-    viewportSize: viewport ? `${viewport.width}x${viewport.height}` : 'null',
-    timestamp: new Date().toISOString(),
-  });
-
-  // Track mount/unmount with stack trace
+  // Component mount/unmount logging
   useEffect(() => {
-    console.log(`[PDFAnnotationLayer:${MOUNT_ID}] ✅ MOUNTED`);
+    console.log('[PDFAnnotationLayer] Component mounted', {
+      pageNumber,
+      visible,
+      viewport
+    });
+    
     return () => {
-      console.log(`[PDFAnnotationLayer:${MOUNT_ID}] ❌ UNMOUNTING - Canvas will be destroyed!`);
-      console.trace(`[PDFAnnotationLayer:${MOUNT_ID}] UNMOUNT Stack trace:`);
+      console.log('[PDFAnnotationLayer] Component unmounting');
     };
-  }, [MOUNT_ID]);
-
-  // Track canvas ref existence
-  useEffect(() => {
-    if (canvasRef.current) {
-      console.log(`[PDFAnnotationLayer:${MOUNT_ID}] ✅ Canvas DOM element exists`, {
-        width: canvasRef.current.width,
-        height: canvasRef.current.height,
-        inDocument: document.body.contains(canvasRef.current),
-      });
-    } else {
-      console.log(`[PDFAnnotationLayer:${MOUNT_ID}] ❌ Canvas DOM element is NULL`);
-    }
-  }, [canvasRef.current, MOUNT_ID]);
+  }, []);
 
   // Initialize Fabric.js canvas
   useEffect(() => {
-    console.log(`[PDFAnnotationLayer:${MOUNT_ID}] 🔨 Init effect triggered`, { 
+    console.log('[PDFAnnotationLayer] Init effect triggered', { 
       hasCanvasRef: !!canvasRef.current, 
       visible 
     });
     
-    if (!canvasRef.current || !visible) {
-      console.log(`[PDFAnnotationLayer:${MOUNT_ID}] ⚠️  Cannot create fabric - ${!canvasRef.current ? 'no canvas ref' : 'not visible'}`);
-      return;
-    }
+    if (!canvasRef.current || !visible) return;
 
-    console.log(`[PDFAnnotationLayer:${MOUNT_ID}] 🎨 Creating Fabric.js canvas...`);
     const fabricCanvas = new fabric.Canvas(canvasRef.current, {
       backgroundColor: undefined,
       enableRetinaScaling: true,
       selection: false,
     });
 
-    console.log(`[PDFAnnotationLayer:${MOUNT_ID}] ✅ Fabric canvas created successfully`, {
+    console.log('[PDFAnnotationLayer] Fabric canvas created', {
       width: fabricCanvas.width,
       height: fabricCanvas.height,
-      hasLowerCanvas: !!fabricCanvas.lowerCanvasEl,
       canvasElement: canvasRef.current
     });
 
     fabricCanvasRef.current = fabricCanvas;
 
     return () => {
-      console.log(`[PDFAnnotationLayer:${MOUNT_ID}] 🗑️  DISPOSING fabric canvas on cleanup`);
-      if (fabricCanvasRef.current) {
-        fabricCanvas.dispose();
-        console.log(`[PDFAnnotationLayer:${MOUNT_ID}] ✅ Fabric canvas disposed`);
-      }
+      console.log('[PDFAnnotationLayer] Disposing fabric canvas');
+      fabricCanvas.dispose();
       fabricCanvasRef.current = null;
     };
-  }, [visible, MOUNT_ID]);
+  }, [visible]);
 
   // Update canvas dimensions when viewport changes
   useEffect(() => {
-    console.log(`[PDFAnnotationLayer:${MOUNT_ID}] 📏 Dimensions effect triggered`, {
+    console.log('[PDFAnnotationLayer] Dimensions effect triggered', {
       hasCanvasRef: !!canvasRef.current,
       hasGridCanvasRef: !!gridCanvasRef.current,
-      viewport: viewport ? `${viewport.width}x${viewport.height}` : 'null',
+      viewport,
       scale,
       rotation
     });
     
-    if (!canvasRef.current || !gridCanvasRef.current || !viewport) {
-      console.log(`[PDFAnnotationLayer:${MOUNT_ID}] ⚠️  Cannot update dimensions - missing refs or viewport`);
-      return;
-    }
+    if (!canvasRef.current || !gridCanvasRef.current || !viewport) return;
 
     const width = viewport.width;
     const height = viewport.height;
 
-    console.log(`[PDFAnnotationLayer:${MOUNT_ID}] ✅ Setting canvas dimensions to ${width}x${height}`);
+    console.log('[PDFAnnotationLayer] Setting canvas dimensions', { width, height });
 
     // Set annotation canvas size
     canvasRef.current.width = width;
@@ -144,42 +106,21 @@ export const PDFAnnotationLayer = ({
 
     if (fabricCanvasRef.current) {
       fabricCanvasRef.current.setDimensions({ width, height });
-      console.log(`[PDFAnnotationLayer:${MOUNT_ID}] ✅ Fabric dimensions updated`, {
+      console.log('[PDFAnnotationLayer] Fabric dimensions updated', {
         fabricWidth: fabricCanvasRef.current.width,
         fabricHeight: fabricCanvasRef.current.height
       });
       fabricCanvasRef.current.renderAll();
-    } else {
-      console.log(`[PDFAnnotationLayer:${MOUNT_ID}] ⚠️  Cannot update fabric dimensions - fabricCanvas is null`);
     }
-  }, [viewport, scale, rotation, MOUNT_ID]);
-
-  // Track viewport changes specifically
-  useEffect(() => {
-    console.log(`[PDFAnnotationLayer:${MOUNT_ID}] 🔄 Viewport updated`, {
-      width: viewport?.width,
-      height: viewport?.height,
-    });
-  }, [viewport, MOUNT_ID]);
+  }, [viewport, scale, rotation]);
 
   // Re-render annotations when scale/rotation changes
   useEffect(() => {
-    console.log(`[PDFAnnotationLayer:${MOUNT_ID}] 🎨 Re-render annotations effect triggered`, {
-      hasFabricCanvas: !!fabricCanvasRef.current,
-      hasViewport: !!viewport,
-      scale,
-      rotation,
-    });
+    if (!fabricCanvasRef.current || !viewport) return;
     
-    if (!fabricCanvasRef.current || !viewport) {
-      console.log(`[PDFAnnotationLayer:${MOUNT_ID}] ⚠️  Cannot re-render - missing fabric or viewport`);
-      return;
-    }
-    
-    console.log(`[PDFAnnotationLayer:${MOUNT_ID}] 🧹 Clearing canvas and re-rendering annotations`);
     fabricCanvasRef.current.clear();
     annotationTools.renderAllAnnotations(fabricCanvasRef.current, viewport);
-  }, [scale, rotation, viewport, annotationTools, MOUNT_ID]);
+  }, [scale, rotation, viewport, annotationTools]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     console.log('[PDFAnnotationLayer] MOUSEDOWN', {
@@ -224,18 +165,20 @@ export const PDFAnnotationLayer = ({
   if (!visible) return null;
 
   return (
-    <div className="absolute inset-0" style={{ zIndex: 5 }}>
+    <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 5 }}>
       {/* Grid overlay canvas (below annotations) */}
       <canvas
         ref={gridCanvasRef}
-        className="absolute inset-0 pointer-events-none"
+        className="absolute inset-0"
+        style={{
+          pointerEvents: 'none',
+        }}
       />
       
       {/* Annotation canvas (on top) */}
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 cursor-crosshair"
-        style={{ pointerEvents: 'auto' }}
+        className="absolute inset-0 pointer-events-auto cursor-crosshair"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

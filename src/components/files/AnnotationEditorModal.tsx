@@ -44,11 +44,6 @@ export const AnnotationEditorModal = ({
   onClose,
   onSave,
 }: AnnotationEditorModalProps) => {
-  // Debugging state
-  const modalMountIdRef = useRef(Math.random().toString(36).slice(2, 8));
-  const renderCountRef = useRef(0);
-  const MODAL_ID = modalMountIdRef.current;
-
   // PDF Viewer State (copied from PDFViewer)
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
@@ -74,41 +69,6 @@ export const AnnotationEditorModal = ({
   const [gridVisible, setGridVisible] = useState(true);
   const annotationTools = useAnnotationTools();
   const { snapToPdfGrid } = useGridSnapping(gridSize, gridVisible);
-
-  // ===== COMPREHENSIVE PARENT TRACKING =====
-  
-  // Track every render
-  renderCountRef.current++;
-  console.log(`[AnnotationEditorModal:${MODAL_ID}] 🔄 RENDER #${renderCountRef.current}`, {
-    isOpen,
-    hasFile: !!file,
-    fileName: file?.name,
-    loading,
-    error,
-    scale,
-    rotation,
-    pageSizeWidth: pageSize.width,
-    timestamp: new Date().toISOString(),
-  });
-
-  // Track mount/unmount
-  useEffect(() => {
-    console.log(`[AnnotationEditorModal:${MODAL_ID}] ✅ MOUNTED`);
-    return () => {
-      console.log(`[AnnotationEditorModal:${MODAL_ID}] ❌ UNMOUNTING`);
-    };
-  }, [MODAL_ID]);
-
-  // Track state changes that might cause re-renders
-  useEffect(() => {
-    console.log(`[AnnotationEditorModal:${MODAL_ID}] 📊 State changed`, {
-      loading,
-      error: error ? 'exists' : 'null',
-      scale,
-      rotation,
-      pageSize: pageSize.width > 0 ? `${pageSize.width}x${pageSize.height}` : 'not set',
-    });
-  }, [loading, error, scale, rotation, pageSize, MODAL_ID]);
 
   // File source logic (copied from PDFViewer)
   const LOCAL_PDF_WHITELIST = useMemo(() => new Set([
@@ -463,40 +423,29 @@ export const AnnotationEditorModal = ({
               />
               
               {/* Annotation Layer - positioned absolutely over the PDF */}
-              {(() => {
-                const shouldRender = !loading && !error && pageSize.width > 0;
-                if (shouldRender) {
-                  console.log(`[AnnotationEditorModal:${MODAL_ID}] ✅ About to render PDFAnnotationLayer`, {
-                    loading,
-                    error,
-                    pageSize,
-                    scale,
-                    viewport: {
+              {!loading && !error && pageSize.width > 0 && (() => {
+                console.log('[AnnotationEditorModal] Rendering PDFAnnotationLayer', {
+                  pageSize,
+                  scale,
+                  viewport: {
+                    width: pageSize.width * scale,
+                    height: pageSize.height * scale
+                  }
+                });
+                
+                return (
+                  <PDFAnnotationLayer
+                    pageNumber={pageNumber}
+                    pdfPage={null}
+                    scale={scale}
+                    rotation={rotation}
+                    visible={true}
+                    viewport={{
                       width: pageSize.width * scale,
                       height: pageSize.height * scale
-                    }
-                  });
-                  return (
-                    <PDFAnnotationLayer
-                      pageNumber={pageNumber}
-                      pdfPage={null}
-                      scale={scale}
-                      rotation={rotation}
-                      visible={true}
-                      viewport={{
-                        width: pageSize.width * scale,
-                        height: pageSize.height * scale
-                      }}
-                    />
-                  );
-                } else {
-                  console.log(`[AnnotationEditorModal:${MODAL_ID}] ⚠️  NOT rendering PDFAnnotationLayer`, {
-                    loading,
-                    error,
-                    pageSizeWidth: pageSize.width
-                  });
-                  return null;
-                }
+                    }}
+                  />
+                );
               })()}
             </>
           )}
