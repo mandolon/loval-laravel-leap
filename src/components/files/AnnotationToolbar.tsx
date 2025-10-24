@@ -49,6 +49,9 @@ const toolLabels: Record<AnnotationTool, string> = {
   eraser: 'Eraser',
 };
 
+// Tools available (pen removed - not supported)
+const AVAILABLE_TOOLS: AnnotationTool[] = ['select', 'line', 'rectangle', 'circle', 'text', 'eraser'];
+
 export const AnnotationToolbar = ({
   onToolChange,
   onColorChange,
@@ -64,13 +67,11 @@ export const AnnotationToolbar = ({
   currentGridSize,
   gridVisible,
 }: AnnotationToolbarProps) => {
-  const tools: AnnotationTool[] = ['select', 'pen', 'line', 'rectangle', 'circle', 'text', 'eraser'];
-
   return (
     <div className="flex items-center gap-2 px-3 py-2 bg-background border-b border-border flex-wrap">
       {/* Tool Buttons */}
       <div className="flex gap-1">
-        {tools.map((tool) => {
+        {AVAILABLE_TOOLS.map((tool) => {
           const Icon = toolIcons[tool];
           return (
             <Button

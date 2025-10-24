@@ -21,6 +21,7 @@ interface PDFCanvasProps {
   pageSize: { width: number; height: number };
   numPages: number | null;
   scrollMode?: 'centered' | 'continuous';
+  annotationMode?: boolean;
   debug?: boolean;
 }
 
@@ -41,6 +42,7 @@ const PDFCanvas = forwardRef<HTMLDivElement, PDFCanvasProps>(({
   pageSize,
   numPages,
   scrollMode = 'centered',
+  annotationMode = false,
   debug = true,
 }, ref) => {
   const centeredOnceRef = useRef(false);
@@ -57,11 +59,13 @@ const PDFCanvas = forwardRef<HTMLDivElement, PDFCanvasProps>(({
   
   // Advanced performance: Dynamic quality based on scale
   const shouldRenderTextLayer = useMemo(() => {
+    // Disable text layer during annotation mode (it blocks mouse events)
+    if (annotationMode) return false;
     // Only render text layer at reasonable zoom levels for better performance
     if (!highQualityEnabled) return false;
     // Disable text layer at very high or very low zooms for performance
     return scale >= 0.5 && scale <= 3.0;
-  }, [highQualityEnabled, scale]);
+  }, [annotationMode, highQualityEnabled, scale]);
   
   const shouldRenderAnnotations = useMemo(() => {
     // Only render annotations at readable zoom levels
