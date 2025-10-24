@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { fabric } from 'fabric';
 import { useGridSnapping } from '@/hooks/useGridSnapping';
 import { useAnnotationTools } from '@/hooks/useAnnotationTools';
@@ -35,26 +35,6 @@ export const PDFAnnotationLayer = ({
   
   const { snapToPdfGrid, gridPoints } = useGridSnapping(gridSize, gridVisible);
   const annotationTools = useAnnotationTools();
-
-  // Dynamic cursor based on active tool
-  const cursorStyle = useMemo(() => {
-    switch (annotationTools.activeTool) {
-      case 'line':
-      case 'rectangle':
-      case 'circle':
-        return 'crosshair';
-      case 'text':
-        return 'text';
-      case 'eraser':
-        return 'pointer';
-      case 'select':
-        return 'default';
-      case 'pen':
-        return 'not-allowed'; // Pen tool disabled
-      default:
-        return 'default';
-    }
-  }, [annotationTools.activeTool]);
 
   const MOUNT_ID = mountIdRef.current;
 
@@ -292,8 +272,8 @@ export const PDFAnnotationLayer = ({
       {/* Annotation canvas (on top) */}
       <canvas
         ref={canvasRef}
-        className="absolute inset-0"
-        style={{ pointerEvents: 'auto', cursor: cursorStyle }}
+        className="absolute inset-0 cursor-crosshair"
+        style={{ pointerEvents: 'auto' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

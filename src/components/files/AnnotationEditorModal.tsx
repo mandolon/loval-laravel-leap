@@ -275,6 +275,16 @@ export const AnnotationEditorModal = ({
     const intrinsic = typeof page.rotate === 'number' ? page.rotate : 0;
     const viewport = page.getViewport({ scale: 1, rotation: intrinsic });
     const newPageSize = { width: viewport.width, height: viewport.height };
+    
+    console.log('[AnnotationEditorModal] Page loaded, setting size', {
+      newPageSize,
+      scale,
+      computedViewport: {
+        width: newPageSize.width * scale,
+        height: newPageSize.height * scale
+      }
+    });
+    
     setPageSize(newPageSize);
   }, [scale]);
 
@@ -450,7 +460,6 @@ export const AnnotationEditorModal = ({
                 pageSize={pageSize}
                 numPages={numPages}
                 scrollMode={scrollMode}
-                annotationMode={true}
               />
               
               {/* Annotation Layer - positioned absolutely over the PDF */}
@@ -474,14 +483,17 @@ export const AnnotationEditorModal = ({
                       scale={scale}
                       rotation={rotation}
                       visible={true}
-                      viewport={{ width: pageSize.width * scale, height: pageSize.height * scale }}
+                      viewport={{
+                        width: pageSize.width * scale,
+                        height: pageSize.height * scale
+                      }}
                     />
                   );
                 } else {
                   console.log(`[AnnotationEditorModal:${MODAL_ID}] ⚠️  NOT rendering PDFAnnotationLayer`, {
                     loading,
                     error,
-                    hasPageSize: pageSize.width > 0
+                    pageSizeWidth: pageSize.width
                   });
                   return null;
                 }
