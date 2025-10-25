@@ -14,14 +14,12 @@ import { useCreateDetailLibrarySubfolder } from '@/lib/api/hooks/useDetailLibrar
 interface CreateSubfolderDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  workspaceId: string;
   categoryId: string;
 }
 
 export default function CreateSubfolderDialog({
   open,
   onOpenChange,
-  workspaceId,
   categoryId,
 }: CreateSubfolderDialogProps) {
   const [name, setName] = useState('');
@@ -32,7 +30,6 @@ export default function CreateSubfolderDialog({
 
     try {
       await createMutation.mutateAsync({
-        workspaceId,
         categoryId,
         name: name.trim(),
       });

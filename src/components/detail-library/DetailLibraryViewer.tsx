@@ -7,14 +7,12 @@ import CardEditModal from './CardEditModal';
 import SimplePDFViewer from './SimplePDFViewer';
 import SimpleImageViewer from './SimpleImageViewer';
 
-interface DetailLibraryViewerProps {
-  workspaceId: string;
-}
+interface DetailLibraryViewerProps {}
 
 // For global search we add folder context to files
 type FlatFile = FileItem & { folderId: string; folderTitle: string };
 
-const DetailLibraryViewer: React.FC<DetailLibraryViewerProps> = ({ workspaceId }) => {
+const DetailLibraryViewer: React.FC<DetailLibraryViewerProps> = () => {
   const [folders, setFolders] = useState<FolderT[]>(MOCK_FOLDERS);
   const [activeFolderId, setActiveFolderId] = useState(MOCK_FOLDERS[0].id);
   const [selectedId, setSelectedId] = useState<string | null>(null);

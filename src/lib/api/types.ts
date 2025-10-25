@@ -8,7 +8,6 @@ export type DetailColorTag = 'slate' | 'green' | 'amber' | 'violet' | 'pink' | '
 export interface DetailLibraryCategory {
   id: string;
   shortId: string;
-  workspaceId: string;
   name: string;
   slug: string;
   isSystemCategory: boolean;
@@ -20,7 +19,6 @@ export interface DetailLibraryCategory {
 export interface DetailLibrarySubfolder {
   id: string;
   shortId: string;
-  workspaceId: string;
   categoryId: string;
   name: string;
   sortOrder: number;
@@ -32,7 +30,6 @@ export interface DetailLibrarySubfolder {
 export interface DetailLibraryFile {
   id: string;
   shortId: string;
-  workspaceId: string;
   categoryId: string;
   subfolderId?: string;
   title: string;

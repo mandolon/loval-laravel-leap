@@ -101,7 +101,6 @@ export default function SubfolderTabs({
       <CreateSubfolderDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
-        workspaceId={workspaceId}
         categoryId={categoryId}
       />
     </>

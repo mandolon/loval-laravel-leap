@@ -6,23 +6,22 @@ import { toast } from 'sonner';
 // Query Keys
 const detailLibraryKeys = {
   all: ['detail-library'] as const,
-  categories: (workspaceId: string) => [...detailLibraryKeys.all, 'categories', workspaceId] as const,
-  subfolders: (workspaceId: string, categoryId?: string) => 
-    [...detailLibraryKeys.all, 'subfolders', workspaceId, categoryId] as const,
-  files: (workspaceId: string, categoryId?: string, subfolderId?: string) => 
-    [...detailLibraryKeys.all, 'files', workspaceId, categoryId, subfolderId] as const,
+  categories: () => [...detailLibraryKeys.all, 'categories'] as const,
+  subfolders: (categoryId?: string) => 
+    [...detailLibraryKeys.all, 'subfolders', categoryId] as const,
+  files: (categoryId?: string, subfolderId?: string) => 
+    [...detailLibraryKeys.all, 'files', categoryId, subfolderId] as const,
   items: (parentFileId: string) => [...detailLibraryKeys.all, 'items', parentFileId] as const,
 };
 
 // Fetch categories
-export function useDetailLibraryCategories(workspaceId: string) {
+export function useDetailLibraryCategories() {
   return useQuery({
-    queryKey: detailLibraryKeys.categories(workspaceId),
+    queryKey: detailLibraryKeys.categories(),
     queryFn: async () => {
       const { data, error } = await supabase
         .from('detail_library_categories')
         .select('*')
-        .eq('workspace_id', workspaceId)
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
@@ -30,7 +29,6 @@ export function useDetailLibraryCategories(workspaceId: string) {
       return (data || []).map(cat => ({
         id: cat.id,
         shortId: cat.short_id,
-        workspaceId: cat.workspace_id,
         name: cat.name,
         slug: cat.slug,
         isSystemCategory: cat.is_system_category,
@@ -39,19 +37,17 @@ export function useDetailLibraryCategories(workspaceId: string) {
         updatedAt: cat.updated_at,
       })) as DetailLibraryCategory[];
     },
-    enabled: !!workspaceId,
   });
 }
 
 // Fetch subfolders by category
-export function useDetailLibrarySubfolders(workspaceId: string, categoryId?: string) {
+export function useDetailLibrarySubfolders(categoryId?: string) {
   return useQuery({
-    queryKey: detailLibraryKeys.subfolders(workspaceId, categoryId),
+    queryKey: detailLibraryKeys.subfolders(categoryId),
     queryFn: async () => {
       let query = supabase
         .from('detail_library_subfolders')
-        .select('*')
-        .eq('workspace_id', workspaceId);
+        .select('*');
 
       if (categoryId) {
         query = query.eq('category_id', categoryId);
@@ -64,7 +60,6 @@ export function useDetailLibrarySubfolders(workspaceId: string, categoryId?: str
       return (data || []).map(subfolder => ({
         id: subfolder.id,
         shortId: subfolder.short_id,
-        workspaceId: subfolder.workspace_id,
         categoryId: subfolder.category_id,
         name: subfolder.name,
         sortOrder: subfolder.sort_order,
@@ -73,19 +68,17 @@ export function useDetailLibrarySubfolders(workspaceId: string, categoryId?: str
         updatedAt: subfolder.updated_at,
       })) as DetailLibrarySubfolder[];
     },
-    enabled: !!workspaceId,
   });
 }
 
 // Fetch files by category and/or subfolder
-export function useDetailLibraryFiles(workspaceId: string, categoryId?: string, subfolderId?: string) {
+export function useDetailLibraryFiles(categoryId?: string, subfolderId?: string) {
   return useQuery({
-    queryKey: detailLibraryKeys.files(workspaceId, categoryId, subfolderId),
+    queryKey: detailLibraryKeys.files(categoryId, subfolderId),
     queryFn: async () => {
       let query = supabase
         .from('detail_library_files')
         .select('*')
-        .eq('workspace_id', workspaceId)
         .is('deleted_at', null);
 
       if (categoryId) {
@@ -106,7 +99,6 @@ export function useDetailLibraryFiles(workspaceId: string, categoryId?: string, 
       return (data || []).map(file => ({
         id: file.id,
         shortId: file.short_id,
-        workspaceId: file.workspace_id,
         categoryId: file.category_id,
         subfolderId: file.subfolder_id,
         title: file.title,
@@ -123,7 +115,6 @@ export function useDetailLibraryFiles(workspaceId: string, categoryId?: string, 
         deletedAt: file.deleted_at,
       })) as DetailLibraryFile[];
     },
-    enabled: !!workspaceId,
   });
 }
 
@@ -161,7 +152,7 @@ export function useDetailLibraryItems(parentFileId?: string) {
 }
 
 // Upload detail file
-export function useUploadDetailFile(workspaceId: string, categoryId: string, subfolderId?: string) {
+export function useUploadDetailFile(categoryId: string, subfolderId?: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -195,7 +186,7 @@ export function useUploadDetailFile(workspaceId: string, categoryId: string, sub
       // Upload first file and create parent record
       const firstFile = files[0];
       const fileId = crypto.randomUUID();
-      const storagePath = `${workspaceId}/${category.slug}/${fileId}/${firstFile.name}`;
+      const storagePath = `${category.slug}/${fileId}/${firstFile.name}`;
 
       const { error: uploadError } = await supabase.storage
         .from('detail-library')
@@ -207,7 +198,6 @@ export function useUploadDetailFile(workspaceId: string, categoryId: string, sub
       const { data: fileRecord, error: fileError } = await supabase
         .from('detail_library_files')
         .insert([{
-          workspace_id: workspaceId,
           category_id: categoryId,
           subfolder_id: subfolderId || null,
           title,
@@ -229,7 +219,7 @@ export function useUploadDetailFile(workspaceId: string, categoryId: string, sub
       // Upload additional files as items
       if (files.length > 1) {
         const itemPromises = files.slice(1).map(async (file, index) => {
-          const itemStoragePath = `${workspaceId}/${category.slug}/${fileId}/${file.name}`;
+          const itemStoragePath = `${category.slug}/${fileId}/${file.name}`;
 
           const { error: itemUploadError } = await supabase.storage
             .from('detail-library')
@@ -415,11 +405,9 @@ export function useCreateDetailLibrarySubfolder() {
 
   return useMutation({
     mutationFn: async ({
-      workspaceId,
       categoryId,
       name,
     }: {
-      workspaceId: string;
       categoryId: string;
       name: string;
     }) => {
@@ -429,7 +417,6 @@ export function useCreateDetailLibrarySubfolder() {
       const { data, error } = await supabase
         .from('detail_library_subfolders')
         .insert([{
-          workspace_id: workspaceId,
           category_id: categoryId,
           name,
           created_by: user.id,

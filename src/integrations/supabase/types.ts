@@ -208,7 +208,6 @@ export type Database = {
           slug: string
           sort_order: number
           updated_at: string | null
-          workspace_id: string
         }
         Insert: {
           created_at?: string | null
@@ -219,7 +218,6 @@ export type Database = {
           slug: string
           sort_order: number
           updated_at?: string | null
-          workspace_id: string
         }
         Update: {
           created_at?: string | null
@@ -230,17 +228,8 @@ export type Database = {
           slug?: string
           sort_order?: number
           updated_at?: string | null
-          workspace_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "detail_library_categories_workspace_id_fkey"
-            columns: ["workspace_id"]
-            isOneToOne: false
-            referencedRelation: "workspaces"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       detail_library_files: {
         Row: {
@@ -261,7 +250,6 @@ export type Database = {
           title: string
           updated_at: string | null
           uploaded_by: string
-          workspace_id: string
         }
         Insert: {
           author_name?: string | null
@@ -281,7 +269,6 @@ export type Database = {
           title: string
           updated_at?: string | null
           uploaded_by: string
-          workspace_id: string
         }
         Update: {
           author_name?: string | null
@@ -301,7 +288,6 @@ export type Database = {
           title?: string
           updated_at?: string | null
           uploaded_by?: string
-          workspace_id?: string
         }
         Relationships: [
           {
@@ -316,13 +302,6 @@ export type Database = {
             columns: ["subfolder_id"]
             isOneToOne: false
             referencedRelation: "detail_library_subfolders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "detail_library_files_workspace_id_fkey"
-            columns: ["workspace_id"]
-            isOneToOne: false
-            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -387,7 +366,6 @@ export type Database = {
           short_id: string
           sort_order: number
           updated_at: string | null
-          workspace_id: string
         }
         Insert: {
           category_id: string
@@ -398,7 +376,6 @@ export type Database = {
           short_id?: string
           sort_order?: number
           updated_at?: string | null
-          workspace_id: string
         }
         Update: {
           category_id?: string
@@ -409,7 +386,6 @@ export type Database = {
           short_id?: string
           sort_order?: number
           updated_at?: string | null
-          workspace_id?: string
         }
         Relationships: [
           {
@@ -417,13 +393,6 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "detail_library_categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "detail_library_subfolders_workspace_id_fkey"
-            columns: ["workspace_id"]
-            isOneToOne: false
-            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
