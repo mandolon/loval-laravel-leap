@@ -18,6 +18,8 @@ const SimpleImageViewer = ({ file, className = '' }: SimpleImageViewerProps) => 
   const [naturalDimensions, setNaturalDimensions] = useState({ width: 0, height: 0 });
   const [fitToScreen, setFitToScreen] = useState(true);
   const [signedUrl, setSignedUrl] = useState<string>('');
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -174,6 +176,34 @@ const SimpleImageViewer = ({ file, className = '' }: SimpleImageViewerProps) => 
     setFitToScreen(false);
   }, [scale, rotation, getFitScale, clampX, clampY]);
 
+  // Mouse drag handlers for panning
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    const fitScale = getFitScale();
+    if (scale > fitScale) {
+      setIsDragging(true);
+      setDragStart({ x: e.clientX, y: e.clientY });
+    }
+  }, [scale, getFitScale]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging || !dragStart) return;
+    
+    const dx = (e.clientX - dragStart.x) / scale;
+    const dy = (e.clientY - dragStart.y) / scale;
+    
+    setPosition(prev => ({
+      x: clampX(prev.x + dx, scale),
+      y: clampY(prev.y + dy, scale)
+    }));
+    
+    setDragStart({ x: e.clientX, y: e.clientY });
+  }, [isDragging, dragStart, scale, clampX, clampY]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+    setDragStart(null);
+  }, []);
+
   // Mouse: Shift + wheel => zoom-at-cursor; plain wheel => vertical pan when zoomed in
   useEffect(() => {
     const el = containerRef.current;
@@ -261,7 +291,13 @@ const SimpleImageViewer = ({ file, className = '' }: SimpleImageViewerProps) => 
       {/* Image Content */}
       <div 
         ref={containerRef}
-        className="flex-1 overflow-hidden flex items-center justify-center py-4 bg-background dark:bg-slate-900/30"
+        className={`flex-1 overflow-hidden flex items-center justify-center py-4 bg-background dark:bg-slate-900/30 ${
+          scale > getFitScale() ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default'
+        }`}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
       >
         {loading && (
           <div className="absolute inset-0" aria-hidden="true" />
