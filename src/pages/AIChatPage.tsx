@@ -194,7 +194,8 @@ export default function AIChatPage() {
   };
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="h-full w-full text-[12px] overflow-hidden pb-6 pr-1">
+      <div className="flex h-full flex-col">
       {/* Center container for all chat content */}
       <div className="relative flex h-full flex-col overflow-hidden">
         
@@ -247,6 +248,7 @@ export default function AIChatPage() {
             <ChatFooter chatOpened={chatOpened} />
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

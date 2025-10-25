@@ -17,6 +17,7 @@ import ProjectDetails from "./pages/ProjectDetails";
 import ProfilePage from "./pages/ProfilePage";
 import AuthPage from "./pages/AuthPage";
 import AIChatPage from "./pages/AIChatPage";
+import DetailLibraryPage from "./pages/DetailLibraryPage";
 import TrashPage from "./pages/TrashPage";
 import NotFound from "./pages/NotFound";
 import NoWorkspacePage from "./pages/NoWorkspacePage";
@@ -110,6 +111,16 @@ const App = () => (
                 <ProtectedRoute>
                   <NewAppLayout>
                     <AIChatPage />
+                  </NewAppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/workspace/:workspaceId/detail-library"
+              element={
+                <ProtectedRoute>
+                  <NewAppLayout>
+                    <DetailLibraryPage />
                   </NewAppLayout>
                 </ProtectedRoute>
               }

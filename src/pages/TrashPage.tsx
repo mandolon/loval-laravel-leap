@@ -5,8 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PageHeader } from "@/components/layout/PageHeader";
-import { PageSubhead } from "@/components/layout/PageSubhead";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,33 +51,7 @@ export default function TrashPage() {
     }
   }, [workspaceId]);
 
-  const loadDeletedThreads = async () => {
-    if (!workspaceId) return;
-
-    try {
-      const { data, error } = await supabase
-        .from("ai_chat_threads")
-        .select("*")
-        .eq("workspace_id", workspaceId)
-        .not("deleted_at", "is", null)
-        .order("deleted_at", { ascending: false });
-
-      if (error) throw error;
-      setDeletedThreads(data || []);
-    } catch (error) {
-      console.error("Error loading deleted threads:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load deleted AI chats",
-        variant: "destructive",
-      });
-    }
-  };
-
   const loadDeletedProjects = async () => {
-    if (!workspaceId) return;
-
-    setLoading(true);
     try {
       const { data, error } = await supabase
         .from("projects")
@@ -90,10 +62,8 @@ export default function TrashPage() {
 
       if (error) throw error;
 
-      const transformedProjects: Project[] = (data || []).map((row: any) => ({
+      const transformedProjects = data.map((row) => ({
         id: row.id,
-        shortId: row.short_id,
-        workspaceId: row.workspace_id,
         name: row.name,
         description: row.description,
         status: row.status,
@@ -141,6 +111,27 @@ export default function TrashPage() {
     }
   };
 
+  const loadDeletedThreads = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("ai_chat_threads")
+        .select("*")
+        .eq("workspace_id", workspaceId)
+        .not("deleted_at", "is", null)
+        .order("deleted_at", { ascending: false });
+
+      if (error) throw error;
+      setDeletedThreads(data || []);
+    } catch (error) {
+      console.error("Error loading deleted threads:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load deleted AI chats",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleRestore = (project: Project) => {
     restoreProjectMutation.mutate(project.id, {
       onSuccess: () => {
@@ -149,14 +140,8 @@ export default function TrashPage() {
     });
   };
 
-  const handlePermanentDelete = (project: Project) => {
-    setSelectedProject(project);
-    setPermanentDeleteDialogOpen(true);
-  };
-
-  const confirmPermanentDelete = () => {
+  const handlePermanentDelete = () => {
     if (!selectedProject) return;
-
     hardDeleteProjectMutation.mutate(selectedProject.id, {
       onSuccess: () => {
         loadDeletedProjects();
@@ -166,32 +151,8 @@ export default function TrashPage() {
     });
   };
 
-  const handleRestoreThread = async (thread: DeletedThread) => {
-    try {
-      const { error } = await supabase
-        .from("ai_chat_threads")
-        .update({ deleted_at: null, deleted_by: null })
-        .eq("id", thread.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Chat restored",
-        description: "The AI chat has been restored successfully.",
-      });
-      loadDeletedThreads();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to restore AI chat",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handlePermanentDeleteThread = (thread: DeletedThread) => {
-    setSelectedThread(thread);
-    setPermanentDeleteThreadDialogOpen(true);
+  const confirmPermanentDelete = () => {
+    handlePermanentDelete();
   };
 
   const confirmPermanentDeleteThread = async () => {
@@ -239,151 +200,130 @@ export default function TrashPage() {
   }
 
   return (
-    <div className="h-screen w-full overflow-hidden bg-slate-50 dark:bg-[#0B0E14] text-slate-700 dark:text-neutral-200 flex gap-1 p-1">
-      <div className="relative min-h-0 flex-1 w-full overflow-hidden">
-        <div className={`${T.panel} ${T.radius} min-h-0 min-w-0 grid grid-rows-[auto_1fr] overflow-hidden h-full`}>
-          {/* Header */}
-          <div className="h-9 px-3 border-b border-slate-200 dark:border-[#1d2230] flex items-center bg-white dark:bg-[#0E1118]">
-            <span className="text-[12px] font-medium">Trash</span>
-          </div>
+    <div className="h-full w-full text-[12px] overflow-hidden pb-6 pr-1">
+      <div className={`${T.panel} ${T.radius} min-h-0 min-w-0 grid grid-rows-[auto_1fr] overflow-hidden h-full`}>
+        {/* Header */}
+        <div className="h-9 px-3 border-b border-slate-200 dark:border-[#1d2230] flex items-center bg-white dark:bg-[#0E1118]">
+          <span className="text-[12px] font-medium">Trash</span>
+        </div>
 
-          {/* Content */}
-          <div className="flex-1 overflow-auto bg-white dark:bg-[#0F1219] p-4">
-            <Tabs defaultValue="projects" className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="projects">Projects</TabsTrigger>
-            <TabsTrigger value="ai-chats">AI Chats</TabsTrigger>
-          </TabsList>
+        {/* Content */}
+        <div className="flex-1 overflow-auto bg-white dark:bg-[#0F1219] p-4">
+          <Tabs defaultValue="projects" className="w-full">
+            <TabsList className="mb-6">
+              <TabsTrigger value="projects">Projects</TabsTrigger>
+              <TabsTrigger value="ai-chats">AI Chats</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="projects">
-            {deletedProjects.length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Trash2 className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Trash is empty</h3>
-                  <p className="text-sm text-muted-foreground text-center max-w-sm">
-                    Deleted projects will appear here. They will be automatically removed after 30 days.
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {deletedProjects.map((project) => (
-                  <Card key={project.id} className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <CardTitle className="text-lg">{project.name}</CardTitle>
-                        <Badge variant="outline" className="text-xs">
-                          {project.status}
-                        </Badge>
-                      </div>
-                      {project.description && (
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          {project.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-1">
-                      <p className="text-xs text-muted-foreground">
-                        Deleted {project.deletedAt && formatDistanceToNow(new Date(project.deletedAt), { addSuffix: true })}
-                      </p>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span>{project.totalTasks || 0} tasks</span>
-                        <span>Phase: {project.phase}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleRestore(project)}
-                        disabled={restoreProjectMutation.isPending}
-                      >
-                        <RotateCcw className="h-4 w-4 mr-2" />
-                        Restore
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handlePermanentDelete(project)}
-                        disabled={hardDeleteProjectMutation.isPending}
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete Forever
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="ai-chats">
-            {deletedThreads.length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <MessageSquare className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No deleted AI chats</h3>
-                  <p className="text-sm text-muted-foreground text-center max-w-sm">
-                    Deleted AI chats will appear here.
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {deletedThreads.map((thread) => (
-                  <Card key={thread.id} className="hover:shadow-md transition-shadow">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                            <CardTitle className="text-lg">{thread.title}</CardTitle>
+            <TabsContent value="projects">
+              {deletedProjects.length === 0 ? (
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <Trash2 className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Trash is empty</h3>
+                    <p className="text-sm text-muted-foreground text-center max-w-sm">
+                      Deleted projects will appear here. They will be automatically removed after 30 days.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {deletedProjects.map((project) => (
+                    <Card key={project.id} className="hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <CardTitle className="text-lg">{project.name}</CardTitle>
+                              <Badge variant="outline" className="text-xs">
+                                {project.status}
+                              </Badge>
+                            </div>
+                            {project.description && (
+                              <p className="text-sm text-muted-foreground line-clamp-2">
+                                {project.description}
+                              </p>
+                            )}
                           </div>
                         </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between">
-                        <div className="flex flex-col gap-1">
-                          <p className="text-xs text-muted-foreground">
-                            Deleted {formatDistanceToNow(new Date(thread.deleted_at), { addSuffix: true })}
-                          </p>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm text-muted-foreground">
+                            Deleted {formatDistanceToNow(new Date(project.deletedAt!))} ago
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRestore(project)}
+                              className="gap-2"
+                            >
+                              <RotateCcw className="h-3 w-3" />
+                              Restore
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedProject(project);
+                                setPermanentDeleteDialogOpen(true);
+                              }}
+                            >
+                              Delete Forever
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleRestoreThread(thread)}
-                          >
-                            <RotateCcw className="h-4 w-4 mr-2" />
-                            Restore
-                          </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="ai-chats">
+              {deletedThreads.length === 0 ? (
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <MessageSquare className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No deleted AI chats</h3>
+                    <p className="text-sm text-muted-foreground text-center max-w-sm">
+                      Deleted AI conversations will appear here.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {deletedThreads.map((thread) => (
+                    <Card key={thread.id} className="hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg">{thread.title}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm text-muted-foreground">
+                            Deleted {formatDistanceToNow(new Date(thread.deleted_at))} ago
+                          </div>
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() => handlePermanentDeleteThread(thread)}
+                            onClick={() => {
+                              setSelectedThread(thread);
+                              setPermanentDeleteThreadDialogOpen(true);
+                            }}
                           >
-                            <Trash2 className="h-4 w-4 mr-2" />
                             Delete Forever
                           </Button>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
 
       {/* Permanent Delete Project Dialog */}
       <AlertDialog open={permanentDeleteDialogOpen} onOpenChange={setPermanentDeleteDialogOpen}>
@@ -391,7 +331,7 @@ export default function TrashPage() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-destructive" />
-              Delete Forever?
+              Delete Project Forever?
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-3">
               <p>
@@ -446,11 +386,8 @@ export default function TrashPage() {
               Delete Forever
             </AlertDialogAction>
           </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-          </div>
-        </div>
-      </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

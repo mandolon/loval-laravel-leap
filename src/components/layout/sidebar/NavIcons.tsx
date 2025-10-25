@@ -28,6 +28,11 @@ export function NavIcons({ collapsed, activeTab, onTabChange }: NavIconsProps) {
           }}
         >
           {navIconItems.map((item, index) => {
+            // Only show Detail Library in collapsed view
+            if (item.tab === 'detail-library' && !collapsed) {
+              return null
+            }
+
             const Icon = item.icon
             const isActive = activeTab === item.tab
             const sharedClasses = cn(
@@ -37,24 +42,30 @@ export function NavIcons({ collapsed, activeTab, onTabChange }: NavIconsProps) {
             const iconSize = collapsed ? 'w-4 h-4' : 'w-4 h-4'
 
             return (
-              <button
-                key={item.tab}
-                onClick={() => onTabChange(item.tab)}
-                className={cn(
-                  sharedClasses,
-                  isActive
-                    ? 'bg-accent text-accent-foreground'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-                  collapsed
-                    ? 'border border-border rounded-lg shadow-sm hover:shadow-md'
-                    : 'rounded'
+              <div key={item.tab}>
+                <button
+                  onClick={() => onTabChange(item.tab)}
+                  className={cn(
+                    sharedClasses,
+                    isActive
+                      ? 'bg-accent text-accent-foreground'
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                    collapsed
+                      ? 'border border-border rounded-lg shadow-sm hover:shadow-md'
+                      : 'rounded'
+                  )}
+                  style={{ transitionDelay: collapsed ? `${index * 40}ms` : '0ms' }}
+                  title={item.label}
+                >
+                  <Icon className={iconSize} />
+                  {!collapsed && <span className="sr-only">{item.label}</span>}
+                </button>
+                
+                {/* Add separator below AI tab in collapsed view */}
+                {collapsed && item.tab === 'ai' && (
+                  <div className="w-full h-px bg-border mx-auto mt-2 mb-2" />
                 )}
-                style={{ transitionDelay: collapsed ? `${index * 40}ms` : '0ms' }}
-                title={item.label}
-              >
-                <Icon className={iconSize} />
-                {!collapsed && <span className="sr-only">{item.label}</span>}
-              </button>
+              </div>
             )
           })}
         </div>

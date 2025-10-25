@@ -100,7 +100,8 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className={`${T.panel} ${T.radius} min-h-0 min-w-0 grid grid-rows-[auto_1fr] overflow-hidden h-full`}>
+    <div className="h-full w-full text-[12px] overflow-hidden pb-6 pr-1">
+      <div className={`${T.panel} ${T.radius} min-h-0 min-w-0 grid grid-rows-[auto_1fr] overflow-hidden h-full`}>
       {/* Header */}
       <div className="h-9 px-3 border-b border-slate-200 dark:border-[#1d2230] flex items-center justify-between bg-white dark:bg-[#0E1118]">
         <span className="text-slate-700 dark:text-neutral-200 font-medium">Profile Settings</span>
@@ -264,6 +265,7 @@ export default function ProfilePage() {
             )}
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   );
