@@ -350,7 +350,6 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
           <NavLink
             key={item.id}
             to={item.path}
-            onClick={() => setActiveTab(item.id)}
             title={item.label}
           >
             <button
