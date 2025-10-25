@@ -45,6 +45,22 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
     }
   }, [currentWorkspaceId, workspaceId, location.pathname]);
 
+  // Set active tab based on current route
+  useEffect(() => {
+    const path = location.pathname;
+    if (path.includes('/detail-library')) {
+      setActiveTab('detail-library');
+    } else if (path.includes('/ai')) {
+      setActiveTab('ai');
+    } else if (path.includes('/tasks')) {
+      setActiveTab('tasks');
+    } else if (path.includes('/projects') || path.includes('/project/')) {
+      setActiveTab('workspace');
+    } else if (path === '/' || path.includes('/workspace/')) {
+      setActiveTab('home');
+    }
+  }, [location.pathname]);
+
   // Realtime subscription for projects in sidebar
   useEffect(() => {
     const wsId = workspaceId || currentWorkspaceId;
@@ -285,6 +301,9 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
 
       case 'ai':
         return <AIChatThreadsList workspaceId={currentWorkspaceId || workspaceId || ''} />;
+      
+      case 'detail-library':
+        return null; // Detail Library has its own page, no sidebar content needed
     }
   };
 
