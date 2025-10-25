@@ -325,8 +325,8 @@ const SimpleImageViewer = ({ file, className = '' }: SimpleImageViewerProps) => 
               onError={handleImageError}
               className="max-w-none"
               style={{
-                // Vertical translate for wheel scroll (clamped), then scale and rotate
-                transform: `translate(0px, ${position.y}px) scale(${scale}) rotate(${rotation}deg)`,
+                // Translate for pan (both X and Y), then scale and rotate
+                transform: `translate(${position.x}px, ${position.y}px) scale(${scale}) rotate(${rotation}deg)`,
                 transformOrigin: 'center center',
                 userSelect: 'none',
                 pointerEvents: 'none',
