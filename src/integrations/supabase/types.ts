@@ -198,6 +198,223 @@ export type Database = {
           },
         ]
       }
+      detail_library_categories: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_system_category: boolean | null
+          name: string
+          short_id: string
+          slug: string
+          sort_order: number
+          updated_at: string | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_system_category?: boolean | null
+          name: string
+          short_id: string
+          slug: string
+          sort_order: number
+          updated_at?: string | null
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_system_category?: boolean | null
+          name?: string
+          short_id?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "detail_library_categories_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      detail_library_files: {
+        Row: {
+          author_name: string | null
+          category_id: string
+          color_tag: string
+          created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          description: string | null
+          filename: string
+          filesize: number
+          id: string
+          mimetype: string
+          short_id: string
+          storage_path: string
+          title: string
+          updated_at: string | null
+          uploaded_by: string
+          workspace_id: string
+        }
+        Insert: {
+          author_name?: string | null
+          category_id: string
+          color_tag: string
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string | null
+          filename: string
+          filesize: number
+          id?: string
+          mimetype: string
+          short_id: string
+          storage_path: string
+          title: string
+          updated_at?: string | null
+          uploaded_by: string
+          workspace_id: string
+        }
+        Update: {
+          author_name?: string | null
+          category_id?: string
+          color_tag?: string
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string | null
+          filename?: string
+          filesize?: number
+          id?: string
+          mimetype?: string
+          short_id?: string
+          storage_path?: string
+          title?: string
+          updated_at?: string | null
+          uploaded_by?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "detail_library_files_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "detail_library_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "detail_library_files_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      detail_library_items: {
+        Row: {
+          created_at: string | null
+          filename: string
+          filesize: number
+          id: string
+          mimetype: string
+          parent_file_id: string
+          short_id: string
+          sort_order: number
+          storage_path: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          filename: string
+          filesize: number
+          id?: string
+          mimetype: string
+          parent_file_id: string
+          short_id: string
+          sort_order?: number
+          storage_path: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          filename?: string
+          filesize?: number
+          id?: string
+          mimetype?: string
+          parent_file_id?: string
+          short_id?: string
+          sort_order?: number
+          storage_path?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "detail_library_items_parent_file_id_fkey"
+            columns: ["parent_file_id"]
+            isOneToOne: false
+            referencedRelation: "detail_library_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      file_annotations: {
+        Row: {
+          annotation_data: Json
+          created_at: string | null
+          created_by: string | null
+          file_id: string
+          id: string
+          project_id: string
+          updated_at: string | null
+          version_number: number | null
+        }
+        Insert: {
+          annotation_data: Json
+          created_at?: string | null
+          created_by?: string | null
+          file_id: string
+          id?: string
+          project_id: string
+          updated_at?: string | null
+          version_number?: number | null
+        }
+        Update: {
+          annotation_data?: Json
+          created_at?: string | null
+          created_by?: string | null
+          file_id?: string
+          id?: string
+          project_id?: string
+          updated_at?: string | null
+          version_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_annotations_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "file_annotations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       files: {
         Row: {
           created_at: string | null
@@ -1425,14 +1642,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      generate_file_share_token: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_short_id: {
+      generate_detail_library_short_id: {
         Args: { prefix: string }
         Returns: string
       }
+      generate_file_share_token: { Args: never; Returns: string }
+      generate_short_id: { Args: { prefix: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]

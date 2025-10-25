@@ -2,6 +2,54 @@
 
 // ============= Core Entities =============
 
+// Detail Library Types
+export type DetailColorTag = 'slate' | 'green' | 'amber' | 'violet' | 'pink' | 'cyan';
+
+export interface DetailLibraryCategory {
+  id: string;
+  shortId: string;
+  workspaceId: string;
+  name: string;
+  slug: string;
+  isSystemCategory: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DetailLibraryFile {
+  id: string;
+  shortId: string;
+  workspaceId: string;
+  categoryId: string;
+  title: string;
+  filename: string;
+  filesize: number;
+  mimetype: string;
+  storagePath: string;
+  colorTag: DetailColorTag;
+  description?: string;
+  authorName?: string;
+  uploadedBy: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+}
+
+export interface DetailLibraryItem {
+  id: string;
+  shortId: string;
+  parentFileId: string;
+  title: string;
+  filename: string;
+  filesize: number;
+  mimetype: string;
+  storagePath: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // User entity (replaces profiles)
 export interface User {
   id: string;
