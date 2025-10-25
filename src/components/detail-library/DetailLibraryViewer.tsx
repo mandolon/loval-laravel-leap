@@ -73,6 +73,7 @@ const DetailLibraryViewer: React.FC<DetailLibraryViewerProps> = () => {
           author: f.authorName || 'Unknown',
           description: f.description || '',
           color: f.colorTag as FileItem['color'],
+          storagePath: f.storagePath,
         }))
     })),
     [categories, dbFiles]
@@ -118,6 +119,7 @@ const DetailLibraryViewer: React.FC<DetailLibraryViewerProps> = () => {
       updated: formatDistanceToNow(new Date(item.updatedAt || item.createdAt), { addSuffix: true }),
       size: formatBytes(item.filesize),
       author: selectedFile.author,
+      storagePath: item.storagePath,
     }));
     return [...generated, ...custom];
   }, [selectedFile, dbItems]);

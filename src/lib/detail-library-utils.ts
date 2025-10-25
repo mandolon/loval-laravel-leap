@@ -10,6 +10,7 @@ export type FileItem = {
   author: string;
   description?: string;
   color: "slate" | "green" | "amber" | "violet" | "pink" | "cyan";
+  storagePath?: string;
 };
 
 export type FolderT = {
@@ -25,6 +26,7 @@ export type DetailItem = {
   updated: string;
   size: string;
   author: string;
+  storagePath?: string;
 };
 
 // Color system constants
