@@ -219,7 +219,7 @@ const DetailLibraryViewer: React.FC<DetailLibraryViewerProps> = () => {
   }
 
   return (
-    <div className="w-full p-4 md:p-6 min-h-full">
+    <div className="w-full h-full overflow-y-auto p-4 md:p-6">
       {/* Header + Breadcrumbs */}
       <div className="mb-4 md:mb-6">
         <div className="flex items-center justify-between gap-3">
@@ -345,7 +345,7 @@ const DetailLibraryViewer: React.FC<DetailLibraryViewerProps> = () => {
         </div>
 
         {/* RIGHT: Preview Panel */}
-        <div className={clsx("col-span-12 lg:col-span-7 space-y-3", !selectedFile && "hidden")}>          
+        <div className={clsx("col-span-12 lg:col-span-7 flex flex-col gap-3", !selectedFile && "hidden")}>          
           <div className="flex items-center justify-between h-10">
             <div className="flex items-center gap-2">
               <input
@@ -383,8 +383,8 @@ const DetailLibraryViewer: React.FC<DetailLibraryViewerProps> = () => {
             </button>
           </div>
 
-          {/* Preview box */}
-          <div className="rounded-2xl border border-black/10 bg-neutral-50 dark:bg-neutral-900 aspect-[4/3] w-full flex items-center justify-center overflow-hidden">
+          {/* Preview box - flexible height to fill available space */}
+          <div className="rounded-2xl border border-black/10 bg-neutral-50 dark:bg-neutral-900 flex-1 min-h-[400px] max-h-[600px] w-full flex items-center justify-center overflow-hidden">
             {previewTarget ? (
               <SimpleImageViewer file={previewTarget} className="w-full h-full" />
             ) : (
