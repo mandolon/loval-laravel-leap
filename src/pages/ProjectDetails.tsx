@@ -668,7 +668,7 @@ const ProjectDetails = () => {
           <ResizableHandle withHandle className="mx-1" />
           <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
             <div className={`${T.panel} ${T.radius} flex flex-col h-full overflow-hidden mr-1`}>
-          <div className="h-10 px-3 flex items-center justify-between border-b border-slate-200 dark:border-[#1d2230] bg-white dark:bg-[#0E1118]">
+          <div className="h-10 px-3 flex items-center justify-between border-b border-[#bbbbbb] dark:border-[#1d2230] bg-white dark:bg-[#0E1118]">
             <span className="text-[12px] text-slate-700 dark:text-neutral-300">Project Chat</span>
             <button
               type="button"
@@ -716,7 +716,7 @@ const ProjectDetails = () => {
             </div>
           </ScrollArea>
 
-          <div className="p-3 border-t border-slate-200 dark:border-[#1d2230] bg-white dark:bg-[#0E1118] mt-auto">
+          <div className="p-3 border-t border-[#bbbbbb] dark:border-[#1d2230] bg-white dark:bg-[#0E1118] mt-auto">
             <ChatInput
               onSendMessage={handleSendMessage}
               replyingTo={replyingTo}

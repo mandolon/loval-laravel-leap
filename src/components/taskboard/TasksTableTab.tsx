@@ -182,8 +182,8 @@ export const TasksTableTab = ({
       {/* Card Container */}
       <div className="mx-0 rounded-xl border border-gray-200 dark:border-[#1a2030]/60 bg-white dark:bg-[#0E1118] shadow-sm">
         {/* Header */}
-        <div className="flex items-center px-5 py-4 mb-1">
-          <h2 className="text-[15px] font-medium text-gray-800 dark:text-neutral-300">Task List</h2>
+        <div className="h-9 px-3 flex items-center bg-white dark:bg-[#0E1118]">
+          <span className="text-[12px] font-medium text-slate-700 dark:text-neutral-200">Task List</span>
         </div>
 
         {/* Controls Row */}
