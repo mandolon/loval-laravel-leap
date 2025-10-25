@@ -1,234 +1,154 @@
-import { useState } from 'react';
-import { useUploadDetailFile, useUpdateDetailFile, useDetailLibrarySubfolders } from '@/lib/api/hooks/useDetailLibrary';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Upload } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import React, { useEffect, useRef, useState } from 'react';
+import { Upload, X } from 'lucide-react';
+import { FileItem, COLOR_KEYS, swatchBg, clsx } from '@/lib/detail-library-utils';
 
 interface CardEditModalProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
-  file: any;
-  workspaceId: string;
-  categoryId: string;
-  subfolderId?: string | null;
+  file: FileItem | null;
+  folderId: string | null;
+  onClose: () => void;
+  onSave: (fileId: string, patch: Partial<Pick<FileItem, "title" | "color" | "type" | "description">>) => void;
+  onUpload: (folderId: string, files: FileList | null) => void;
 }
 
-const swatchBg = {
-  slate: "bg-slate-300",
-  green: "bg-lime-300",
-  amber: "bg-amber-300",
-  violet: "bg-violet-300",
-  pink: "bg-pink-300",
-  cyan: "bg-cyan-300",
-};
-
-export default function CardEditModal({
+const CardEditModal: React.FC<CardEditModalProps> = ({
   open,
-  onOpenChange,
   file,
-  workspaceId,
-  categoryId,
-  subfolderId,
-}: CardEditModalProps) {
-  const [title, setTitle] = useState(file?.title || '');
-  const [description, setDescription] = useState(file?.description || '');
-  const [authorName, setAuthorName] = useState(file?.authorName || '');
-  const [colorTag, setColorTag] = useState(file?.colorTag || 'slate');
-  const [selectedSubfolderId, setSelectedSubfolderId] = useState<string | null>(
-    file?.subfolderId || subfolderId || null
-  );
-  const [uploading, setUploading] = useState(false);
+  folderId,
+  onClose,
+  onSave,
+  onUpload,
+}) => {
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
+  const [title, setTitle] = useState("");
+  const [color, setColor] = useState<FileItem["color"]>("slate");
+  const [type, setType] = useState<FileItem["type"]>("pdf");
+  const [description, setDescription] = useState("");
 
-  const { data: subfolders = [] } = useDetailLibrarySubfolders(workspaceId, categoryId);
-  const uploadMutation = useUploadDetailFile(workspaceId, categoryId, selectedSubfolderId || undefined);
-  const updateMutation = useUpdateDetailFile();
-
-  const handleSave = async () => {
-    if (!file) return;
-
-    try {
-      await updateMutation.mutateAsync({
-        fileId: file.id,
-        title: title.trim(),
-        description: description.trim(),
-        authorName: authorName.trim(),
-        subfolderId: selectedSubfolderId,
-      });
-      
-      toast.success('Details updated successfully');
-      onOpenChange(false);
-    } catch (error) {
-      console.error('Error updating file:', error);
-      toast.error('Failed to update details');
+  useEffect(() => {
+    if (file) {
+      setTitle(file.title);
+      setColor(file.color);
+      setType(file.type);
+      setDescription(file.description ?? "");
     }
-  };
+  }, [file, open]);
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
+  if (!open || !file || !folderId) return null;
 
-    setUploading(true);
-    try {
-      const fileArray = Array.from(files);
-      await uploadMutation.mutateAsync({
-        files: fileArray,
-        title: title.trim() || fileArray[0].name,
-        description: description.trim(),
-        authorName: authorName.trim(),
-        colorTag: colorTag as any,
-      });
-      
-      toast.success(`${files.length} file(s) uploaded successfully`);
-      onOpenChange(false);
-    } catch (error) {
-      console.error('Error uploading files:', error);
-      toast.error('Failed to upload files');
-    } finally {
-      setUploading(false);
-    }
-  };
+  function handleDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    const files = e.dataTransfer.files;
+    onUpload(folderId, files);
+  }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{file ? 'Edit Details' : 'Upload Files'}</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          {/* Title */}
-          <div>
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter title..."
-            />
+    <div className="fixed inset-0 z-[60]">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="absolute inset-0 flex items-center justify-center p-4">
+        <div className="w-full max-w-md rounded-2xl border bg-white p-4 shadow-xl dark:bg-neutral-900">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-sm font-medium">Edit Card</div>
+            <button className="p-1 rounded-md hover:bg-neutral-50 dark:hover:bg-neutral-800" onClick={onClose} aria-label="Close">
+              <X className="h-4 w-4" />
+            </button>
           </div>
+
+          {/* Title */}
+          <label className="block text-xs opacity-70 mb-1">Title</label>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full mb-3 rounded-lg border border-black/10 px-3 py-2 text-sm focus:bg-white focus:shadow-sm bg-white/70 dark:bg-neutral-900/60"
+          />
 
           {/* Description */}
-          <div>
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter description..."
-              rows={3}
-            />
-          </div>
+          <label className="block text-xs opacity-70 mb-1">Description</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            className="w-full mb-3 rounded-lg border border-black/10 px-3 py-2 text-sm focus:bg-white focus:shadow-sm bg-white/70 dark:bg-neutral-900/60"
+          />
 
-          {/* Author Name */}
-          <div>
-            <Label htmlFor="author">Author Name</Label>
-            <Input
-              id="author"
-              value={authorName}
-              onChange={(e) => setAuthorName(e.target.value)}
-              placeholder="Enter author name..."
-            />
-          </div>
+          {/* Badge/Type */}
+          <label className="block text-xs opacity-70 mb-1">Badge</label>
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value as FileItem["type"])}
+            className="w-full mb-3 rounded-lg border border-black/10 px-3 py-2 text-sm bg-white/70 dark:bg-neutral-900/60"
+          >
+            <option value="pdf">Assembly (PDF)</option>
+            <option value="image">Detail (Image)</option>
+          </select>
 
-          {/* Subfolder Selection */}
-          <div>
-            <Label htmlFor="subfolder">Subfolder</Label>
-            <Select
-              value={selectedSubfolderId || 'root'}
-              onValueChange={(value) => setSelectedSubfolderId(value === 'root' ? null : value)}
-            >
-              <SelectTrigger id="subfolder">
-                <SelectValue placeholder="Select subfolder..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="root">Root (No subfolder)</SelectItem>
-                {subfolders.map((subfolder) => (
-                  <SelectItem key={subfolder.id} value={subfolder.id}>
-                    {subfolder.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Color Swatches */}
-          <div>
-            <Label>Color Tag</Label>
-            <div className="flex gap-2 mt-2">
-              {Object.keys(swatchBg).map((color) => (
+          {/* Color */}
+          <div className="mb-3">
+            <div className="text-xs opacity-70 mb-1">Color</div>
+            <div className="grid grid-cols-6 gap-2">
+              {COLOR_KEYS.map((c) => (
                 <button
-                  key={color}
-                  className={cn(
-                    "w-10 h-10 rounded-full transition-all",
-                    swatchBg[color as keyof typeof swatchBg],
-                    colorTag === color && "ring-2 ring-offset-2 ring-foreground"
-                  )}
-                  onClick={() => setColorTag(color)}
+                  key={c}
+                  type="button"
+                  title={c}
+                  className={clsx("h-7 w-7 rounded-md border", swatchBg[c], c === color && "ring-2 ring-black/30")}
+                  onClick={() => setColor(c)}
                 />
               ))}
             </div>
           </div>
 
-          {/* File Upload (only for new files) */}
-          {!file && (
-            <div>
-              <Label>Upload Files</Label>
-              <div className="mt-2 border-2 border-dashed border-border rounded-lg p-6 text-center">
-                <input
-                  type="file"
-                  id="file-upload"
-                  multiple
-                  accept="application/pdf,image/*"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  disabled={uploading}
-                />
-                <label
-                  htmlFor="file-upload"
-                  className="cursor-pointer flex flex-col items-center gap-2"
-                >
-                  <Upload className="h-8 w-8 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    Click to upload or drag and drop
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    PDF or images (multiple files supported)
-                  </p>
-                </label>
+          {/* Upload */}
+          <div
+            className="mb-4 rounded-lg border border-dashed border-black/15 p-3 text-xs text-muted-foreground"
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleDrop}
+          >
+            <input
+              ref={hiddenInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(e) => onUpload(folderId, e.target.files)}
+            />
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                Drop files here to upload to this folder.
               </div>
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-md border px-2 py-1.5 text-xs hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                onClick={() => hiddenInputRef.current?.click()}
+              >
+                <Upload className="h-3.5 w-3.5" />
+                Select files
+              </button>
             </div>
-          )}
-        </div>
+          </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          {file && (
-            <Button onClick={handleSave} disabled={updateMutation.isPending}>
-              {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
-            </Button>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <div className="flex items-center justify-end gap-2">
+            <button
+              type="button"
+              className="rounded-md border px-3 py-1.5 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800"
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="rounded-md border px-3 py-1.5 text-sm bg-black text-white border-black hover:bg-black/90 dark:bg-white dark:text-black dark:border-white/80"
+              onClick={() => {
+                onSave(file.id, { title: title.trim() || file.title, color, type, description: description.trim() });
+                onClose();
+              }}
+            >
+              Save changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
-}
+};
+
+export default CardEditModal;

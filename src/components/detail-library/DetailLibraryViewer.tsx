@@ -1,191 +1,166 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { 
-  useDetailLibraryCategories, 
-  useDetailLibraryFiles, 
-  useUpdateDetailFile,
-  useUpdateDetailFileColor,
-  useDeleteDetailFile,
-} from '@/lib/api/hooks/useDetailLibrary';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronRight, ChevronLeft, Download, Upload, Search, Folder } from 'lucide-react';
+import { FolderT, FileItem, DetailItem, MOCK_FOLDERS, generateDetailList, filterByQuery, clsx, swatchBg } from '@/lib/detail-library-utils';
+import CardButton from './CardButton';
+import DetailRowButton from './DetailRowButton';
+import CardEditModal from './CardEditModal';
 import SimplePDFViewer from './SimplePDFViewer';
 import SimpleImageViewer from './SimpleImageViewer';
-import CardEditModal from './CardEditModal';
-import { 
-  Search, 
-  ChevronRight, 
-  FileText, 
-  Image as ImageIcon, 
-  MoreHorizontal,
-  Trash,
-  Download,
-  Folder,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { DetailLibraryFile, DetailColorTag } from '@/lib/api/types';
 
 interface DetailLibraryViewerProps {
   workspaceId: string;
 }
 
-// Helper functions
-const baseTitleFromName = (filename: string) => {
-  return filename.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
-};
+// For global search we add folder context to files
+type FlatFile = FileItem & { folderId: string; folderTitle: string };
 
-const firstNameOnly = (name: string) => {
-  return name.split(' ')[0];
-};
+const DetailLibraryViewer: React.FC<DetailLibraryViewerProps> = ({ workspaceId }) => {
+  const [folders, setFolders] = useState<FolderT[]>(MOCK_FOLDERS);
+  const [activeFolderId, setActiveFolderId] = useState(MOCK_FOLDERS[0].id);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedDetailId, setSelectedDetailId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
-const footerMeta = (file: DetailLibraryFile) => {
-  const date = new Date(file.updatedAt);
-  const formatted = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const author = file.authorName ? firstNameOnly(file.authorName) : 'Unknown';
-  return `${formatted} by ${author}`;
-};
+  const [editModal, setEditModal] = useState<{ open: boolean; file: FileItem | null; folderId: string | null }>({ open: false, file: null, folderId: null });
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [inlineTitle, setInlineTitle] = useState("");
+  const [inlineDesc, setInlineDesc] = useState("");
+  // Store custom uploaded details per parent file
+  const [customDetails, setCustomDetails] = useState<Record<string, DetailItem[]>>({});
 
-const formatBytes = (bytes: number) => {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-};
-
-const colorMap: Record<DetailColorTag, string> = {
-  slate: 'bg-slate-100 dark:bg-slate-900',
-  green: 'bg-lime-100 dark:bg-lime-950',
-  amber: 'bg-amber-100 dark:bg-amber-950',
-  violet: 'bg-violet-100 dark:bg-violet-950',
-  pink: 'bg-pink-100 dark:bg-pink-950',
-  cyan: 'bg-cyan-100 dark:bg-cyan-950',
-};
-
-const swatchBg: Record<DetailColorTag, string> = {
-  slate: 'bg-slate-300',
-  green: 'bg-lime-300',
-  amber: 'bg-amber-300',
-  violet: 'bg-violet-300',
-  pink: 'bg-pink-300',
-  cyan: 'bg-cyan-300',
-};
-
-export default function DetailLibraryViewer({ workspaceId }: DetailLibraryViewerProps) {
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-  const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
-  const [query, setQuery] = useState('');
-  const [editModalState, setEditModalState] = useState<{
-    open: boolean;
-    file?: any;
-    categoryId?: string;
-  }>({ open: false });
-
-  const [tempTitle, setTempTitle] = useState('');
-  const [tempDescription, setTempDescription] = useState('');
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-
-  // Fetch data
-  const { data: categories = [] } = useDetailLibraryCategories(workspaceId);
-  const { data: files = [] } = useDetailLibraryFiles(workspaceId, selectedCategoryId || undefined);
-
-  const updateFileMutation = useUpdateDetailFile();
-  const updateColorMutation = useUpdateDetailFileColor();
-  const deleteFileMutation = useDeleteDetailFile();
-
-  // Auto-select first category
-  useEffect(() => {
-    if (!selectedCategoryId && categories.length > 0) {
-      setSelectedCategoryId(categories[0].id);
-    }
-  }, [categories, selectedCategoryId]);
-
-  // Reset selection when category changes
-  useEffect(() => {
-    setSelectedFileId(null);
-  }, [selectedCategoryId]);
-
-  // Update temp values when selected file changes
-  useEffect(() => {
-    const file = files.find((f) => f.id === selectedFileId);
-    if (file) {
-      setTempTitle(file.title);
-      setTempDescription(file.description || '');
-    } else {
-      setTempTitle('');
-      setTempDescription('');
-    }
-  }, [selectedFileId, files]);
-
-  // Fetch signed URL for preview
-  useEffect(() => {
-    const file = files.find((f) => f.id === selectedFileId);
-    if (!file) {
-      setPreviewUrl(null);
-      return;
-    }
-
-    const fetchUrl = async () => {
-      const { data } = await supabase.storage
-        .from('detail-library')
-        .createSignedUrl(file.storagePath, 3600);
-      setPreviewUrl(data?.signedUrl || null);
-    };
-
-    fetchUrl();
-  }, [selectedFileId, files]);
-
-  const selectedFile = files.find((f) => f.id === selectedFileId);
-  const activeCategory = categories.find((c) => c.id === selectedCategoryId);
-
-  const filteredFiles = files.filter((file) =>
-    file.title.toLowerCase().includes(query.toLowerCase())
+  const activeFolder = useMemo(
+    () => folders.find((f) => f.id === activeFolderId)!,
+    [folders, activeFolderId]
   );
 
-  const handleFileClick = (fileId: string) => {
-    setSelectedFileId(fileId);
-  };
+  // Flatten all files across folders for global search
+  const allFiles: FlatFile[] = useMemo(
+    () =>
+      folders.flatMap((f) =>
+        f.files.map((fl) => ({ ...fl, folderId: f.id, folderTitle: f.title }))
+      ),
+    [folders]
+  );
 
-  const handleSaveMeta = async (fileId: string, updates: { title?: string; description?: string }) => {
-    try {
-      await updateFileMutation.mutateAsync({ fileId, ...updates });
-    } catch (error) {
-      console.error('Error updating file:', error);
-    }
-  };
+  // Identify the selected file inside the current active folder
+  const selectedFile = useMemo(
+    () => activeFolder.files.find((f) => f.id === selectedId) || null,
+    [activeFolder, selectedId]
+  );
 
-  const handleColorChange = async (fileId: string, colorTag: DetailColorTag) => {
-    try {
-      await updateColorMutation.mutateAsync({ fileId, colorTag });
-    } catch (error) {
-      console.error('Error updating color:', error);
-    }
-  };
+  // Sync inline editors with the currently selected file
+  useEffect(() => {
+    setInlineTitle(selectedFile?.title ?? "");
+    setInlineDesc(selectedFile?.description ?? "");
+  }, [selectedFile]);
 
-  const handleDeleteFile = async (fileId: string) => {
-    if (!confirm('Delete this file?')) return;
-    try {
-      await deleteFileMutation.mutateAsync({ fileId });
-      if (selectedFileId === fileId) {
-        setSelectedFileId(null);
-      }
-    } catch (error) {
-      console.error('Error deleting file:', error);
+  // Build per-file details (local) and global details (all files) for search
+  const detailList = useMemo(() => {
+    if (!selectedFile) return [];
+    const generated = generateDetailList(selectedFile);
+    const custom = customDetails[selectedFile.id] || [];
+    return [...generated, ...custom];
+  }, [selectedFile, customDetails]);
+  const allDetails: (DetailItem & { baseId: string; folderId: string })[] = useMemo(
+    () =>
+      allFiles.flatMap((fl) => {
+        const generated = generateDetailList(fl).map((d) => ({ ...d, baseId: fl.id, folderId: fl.folderId }));
+        const custom = (customDetails[fl.id] || []).map((d) => ({ ...d, baseId: fl.id, folderId: fl.folderId }));
+        return [...generated, ...custom];
+      }),
+    [allFiles, customDetails]
+  );
+
+  // Derive selected detail by ID from the local list (after switching files it will match)
+  const selectedDetail = useMemo(
+    () => detailList.find((d) => d.id === selectedDetailId) || null,
+    [detailList, selectedDetailId]
+  );
+
+  const previewTarget = selectedDetail || selectedFile;
+
+  function handleUploadToFolder(folderId: string, files: FileList | null) {
+    if (!files || files.length === 0) return;
+    const items = Array.from(files).map((f) => ({ name: f.name, type: f.type, size: f.size }));
+    const nowId = Date.now();
+    
+    // If a file is selected, add uploads as detail items to that file
+    if (selectedFile) {
+      const newDetails: DetailItem[] = items.map((it, i) => ({
+        id: `detail-upl-${nowId}-${i}`,
+        title: it.name.replace(/\.[^/.]+$/, "").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim() || it.name,
+        type: it.type.startsWith("image/") || /\.(png|jpe?g|gif|svg|webp)$/i.test(it.name) ? "image" : "pdf",
+        updated: "just now",
+        size: it.size < 1024 ? `${it.size} B` : it.size < 1024 * 1024 ? `${Math.round((it.size / 1024) * 10) / 10} KB` : `${Math.round((it.size / (1024 * 1024)) * 10) / 10} MB`,
+        author: "You",
+      }));
+      
+      setCustomDetails((prev) => ({
+        ...prev,
+        [selectedFile.id]: [...(prev[selectedFile.id] || []), ...newDetails],
+      }));
+    } else {
+      // Otherwise, add uploads as new cards to the folder
+      setFolders((prev) => {
+        return prev.map((fol) => {
+          if (fol.id !== folderId) return fol;
+          const newFiles: FileItem[] = items.map((it, i) => ({
+            id: `upl-${nowId}-${i}`,
+            title: it.name.replace(/\.[^/.]+$/, "").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim() || it.name,
+            type: it.type.startsWith("image/") || /\.(png|jpe?g|gif|svg|webp)$/i.test(it.name) ? "image" : "pdf",
+            updated: "just now",
+            size: it.size < 1024 ? `${it.size} B` : it.size < 1024 * 1024 ? `${Math.round((it.size / 1024) * 10) / 10} KB` : `${Math.round((it.size / (1024 * 1024)) * 10) / 10} MB`,
+            author: "You",
+            description: "",
+            color: "slate",
+          }));
+          return { ...fol, files: [...fol.files, ...newFiles] };
+        });
+      });
     }
-  };
+  }
+
+  function handleSaveMeta(fileId: string, patch: Partial<Pick<FileItem, "title" | "color" | "type" | "description">>) {
+    setFolders((prev) => prev.map((fol) => ({
+      ...fol,
+      files: fol.files.map((fl) => (fl.id === fileId ? { ...fl, ...patch } : fl)),
+    })));
+  }
+
+  // Global-filtered details only (query applies to lists, not cards)
+  const filteredDetails = useMemo(
+    () => filterByQuery(allDetails, query) as (DetailItem & { baseId: string; folderId: string })[],
+    [allDetails, query]
+  );
+
+  const visibleDetails = useMemo(
+    () => (query ? filteredDetails : detailList).filter((d) => !dismissedIds.has(d.id)),
+    [query, filteredDetails, detailList, dismissedIds]
+  );
+
+  // Card grid shows current folder
+  const filesToShow: (FileItem | FlatFile)[] = activeFolder.files;
+
+  const placeholder = "Search details...";
 
   return (
-    <div className="w-full mx-auto max-w-7xl p-4 md:p-6">
-      {/* Breadcrumbs + Search */}
+    <div className="w-full p-4 md:p-6 min-h-full">
+      {/* Header + Breadcrumbs */}
       <div className="mb-4 md:mb-6">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center text-sm text-muted-foreground gap-1">
             <span className="font-medium">Detail Library</span>
-            {activeCategory && (
+            <ChevronRight className="h-4 w-4 opacity-60" />
+            <span>{activeFolder.title}</span>
+            {selectedFile && (
               <>
                 <ChevronRight className="h-4 w-4 opacity-60" />
-                <span>{activeCategory.name}</span>
+                <span>{selectedFile.title}</span>
               </>
             )}
           </div>
+          {/* Inline, compact search on the same row (top-right aligned) */}
           <div role="search" className="relative w-48 sm:w-56 md:w-64 h-8">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 opacity-70" />
             <label htmlFor="lib-search" className="sr-only">Search</label>
@@ -193,125 +168,152 @@ export default function DetailLibraryViewer({ workspaceId }: DetailLibraryViewer
               id="lib-search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search details..."
+              placeholder={placeholder}
               className="h-8 w-full rounded-xl border border-black/10 bg-white/60 pl-7 pr-3 text-xs outline-none ring-0 placeholder:opacity-60 focus:bg-white focus:shadow-sm dark:bg-neutral-900/60 dark:focus:bg-neutral-900"
             />
           </div>
         </div>
       </div>
 
-      {/* Category Tabs */}
+      {/* Folder Switcher */}
       <div className="flex flex-wrap gap-3 mb-6">
-        {categories.map((category) => (
+        {folders.map((folder) => (
           <button
-            key={category.id}
-            onClick={() => setSelectedCategoryId(category.id)}
-            className={cn(
+            key={folder.id}
+            onClick={() => {
+              setActiveFolderId(folder.id);
+              setSelectedId(null);
+              setSelectedDetailId(null);
+            }}
+            className={clsx(
               "inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm transition-all",
-              selectedCategoryId === category.id
+              activeFolderId === folder.id
                 ? "border-black/10 bg-white shadow-sm dark:bg-neutral-900"
                 : "border-black/10 bg-neutral-50 hover:bg-white dark:bg-neutral-800/50 dark:hover:bg-neutral-800"
             )}
           >
             <Folder className="h-4 w-4 opacity-70" />
-            <span>{category.name}</span>
+            <span>{folder.title}</span>
           </button>
         ))}
       </div>
 
-      {/* Main Grid */}
+      {/* Main Layout */}
       <div className="grid grid-cols-12 gap-6">
-        {/* LEFT: File Cards */}
-        <div className={cn("col-span-12", selectedFileId ? "lg:col-span-5" : "lg:col-span-12")}>
-          {filteredFiles.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <p>No files in this category</p>
-              <button
-                onClick={() => setEditModalState({ open: true, categoryId: selectedCategoryId || undefined })}
-                className="mt-4 text-sm text-primary hover:underline"
-              >
-                Upload your first file
-              </button>
+        {/* LEFT: Cards Grid */}
+        <div className={clsx("col-span-12", selectedFile ? "lg:col-span-5" : "lg:col-span-12")}>          
+          {!selectedFile ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              {filesToShow.map((file) => (
+                <CardButton
+                  key={file.id}
+                  file={file}
+                  parentFolderId={activeFolderId}
+                  onClick={() => {
+                    setSelectedId(file.id);
+                    setSelectedDetailId(null);
+                  }}
+                  onOpenEdit={(f, folderId) => setEditModal({ open: true, file: f, folderId })}
+                  folderCount={activeFolder.files.length}
+                />
+              ))}
+              {filesToShow.length === 0 && (
+                <div className="col-span-full text-sm text-muted-foreground p-4 border border-dashed rounded-xl">
+                  No results.
+                </div>
+              )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {filteredFiles.map((file) => (
-                <div
-                  key={file.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => handleFileClick(file.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      handleFileClick(file.id);
-                    }
+            <div className="space-y-3">
+              <div className="flex items-center justify-between h-10">
+                <button
+                  onClick={() => {
+                    setSelectedId(null);
+                    setSelectedDetailId(null);
                   }}
-                  className={cn(
-                    "group relative h-full flex flex-col text-left rounded-3xl p-3 md:p-4 transition-shadow border border-black/5 shadow-sm hover:shadow-md cursor-pointer",
-                    colorMap[file.colorTag],
-                    selectedFileId === file.id && "ring-2 ring-primary ring-offset-2"
-                  )}
+                  className="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800"
                 >
-                  {/* 3-dot menu */}
-                  <div className="absolute top-2 right-2 transition opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
-                    <button
-                      aria-label="Card menu"
-                      className="p-1.5 rounded-md border bg-white/80 backdrop-blur hover:bg-white shadow-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditModalState({ open: true, file, categoryId: selectedCategoryId || undefined });
-                      }}
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
+                  <ChevronLeft className="h-4 w-4" />
+                  <span>Back</span>
                     </button>
+                <div className="text-sm text-muted-foreground">{visibleDetails.length} items</div>
                   </div>
 
-                  {/* Badge */}
-                  <div className="flex items-center gap-2 text-xs opacity-80 min-h-[20px]">
-                    {file.mimetype === 'application/pdf' ? (
-                      <FileText className="h-4 w-4" />
-                    ) : (
-                      <ImageIcon className="h-4 w-4" />
-                    )}
-                    <span>{file.mimetype === 'application/pdf' ? 'Assembly' : 'Detail'}</span>
+              <div className="space-y-2">
+                {visibleDetails.map((d) => (
+                  <DetailRowButton
+                    key={d.id}
+                    detail={d}
+                    active={d.id === selectedDetailId}
+                    onClick={() => {
+                      const g: any = d as any;
+                      if (g.baseId) setSelectedId(g.baseId);
+                      setSelectedDetailId(d.id);
+                    }}
+                    onDelete={() => setDismissedIds((prev) => { const s = new Set(prev); s.add(d.id); return s; })}
+                  />
+                ))}
+                {visibleDetails.length === 0 && (
+                  <div className="text-sm text-muted-foreground p-3 border border-dashed rounded-xl">
+                    No details match.
                   </div>
-
-                  {/* Title - split into 2 lines */}
-                  <div className="mt-auto leading-[1.1] min-h-[3.5rem] md:min-h-[4rem] flex flex-col justify-end">
-                    <h3 className="text-xl md:text-2xl font-semibold tracking-tight text-neutral-800 dark:text-neutral-200">
-                      {file.title.split(' ').slice(0, 2).join(' ')}
-                    </h3>
-                    <p className="text-xl md:text-2xl font-semibold tracking-tight text-neutral-800 dark:text-neutral-200 min-h-[1.75rem] md:min-h-[2rem]">
-                      {file.title.split(' ').slice(2).join(' ')}
-                    </p>
-                  </div>
-
-                  {/* Footer */}
-                  <div className="mt-2 flex items-center justify-between text-xs opacity-80">
-                    <span>{footerMeta(file)}</span>
-                    <span className="opacity-80">{formatBytes(file.filesize)}</span>
-                  </div>
+                )}
                 </div>
-              ))}
             </div>
           )}
         </div>
 
         {/* RIGHT: Preview Panel */}
-        <div className={cn("col-span-12 lg:col-span-7 space-y-3", !selectedFileId && "hidden")}>
-          {selectedFile && (
-            <>
-              {/* Viewer */}
-              <div className="rounded-2xl border border-black/10 bg-white/60 overflow-hidden backdrop-blur-sm dark:bg-neutral-900/60">
-                {previewUrl && selectedFile.mimetype === 'application/pdf' ? (
-                  <SimplePDFViewer file={{ url: previewUrl, name: selectedFile.filename }} />
-                ) : previewUrl ? (
-                  <SimpleImageViewer file={{ url: previewUrl, name: selectedFile.filename }} />
-                ) : (
-                  <div className="h-96 flex items-center justify-center text-muted-foreground">
-                    Loading preview...
-                  </div>
+        <div className={clsx("col-span-12 lg:col-span-7 space-y-3", !selectedFile && "hidden")}>          
+          <div className="flex items-center justify-between h-10">
+            <div className="flex items-center gap-2">
+              <input
+                ref={uploadInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={(e) => handleUploadToFolder(activeFolderId, e.target.files)}
+              />
+              <button
+                disabled={!selectedFile}
+                onClick={() => uploadInputRef.current?.click()}
+                className={clsx(
+                  "inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm",
+                  selectedFile
+                    ? "border-black/10 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                    : "border-black/10 opacity-50"
+                )}
+              >
+                <Upload className="h-4 w-4" />
+                <span>Upload</span>
+              </button>
+            </div>
+            <button
+              disabled={!previewTarget}
+              className={clsx(
+                "inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm",
+                previewTarget
+                  ? "border-black/10 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                  : "border-black/10 opacity-50"
+              )}
+            >
+              <Download className="h-4 w-4" />
+              <span>Download</span>
+            </button>
+          </div>
+
+          {/* Preview box */}
+          <div className="rounded-2xl border border-black/10 bg-neutral-50 dark:bg-neutral-900 aspect-[4/3] w-full flex items-center justify-center overflow-hidden">
+            {previewTarget ? (
+              previewTarget.type === "pdf" ? (
+                <SimplePDFViewer file={previewTarget} className="w-full h-full" />
+              ) : (
+                <SimpleImageViewer file={previewTarget} className="w-full h-full" />
+              )
+            ) : (
+              <div className="text-sm text-muted-foreground">
+                {selectedFile ? "Select a detail to preview" : "Select a card to preview"}
+              </div>
                 )}
               </div>
 
@@ -319,119 +321,93 @@ export default function DetailLibraryViewer({ workspaceId }: DetailLibraryViewer
               <div className="rounded-2xl border border-black/10 bg-white/60 p-4 backdrop-blur-sm dark:bg-neutral-900/60">
                 <div className="mb-3 flex items-center justify-between">
                   <h4 className="text-sm font-medium text-muted-foreground">File Properties</h4>
+              <div />
                 </div>
                 <div className="grid grid-cols-1 md:[grid-template-columns:1.5fr_1fr] gap-6 md:gap-8">
                   {/* Left column */}
                   <dl className="grid grid-cols-3 gap-y-3 text-sm">
                     <dt className="opacity-60">Name</dt>
                     <dd className="col-span-2">
+                  {selectedFile ? (
                       <textarea
-                        value={tempTitle}
-                        onChange={(e) => setTempTitle(e.target.value)}
-                        onBlur={() => {
-                          if (tempTitle.trim() !== selectedFile.title) {
-                            handleSaveMeta(selectedFile.id, { title: tempTitle.trim() });
-                          }
-                        }}
+                      aria-label="Edit title"
+                      value={inlineTitle}
+                      onChange={(e) => setInlineTitle(e.target.value)}
+                      onBlur={() => selectedFile && handleSaveMeta(selectedFile.id, { title: inlineTitle.trim() || selectedFile.title })}
                         rows={1}
                         className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm font-medium focus:bg-white focus:shadow-sm bg-white/70 dark:bg-neutral-900/60 resize-none overflow-hidden"
                       />
+                  ) : ("—")}
                     </dd>
 
                     <dt className="opacity-60">Description</dt>
                     <dd className="col-span-2">
+                  {selectedFile ? (
                       <textarea
-                        value={tempDescription}
-                        onChange={(e) => setTempDescription(e.target.value)}
-                        onBlur={() => {
-                          if (tempDescription.trim() !== (selectedFile.description || '')) {
-                            handleSaveMeta(selectedFile.id, { description: tempDescription.trim() });
-                          }
-                        }}
+                      aria-label="Edit description"
+                      value={inlineDesc}
+                      onChange={(e) => setInlineDesc(e.target.value)}
+                      onBlur={() => selectedFile && handleSaveMeta(selectedFile.id, { description: inlineDesc.trim() })}
                         rows={4}
                         className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm focus:bg-white focus:shadow-sm bg-white/70 dark:bg-neutral-900/60"
                       />
+                  ) : ("—")}
                     </dd>
                   </dl>
 
                   {/* Right column */}
                   <dl className="grid grid-cols-3 gap-y-3 text-sm">
                     <dt className="opacity-60">Type</dt>
-                    <dd className="col-span-2">{selectedFile.mimetype === 'application/pdf' ? 'PDF' : 'IMAGE'}</dd>
+                <dd className="col-span-2">
+                  {previewTarget ? previewTarget.type.toUpperCase() : "—"}
+                </dd>
 
                     <dt className="opacity-60">Size</dt>
-                    <dd className="col-span-2">{formatBytes(selectedFile.filesize)}</dd>
+                <dd className="col-span-2">
+                  {previewTarget ? previewTarget.size : "—"}
+                </dd>
 
                     <dt className="opacity-60">Updated</dt>
                     <dd className="col-span-2">
-                      {new Date(selectedFile.updatedAt).toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric', 
-                        year: 'numeric' 
-                      })}
+                  {previewTarget ? previewTarget.updated : "—"}
                     </dd>
 
                     <dt className="opacity-60">Author</dt>
-                    <dd className="col-span-2">{selectedFile.authorName || '—'}</dd>
+                <dd className="col-span-2">
+                  {previewTarget ? previewTarget.author : "—"}
+                </dd>
 
                     <dt className="opacity-60">Color</dt>
                     <dd className="col-span-2">
-                      <div className="flex gap-2">
-                        {(Object.keys(swatchBg) as DetailColorTag[]).map((color) => (
-                          <button
-                            key={color}
-                            onClick={() => handleColorChange(selectedFile.id, color)}
-                            className={cn(
-                              "w-6 h-6 rounded-full transition-all",
-                              swatchBg[color],
-                              selectedFile.colorTag === color && "ring-2 ring-offset-2 ring-foreground"
-                            )}
-                            aria-label={`Set color to ${color}`}
-                          />
-                        ))}
-                      </div>
+                  {previewTarget && 'color' in previewTarget ? (
+                    <span className={clsx(
+                      "inline-flex items-center gap-2 rounded-md border px-2 py-0.5 text-xs text-black/70 dark:text-white/80 border-black/10",
+                      swatchBg[(previewTarget as any).color as keyof typeof swatchBg] || "bg-neutral-200"
+                    )}>
+                      <span className="h-2 w-2 rounded-full bg-current" />
+                      <span className="capitalize">{(previewTarget as any).color}</span>
+                    </span>
+                  ) : (
+                    "—"
+                  )}
                     </dd>
                   </dl>
                 </div>
               </div>
-
-              {/* Actions */}
-              <div className="flex gap-2">
-                <button
-                  onClick={async () => {
-                    if (previewUrl) {
-                      const link = document.createElement('a');
-                      link.href = previewUrl;
-                      link.download = selectedFile.filename;
-                      link.click();
-                    }
-                  }}
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
-                >
-                  <Download className="h-4 w-4" />
-                  <span>Download</span>
-                </button>
-                <button
-                  onClick={() => handleDeleteFile(selectedFile.id)}
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                >
-                  <Trash className="h-4 w-4" />
-                  <span>Delete</span>
-                </button>
-              </div>
-            </>
-          )}
         </div>
       </div>
 
-      {/* Edit Modal */}
+      {/* Modal Mount */}
       <CardEditModal
-        open={editModalState.open}
-        onOpenChange={(open) => setEditModalState({ open })}
-        file={editModalState.file}
-        workspaceId={workspaceId}
-        categoryId={editModalState.categoryId || selectedCategoryId || ''}
+        open={editModal.open}
+        file={editModal.file}
+        folderId={editModal.folderId}
+        onClose={() => setEditModal({ open: false, file: null, folderId: null })}
+        onSave={handleSaveMeta}
+        onUpload={handleUploadToFolder}
       />
     </div>
   );
-}
+};
+
+export default DetailLibraryViewer;
