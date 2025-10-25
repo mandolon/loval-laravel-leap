@@ -15,6 +15,9 @@ export interface ProjectMember {
     name: string;
     email: string;
     avatar_url: string | null;
+    shortId: string;
+    createdAt: string;
+    updatedAt: string;
   };
 }
 
@@ -48,7 +51,7 @@ export const useProjectMembers = (projectId: string) => {
       // Fetch user details
       const { data: users, error: usersError } = await supabase
         .from('users')
-        .select('id, name, email, avatar_url')
+        .select('id, name, email, avatar_url, short_id, created_at, updated_at')
         .in('id', userIds);
 
       if (usersError) throw usersError;
@@ -72,6 +75,9 @@ export const useProjectMembers = (projectId: string) => {
             name: user.name,
             email: user.email,
             avatar_url: user.avatar_url,
+            shortId: user.short_id,
+            createdAt: user.created_at,
+            updatedAt: user.updated_at,
           } : undefined,
         };
       });

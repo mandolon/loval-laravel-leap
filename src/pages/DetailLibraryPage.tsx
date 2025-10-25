@@ -5,11 +5,11 @@ import DetailLibraryPreviewPane from '@/components/detail-library/DetailLibraryP
 import { Loader2 } from 'lucide-react';
 
 const DetailLibraryPage = () => {
-  const { activeWorkspaceId } = useWorkspaces();
-  const { data: categories, isLoading } = useDetailLibraryCategories(activeWorkspaceId || '');
+  const { currentWorkspaceId } = useWorkspaces();
+  const { data: categories, isLoading } = useDetailLibraryCategories(currentWorkspaceId || '');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
-  if (!activeWorkspaceId) {
+  if (!currentWorkspaceId) {
     return (
       <div className="h-full w-full flex items-center justify-center text-muted-foreground">
         No workspace selected
