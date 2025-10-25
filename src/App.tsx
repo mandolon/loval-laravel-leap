@@ -116,7 +116,7 @@ const App = () => (
               }
             />
             <Route
-              path="/workspace/:workspaceId/detail-library"
+              path="/detail-library"
               element={
                 <ProtectedRoute>
                   <NewAppLayout>

@@ -1,4 +1,4 @@
-import { Home, FolderKanban, CheckSquare, Bot, Plus, ChevronRight, ChevronLeft, Sun, Moon, Trash2 } from "lucide-react";
+import { Home, FolderKanban, CheckSquare, Bot, Plus, ChevronRight, ChevronLeft, Sun, Moon, Trash2, Library } from "lucide-react";
 import { NavLink, useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -34,7 +34,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
   const { user, signOut } = useUser();
   const { theme, setTheme } = useTheme();
   const { currentWorkspace, currentWorkspaceId, refetch: refetchWorkspaces } = useWorkspaces();
-  const [activeTab, setActiveTab] = useState<'home' | 'workspace' | 'tasks' | 'ai'>('workspace');
+  const [activeTab, setActiveTab] = useState<'home' | 'workspace' | 'tasks' | 'ai' | 'detail-library'>('workspace');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [projects, setProjects] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('active');
@@ -168,6 +168,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
     { id: 'workspace' as const, icon: FolderKanban, label: 'Workspace', path: getNavPath('/projects') },
     { id: 'tasks' as const, icon: CheckSquare, label: 'Tasks', path: getNavPath('/tasks') },
     { id: 'ai' as const, icon: Bot, label: 'AI', path: getNavPath('/ai') },
+    { id: 'detail-library' as const, icon: Library, label: 'Detail Library', path: '/detail-library' },
   ];
 
   const statusFilters = [
