@@ -11,28 +11,20 @@ import {
 import SimplePDFViewer from './SimplePDFViewer';
 import SimpleImageViewer from './SimpleImageViewer';
 import CardEditModal from './CardEditModal';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
 import { 
   Search, 
   ChevronRight, 
   FileText, 
   Image as ImageIcon, 
-  MoreVertical,
+  MoreHorizontal,
   ChevronLeft,
-  Trash2,
+  Trash,
   Upload,
   Download,
+  Folder,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 
 interface DetailLibraryViewerProps {
   workspaceId: string;
@@ -55,6 +47,52 @@ const swatchBg = {
   pink: "bg-pink-300",
   cyan: "bg-cyan-300",
 };
+
+// Helper functions
+function baseTitleFromName(name: string): string {
+  const dot = name.lastIndexOf(".");
+  const raw = dot > 0 ? name.slice(0, dot) : name;
+  return raw.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function firstNameOnly(name: string): string {
+  const t = (name || "").trim();
+  if (!t) return "—";
+  const first = t.split(/\s+/)[0];
+  return first.replace(/,+$/, "");
+}
+
+function footerMeta(f: { updatedAt?: string; authorName?: string }): string {
+  const updated = f.updatedAt ? formatDistanceToNow(new Date(f.updatedAt), { addSuffix: true }) : "recently";
+  const author = firstNameOnly(f.authorName || "Unknown");
+  return `${updated} by ${author}`;
+}
+
+function avatarInitials(name: string): string {
+  const t = (name || "").trim();
+  if (!t) return "";
+  const parts = t.split(/\s+/).filter(Boolean);
+  const first = parts[0]?.[0] || "";
+  let second = "";
+  if (parts[1]) {
+    for (const ch of parts[1]) { 
+      if (/[A-Za-z]/.test(ch)) { 
+        second = ch; 
+        break; 
+      } 
+    }
+  }
+  return (first + second).toUpperCase();
+}
+
+function formatBytes(n: number): string {
+  if (!isFinite(n) || n < 0) return "—";
+  const kb = 1024;
+  const mb = kb * 1024;
+  if (n < kb) return `${n} B`;
+  if (n < mb) return `${Math.round((n / kb) * 10) / 10} KB`;
+  return `${Math.round((n / mb) * 10) / 10} MB`;
+}
 
 export default function DetailLibraryViewer({ workspaceId }: DetailLibraryViewerProps) {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -89,6 +127,14 @@ export default function DetailLibraryViewer({ workspaceId }: DetailLibraryViewer
       setSelectedCategoryId(categories[0].id);
     }
   }, [categories, selectedCategoryId]);
+
+  // Update temp values when file changes
+  useEffect(() => {
+    if (selectedFile) {
+      setTempTitle(selectedFile.title);
+      setTempDescription(selectedFile.description || '');
+    }
+  }, [selectedFile]);
 
   // Fetch signed URL for preview
   useEffect(() => {
@@ -172,7 +218,7 @@ export default function DetailLibraryViewer({ workspaceId }: DetailLibraryViewer
     }
 
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
         {files.map((file) => {
           const isPDF = file.mimetype === 'application/pdf';
           const itemCount = items?.filter(i => i.parentFileId === file.id).length || 0;
@@ -180,53 +226,58 @@ export default function DetailLibraryViewer({ workspaceId }: DetailLibraryViewer
           return (
             <div
               key={file.id}
-              className={cn(
-                "rounded-3xl p-6 border border-black/10 cursor-pointer transition-all hover:shadow-lg relative",
-                colorMap[file.colorTag]
-              )}
+              role="button"
+              tabIndex={0}
               onClick={() => handleFileClick(file.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleFileClick(file.id);
+                }
+              }}
+              className={cn(
+                "group relative h-full flex flex-col text-left rounded-3xl p-3 md:p-4 transition-shadow border border-black/5 shadow-sm hover:shadow-md cursor-pointer",
+                colorMap[file.colorTag as keyof typeof colorMap]
+              )}
             >
-              <div className="absolute top-4 right-4">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={(e) => {
-                      e.stopPropagation();
-                      setEditModalState({ open: true, file, categoryId: selectedCategoryId });
-                    }}>
-                      Edit Details
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+              {/* 3-dot menu */}
+              <div className="absolute top-2 right-2 transition opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
+                <button
+                  aria-label="Card menu"
+                  className="p-1.5 rounded-md border bg-white/80 backdrop-blur hover:bg-white shadow-sm dark:bg-neutral-900/80 dark:hover:bg-neutral-900"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditModalState({ open: true, file, categoryId: selectedCategoryId });
+                  }}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
               </div>
 
-              <div className="flex items-center gap-2 mb-3">
+              {/* Badge */}
+              <div className="flex items-center gap-2 text-xs opacity-80 min-h-[20px]">
                 {isPDF ? (
                   <FileText className="h-4 w-4" />
                 ) : (
                   <ImageIcon className="h-4 w-4" />
                 )}
-                <span className="text-xs font-medium">
-                  {isPDF ? 'Assembly' : 'Detail'}
-                </span>
+                <span>{isPDF ? 'Assembly' : 'Detail'}</span>
               </div>
 
-              <h3 className="text-2xl font-bold mb-4 leading-tight">
-                {file.title}
-              </h3>
+              {/* Title - split into 2 lines */}
+              <div className="mt-auto leading-[1.1] min-h-[3.5rem] md:min-h-[4rem] flex flex-col justify-end">
+                <h3 className="text-xl md:text-2xl font-semibold tracking-tight text-neutral-800 dark:text-neutral-200">
+                  {file.title.split(" ").slice(0, 2).join(" ")}
+                </h3>
+                <p className="text-xl md:text-2xl font-semibold tracking-tight text-neutral-800 dark:text-neutral-200 min-h-[1.75rem] md:min-h-[2rem]">
+                  {file.title.split(" ").slice(2).join(" ")}
+                </p>
+              </div>
 
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">
-                  {formatDistanceToNow(new Date(file.createdAt), { addSuffix: true })}
-                  {file.authorName && ` by ${file.authorName}`}
-                </span>
-                <span className="font-medium">
-                  {itemCount} file{itemCount !== 1 ? 's' : ''}
-                </span>
+              {/* Footer */}
+              <div className="mt-2 flex items-center justify-between text-xs opacity-80">
+                <span>{footerMeta(file)}</span>
+                <span className="opacity-80">{itemCount} files</span>
               </div>
             </div>
           );
@@ -239,57 +290,73 @@ export default function DetailLibraryViewer({ workspaceId }: DetailLibraryViewer
     if (!selectedFile) return null;
 
     return (
-      <div className="space-y-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleBackToCards}
-          className="mb-4"
-        >
-          <ChevronLeft className="h-4 w-4 mr-1" />
-          Back to {selectedFile.title}
-        </Button>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between h-10">
+          <button
+            onClick={handleBackToCards}
+            className="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 border-black/10"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            <span>Back</span>
+          </button>
+          <div className="text-sm text-muted-foreground">{filteredItems.length} items</div>
+        </div>
 
         <div className="space-y-2">
           {filteredItems.map((item, index) => {
             const isActive = item.id === selectedItemId;
+            const isPDF = item.mimetype === 'application/pdf';
             
             return (
               <div
                 key={item.id}
-                className={cn(
-                  "p-4 rounded-xl border border-border cursor-pointer transition-all hover:bg-accent/50 group",
-                  isActive && "bg-accent"
-                )}
+                role="button"
+                tabIndex={0}
                 onClick={() => setSelectedItemId(item.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setSelectedItemId(item.id);
+                  }
+                }}
+                className={cn(
+                  "group relative w-full flex items-center gap-3 rounded-xl border px-2.5 py-2 text-left transition-colors cursor-pointer",
+                  isActive
+                    ? "bg-neutral-50 dark:bg-neutral-800/60 border-black/10"
+                    : "hover:bg-neutral-50 dark:hover:bg-neutral-800/40 border-black/10"
+                )}
               >
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 border-2 border-dashed border-border rounded-lg flex-shrink-0" />
-                  
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-sm truncate">
-                      Detail {String(index + 1).padStart(2, '0')}
-                    </h4>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {item.mimetype} • {(item.filesize / 1024).toFixed(1)} KB
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(item.updatedAt), { addSuffix: true })}
-                    </p>
-                  </div>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteItem(item.id);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                {/* Thumbnail */}
+                <div className="h-10 w-8 rounded-md border border-dashed border-black/10 bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center shrink-0">
+                  {isPDF ? (
+                    <FileText className="h-4 w-4 opacity-70" />
+                  ) : (
+                    <ImageIcon className="h-4 w-4 opacity-70" />
+                  )}
                 </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium">
+                    Detail {String(index + 1).padStart(2, '0')}
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="truncate">
+                      {isPDF ? 'PDF' : 'IMAGE'} • {formatBytes(item.filesize)} • {formatDistanceToNow(new Date(item.updatedAt), { addSuffix: true })}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Hover delete */}
+                <button
+                  aria-label="Delete"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteItem(item.id);
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md opacity-0 group-hover:opacity-100 transition border border-black/10 bg-white/80 hover:bg-white dark:bg-neutral-900/70"
+                >
+                  <Trash className="h-4 w-4 opacity-70" />
+                </button>
               </div>
             );
           })}
@@ -304,7 +371,7 @@ export default function DetailLibraryViewer({ workspaceId }: DetailLibraryViewer
     if (!previewFile) {
       return (
         <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-          Select a detail to preview
+          Select a file to preview
         </div>
       );
     }
@@ -312,9 +379,9 @@ export default function DetailLibraryViewer({ workspaceId }: DetailLibraryViewer
     const isPDF = previewFile.mimetype === 'application/pdf';
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-3">
         {/* Viewer */}
-        <div className="aspect-[4/3] bg-muted rounded-xl overflow-hidden border border-border">
+        <div className="aspect-[4/3] bg-muted rounded-xl overflow-hidden border border-black/10">
           {fileUrl ? (
             isPDF ? (
               <SimplePDFViewer file={{ url: fileUrl, name: previewFile.filename }} />
@@ -328,93 +395,80 @@ export default function DetailLibraryViewer({ workspaceId }: DetailLibraryViewer
           )}
         </div>
 
-        {/* File Properties - only show for main file, not items */}
-        {selectedFile && !selectedItem && (
-          <div className="space-y-4">
-            {/* Title */}
-            <div>
-              <label className="text-xs font-medium text-muted-foreground">Title</label>
-              {editingTitle ? (
-                <Input
-                  value={tempTitle}
-                  onChange={(e) => setTempTitle(e.target.value)}
-                  onBlur={handleUpdateTitle}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleUpdateTitle();
-                    if (e.key === 'Escape') setEditingTitle(false);
-                  }}
-                  autoFocus
-                  className="mt-1"
-                />
-              ) : (
-                <div
-                  className="mt-1 p-2 rounded-lg hover:bg-accent cursor-pointer transition-colors"
-                  onClick={() => {
-                    setTempTitle(selectedFile.title);
-                    setEditingTitle(true);
-                  }}
-                >
-                  <p className="text-sm font-medium">{selectedFile.title}</p>
-                </div>
-              )}
+        {/* File Properties */}
+        {selectedFile && (
+          <div className="rounded-2xl border border-black/10 bg-white/60 p-4 backdrop-blur-sm dark:bg-neutral-900/60">
+            <div className="mb-3 flex items-center justify-between">
+              <h4 className="text-sm font-medium text-muted-foreground">File Properties</h4>
             </div>
+            <div className="grid grid-cols-1 md:[grid-template-columns:1.5fr_1fr] gap-6 md:gap-8">
+              {/* Left column */}
+              <dl className="grid grid-cols-3 gap-y-3 text-sm">
+                <dt className="opacity-60">Name</dt>
+                <dd className="col-span-2">
+                  <textarea
+                    value={tempTitle}
+                    onChange={(e) => setTempTitle(e.target.value)}
+                    onBlur={handleUpdateTitle}
+                    onFocus={() => setEditingTitle(true)}
+                    rows={1}
+                    className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm font-medium focus:bg-white focus:shadow-sm bg-white/70 dark:bg-neutral-900/60 resize-none overflow-hidden"
+                  />
+                </dd>
 
-            {/* Description */}
-            <div>
-              <label className="text-xs font-medium text-muted-foreground">Description</label>
-              {editingDescription ? (
-                <Textarea
-                  value={tempDescription}
-                  onChange={(e) => setTempDescription(e.target.value)}
-                  onBlur={handleUpdateDescription}
-                  placeholder="Add a description..."
-                  rows={3}
-                  autoFocus
-                  className="mt-1"
-                />
-              ) : (
-                <div
-                  className="mt-1 p-2 rounded-lg hover:bg-accent cursor-pointer transition-colors min-h-[60px]"
-                  onClick={() => {
-                    setTempDescription(selectedFile.description || '');
-                    setEditingDescription(true);
-                  }}
-                >
-                  <p className="text-sm text-muted-foreground">
-                    {selectedFile.description || 'Click to add description...'}
-                  </p>
-                </div>
-              )}
-            </div>
+                <dt className="opacity-60">Description</dt>
+                <dd className="col-span-2">
+                  <textarea
+                    value={tempDescription}
+                    onChange={(e) => setTempDescription(e.target.value)}
+                    onBlur={handleUpdateDescription}
+                    onFocus={() => setEditingDescription(true)}
+                    rows={4}
+                    placeholder="Add a description..."
+                    className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm focus:bg-white focus:shadow-sm bg-white/70 dark:bg-neutral-900/60"
+                  />
+                </dd>
+              </dl>
 
-            {/* Author */}
-            {selectedFile.authorName && (
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">Author</label>
-                <p className="mt-1 text-sm">{selectedFile.authorName}</p>
-              </div>
-            )}
+              {/* Right column */}
+              <dl className="grid grid-cols-3 gap-y-3 text-sm">
+                <dt className="opacity-60">Type</dt>
+                <dd className="col-span-2">{isPDF ? 'PDF' : 'IMAGE'}</dd>
 
-            {/* Metadata */}
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <span>{(selectedFile.filesize / 1024).toFixed(1)} KB</span>
-              <span>•</span>
-              <span>{selectedFile.mimetype}</span>
-              <span>•</span>
-              <span>{formatDistanceToNow(new Date(selectedFile.updatedAt), { addSuffix: true })}</span>
+                <dt className="opacity-60">Size</dt>
+                <dd className="col-span-2">{formatBytes(previewFile.filesize)}</dd>
+
+                <dt className="opacity-60">Updated</dt>
+                <dd className="col-span-2">{formatDistanceToNow(new Date(previewFile.updatedAt), { addSuffix: true })}</dd>
+
+                <dt className="opacity-60">Author</dt>
+                <dd className="col-span-2">{selectedFile.authorName || '—'}</dd>
+
+                <dt className="opacity-60">Color</dt>
+                <dd className="col-span-2">
+                  <span className={cn(
+                    "inline-flex items-center gap-2 rounded-md border px-2 py-0.5 text-xs text-black/70 dark:text-white/80 border-black/10",
+                    swatchBg[selectedFile.colorTag as keyof typeof swatchBg] || "bg-neutral-200"
+                  )}>
+                    <span className="h-2 w-2 rounded-full bg-current" />
+                    <span className="capitalize">{selectedFile.colorTag}</span>
+                  </span>
+                </dd>
+              </dl>
             </div>
 
             {/* Color Swatches */}
-            <div>
-              <label className="text-xs font-medium text-muted-foreground block mb-2">Color Tag</label>
-              <div className="flex gap-2">
+            <div className="mt-4 pt-4 border-t border-black/10">
+              <div className="grid grid-cols-6 gap-2">
                 {Object.keys(swatchBg).map((color) => (
                   <button
                     key={color}
+                    type="button"
+                    title={color}
                     className={cn(
-                      "w-8 h-8 rounded-full transition-all",
+                      "h-7 w-full rounded-md border border-black/10",
                       swatchBg[color as keyof typeof swatchBg],
-                      selectedFile.colorTag === color && "ring-2 ring-offset-2 ring-foreground"
+                      selectedFile.colorTag === color && "ring-2 ring-black/30 dark:ring-white/30"
                     )}
                     onClick={() => handleColorChange(color)}
                   />
@@ -422,16 +476,16 @@ export default function DetailLibraryViewer({ workspaceId }: DetailLibraryViewer
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="flex-1">
-                <Upload className="h-4 w-4 mr-2" />
-                Upload
-              </Button>
-              <Button variant="outline" size="sm" className="flex-1">
-                <Download className="h-4 w-4 mr-2" />
-                Download
-              </Button>
+            {/* Action buttons */}
+            <div className="mt-4 pt-4 border-t border-black/10 flex gap-2">
+              <button className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 border-black/10">
+                <Upload className="h-4 w-4" />
+                <span>Upload</span>
+              </button>
+              <button className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 border-black/10">
+                <Download className="h-4 w-4" />
+                <span>Download</span>
+              </button>
             </div>
           </div>
         )}
@@ -440,63 +494,73 @@ export default function DetailLibraryViewer({ workspaceId }: DetailLibraryViewer
   };
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2 text-sm">
-          <span className="font-medium">Detail Library</span>
-          {selectedCategory && (
-            <>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">{selectedCategory.name}</span>
-            </>
+    <div className="w-full mx-auto max-w-7xl p-4 md:p-6">
+      {/* Breadcrumbs + Search */}
+      <div className="mb-4 md:mb-6">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center text-sm text-muted-foreground gap-1">
+            <span className="font-medium">Detail Library</span>
+            <ChevronRight className="h-4 w-4 opacity-60" />
+            <span>{selectedCategory?.name || 'All'}</span>
+            {selectedFile && (
+              <>
+                <ChevronRight className="h-4 w-4 opacity-60" />
+                <span>{selectedFile.title}</span>
+              </>
+            )}
+          </div>
+          {selectedFileId && (
+            <div role="search" className="relative w-48 sm:w-56 md:w-64 h-8">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 opacity-70" />
+              <label htmlFor="lib-search" className="sr-only">Search</label>
+              <input
+                id="lib-search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search details..."
+                className="h-8 w-full rounded-xl border border-black/10 bg-white/60 pl-7 pr-3 text-xs outline-none ring-0 placeholder:opacity-60 focus:bg-white focus:shadow-sm dark:bg-neutral-900/60 dark:focus:bg-neutral-900"
+              />
+            </div>
           )}
         </div>
-        
-        {selectedFileId && (
-          <div className="relative w-48">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search details..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 text-sm"
-            />
-          </div>
-        )}
       </div>
 
-      {/* Category Tabs */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+      {/* Folder Tabs */}
+      <div className="flex flex-wrap gap-3 mb-6">
         {categories?.map((category) => (
-          <Button
+          <button
             key={category.id}
-            variant={selectedCategoryId === category.id ? 'default' : 'outline'}
-            size="sm"
             onClick={() => {
               setSelectedCategoryId(category.id);
               setSelectedFileId(null);
               setSelectedItemId(null);
-              setSearchQuery('');
             }}
-            className="rounded-xl whitespace-nowrap"
+            className={cn(
+              "inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm transition-all",
+              selectedCategoryId === category.id
+                ? "border-black/10 bg-white shadow-sm dark:bg-neutral-900"
+                : "border-black/10 bg-neutral-50 hover:bg-white dark:bg-neutral-800/50 dark:hover:bg-neutral-800"
+            )}
           >
-            {category.name}
-          </Button>
+            <Folder className="h-4 w-4 opacity-70" />
+            <span>{category.name}</span>
+          </button>
         ))}
       </div>
 
-      {/* Main Content Grid */}
-      <div className="flex-1 grid grid-cols-12 gap-6 overflow-hidden">
-        {/* Left Panel - Cards or Detail List */}
-        <div className="col-span-12 lg:col-span-5 overflow-y-auto">
-          {selectedFileId ? renderDetailList() : renderCardsGrid()}
+      {/* Main Content */}
+      <div className="grid grid-cols-12 gap-6">
+        {/* LEFT: Cards or Detail List */}
+        <div className={cn("col-span-12", selectedFile ? "lg:col-span-5" : "lg:col-span-12")}>
+          {!selectedFile ? renderCardsGrid() : renderDetailList()}
         </div>
 
-        {/* Right Panel - Preview */}
-        <div className="col-span-12 lg:col-span-7 overflow-y-auto">
-          {renderPreviewPanel()}
-        </div>
+        {/* RIGHT: Preview Panel - hidden when no file selected */}
+        {selectedFile && (
+          <div className="col-span-12 lg:col-span-7 space-y-3">
+            {renderPreviewPanel()}
+          </div>
+        )}
       </div>
 
       {/* Edit Modal */}
