@@ -78,23 +78,26 @@ const DetailLibraryViewer: React.FC<DetailLibraryViewerProps> = () => {
     [categories, dbFiles]
   );
 
-  const activeFolder = useMemo(
-    () => folders.find((f) => f.id === activeFolderId) || folders[0],
-    [folders, activeFolderId]
-  );
+  const activeFolder = useMemo(() => {
+    const found = folders.find((f) => f.id === activeFolderId);
+    if (found) return found;
+    if (folders.length > 0) return folders[0];
+    // Return empty folder structure as fallback
+    return { id: '', title: '', files: [] };
+  }, [folders, activeFolderId]);
 
   // Flatten all files across folders for global search
   const allFiles: FlatFile[] = useMemo(
     () =>
       folders.flatMap((f) =>
-        f.files.map((fl) => ({ ...fl, folderId: f.id, folderTitle: f.title }))
+        (f.files || []).map((fl) => ({ ...fl, folderId: f.id, folderTitle: f.title }))
       ),
     [folders]
   );
 
   // Identify the selected file inside the current active folder
   const selectedFile = useMemo(
-    () => activeFolder.files.find((f) => f.id === selectedId) || null,
+    () => (activeFolder.files || []).find((f) => f.id === selectedId) || null,
     [activeFolder, selectedId]
   );
 
@@ -203,7 +206,7 @@ const DetailLibraryViewer: React.FC<DetailLibraryViewerProps> = () => {
   );
 
   // Card grid shows current folder
-  const filesToShow: (FileItem | FlatFile)[] = activeFolder.files;
+  const filesToShow: (FileItem | FlatFile)[] = activeFolder.files || [];
 
   const placeholder = "Search details...";
 
@@ -292,7 +295,7 @@ const DetailLibraryViewer: React.FC<DetailLibraryViewerProps> = () => {
                     setSelectedDetailId(null);
                   }}
                   onOpenEdit={(f, folderId) => setEditModal({ open: true, file: f, folderId })}
-                  folderCount={activeFolder.files.length}
+                  folderCount={(activeFolder.files || []).length}
                 />
               ))}
               {filesToShow.length === 0 && (
