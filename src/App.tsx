@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { UserProvider } from "./contexts/UserContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { NewAppLayout } from "./components/layout/NewAppLayout";
@@ -122,6 +122,15 @@ const App = () => (
                   <NewAppLayout>
                     <DetailLibraryPage />
                   </NewAppLayout>
+                </ProtectedRoute>
+              }
+            />
+            {/* Redirect old workspace-based route to new top-level route */}
+            <Route
+              path="/workspace/:workspaceId/detail-library"
+              element={
+                <ProtectedRoute>
+                  <Navigate to="/detail-library" replace />
                 </ProtectedRoute>
               }
             />
