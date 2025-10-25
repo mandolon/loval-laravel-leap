@@ -17,11 +17,24 @@ export interface DetailLibraryCategory {
   updatedAt: string;
 }
 
+export interface DetailLibrarySubfolder {
+  id: string;
+  shortId: string;
+  workspaceId: string;
+  categoryId: string;
+  name: string;
+  sortOrder: number;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface DetailLibraryFile {
   id: string;
   shortId: string;
   workspaceId: string;
   categoryId: string;
+  subfolderId?: string;
   title: string;
   filename: string;
   filesize: number;

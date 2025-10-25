@@ -257,6 +257,7 @@ export type Database = {
           mimetype: string
           short_id: string
           storage_path: string
+          subfolder_id: string | null
           title: string
           updated_at: string | null
           uploaded_by: string
@@ -276,6 +277,7 @@ export type Database = {
           mimetype: string
           short_id: string
           storage_path: string
+          subfolder_id?: string | null
           title: string
           updated_at?: string | null
           uploaded_by: string
@@ -295,6 +297,7 @@ export type Database = {
           mimetype?: string
           short_id?: string
           storage_path?: string
+          subfolder_id?: string | null
           title?: string
           updated_at?: string | null
           uploaded_by?: string
@@ -306,6 +309,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "detail_library_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "detail_library_files_subfolder_id_fkey"
+            columns: ["subfolder_id"]
+            isOneToOne: false
+            referencedRelation: "detail_library_subfolders"
             referencedColumns: ["id"]
           },
           {
@@ -363,6 +373,57 @@ export type Database = {
             columns: ["parent_file_id"]
             isOneToOne: false
             referencedRelation: "detail_library_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      detail_library_subfolders: {
+        Row: {
+          category_id: string
+          created_at: string | null
+          created_by: string
+          id: string
+          name: string
+          short_id: string
+          sort_order: number
+          updated_at: string | null
+          workspace_id: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string | null
+          created_by: string
+          id?: string
+          name: string
+          short_id?: string
+          sort_order?: number
+          updated_at?: string | null
+          workspace_id: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          name?: string
+          short_id?: string
+          sort_order?: number
+          updated_at?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "detail_library_subfolders_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "detail_library_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "detail_library_subfolders_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]

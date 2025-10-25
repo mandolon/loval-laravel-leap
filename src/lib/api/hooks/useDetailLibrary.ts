@@ -1,14 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type { DetailLibraryCategory, DetailLibraryFile, DetailLibraryItem, DetailColorTag } from '../types';
+import type { DetailLibraryCategory, DetailLibrarySubfolder, DetailLibraryFile, DetailLibraryItem, DetailColorTag } from '../types';
 import { toast } from 'sonner';
 
 // Query Keys
 const detailLibraryKeys = {
   all: ['detail-library'] as const,
   categories: (workspaceId: string) => [...detailLibraryKeys.all, 'categories', workspaceId] as const,
-  files: (workspaceId: string, categoryId?: string) => 
-    [...detailLibraryKeys.all, 'files', workspaceId, categoryId] as const,
+  subfolders: (workspaceId: string, categoryId?: string) => 
+    [...detailLibraryKeys.all, 'subfolders', workspaceId, categoryId] as const,
+  files: (workspaceId: string, categoryId?: string, subfolderId?: string) => 
+    [...detailLibraryKeys.all, 'files', workspaceId, categoryId, subfolderId] as const,
   items: (parentFileId: string) => [...detailLibraryKeys.all, 'items', parentFileId] as const,
 };
 
@@ -41,10 +43,44 @@ export function useDetailLibraryCategories(workspaceId: string) {
   });
 }
 
-// Fetch files by category
-export function useDetailLibraryFiles(workspaceId: string, categoryId?: string) {
+// Fetch subfolders by category
+export function useDetailLibrarySubfolders(workspaceId: string, categoryId?: string) {
   return useQuery({
-    queryKey: detailLibraryKeys.files(workspaceId, categoryId),
+    queryKey: detailLibraryKeys.subfolders(workspaceId, categoryId),
+    queryFn: async () => {
+      let query = supabase
+        .from('detail_library_subfolders')
+        .select('*')
+        .eq('workspace_id', workspaceId);
+
+      if (categoryId) {
+        query = query.eq('category_id', categoryId);
+      }
+
+      const { data, error } = await query.order('sort_order', { ascending: true });
+
+      if (error) throw error;
+      
+      return (data || []).map(subfolder => ({
+        id: subfolder.id,
+        shortId: subfolder.short_id,
+        workspaceId: subfolder.workspace_id,
+        categoryId: subfolder.category_id,
+        name: subfolder.name,
+        sortOrder: subfolder.sort_order,
+        createdBy: subfolder.created_by,
+        createdAt: subfolder.created_at,
+        updatedAt: subfolder.updated_at,
+      })) as DetailLibrarySubfolder[];
+    },
+    enabled: !!workspaceId,
+  });
+}
+
+// Fetch files by category and/or subfolder
+export function useDetailLibraryFiles(workspaceId: string, categoryId?: string, subfolderId?: string) {
+  return useQuery({
+    queryKey: detailLibraryKeys.files(workspaceId, categoryId, subfolderId),
     queryFn: async () => {
       let query = supabase
         .from('detail_library_files')
@@ -56,6 +92,13 @@ export function useDetailLibraryFiles(workspaceId: string, categoryId?: string) 
         query = query.eq('category_id', categoryId);
       }
 
+      if (subfolderId) {
+        query = query.eq('subfolder_id', subfolderId);
+      } else if (subfolderId === null) {
+        // Explicitly filter for root files (no subfolder)
+        query = query.is('subfolder_id', null);
+      }
+
       const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -65,6 +108,7 @@ export function useDetailLibraryFiles(workspaceId: string, categoryId?: string) 
         shortId: file.short_id,
         workspaceId: file.workspace_id,
         categoryId: file.category_id,
+        subfolderId: file.subfolder_id,
         title: file.title,
         filename: file.filename,
         filesize: file.filesize,
@@ -117,7 +161,7 @@ export function useDetailLibraryItems(parentFileId?: string) {
 }
 
 // Upload detail file
-export function useUploadDetailFile(workspaceId: string, categoryId: string) {
+export function useUploadDetailFile(workspaceId: string, categoryId: string, subfolderId?: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -165,6 +209,7 @@ export function useUploadDetailFile(workspaceId: string, categoryId: string) {
         .insert([{
           workspace_id: workspaceId,
           category_id: categoryId,
+          subfolder_id: subfolderId || null,
           title,
           filename: firstFile.name,
           filesize: firstFile.size,
@@ -212,7 +257,7 @@ export function useUploadDetailFile(workspaceId: string, categoryId: string) {
       return fileRecord;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: detailLibraryKeys.files(workspaceId, categoryId) });
+      queryClient.invalidateQueries({ queryKey: detailLibraryKeys.all });
       toast.success('File(s) uploaded successfully');
     },
     onError: (error: Error) => {
@@ -231,16 +276,19 @@ export function useUpdateDetailFile() {
       title,
       description,
       authorName,
+      subfolderId,
     }: {
       fileId: string;
       title?: string;
       description?: string;
       authorName?: string;
+      subfolderId?: string | null;
     }) => {
       const updates: any = {};
       if (title !== undefined) updates.title = title;
       if (description !== undefined) updates.description = description;
       if (authorName !== undefined) updates.author_name = authorName;
+      if (subfolderId !== undefined) updates.subfolder_id = subfolderId;
 
       const { data, error } = await supabase
         .from('detail_library_files')
@@ -357,6 +405,114 @@ export function useDeleteDetailFile() {
     },
     onError: (error: Error) => {
       toast.error(`Delete failed: ${error.message}`);
+    },
+  });
+}
+
+// Create subfolder
+export function useCreateDetailLibrarySubfolder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      workspaceId,
+      categoryId,
+      name,
+    }: {
+      workspaceId: string;
+      categoryId: string;
+      name: string;
+    }) => {
+      const user = (await supabase.auth.getUser()).data.user;
+      if (!user) throw new Error('User not authenticated');
+
+      const { data, error } = await supabase
+        .from('detail_library_subfolders')
+        .insert([{
+          workspace_id: workspaceId,
+          category_id: categoryId,
+          name,
+          created_by: user.id,
+          short_id: '',
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: detailLibraryKeys.all });
+      toast.success('Subfolder created successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to create subfolder: ${error.message}`);
+    },
+  });
+}
+
+// Update subfolder
+export function useUpdateDetailLibrarySubfolder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      subfolderId,
+      name,
+    }: {
+      subfolderId: string;
+      name: string;
+    }) => {
+      const { data, error } = await supabase
+        .from('detail_library_subfolders')
+        .update({ name })
+        .eq('id', subfolderId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: detailLibraryKeys.all });
+      toast.success('Subfolder renamed successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to rename subfolder: ${error.message}`);
+    },
+  });
+}
+
+// Delete subfolder
+export function useDeleteDetailLibrarySubfolder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ subfolderId }: { subfolderId: string }) => {
+      // Check if subfolder has files
+      const { data: files } = await supabase
+        .from('detail_library_files')
+        .select('id')
+        .eq('subfolder_id', subfolderId)
+        .is('deleted_at', null);
+
+      if (files && files.length > 0) {
+        throw new Error('Cannot delete subfolder with files. Please move or delete files first.');
+      }
+
+      const { error } = await supabase
+        .from('detail_library_subfolders')
+        .delete()
+        .eq('id', subfolderId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: detailLibraryKeys.all });
+      toast.success('Subfolder deleted successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to delete subfolder: ${error.message}`);
     },
   });
 }

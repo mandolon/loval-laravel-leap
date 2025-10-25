@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useUploadDetailFile, useUpdateDetailFile } from '@/lib/api/hooks/useDetailLibrary';
+import { useUploadDetailFile, useUpdateDetailFile, useDetailLibrarySubfolders } from '@/lib/api/hooks/useDetailLibrary';
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -21,6 +28,7 @@ interface CardEditModalProps {
   file: any;
   workspaceId: string;
   categoryId: string;
+  subfolderId?: string | null;
 }
 
 const swatchBg = {
@@ -38,14 +46,19 @@ export default function CardEditModal({
   file,
   workspaceId,
   categoryId,
+  subfolderId,
 }: CardEditModalProps) {
   const [title, setTitle] = useState(file?.title || '');
   const [description, setDescription] = useState(file?.description || '');
   const [authorName, setAuthorName] = useState(file?.authorName || '');
   const [colorTag, setColorTag] = useState(file?.colorTag || 'slate');
+  const [selectedSubfolderId, setSelectedSubfolderId] = useState<string | null>(
+    file?.subfolderId || subfolderId || null
+  );
   const [uploading, setUploading] = useState(false);
 
-  const uploadMutation = useUploadDetailFile(workspaceId, categoryId);
+  const { data: subfolders = [] } = useDetailLibrarySubfolders(workspaceId, categoryId);
+  const uploadMutation = useUploadDetailFile(workspaceId, categoryId, selectedSubfolderId || undefined);
   const updateMutation = useUpdateDetailFile();
 
   const handleSave = async () => {
@@ -57,6 +70,7 @@ export default function CardEditModal({
         title: title.trim(),
         description: description.trim(),
         authorName: authorName.trim(),
+        subfolderId: selectedSubfolderId,
       });
       
       toast.success('Details updated successfully');
@@ -132,6 +146,27 @@ export default function CardEditModal({
               onChange={(e) => setAuthorName(e.target.value)}
               placeholder="Enter author name..."
             />
+          </div>
+
+          {/* Subfolder Selection */}
+          <div>
+            <Label htmlFor="subfolder">Subfolder</Label>
+            <Select
+              value={selectedSubfolderId || 'root'}
+              onValueChange={(value) => setSelectedSubfolderId(value === 'root' ? null : value)}
+            >
+              <SelectTrigger id="subfolder">
+                <SelectValue placeholder="Select subfolder..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="root">Root (No subfolder)</SelectItem>
+                {subfolders.map((subfolder) => (
+                  <SelectItem key={subfolder.id} value={subfolder.id}>
+                    {subfolder.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Color Swatches */}
