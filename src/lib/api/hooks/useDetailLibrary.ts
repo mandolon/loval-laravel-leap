@@ -256,6 +256,135 @@ export function useUploadDetailFile(categoryId: string, subfolderId?: string) {
   });
 }
 
+// Create detail card (placeholder file)
+export function useCreateDetailCard(categoryId: string, subfolderId?: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      title,
+      colorTag,
+      description,
+      authorName,
+    }: {
+      title: string;
+      colorTag: DetailColorTag;
+      description?: string;
+      authorName?: string;
+    }) => {
+      const user = (await supabase.auth.getUser()).data.user;
+      if (!user) throw new Error('User not authenticated');
+
+      const { data, error } = await supabase
+        .from('detail_library_files')
+        .insert([{
+          category_id: categoryId,
+          subfolder_id: subfolderId || null,
+          title,
+          filename: `${title.toLowerCase().replace(/\s+/g, '-')}.placeholder`,
+          filesize: 0,
+          mimetype: 'application/octet-stream',
+          storage_path: '',
+          color_tag: colorTag,
+          description,
+          author_name: authorName,
+          uploaded_by: user.id,
+          short_id: '',
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: detailLibraryKeys.all });
+      toast.success('Card created successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to create card: ${error.message}`);
+    },
+  });
+}
+
+// Upload detail item to existing card
+export function useUploadDetailItem(parentFileId?: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      parentFileId: pid,
+      file,
+      title,
+    }: {
+      parentFileId: string;
+      file: File;
+      title: string;
+    }) => {
+      const actualParentId = pid || parentFileId;
+      if (!actualParentId) throw new Error('Parent file ID required');
+
+      const { data: parentFile } = await supabase
+        .from('detail_library_files')
+        .select('category_id')
+        .eq('id', actualParentId)
+        .single();
+
+      if (!parentFile) throw new Error('Parent file not found');
+
+      const { data: category } = await supabase
+        .from('detail_library_categories')
+        .select('slug')
+        .eq('id', parentFile.category_id)
+        .single();
+
+      if (!category) throw new Error('Category not found');
+
+      const storagePath = `${category.slug}/${actualParentId}/${file.name}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('detail-library')
+        .upload(storagePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: existingItems } = await supabase
+        .from('detail_library_items')
+        .select('sort_order')
+        .eq('parent_file_id', actualParentId)
+        .order('sort_order', { ascending: false })
+        .limit(1);
+
+      const nextSortOrder = (existingItems?.[0]?.sort_order || 0) + 1;
+
+      const { data, error } = await supabase
+        .from('detail_library_items')
+        .insert([{
+          parent_file_id: actualParentId,
+          title,
+          filename: file.name,
+          filesize: file.size,
+          mimetype: file.type,
+          storage_path: storagePath,
+          sort_order: nextSortOrder,
+          short_id: '',
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: detailLibraryKeys.all });
+      toast.success('Detail uploaded successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Upload failed: ${error.message}`);
+    },
+  });
+}
+
 // Update file metadata
 export function useUpdateDetailFile() {
   const queryClient = useQueryClient();

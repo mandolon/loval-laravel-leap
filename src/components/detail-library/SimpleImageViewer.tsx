@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { logger } from '@/utils/logger';
 import { getOptimizedS3Url, getBestImageFormat } from '@/utils/imageUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SimpleImageViewerProps {
   file: any;
@@ -16,8 +17,25 @@ const SimpleImageViewer = ({ file, className = '' }: SimpleImageViewerProps) => 
   const [error, setError] = useState<string | null>(null);
   const [naturalDimensions, setNaturalDimensions] = useState({ width: 0, height: 0 });
   const [fitToScreen, setFitToScreen] = useState(true);
+  const [signedUrl, setSignedUrl] = useState<string>('');
   
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Fetch signed URL for storage files
+  useEffect(() => {
+    async function getUrl() {
+      if (file && 'storagePath' in file && file.storagePath) {
+        const { data } = await supabase.storage
+          .from('detail-library')
+          .createSignedUrl(file.storagePath, 3600);
+        
+        if (data?.signedUrl) {
+          setSignedUrl(data.signedUrl);
+        }
+      }
+    }
+    getUrl();
+  }, [file]);
 
   // Helpers: compute rotation-aware fit-to-height scale and max vertical offset
   const getFitScale = useCallback(() => {
@@ -62,11 +80,15 @@ const SimpleImageViewer = ({ file, className = '' }: SimpleImageViewerProps) => 
     return Math.max(-maxOffsetPreScale, Math.min(x, maxOffsetPreScale));
   }, [naturalDimensions, rotation]);
 
-  // Derive image URL: prefer explicit remote url, otherwise fall back to local sample directory
+  // Derive image URL: prefer signed URL, then explicit remote url, otherwise fall back to local sample directory
   // Optimize S3 URLs with WebP and proper sizing
   const fallbackChain = useMemo(() => {
     if (!file) return [];
     const urls = [];
+    
+    // Prefer signed URL from storage
+    if (signedUrl) urls.push(signedUrl);
+    
     if (file.url) {
       // Optimize S3 URLs with WebP format and quality settings
       const optimized = getOptimizedS3Url(file.url, {
@@ -84,7 +106,7 @@ const SimpleImageViewer = ({ file, className = '' }: SimpleImageViewerProps) => 
       'https://picsum.photos/seed/fallback/1200/800'
     );
     return Array.from(new Set(urls));
-  }, [file]);
+  }, [file, signedUrl]);
 
   const [fallbackIndex, setFallbackIndex] = useState(0);
   useEffect(() => { setFallbackIndex(0); }, [file]);

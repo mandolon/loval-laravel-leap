@@ -1,10 +1,23 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronRight, ChevronLeft, Download, Upload, Search, Folder } from 'lucide-react';
-import { FolderT, FileItem, DetailItem, MOCK_FOLDERS, generateDetailList, filterByQuery, clsx, swatchBg } from '@/lib/detail-library-utils';
+import { FolderT, FileItem, DetailItem, generateDetailList, filterByQuery, clsx, swatchBg, formatBytes, baseTitleFromName } from '@/lib/detail-library-utils';
 import CardButton from './CardButton';
 import DetailRowButton from './DetailRowButton';
 import CardEditModal from './CardEditModal';
 import SimpleImageViewer from './SimpleImageViewer';
+import CreateCardDialog from './CreateCardDialog';
+import { 
+  useDetailLibraryCategories,
+  useDetailLibraryFiles,
+  useDetailLibraryItems,
+  useCreateDetailCard,
+  useUploadDetailItem,
+  useUpdateDetailFile,
+  useUpdateDetailFileColor,
+} from '@/lib/api/hooks/useDetailLibrary';
+import { DetailColorTag } from '@/lib/api/types';
+import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
 
 interface DetailLibraryViewerProps {}
 
@@ -12,22 +25,61 @@ interface DetailLibraryViewerProps {}
 type FlatFile = FileItem & { folderId: string; folderTitle: string };
 
 const DetailLibraryViewer: React.FC<DetailLibraryViewerProps> = () => {
-  const [folders, setFolders] = useState<FolderT[]>(MOCK_FOLDERS);
-  const [activeFolderId, setActiveFolderId] = useState(MOCK_FOLDERS[0].id);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedDetailId, setSelectedDetailId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-
   const [editModal, setEditModal] = useState<{ open: boolean; file: FileItem | null; folderId: string | null }>({ open: false, file: null, folderId: null });
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const [inlineTitle, setInlineTitle] = useState("");
   const [inlineDesc, setInlineDesc] = useState("");
-  // Store custom uploaded details per parent file
-  const [customDetails, setCustomDetails] = useState<Record<string, DetailItem[]>>({});
+  const [createCardOpen, setCreateCardOpen] = useState(false);
+
+  // Query hooks
+  const { data: categories = [], isLoading: categoriesLoading } = useDetailLibraryCategories();
+  const [activeFolderId, setActiveFolderId] = useState<string>('');
+  
+  useEffect(() => {
+    if (categories.length > 0 && !activeFolderId) {
+      setActiveFolderId(categories[0].id);
+    }
+  }, [categories, activeFolderId]);
+
+  const { data: dbFiles = [], isLoading: filesLoading } = useDetailLibraryFiles(
+    activeFolderId === 'all' ? undefined : activeFolderId,
+    undefined
+  );
+  const { data: dbItems = [] } = useDetailLibraryItems(selectedId || undefined);
+
+  // Mutation hooks
+  const createCardMutation = useCreateDetailCard(activeFolderId);
+  const uploadItemMutation = useUploadDetailItem(selectedId || undefined);
+  const updateFileMutation = useUpdateDetailFile();
+  const updateColorMutation = useUpdateDetailFileColor();
+
+  // Transform categories to FolderT structure
+  const folders = useMemo(() => 
+    categories.map(cat => ({
+      id: cat.id,
+      title: cat.name,
+      files: dbFiles
+        .filter(f => f.categoryId === cat.id)
+        .map(f => ({
+          id: f.id,
+          title: f.title,
+          type: f.mimetype.startsWith('image/') ? 'image' as const : 'pdf' as const,
+          updated: formatDistanceToNow(new Date(f.updatedAt || f.createdAt), { addSuffix: true }),
+          size: formatBytes(f.filesize),
+          author: f.authorName || 'Unknown',
+          description: f.description || '',
+          color: f.colorTag as FileItem['color'],
+        }))
+    })),
+    [categories, dbFiles]
+  );
 
   const activeFolder = useMemo(
-    () => folders.find((f) => f.id === activeFolderId)!,
+    () => folders.find((f) => f.id === activeFolderId) || folders[0],
     [folders, activeFolderId]
   );
 
@@ -56,17 +108,23 @@ const DetailLibraryViewer: React.FC<DetailLibraryViewerProps> = () => {
   const detailList = useMemo(() => {
     if (!selectedFile) return [];
     const generated = generateDetailList(selectedFile);
-    const custom = customDetails[selectedFile.id] || [];
+    const custom: DetailItem[] = dbItems.map(item => ({
+      id: item.id,
+      title: item.title,
+      type: item.mimetype.startsWith('image/') ? 'image' : 'pdf',
+      updated: formatDistanceToNow(new Date(item.updatedAt || item.createdAt), { addSuffix: true }),
+      size: formatBytes(item.filesize),
+      author: selectedFile.author,
+    }));
     return [...generated, ...custom];
-  }, [selectedFile, customDetails]);
+  }, [selectedFile, dbItems]);
   const allDetails: (DetailItem & { baseId: string; folderId: string })[] = useMemo(
     () =>
       allFiles.flatMap((fl) => {
         const generated = generateDetailList(fl).map((d) => ({ ...d, baseId: fl.id, folderId: fl.folderId }));
-        const custom = (customDetails[fl.id] || []).map((d) => ({ ...d, baseId: fl.id, folderId: fl.folderId }));
-        return [...generated, ...custom];
+        return [...generated];
       }),
-    [allFiles, customDetails]
+    [allFiles]
   );
 
   // Derive selected detail by ID from the local list (after switching files it will match)
@@ -77,52 +135,60 @@ const DetailLibraryViewer: React.FC<DetailLibraryViewerProps> = () => {
 
   const previewTarget = selectedDetail || selectedFile;
 
-  function handleUploadToFolder(folderId: string, files: FileList | null) {
-    if (!files || files.length === 0) return;
-    const items = Array.from(files).map((f) => ({ name: f.name, type: f.type, size: f.size }));
-    const nowId = Date.now();
+  async function handleUploadToFolder(folderId: string, fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) return;
     
-    // If a file is selected, add uploads as detail items to that file
-    if (selectedFile) {
-      const newDetails: DetailItem[] = items.map((it, i) => ({
-        id: `detail-upl-${nowId}-${i}`,
-        title: it.name.replace(/\.[^/.]+$/, "").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim() || it.name,
-        type: it.type.startsWith("image/") || /\.(png|jpe?g|gif|svg|webp)$/i.test(it.name) ? "image" : "pdf",
-        updated: "just now",
-        size: it.size < 1024 ? `${it.size} B` : it.size < 1024 * 1024 ? `${Math.round((it.size / 1024) * 10) / 10} KB` : `${Math.round((it.size / (1024 * 1024)) * 10) / 10} MB`,
-        author: "You",
-      }));
-      
-      setCustomDetails((prev) => ({
-        ...prev,
-        [selectedFile.id]: [...(prev[selectedFile.id] || []), ...newDetails],
-      }));
-    } else {
-      // Otherwise, add uploads as new cards to the folder
-      setFolders((prev) => {
-        return prev.map((fol) => {
-          if (fol.id !== folderId) return fol;
-          const newFiles: FileItem[] = items.map((it, i) => ({
-            id: `upl-${nowId}-${i}`,
-            title: it.name.replace(/\.[^/.]+$/, "").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim() || it.name,
-            type: it.type.startsWith("image/") || /\.(png|jpe?g|gif|svg|webp)$/i.test(it.name) ? "image" : "pdf",
-            updated: "just now",
-            size: it.size < 1024 ? `${it.size} B` : it.size < 1024 * 1024 ? `${Math.round((it.size / 1024) * 10) / 10} KB` : `${Math.round((it.size / (1024 * 1024)) * 10) / 10} MB`,
-            author: "You",
-            description: "",
-            color: "slate",
-          }));
-          return { ...fol, files: [...fol.files, ...newFiles] };
+    if (!selectedFile) {
+      toast.error('Please select a card first');
+      return;
+    }
+
+    try {
+      const filesArray = Array.from(fileList);
+      for (const file of filesArray) {
+        await uploadItemMutation.mutateAsync({
+          parentFileId: selectedFile.id,
+          file,
+          title: baseTitleFromName(file.name),
         });
-      });
+      }
+    } catch (error) {
+      console.error('Upload failed:', error);
     }
   }
 
-  function handleSaveMeta(fileId: string, patch: Partial<Pick<FileItem, "title" | "color" | "type" | "description">>) {
-    setFolders((prev) => prev.map((fol) => ({
-      ...fol,
-      files: fol.files.map((fl) => (fl.id === fileId ? { ...fl, ...patch } : fl)),
-    })));
+  async function handleSaveMeta(fileId: string, patch: Partial<Pick<FileItem, "title" | "color" | "type" | "description">>) {
+    try {
+      if (patch.title !== undefined || patch.description !== undefined) {
+        await updateFileMutation.mutateAsync({
+          fileId,
+          title: patch.title,
+          description: patch.description,
+        });
+      }
+      
+      if (patch.color) {
+        await updateColorMutation.mutateAsync({ 
+          fileId, 
+          colorTag: patch.color as DetailColorTag
+        });
+      }
+    } catch (error) {
+      console.error('Update failed:', error);
+    }
+  }
+
+  async function handleCreateCard(title: string, colorTag: DetailColorTag, description: string) {
+    try {
+      await createCardMutation.mutateAsync({
+        title,
+        colorTag,
+        description,
+        authorName: 'You',
+      });
+    } catch (error) {
+      console.error('Create failed:', error);
+    }
   }
 
   // Global-filtered details only (query applies to lists, not cards)
@@ -140,6 +206,14 @@ const DetailLibraryViewer: React.FC<DetailLibraryViewerProps> = () => {
   const filesToShow: (FileItem | FlatFile)[] = activeFolder.files;
 
   const placeholder = "Search details...";
+
+  if (categoriesLoading || filesLoading) {
+    return (
+      <div className="w-full p-4 md:p-6 min-h-full flex items-center justify-center">
+        <div className="text-sm text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full p-4 md:p-6 min-h-full">
@@ -193,6 +267,13 @@ const DetailLibraryViewer: React.FC<DetailLibraryViewerProps> = () => {
             <span>{folder.title}</span>
           </button>
         ))}
+        <button
+          onClick={() => setCreateCardOpen(true)}
+          className="inline-flex items-center gap-2 rounded-xl border border-dashed border-black/20 px-4 py-2 text-sm hover:border-black/30 hover:bg-white dark:hover:bg-neutral-800"
+        >
+          <Folder className="h-4 w-4 opacity-70" />
+          <span>Add Card</span>
+        </button>
       </div>
 
       {/* Main Layout */}
@@ -398,6 +479,13 @@ const DetailLibraryViewer: React.FC<DetailLibraryViewerProps> = () => {
         onClose={() => setEditModal({ open: false, file: null, folderId: null })}
         onSave={handleSaveMeta}
         onUpload={handleUploadToFolder}
+      />
+
+      <CreateCardDialog
+        open={createCardOpen}
+        categoryId={activeFolderId}
+        onClose={() => setCreateCardOpen(false)}
+        onCreate={handleCreateCard}
       />
     </div>
   );
