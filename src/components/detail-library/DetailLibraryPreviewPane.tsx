@@ -1,4 +1,3 @@
-import SimplePDFViewer from './SimplePDFViewer';
 import SimpleImageViewer from './SimpleImageViewer';
 
 interface DetailLibraryPreviewPaneProps {
@@ -14,13 +13,7 @@ const DetailLibraryPreviewPane = ({ file }: DetailLibraryPreviewPaneProps) => {
     );
   }
 
-  const isPDF = file.mimetype === 'application/pdf';
-
-  return isPDF ? (
-    <SimplePDFViewer file={file} className="h-full" />
-  ) : (
-    <SimpleImageViewer file={file} className="h-full" />
-  );
+  return <SimpleImageViewer file={file} className="h-full" />;
 };
 
 export default DetailLibraryPreviewPane;

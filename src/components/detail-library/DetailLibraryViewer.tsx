@@ -4,7 +4,6 @@ import { FolderT, FileItem, DetailItem, MOCK_FOLDERS, generateDetailList, filter
 import CardButton from './CardButton';
 import DetailRowButton from './DetailRowButton';
 import CardEditModal from './CardEditModal';
-import SimplePDFViewer from './SimplePDFViewer';
 import SimpleImageViewer from './SimpleImageViewer';
 
 interface DetailLibraryViewerProps {}
@@ -303,17 +302,13 @@ const DetailLibraryViewer: React.FC<DetailLibraryViewerProps> = () => {
           {/* Preview box */}
           <div className="rounded-2xl border border-black/10 bg-neutral-50 dark:bg-neutral-900 aspect-[4/3] w-full flex items-center justify-center overflow-hidden">
             {previewTarget ? (
-              previewTarget.type === "pdf" ? (
-                <SimplePDFViewer file={previewTarget} className="w-full h-full" />
-              ) : (
-                <SimpleImageViewer file={previewTarget} className="w-full h-full" />
-              )
+              <SimpleImageViewer file={previewTarget} className="w-full h-full" />
             ) : (
               <div className="text-sm text-muted-foreground">
                 {selectedFile ? "Select a detail to preview" : "Select a card to preview"}
               </div>
-                )}
-              </div>
+            )}
+          </div>
 
               {/* File Properties */}
               <div className="rounded-2xl border border-black/10 bg-white/60 p-4 backdrop-blur-sm dark:bg-neutral-900/60">
