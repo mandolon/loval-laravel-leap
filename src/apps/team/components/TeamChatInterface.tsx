@@ -358,23 +358,14 @@ export default function TeamChatInterface() {
   const endRef = useRef<HTMLDivElement>(null); 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Transform messages to include user data
+  // Messages are already transformed by useProjectMessages hook
   const messages = useMemo(() => {
-    const transformed = rawMessages.map((m: any) => ({
-      id: m.id,
-      projectId: m.project_id,
-      userId: m.user_id,
-      user: m.users, // Note: the join returns 'users' not 'user'
-      content: m.content,
-      replyToMessageId: m.reply_to_message_id,
-      referencedFiles: m.referenced_files || [],
-      createdAt: m.created_at,
-      updatedAt: m.updated_at,
+    return rawMessages.map((m: any) => ({
+      ...m,
+      // Ensure user data is available
+      user: m.user || { id: m.userId, name: 'Unknown' }
     }));
-    console.log('Transformed messages:', transformed);
-    console.log('Current user ID:', user?.id);
-    return transformed;
-  }, [rawMessages, user?.id]);
+  }, [rawMessages]);
 
   // Transform files to assets format
   const assets = useMemo(() => {
