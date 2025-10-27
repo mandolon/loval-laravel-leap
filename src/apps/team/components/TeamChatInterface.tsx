@@ -479,12 +479,58 @@ export default function TeamChatInterface() {
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [treeMessages]);
 
   return (
-    <div className="flex h-full w-full flex-col bg-[#f9f9f9] dark:bg-neutral-950 overflow-hidden">
-      {/* Header */}
-      <header className="flex-none z-20 md:z-50 grid h-12 grid-cols-3 items-center px-2 backdrop-blur-md bg-white/30 dark:bg-neutral-950/20 border-b border-neutral-200/50 dark:border-neutral-800/50">
-        <div className="flex items-center gap-2 min-w-0 justify-self-start">
-          <button onClick={() => { if (window.innerWidth < 768) setMobileSideOpen(true); else setSidebarExpanded((v) => !v); }} className="rounded-lg p-1.5 transition hover:bg-neutral-100/60 dark:hover:bg-neutral-900/60"><HamburgerMenuIcon className="h-5 w-5"/></button>
-        </div>
+    <div className="flex h-full w-full bg-[#f9f9f9] dark:bg-neutral-950 overflow-hidden">
+      {/* Desktop Sidebar - Full Height */}
+      {sidebarExpanded && (
+        <DesktopSidebar
+          recentProjects={recentProjects}
+          otherProjects={otherProjects}
+          selectedProjectId={selectedProjectId}
+          onSelectProject={handleSelectProject}
+        />
+      )}
+
+      {/* Mobile Sidebar */}
+      {mobileSideOpen && (
+        <>
+          <div className="fixed inset-0 z-30 bg-black/30 backdrop-blur-sm md:hidden" onClick={() => setMobileSideOpen(false)} />
+          <aside className="fixed inset-y-0 left-0 z-40 w-[80vw] max-w-[480px] translate-x-0 border-r bg-white shadow-xl transition-transform dark:border-neutral-800 dark:bg-neutral-950 md:hidden">
+            <ScrollArea.Root className="h-full min-h-0"><ScrollArea.Viewport className="h-full w-full">
+              <div className="p-2">
+                <SectionHeader title="Workspace" />
+                <div className="px-2 pb-2">
+                  <div className="mt-1 space-y-1">
+                    <button
+                      className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm transition opacity-50 cursor-not-allowed"
+                      disabled
+                    >
+                      <div className="min-w-0 truncate flex items-center gap-2">
+                        <div className="grid h-6 w-6 place-items-center rounded bg-neutral-100 text-xs dark:bg-neutral-800">💬</div>
+                        <div>
+                          <div className="truncate font-medium text-neutral-400">Workspace chat</div>
+                          <div className="truncate text-[11px] text-neutral-400">Coming soon</div>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+                <SectionHeader title="Recent Projects" />
+                <div className="px-2 pb-2">{recentProjects.map((p: any) => <SidebarProjectItem key={p.id} project={p} active={p.id === selectedProjectId} onClick={() => handleSelectProject(p.id)} />)}</div>
+                <SectionHeader title="All Projects" />
+                <div className="px-2 pb-2">{otherProjects.map((p: any) => <SidebarProjectItem key={p.id} project={p} active={p.id === selectedProjectId} onClick={() => handleSelectProject(p.id)} showMeta={false} />)}</div>
+              </div>
+            </ScrollArea.Viewport><ScrollArea.Scrollbar className="w-2" orientation="vertical" /></ScrollArea.Root>
+          </aside>
+        </>
+      )}
+
+      {/* Main Content Area - Right Side */}
+      <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
+        {/* Header */}
+        <header className="flex-none z-20 grid h-12 grid-cols-3 items-center px-2 backdrop-blur-md bg-white/30 dark:bg-neutral-950/20 border-b border-neutral-200/50 dark:border-neutral-800/50">
+          <div className="flex items-center gap-2 min-w-0 justify-self-start">
+            <button onClick={() => { if (window.innerWidth < 768) setMobileSideOpen(true); else setSidebarExpanded((v) => !v); }} className="rounded-lg p-1.5 transition hover:bg-neutral-100/60 dark:hover:bg-neutral-900/60"><HamburgerMenuIcon className="h-5 w-5"/></button>
+          </div>
         <div className="col-start-2 flex min-w-0 items-center justify-center">
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>
@@ -532,55 +578,12 @@ export default function TeamChatInterface() {
           )}
           <button onClick={() => setPage(page === "files" ? "chat" : "files")} className={cx("relative z-10 rounded-lg p-1.5 transition bg-neutral-100/70 dark:bg-neutral-800/70 hover:bg-neutral-100/90 dark:hover:bg-neutral-800/90 ring-1 ring-inset ring-neutral-200/60 dark:ring-neutral-700/60", page === "files" && "bg-neutral-200/80 dark:bg-neutral-700/80")} aria-label="Files" title="Files"><FileIcon className="h-5 w-5"/></button>
         </div>
-      </header>
+        </header>
 
-      {/* Body */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        {sidebarExpanded && (
-          <DesktopSidebar
-            recentProjects={recentProjects}
-            otherProjects={otherProjects}
-            selectedProjectId={selectedProjectId}
-            onSelectProject={handleSelectProject}
-          />
-        )}
-
-        {mobileSideOpen && (
-          <>
-            <div className="fixed inset-0 z-30 bg-black/30 backdrop-blur-sm md:hidden" onClick={() => setMobileSideOpen(false)} />
-            <aside className="fixed inset-y-0 left-0 z-40 w-[80vw] max-w-[480px] translate-x-0 border-r bg-white shadow-xl transition-transform dark:border-neutral-800 dark:bg-neutral-950 md:hidden">
-              <ScrollArea.Root className="h-full min-h-0"><ScrollArea.Viewport className="h-full w-full">
-                <div className="p-2">
-                  <SectionHeader title="Workspace" />
-                  <div className="px-2 pb-2">
-                    <div className="mt-1 space-y-1">
-                      <button
-                        className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm transition opacity-50 cursor-not-allowed"
-                        disabled
-                      >
-                        <div className="min-w-0 truncate flex items-center gap-2">
-                          <div className="grid h-6 w-6 place-items-center rounded bg-neutral-100 text-xs dark:bg-neutral-800">💬</div>
-                          <div>
-                            <div className="truncate font-medium text-neutral-400">Workspace chat</div>
-                            <div className="truncate text-[11px] text-neutral-400">Coming soon</div>
-                          </div>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-                  <SectionHeader title="Recent Projects" />
-                  <div className="px-2 pb-2">{recentProjects.map((p: any) => <SidebarProjectItem key={p.id} project={p} active={p.id === selectedProjectId} onClick={() => handleSelectProject(p.id)} />)}</div>
-                  <SectionHeader title="All Projects" />
-                  <div className="px-2 pb-2">{otherProjects.map((p: any) => <SidebarProjectItem key={p.id} project={p} active={p.id === selectedProjectId} onClick={() => handleSelectProject(p.id)} showMeta={false} />)}</div>
-                </div>
-              </ScrollArea.Viewport><ScrollArea.Scrollbar className="w-2" orientation="vertical" /></ScrollArea.Root>
-            </aside>
-          </>
-        )}
-
-        <div className="grid min-w-0 flex-1 grid-cols-12 overflow-hidden">
+        {/* Chat/Files Content Area */}
+        <div className="flex flex-1 min-h-0 overflow-hidden">
           {page === "chat" ? (
-            <div className="col-span-12 flex min-h-0 flex-col bg-[#f9f9f9] dark:bg-transparent overflow-hidden">
+            <div className="flex flex-1 min-h-0 flex-col bg-[#f9f9f9] dark:bg-transparent overflow-hidden">
               <ScrollArea.Root className="min-h-0 flex-1">
                 <ScrollArea.Viewport className="h-full w-full overscroll-contain bg-[#f9f9f9] dark:bg-transparent touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }}>
                   <div className="p-4 space-y-3 md:space-y-2">
@@ -620,7 +623,7 @@ export default function TeamChatInterface() {
               </div>
             </div>
           ) : (
-            <div className="relative col-span-12 flex min-h-0 flex-col overflow-hidden">
+            <div className="relative flex flex-1 min-h-0 flex-col overflow-hidden">
               <FilesView assets={assets} project={selectedProject} view={filesView} selectionMode={filesSelectMode} selectedIds={selectedAssetIds} onToggleSelect={toggleAssetSelect} />
               {filesSelectMode && (
                 <div className="sticky bottom-0 z-10 mt-auto">
