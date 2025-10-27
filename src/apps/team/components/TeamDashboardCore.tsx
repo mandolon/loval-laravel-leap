@@ -20,6 +20,7 @@ import {
   flexRender,
   createColumnHelper,
 } from "@tanstack/react-table";
+import { TeamAvatarMenu } from "./TeamAvatarMenu";
 
 // ----------------------------------
 // Theme & constants
@@ -726,28 +727,7 @@ const TopHeader = memo(function TopHeader({
 
           {/* Right: account chip */}
           <div className="h-9 flex items-center justify-end pr-1">
-            <button
-              aria-label="Account menu"
-              className="group cursor-pointer inline-flex items-center gap-1 rounded-md px-1.5 py-[2px] transition ring-1 ring-transparent hover:bg-slate-100 hover:ring-slate-200"
-            >
-              <div
-                className="h-6 w-6 rounded-full bg-slate-900 text-white grid place-items-center text-[11px] font-semibold shadow-sm"
-                title="Account"
-              >
-                A
-              </div>
-              <svg
-                viewBox="0 0 24 24"
-                width="12"
-                height="12"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                className="text-slate-600 transition group-hover:text-slate-700"
-              >
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-            </button>
+            <TeamAvatarMenu />
           </div>
         </div>
       </div>
