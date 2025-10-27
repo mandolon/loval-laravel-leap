@@ -638,9 +638,6 @@ const RailItem = memo(function RailItem({
                     </span>
                   )}
                   <span>{t}</span>
-                  {isSelected && (
-                    <span className="ml-auto text-[11px] text-[#3a78bd]">Selected</span>
-                  )}
                 </button>
               );
             })}
