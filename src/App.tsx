@@ -34,12 +34,10 @@ function AppRouter() {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
   
-  if (role === 'team') {
-    return <TeamApp />;
-  }
-  
-  return (
-    <Routes>
+  // Admins always use the standard admin dashboard
+  if (user?.is_admin) {
+    return (
+      <Routes>
             <Route path="/auth" element={<AuthPage />} />
             <Route
               path="/"
@@ -213,6 +211,188 @@ function AppRouter() {
             />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
+      </Routes>
+    );
+  }
+  
+  // Team users get the new team dashboard
+  if (role === 'team') {
+    return <TeamApp />;
+  }
+  
+  // Default routes for consultants, clients, and others
+  return (
+    <Routes>
+      <Route path="/auth" element={<AuthPage />} />
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <NewAppLayout>
+              <HomePage />
+            </NewAppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/workspace/:workspaceId"
+        element={
+          <ProtectedRoute>
+            <NewAppLayout>
+              <HomePage />
+            </NewAppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/workspace/:workspaceId/projects"
+        element={
+          <ProtectedRoute>
+            <NewAppLayout>
+              <ProjectsPage />
+            </NewAppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/workspace/:workspaceId/tasks"
+        element={
+          <ProtectedRoute>
+            <NewAppLayout>
+              <TasksPage />
+            </NewAppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/workspace/:workspaceId/team"
+        element={
+          <ProtectedRoute>
+            <NewAppLayout>
+              <TeamPage />
+            </NewAppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/workspace/:workspaceId/clients"
+        element={
+          <ProtectedRoute>
+            <NewAppLayout>
+              <ClientsPage />
+            </NewAppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/workspace/:workspaceId/project/:id"
+        element={
+          <ProtectedRoute>
+            <NewAppLayout>
+              <ProjectDetails />
+            </NewAppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/workspace/:workspaceId/ai"
+        element={
+          <ProtectedRoute>
+            <NewAppLayout>
+              <AIChatPage />
+            </NewAppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/detail-library"
+        element={
+          <ProtectedRoute>
+            <NewAppLayout>
+              <DetailLibraryPage />
+            </NewAppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/workspace/:workspaceId/detail-library"
+        element={
+          <ProtectedRoute>
+            <Navigate to="/detail-library" replace />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/workspace/:workspaceId/trash"
+        element={
+          <ProtectedRoute>
+            <NewAppLayout>
+              <TrashPage />
+            </NewAppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <NewAppLayout>
+              <ProfilePage />
+            </NewAppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/projects"
+        element={
+          <ProtectedRoute>
+            <NewAppLayout>
+              <ProjectsPage />
+            </NewAppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tasks"
+        element={
+          <ProtectedRoute>
+            <NewAppLayout>
+              <TasksPage />
+            </NewAppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/team"
+        element={
+          <ProtectedRoute>
+            <NewAppLayout>
+              <TeamPage />
+            </NewAppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/clients"
+        element={
+          <ProtectedRoute>
+            <NewAppLayout>
+              <ClientsPage />
+            </NewAppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/project/:id"
+        element={
+          <ProtectedRoute>
+            <NewAppLayout>
+              <ProjectDetails />
+            </NewAppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
