@@ -173,8 +173,6 @@ const MessageBubble = ({ m, meId, rating, onThumb, onReply, onEdit, onDelete, at
   const startLP = () => { if (lpTimer.current) clearTimeout(lpTimer.current); lpTimer.current = setTimeout(() => setMenuOpen(true), 500); };
   const cancelLP = () => { if (lpTimer.current) { clearTimeout(lpTimer.current); lpTimer.current = null; } };
   
-  console.log('MessageBubble:', { userId: m.userId, meId, isMe, userName: m.user?.name });
-  
   return (
     <div 
       className={cx("relative flex gap-2 w-full px-2", isMe ? "justify-end" : "justify-start")} 
@@ -362,18 +360,21 @@ export default function TeamChatInterface() {
 
   // Transform messages to include user data
   const messages = useMemo(() => {
-    return rawMessages.map((m: any) => ({
+    const transformed = rawMessages.map((m: any) => ({
       id: m.id,
       projectId: m.project_id,
       userId: m.user_id,
-      user: m.user,
+      user: m.users, // Note: the join returns 'users' not 'user'
       content: m.content,
       replyToMessageId: m.reply_to_message_id,
       referencedFiles: m.referenced_files || [],
       createdAt: m.created_at,
       updatedAt: m.updated_at,
     }));
-  }, [rawMessages]);
+    console.log('Transformed messages:', transformed);
+    console.log('Current user ID:', user?.id);
+    return transformed;
+  }, [rawMessages, user?.id]);
 
   // Transform files to assets format
   const assets = useMemo(() => {
