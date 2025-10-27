@@ -908,16 +908,11 @@ const DetailLibraryView = memo(function DetailLibraryView() {
 });
 
 // ----------------------------------
-// Chat View
+// Chat View - Integrated with database
 // ----------------------------------
+import TeamChatInterface from './TeamChatInterface';
 const ChatView = memo(function ChatView() {
-  return (
-    <div className="px-6 pt-3 pb-12">
-      <div className="rounded-xl border border-slate-200 bg-white/70 backdrop-blur-sm p-4 text-sm text-slate-600">
-        Chat placeholder — start a conversation here.
-      </div>
-    </div>
-  );
+  return <TeamChatInterface />;
 });
 
 // ----------------------------------
