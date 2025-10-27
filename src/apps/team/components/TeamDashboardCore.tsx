@@ -20,10 +20,10 @@ import {
   flexRender,
   createColumnHelper,
 } from "@tanstack/react-table";
-import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/contexts/UserContext";
+import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { TeamAvatarMenu } from "./TeamAvatarMenu";
 
 // ----------------------------------
@@ -177,14 +177,19 @@ export default function RehomeDoubleSidebar() {
   const [selected, setSelected] = useState<{ tab: string; item: string } | null>(null);
   const [railCollapsed, setRailCollapsed] = useState(false);
   const mdUp = useMediaQuery("(min-width: 768px)");
-  const { workspaceId } = useParams();
+  const { currentWorkspaceId } = useWorkspaces();
   const { user } = useUser();
 
   // Fetch user's projects for the current workspace
   const { data: userProjects = [] } = useQuery({
-    queryKey: ['team-user-projects', workspaceId, user?.id],
+    queryKey: ['team-user-projects', currentWorkspaceId, user?.id],
     queryFn: async () => {
-      if (!workspaceId || !user?.id) return [];
+      if (!currentWorkspaceId || !user?.id) {
+        console.log('Missing workspace or user:', { currentWorkspaceId, userId: user?.id });
+        return [];
+      }
+      
+      console.log('Fetching projects for workspace:', currentWorkspaceId, 'user:', user.id);
       
       const { data, error } = await supabase
         .from('project_members')
@@ -192,12 +197,11 @@ export default function RehomeDoubleSidebar() {
           project_id,
           projects!inner (
             id,
-            name,
-            workspace_id
+            name
           )
         `)
         .eq('user_id', user.id)
-        .eq('projects.workspace_id', workspaceId)
+        .eq('projects.workspace_id', currentWorkspaceId)
         .is('deleted_at', null)
         .is('projects.deleted_at', null);
 
@@ -206,9 +210,12 @@ export default function RehomeDoubleSidebar() {
         return [];
       }
 
-      return data.map((pm: any) => pm.projects.name);
+      console.log('Fetched user projects:', data);
+      const projectNames = data?.map((pm: any) => pm.projects.name) || [];
+      console.log('Project names:', projectNames);
+      return projectNames;
     },
-    enabled: !!workspaceId && !!user?.id,
+    enabled: !!currentWorkspaceId && !!user?.id,
   });
 
   const projectItems = userProjects.length > 0 ? userProjects : ITEMS_CONFIG.projects;
