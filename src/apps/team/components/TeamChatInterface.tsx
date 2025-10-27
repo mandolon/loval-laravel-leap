@@ -175,9 +175,11 @@ const MessageBubble = ({ m, meId, rating, onThumb, onReply, onEdit, onDelete, at
   const cancelLP = () => { if (lpTimer.current) { clearTimeout(lpTimer.current); lpTimer.current = null; } };
   
   return (
-    <div className={cx("relative mx-2 flex gap-2", isMe && "ml-auto flex-row-reverse")} style={style} onContextMenu={(e) => e.preventDefault()}>
-      <Avatar name={m.user?.name} />
-      <div className={cx("flex min-w-0 max-w-[72ch] flex-col", isMe ? "items-end" : "items-start")}> 
+    <div className={cx("relative flex gap-2 w-full", isMe ? "justify-end flex-row-reverse" : "justify-start")} style={style} onContextMenu={(e) => e.preventDefault()}>
+      <div className="flex-shrink-0">
+        <Avatar name={m.user?.name} />
+      </div>
+      <div className={cx("flex min-w-0 max-w-[72ch] flex-col", isMe ? "items-end" : "items-start")}>
         <DropdownMenu.Root open={menuOpen} onOpenChange={setMenuOpen}>
           <DropdownMenu.Trigger asChild>
             <div
@@ -604,7 +606,7 @@ export default function TeamChatInterface() {
             <div className="flex flex-1 min-h-0 flex-col bg-[#f9f9f9] dark:bg-transparent overflow-hidden">
               <ScrollArea.Root className="min-h-0 flex-1">
                 <ScrollArea.Viewport className="h-full w-full overscroll-contain bg-[#f9f9f9] dark:bg-transparent touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }}>
-                  <div className="p-4 space-y-3 md:space-y-2">
+                  <div className="p-4 space-y-3 md:space-y-2 w-full">
                     {treeMessages.map((m: any) => (
                       <MessageBubble 
                         key={m.id} 
