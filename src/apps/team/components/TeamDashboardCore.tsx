@@ -1124,13 +1124,3 @@ export {
   TabsRow,
   TopHeader
 };
-
-export {
-  RehomeDoubleSidebar as TeamDashboardLayout,
-  HomeView,
-  TasksView,
-  DetailLibraryView,
-  ChatView,
-  TopHeader as TeamTopHeader,
-  TabsRow as TeamTabsRow,
-};
