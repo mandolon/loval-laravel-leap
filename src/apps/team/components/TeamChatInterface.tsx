@@ -282,7 +282,12 @@ const FilesView = ({ assets, project, view, selectionMode = false, selectedIds, 
 // --- Desktop sidebar ------------------------------------------------------
 function DesktopSidebar({ recentProjects, otherProjects, selectedProjectId, onSelectProject }: any) {
   return (
-    <aside className="hidden md:flex h-full w-72 flex-col border-r bg-white dark:border-neutral-800 dark:bg-neutral-950"> 
+    <aside 
+      className="hidden md:flex h-full w-72 flex-col border-r bg-white dark:border-neutral-800 dark:bg-neutral-950"
+      style={{
+        transition: "width 260ms cubic-bezier(0.22, 1, 0.36, 1), transform 260ms cubic-bezier(0.22, 1, 0.36, 1)"
+      }}
+    >
       <ScrollArea.Root className="h-full min-h-0"><ScrollArea.Viewport className="h-full w-full">
         <div className="p-2">
           {/* Workspace chat section - mock for future */}
@@ -481,20 +486,35 @@ export default function TeamChatInterface() {
   return (
     <div className="flex h-full w-full bg-[#f9f9f9] dark:bg-neutral-950 overflow-hidden">
       {/* Desktop Sidebar - Full Height */}
-      {sidebarExpanded && (
+      <div 
+        className="hidden md:block h-full overflow-hidden"
+        style={{
+          width: sidebarExpanded ? "18rem" : "0",
+          transition: "width 260ms cubic-bezier(0.22, 1, 0.36, 1)"
+        }}
+      >
         <DesktopSidebar
           recentProjects={recentProjects}
           otherProjects={otherProjects}
           selectedProjectId={selectedProjectId}
           onSelectProject={handleSelectProject}
         />
-      )}
+      </div>
 
       {/* Mobile Sidebar */}
-      {mobileSideOpen && (
-        <>
-          <div className="fixed inset-0 z-30 bg-black/30 backdrop-blur-sm md:hidden" onClick={() => setMobileSideOpen(false)} />
-          <aside className="fixed inset-y-0 left-0 z-40 w-[80vw] max-w-[480px] translate-x-0 border-r bg-white shadow-xl transition-transform dark:border-neutral-800 dark:bg-neutral-950 md:hidden">
+      <div 
+        className={`fixed inset-0 z-30 bg-black/30 backdrop-blur-sm md:hidden transition-opacity duration-200 ${
+          mobileSideOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`} 
+        onClick={() => setMobileSideOpen(false)} 
+      />
+      <aside 
+        className="fixed inset-y-0 left-0 z-40 w-[80vw] max-w-[480px] border-r bg-white shadow-xl dark:border-neutral-800 dark:bg-neutral-950 md:hidden"
+        style={{
+          transform: mobileSideOpen ? 'translateX(0)' : 'translateX(-100%)',
+          transition: 'transform 260ms cubic-bezier(0.22, 1, 0.36, 1)'
+        }}
+      >
             <ScrollArea.Root className="h-full min-h-0"><ScrollArea.Viewport className="h-full w-full">
               <div className="p-2">
                 <SectionHeader title="Workspace" />
@@ -519,10 +539,8 @@ export default function TeamChatInterface() {
                 <SectionHeader title="All Projects" />
                 <div className="px-2 pb-2">{otherProjects.map((p: any) => <SidebarProjectItem key={p.id} project={p} active={p.id === selectedProjectId} onClick={() => handleSelectProject(p.id)} showMeta={false} />)}</div>
               </div>
-            </ScrollArea.Viewport><ScrollArea.Scrollbar className="w-2" orientation="vertical" /></ScrollArea.Root>
-          </aside>
-        </>
-      )}
+          </ScrollArea.Viewport><ScrollArea.Scrollbar className="w-2" orientation="vertical" /></ScrollArea.Root>
+        </aside>
 
       {/* Main Content Area - Right Side */}
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
