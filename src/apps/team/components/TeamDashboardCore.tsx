@@ -20,6 +20,10 @@ import {
   flexRender,
   createColumnHelper,
 } from "@tanstack/react-table";
+import { useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useUser } from "@/contexts/UserContext";
 import { TeamAvatarMenu } from "./TeamAvatarMenu";
 
 // ----------------------------------
@@ -173,6 +177,41 @@ export default function RehomeDoubleSidebar() {
   const [selected, setSelected] = useState<{ tab: string; item: string } | null>(null);
   const [railCollapsed, setRailCollapsed] = useState(false);
   const mdUp = useMediaQuery("(min-width: 768px)");
+  const { workspaceId } = useParams();
+  const { user } = useUser();
+
+  // Fetch user's projects for the current workspace
+  const { data: userProjects = [] } = useQuery({
+    queryKey: ['team-user-projects', workspaceId, user?.id],
+    queryFn: async () => {
+      if (!workspaceId || !user?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('project_members')
+        .select(`
+          project_id,
+          projects!inner (
+            id,
+            name,
+            workspace_id
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('projects.workspace_id', workspaceId)
+        .is('deleted_at', null)
+        .is('projects.deleted_at', null);
+
+      if (error) {
+        console.error('Error fetching user projects:', error);
+        return [];
+      }
+
+      return data.map((pm: any) => pm.projects.name);
+    },
+    enabled: !!workspaceId && !!user?.id,
+  });
+
+  const projectItems = userProjects.length > 0 ? userProjects : ITEMS_CONFIG.projects;
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
@@ -216,7 +255,7 @@ export default function RehomeDoubleSidebar() {
             label={TITLES[tab as keyof typeof TITLES]}
             icon={ICON_MAP[tab as keyof typeof ICON_MAP]}
             active={active === tab}
-            items={ITEMS_CONFIG[tab as keyof typeof ITEMS_CONFIG]}
+            items={tab === "projects" ? projectItems : ITEMS_CONFIG[tab as keyof typeof ITEMS_CONFIG]}
             openTab={openTab}
             setOpenTab={setOpenTab}
             selected={selected}
