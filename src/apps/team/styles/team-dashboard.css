@@ -1,0 +1,21 @@
+/* Team Dashboard Scoped Styles */
+.team-app {
+  /* Base container */
+  width: 100%;
+  min-height: 100vh;
+  
+  /* CSS Variables for theming (matching source design) */
+  --team-primary: hsl(222 47% 11%);
+  --team-primary-hover: hsl(222 47% 15%);
+  --team-accent: hsl(213 94% 68%);
+  --team-background: hsl(220 35% 97%);
+  --team-violet: hsl(259 94% 68%);
+  
+  /* Ensure isolation from main app styles */
+  isolation: isolate;
+}
+
+/* Ensure team dashboard fills viewport */
+.team-app > * {
+  min-height: 100vh;
+}
