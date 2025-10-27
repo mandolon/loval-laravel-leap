@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { UserProvider, useUser } from "./contexts/UserContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { NewAppLayout } from "./components/layout/NewAppLayout";
@@ -28,7 +28,13 @@ const queryClient = new QueryClient();
 
 function AppRouter() {
   const { user, loading } = useUser();
-  const { role, loading: roleLoading } = useWorkspaceRole(undefined);
+  const location = useLocation();
+  
+  // Extract workspace ID from URL path
+  const workspaceIdMatch = location.pathname.match(/^\/workspace\/([^/]+)/);
+  const workspaceId = workspaceIdMatch ? workspaceIdMatch[1] : undefined;
+  
+  const { role, loading: roleLoading } = useWorkspaceRole(workspaceId);
   
   if (loading || roleLoading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
