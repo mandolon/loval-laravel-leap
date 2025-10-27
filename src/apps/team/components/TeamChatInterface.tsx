@@ -259,8 +259,8 @@ const FileListItem = ({ asset, selectable = false, selected = false, onToggle }:
 const FilesView = ({ assets, project, view, selectionMode = false, selectedIds, onToggleSelect }: any) => {
   const filtered = project ? assets.filter((a: any) => a.projectId === project.id) : assets;
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex-1 overflow-auto p-4 pt-14 md:pt-16">
+    <div className="flex h-full flex-col overflow-hidden">
+      <div className="flex-1 overflow-auto p-4">
         {view === "grid" ? (
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
             {filtered.map((a: any) => (
@@ -479,9 +479,9 @@ export default function TeamChatInterface() {
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [treeMessages]);
 
   return (
-    <div className="flex h-[100dvh] min-h-0 flex-col bg-[#f9f9f9] dark:bg-neutral-950">
+    <div className="flex h-full w-full flex-col bg-[#f9f9f9] dark:bg-neutral-950 overflow-hidden">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-20 md:z-50 grid h-12 grid-cols-3 items-center px-2 backdrop-blur-md bg-white/30 dark:bg-neutral-950/20">
+      <header className="flex-none z-20 md:z-50 grid h-12 grid-cols-3 items-center px-2 backdrop-blur-md bg-white/30 dark:bg-neutral-950/20 border-b border-neutral-200/50 dark:border-neutral-800/50">
         <div className="flex items-center gap-2 min-w-0 justify-self-start">
           <button onClick={() => { if (window.innerWidth < 768) setMobileSideOpen(true); else setSidebarExpanded((v) => !v); }} className="rounded-lg p-1.5 transition hover:bg-neutral-100/60 dark:hover:bg-neutral-900/60"><HamburgerMenuIcon className="h-5 w-5"/></button>
         </div>
@@ -532,11 +532,10 @@ export default function TeamChatInterface() {
           )}
           <button onClick={() => setPage(page === "files" ? "chat" : "files")} className={cx("relative z-10 rounded-lg p-1.5 transition bg-neutral-100/70 dark:bg-neutral-800/70 hover:bg-neutral-100/90 dark:hover:bg-neutral-800/90 ring-1 ring-inset ring-neutral-200/60 dark:ring-neutral-700/60", page === "files" && "bg-neutral-200/80 dark:bg-neutral-700/80")} aria-label="Files" title="Files"><FileIcon className="h-5 w-5"/></button>
         </div>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-b from-[#f9f9f9]/40 to-transparent dark:from-neutral-950/40"/>
       </header>
 
       {/* Body */}
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         {sidebarExpanded && (
           <DesktopSidebar
             recentProjects={recentProjects}
@@ -579,12 +578,12 @@ export default function TeamChatInterface() {
           </>
         )}
 
-        <div className="grid min-w-0 flex-1 grid-cols-12">
+        <div className="grid min-w-0 flex-1 grid-cols-12 overflow-hidden">
           {page === "chat" ? (
-            <div className="col-span-12 flex min-h-0 flex-col bg-[#f9f9f9] dark:bg-transparent">
+            <div className="col-span-12 flex min-h-0 flex-col bg-[#f9f9f9] dark:bg-transparent overflow-hidden">
               <ScrollArea.Root className="min-h-0 flex-1">
                 <ScrollArea.Viewport className="h-full w-full overscroll-contain bg-[#f9f9f9] dark:bg-transparent touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }}>
-                  <div className="p-4 pt-14 md:pt-16 space-y-3 md:space-y-2">
+                  <div className="p-4 space-y-3 md:space-y-2">
                     {treeMessages.map((m: any) => (
                       <MessageBubble 
                         key={m.id} 
@@ -604,7 +603,7 @@ export default function TeamChatInterface() {
                 <ScrollArea.Scrollbar className="w-2" orientation="vertical" />
               </ScrollArea.Root>
 
-              <div className="border-t p-3 dark:border-neutral-800">
+              <div className="flex-none border-t p-3 dark:border-neutral-800">
                 {replyTo && (
                   <div className="mb-2 flex items-center justify-between rounded-lg bg-neutral-100 p-2 text-sm dark:bg-neutral-900">
                     <span>Replying to message</span>
@@ -621,7 +620,7 @@ export default function TeamChatInterface() {
               </div>
             </div>
           ) : (
-            <div className="relative col-span-12 flex min-h-0 flex-col">
+            <div className="relative col-span-12 flex min-h-0 flex-col overflow-hidden">
               <FilesView assets={assets} project={selectedProject} view={filesView} selectionMode={filesSelectMode} selectedIds={selectedAssetIds} onToggleSelect={toggleAssetSelect} />
               {filesSelectMode && (
                 <div className="sticky bottom-0 z-10 mt-auto">
