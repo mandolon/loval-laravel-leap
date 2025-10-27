@@ -168,17 +168,24 @@ const ActionBar = ({ isMe, rating, onThumb, onReply, onEdit, onDelete, mid }: an
 const MessageBubble = ({ m, meId, rating, onThumb, onReply, onEdit, onDelete, attachmentFiles }: any) => {
   const isMe = m.userId === meId;
   const indent = Math.min(6, (m?.depth || 0) * 4) * 4;
-  const style = isMe ? { marginRight: indent } : { marginLeft: indent };
   const [menuOpen, setMenuOpen] = useState(false);
   const lpTimer = useRef<any>(null);
   const startLP = () => { if (lpTimer.current) clearTimeout(lpTimer.current); lpTimer.current = setTimeout(() => setMenuOpen(true), 500); };
   const cancelLP = () => { if (lpTimer.current) { clearTimeout(lpTimer.current); lpTimer.current = null; } };
   
+  console.log('MessageBubble:', { userId: m.userId, meId, isMe, userName: m.user?.name });
+  
   return (
-    <div className={cx("relative flex gap-2 w-full", isMe ? "justify-end flex-row-reverse" : "justify-start")} style={style} onContextMenu={(e) => e.preventDefault()}>
-      <div className="flex-shrink-0">
-        <Avatar name={m.user?.name} />
-      </div>
+    <div 
+      className={cx("relative flex gap-2 w-full px-2", isMe ? "justify-end" : "justify-start")} 
+      style={isMe ? { paddingRight: indent } : { paddingLeft: indent }}
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      {!isMe && (
+        <div className="flex-shrink-0">
+          <Avatar name={m.user?.name} />
+        </div>
+      )}
       <div className={cx("flex min-w-0 max-w-[72ch] flex-col", isMe ? "items-end" : "items-start")}>
         <DropdownMenu.Root open={menuOpen} onOpenChange={setMenuOpen}>
           <DropdownMenu.Trigger asChild>
@@ -209,6 +216,11 @@ const MessageBubble = ({ m, meId, rating, onThumb, onReply, onEdit, onDelete, at
         </DropdownMenu.Root>
         <ActionBar isMe={isMe} rating={rating} onThumb={(dir: string) => onThumb(dir, m.id)} onReply={onReply} onEdit={onEdit} onDelete={onDelete} mid={m.id} />
       </div>
+      {isMe && (
+        <div className="flex-shrink-0">
+          <Avatar name={m.user?.name} />
+        </div>
+      )}
     </div>
   );
 };
