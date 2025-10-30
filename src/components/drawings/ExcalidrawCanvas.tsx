@@ -76,6 +76,14 @@ export default function ExcalidrawCanvas({
   // Safely parse excalidraw data
   const excalidrawData = pageData?.excalidraw_data as any;
   
+  // Ensure collaborators is always a Map
+  const savedAppState = excalidrawData?.appState || {};
+  const mergedAppState = {
+    ...defaultAppState,
+    ...savedAppState,
+    collaborators: new Map(), // Always use a fresh Map
+  };
+  
   return (
     <div className="h-full">
       <Excalidraw
@@ -85,10 +93,7 @@ export default function ExcalidrawCanvas({
         }}
         initialData={{
           elements: excalidrawData?.elements || [],
-          appState: {
-            ...defaultAppState,
-            ...excalidrawData?.appState,
-          },
+          appState: mergedAppState,
           files: excalidrawData?.files || {},
         }}
         onChange={handleChange}
