@@ -38,6 +38,7 @@ export default function ExcalidrawCanvas({
     currentItemEndArrowhead: 'triangle',
     currentItemRoughness: 0,
     currentItemFontSize: 8,
+    collaborators: new Map(),
   };
   
   const handleChange = useCallback((elements: any, appState: any, files: any) => {
