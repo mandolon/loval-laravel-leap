@@ -535,6 +535,38 @@ export default function TeamChatSlim({
                 </p>
 
                 <div className="flex flex-col gap-2 mt-8">
+                  {/* Workspace Chat Button */}
+                  <button
+                    onClick={() => {
+                      onProjectSelect(null);
+                      setIsWorkspaceChat(true);
+                    }}
+                    className="w-full text-left px-4 py-3 rounded-xl border transition-colors mb-4"
+                    style={{
+                      borderColor: THEME.border,
+                      background: THEME.card,
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = THEME.hover)}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = THEME.card)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <svg className="h-5 w-5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                        />
+                      </svg>
+                      <div>
+                        <div className="font-medium text-base">Workspace chat</div>
+                        <div className="text-xs mt-0.5" style={{ color: THEME.textSecondary }}>
+                          Chat with your team
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+
                   <div className="text-xs font-semibold opacity-60 mb-2 text-left">
                     RECENT PROJECTS
                   </div>
