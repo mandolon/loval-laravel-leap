@@ -991,7 +991,7 @@ const ChatView = memo(function ChatView() {
   };
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full relative">
       <div className="flex-1 min-w-0">
         <TeamChatSlim
           projects={projects}
@@ -1002,6 +1002,24 @@ const ChatView = memo(function ChatView() {
           onFileSelect={setSelectedFileId}
         />
       </div>
+      
+      {/* Project Panel - Files & Whiteboards */}
+      {selectedProject && (
+        <div
+          className="transition-all duration-300 ease-out border-l border-slate-200 bg-white overflow-hidden"
+          style={{
+            width: projectPanelCollapsed ? '0px' : '280px',
+            opacity: projectPanelCollapsed ? 0 : 1,
+          }}
+        >
+          <ProjectPanel
+            projectId={selectedProject.id}
+            projectName={selectedProject.name}
+            onBreadcrumb={(crumb) => console.log('Breadcrumb:', crumb)}
+            onFileSelect={(file) => setSelectedFileId(file?.id || null)}
+          />
+        </div>
+      )}
     </div>
   );
 });
