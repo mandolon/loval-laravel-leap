@@ -976,9 +976,34 @@ const DetailLibraryView = memo(function DetailLibraryView() {
 // ----------------------------------
 // Chat View - Integrated with database
 // ----------------------------------
-import TeamChatInterface from './TeamChatInterface';
+import TeamChatSlim from './TeamChatSlim';
+import { useProjects } from '@/lib/api/hooks/useProjects';
 const ChatView = memo(function ChatView() {
-  return <TeamChatInterface />;
+  const { currentWorkspaceId } = useWorkspaces();
+  const { data: projects = [] } = useProjects(currentWorkspaceId || '');
+
+  const [selectedProject, setSelectedProject] = React.useState<any>(null);
+  const [selectedFileId, setSelectedFileId] = React.useState<string | null>(null);
+  const [projectPanelCollapsed, setProjectPanelCollapsed] = React.useState(false);
+
+  const handleToggleFiles = () => {
+    setProjectPanelCollapsed(false);
+  };
+
+  return (
+    <div className="flex h-full">
+      <div className="flex-1 min-w-0">
+        <TeamChatSlim
+          projects={projects}
+          selectedProject={selectedProject}
+          onProjectSelect={setSelectedProject}
+          onToggleSidebar={() => setProjectPanelCollapsed(!projectPanelCollapsed)}
+          onToggleFiles={handleToggleFiles}
+          onFileSelect={setSelectedFileId}
+        />
+      </div>
+    </div>
+  );
 });
 
 // ----------------------------------
