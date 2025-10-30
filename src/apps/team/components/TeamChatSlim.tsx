@@ -332,6 +332,27 @@ export default function TeamChatSlim({
           color: THEME.text,
         }}
       >
+        {/* Collapse/Expand Button - Top Left */}
+        {showSidePanel && !selectedProject && !isWorkspaceChat && (
+          <button
+            onClick={() => setIsSidePanelCollapsed(!isSidePanelCollapsed)}
+            className="absolute top-4 left-4 z-20 p-2 rounded-lg transition-colors border"
+            style={{
+              color: THEME.textSecondary,
+              borderColor: THEME.border,
+              background: THEME.card,
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = THEME.hover)}
+            onMouseLeave={(e) => (e.currentTarget.style.background = THEME.card)}
+            title={isSidePanelCollapsed ? "Expand panel" : "Collapse panel"}
+          >
+            {isSidePanelCollapsed ? (
+              <PanelLeft className="h-4 w-4" />
+            ) : (
+              <PanelLeftClose className="h-4 w-4" />
+            )}
+          </button>
+        )}
       {isDragging && (
         <div
           className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none"
@@ -407,27 +428,7 @@ export default function TeamChatSlim({
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-2 md:gap-3 px-4 pt-8 pb-4">
           {!selectedProject && !isWorkspaceChat ? (
-            <div className="flex flex-col items-center justify-start pt-32 relative">
-              {/* Collapse/Expand Button - Top Left */}
-              {showSidePanel && (
-                <button
-                  onClick={() => setIsSidePanelCollapsed(!isSidePanelCollapsed)}
-                  className="absolute top-0 left-0 p-2 rounded-lg transition-colors"
-                  style={{
-                    color: THEME.textSecondary,
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = THEME.hover)}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                  title={isSidePanelCollapsed ? "Expand panel" : "Collapse panel"}
-                >
-                  {isSidePanelCollapsed ? (
-                    <PanelLeft className="h-5 w-5" />
-                  ) : (
-                    <PanelLeftClose className="h-5 w-5" />
-                  )}
-                </button>
-              )}
-
+            <div className="flex flex-col items-center justify-start pt-32">
               <div className="text-center max-w-md">
                 <h2 className="text-2xl font-semibold mb-3" style={{ color: THEME.text }}>
                   Welcome to your workspace
