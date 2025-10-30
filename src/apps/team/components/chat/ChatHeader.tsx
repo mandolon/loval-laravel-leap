@@ -74,7 +74,7 @@ export function ChatHeader({
             onMouseEnter={(e) => (e.currentTarget.style.background = THEME.hover)}
             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
           >
-            <span className="chat-header-project-name text-[18px] font-semibold">{headerTitle}</span>
+            <span className="chat-header-project-name text-[16px] font-semibold">{headerTitle}</span>
             <ChevronDown className="h-4 w-4 opacity-60" />
           </button>
 
