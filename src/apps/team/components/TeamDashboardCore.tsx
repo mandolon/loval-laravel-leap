@@ -185,9 +185,15 @@ export default function RehomeDoubleSidebar() {
   const [railCollapsed, setRailCollapsed] = useState(false);
   const [projectPanelCollapsed, setProjectPanelCollapsed] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
+  const [chatResetTrigger, setChatResetTrigger] = useState(0);
   const mdUp = useMediaQuery("(min-width: 768px)");
   const { currentWorkspaceId } = useWorkspaces();
   const { user } = useUser();
+
+  const handleChatActivate = useCallback(() => {
+    setActive("chat");
+    setChatResetTrigger(prev => prev + 1);
+  }, []);
 
   // Fetch user's projects for the current workspace
   const { data: userProjects = [] } = useQuery({
@@ -276,7 +282,7 @@ export default function RehomeDoubleSidebar() {
             setOpenTab={setOpenTab}
             selected={selected}
             setSelected={setSelected}
-            onActivate={() => setActive(tab)}
+            onActivate={tab === "chat" ? handleChatActivate : () => setActive(tab)}
             menuEnabled={tab === "projects"}
           />
         ))}
@@ -367,7 +373,7 @@ export default function RehomeDoubleSidebar() {
             ) : active === "tasks" ? (
               <TasksView />
             ) : active === "chat" ? (
-              <ChatView />
+              <ChatView resetTrigger={chatResetTrigger} />
             ) : active === "home" ? (
               <HomeView />
             ) : null}
@@ -978,7 +984,12 @@ const DetailLibraryView = memo(function DetailLibraryView() {
 // ----------------------------------
 import TeamChatSlim from './TeamChatSlim';
 import { useProjects } from '@/lib/api/hooks/useProjects';
-const ChatView = memo(function ChatView() {
+
+interface ChatViewProps {
+  resetTrigger?: number;
+}
+
+const ChatView = memo(function ChatView({ resetTrigger }: ChatViewProps) {
   const { currentWorkspaceId } = useWorkspaces();
   const { data: projects = [] } = useProjects(currentWorkspaceId || '');
 
@@ -987,11 +998,11 @@ const ChatView = memo(function ChatView() {
   const [page, setPage] = useState<'chat' | 'files'>('chat');
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
 
-  // Reset to home/default chat view when component mounts
+  // Reset to home/default chat view when component mounts or resetTrigger changes
   React.useEffect(() => {
     setSelectedProject(null);
     setPage('chat');
-  }, []); // Empty dependency array means this only runs on mount
+  }, [resetTrigger]);
 
   const handleToggleSidebar = () => setSidebarCollapsed((prev) => !prev);
   const handleToggleFiles = () => setPage((prev) => prev === 'chat' ? 'files' : 'chat');
