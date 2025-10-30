@@ -77,8 +77,8 @@ export function ChatHeader({
           </button>
         </div>
 
-        {/* Center: Project selector (or left-aligned on files page) */}
-        <div className={showFilesControls ? "flex items-center" : "absolute left-1/2 -translate-x-1/2 flex items-center"}>
+        {/* Center: Project selector */}
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
           <button
             onClick={onToggleChatSelector}
             className="flex items-center gap-2 transition-all px-3 py-1.5 rounded-lg"
