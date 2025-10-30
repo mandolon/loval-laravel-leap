@@ -267,13 +267,69 @@ export default function TeamChatSlim({
   // If showing files view, render that instead
   if (page === 'files' && selectedProject) {
     return (
-      <TeamFilesView
-        projectId={selectedProject.id}
-        onFileSelect={(fileId) => {
-          if (onFileSelect) onFileSelect(fileId);
-          if (onPageChange) onPageChange('chat');
-        }}
-      />
+      <div className="flex h-full w-full">
+        {/* Side Panel */}
+        {showSidePanel && !isSidePanelCollapsed && (
+          <ChatSidePanel
+            projects={projects}
+            selectedProject={selectedProject}
+            onProjectSelect={(project) => {
+              onProjectSelect(project as any);
+              setIsWorkspaceChat(false);
+            }}
+            workspaceId={workspaceId}
+            isWorkspaceChat={isWorkspaceChat}
+            onWorkspaceChatSelect={() => {
+              onProjectSelect(null);
+              setIsWorkspaceChat(true);
+            }}
+          />
+        )}
+
+        {/* Main Files Area - Full Width */}
+        <div className="flex-1 min-h-screen flex flex-col relative" style={{ background: THEME.background }}>
+          {/* Collapse/Expand Button - Top Left */}
+          {showSidePanel && (
+            <button
+              onClick={() => setIsSidePanelCollapsed(!isSidePanelCollapsed)}
+              className="absolute top-4 left-4 z-20 p-2 rounded-lg transition-colors border"
+              style={{
+                color: THEME.textSecondary,
+                borderColor: THEME.border,
+                background: THEME.card,
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = THEME.hover)}
+              onMouseLeave={(e) => (e.currentTarget.style.background = THEME.card)}
+              title={isSidePanelCollapsed ? "Expand panel" : "Collapse panel"}
+            >
+              {isSidePanelCollapsed ? (
+                <PanelLeft className="h-4 w-4" />
+              ) : (
+                <PanelLeftClose className="h-4 w-4" />
+              )}
+            </button>
+          )}
+
+          <ChatHeader
+            selectedProject={selectedProject}
+            projects={projects}
+            showChatSelector={showChatSelector}
+            onToggleSidebar={onToggleSidebar}
+            onToggleFiles={onToggleFiles}
+            onProjectSelect={onProjectSelect}
+            onToggleChatSelector={() => setShowChatSelector(!showChatSelector)}
+            onCloseChatSelector={() => setShowChatSelector(false)}
+          />
+
+          <TeamFilesView
+            projectId={selectedProject.id}
+            onFileSelect={(fileId) => {
+              if (onFileSelect) onFileSelect(fileId);
+              if (onPageChange) onPageChange('chat');
+            }}
+          />
+        </div>
+      </div>
     );
   }
 
