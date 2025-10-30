@@ -28,6 +28,7 @@ import { useUser } from "@/contexts/UserContext";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { TeamAvatarMenu } from "./TeamAvatarMenu";
 import ProjectPanel from "./ProjectPanel";
+import TeamFileViewer from "./viewers/TeamFileViewer";
 
 // ----------------------------------
 // Theme & constants
@@ -183,6 +184,7 @@ export default function RehomeDoubleSidebar() {
   const [selected, setSelected] = useState<{ tab: string; item: string } | null>(null);
   const [railCollapsed, setRailCollapsed] = useState(false);
   const [projectPanelCollapsed, setProjectPanelCollapsed] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<any>(null);
   const mdUp = useMediaQuery("(min-width: 768px)");
   const { currentWorkspaceId } = useWorkspaces();
   const { user } = useUser();
@@ -345,26 +347,28 @@ export default function RehomeDoubleSidebar() {
             }
           >
             {active === "projects" ? (
-              <div className="h-full px-6 pt-2 pb-12 overflow-auto">
+              <div className="h-full flex flex-col">
                 {selected?.tab === "projects" && (
-                  <div className="mb-3">
-                    <div className="flex items-center justify-start">
-                      <span className="rounded-full border border-[#d2e3fc] bg-[#f0f5fe] text-[#3a78bd] text-[12px] px-3 py-1">
-                        {selected.item}
-                      </span>
-                    </div>
-                    
-                    {/* Project details placeholder */}
-                    <div className="mt-6 p-4 border border-slate-200 rounded-lg bg-slate-50/50">
-                      <h2 className="text-sm font-semibold mb-2">{selected.item}</h2>
-                      <p className="text-xs text-slate-600">Project details will appear here</p>
-                    </div>
+                  <div className="px-6 pt-2 pb-4 border-b border-slate-200">
+                    <span className="rounded-full border border-[#d2e3fc] bg-[#f0f5fe] text-[#3a78bd] text-[12px] px-3 py-1">
+                      {selected.item}
+                    </span>
                   </div>
                 )}
                 
-                {!selected && (
-                  <div className="text-slate-600 text-sm">Select a project from the sidebar</div>
-                )}
+                {/* File Viewer Area */}
+                <div className="flex-1 min-h-0">
+                  {selectedFile ? (
+                    <TeamFileViewer file={selectedFile} />
+                  ) : (
+                    <div className="h-full flex items-center justify-center">
+                      <div className="text-center text-slate-600">
+                        <p className="text-sm font-medium">No file selected</p>
+                        <p className="text-xs mt-1">Select a file from the panel to preview</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : active === "details" ? (
               <DetailLibraryView />
@@ -392,11 +396,12 @@ export default function RehomeDoubleSidebar() {
             overflow: "hidden",
           }}
         >
-          <ProjectPanel
-            projectId={userProjects.find((p: any) => p.name === selected.item)?.id || ''}
-            projectName={selected.item}
-            onBreadcrumb={(crumb) => console.log('Breadcrumb:', crumb)}
-          />
+            <ProjectPanel
+              projectId={userProjects.find((p: any) => p.name === selected.item)?.id || ''}
+              projectName={selected.item}
+              onBreadcrumb={(crumb) => console.log('Breadcrumb:', crumb)}
+              onFileSelect={(file) => setSelectedFile(file)}
+            />
         </div>
       )}
     </div>

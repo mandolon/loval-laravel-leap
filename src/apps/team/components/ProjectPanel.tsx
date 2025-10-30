@@ -228,14 +228,26 @@ function formatBytes(bytes?: number | null) {
 }
 
 // ------- Project Panel -------
+interface ProjectFile {
+  id: string;
+  filename: string;
+  storage_path: string;
+  mimetype: string | null;
+  filesize: number | null;
+  updated_at: string;
+  folder_id: string;
+}
+
 export default function ProjectPanel({ 
   projectId, 
   projectName = "Project Files",
-  onBreadcrumb 
+  onBreadcrumb,
+  onFileSelect
 }: { 
   projectId: string; 
   projectName?: string; 
   onBreadcrumb?: (breadcrumb: string) => void;
+  onFileSelect?: (file: ProjectFile | null) => void;
 }) {
   const [tab, setTab] = useState<'files' | 'whiteboards'>('files');
   const [query, setQuery] = useState("");
@@ -496,7 +508,13 @@ export default function ProjectPanel({
                     key={item.id}
                     item={item}
                     selected={isSelected}
-                    onClick={() => setSelectedId(item.id)}
+                    onClick={() => {
+                      setSelectedId(item.id);
+                      const fileData = rawFiles.find(f => f.id === item.id);
+                      if (fileData && onFileSelect) {
+                        onFileSelect(fileData);
+                      }
+                    }}
                     onContextMenu={(e: any) => {
                       e.preventDefault();
                       e.stopPropagation();
