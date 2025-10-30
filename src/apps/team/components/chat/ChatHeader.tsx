@@ -1,4 +1,4 @@
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Grid3x3, List } from "lucide-react";
 
 // Theme Configuration
 const THEME = {
@@ -21,6 +21,14 @@ interface ChatHeaderProps {
   onProjectSelect: (project: { id: string; name: string; description?: string }) => void;
   onToggleChatSelector: () => void;
   onCloseChatSelector: () => void;
+  // Files view controls
+  showFilesControls?: boolean;
+  viewMode?: 'grid' | 'list';
+  onViewModeChange?: (mode: 'grid' | 'list') => void;
+  selectMode?: boolean;
+  onSelectModeChange?: (mode: boolean) => void;
+  selectedFilesCount?: number;
+  onShareToChat?: () => void;
 }
 
 export function ChatHeader({
@@ -32,6 +40,13 @@ export function ChatHeader({
   onProjectSelect,
   onToggleChatSelector,
   onCloseChatSelector,
+  showFilesControls = false,
+  viewMode = 'grid',
+  onViewModeChange,
+  selectMode = false,
+  onSelectModeChange,
+  selectedFilesCount = 0,
+  onShareToChat,
 }: ChatHeaderProps) {
   const headerTitle = selectedProject?.name || "Workspace";
 
@@ -131,25 +146,101 @@ export function ChatHeader({
           )}
         </div>
 
-        {/* Right: Files button */}
+        {/* Right: Files controls or Files button */}
         <div className="flex items-center gap-2">
-          <button
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-md border transition-colors"
-            style={{ borderColor: THEME.border, background: THEME.card }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = THEME.hover)}
-            onMouseLeave={(e) => (e.currentTarget.style.background = THEME.card)}
-            onClick={onToggleFiles}
-            title="Files"
-          >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-          </button>
+          {showFilesControls ? (
+            <>
+              {/* View Mode Toggle */}
+              <div className="flex items-center gap-1 border rounded-md" style={{ borderColor: THEME.border }}>
+                <button
+                  onClick={() => onViewModeChange?.('grid')}
+                  className="p-2 rounded-l-md transition-colors"
+                  style={{
+                    background: viewMode === 'grid' ? THEME.hover : 'transparent',
+                    color: viewMode === 'grid' ? THEME.accent : THEME.textSecondary,
+                  }}
+                  title="Grid view"
+                >
+                  <Grid3x3 className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => onViewModeChange?.('list')}
+                  className="p-2 rounded-r-md transition-colors"
+                  style={{
+                    background: viewMode === 'list' ? THEME.hover : 'transparent',
+                    color: viewMode === 'list' ? THEME.accent : THEME.textSecondary,
+                  }}
+                  title="List view"
+                >
+                  <List className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Select Button */}
+              <button
+                onClick={() => onSelectModeChange?.(!selectMode)}
+                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors border"
+                style={{
+                  borderColor: selectMode ? 'rgba(76, 117, 209, 0.3)' : THEME.border,
+                  background: selectMode ? 'rgba(76, 117, 209, 0.1)' : THEME.card,
+                  color: selectMode ? THEME.accent : THEME.text,
+                }}
+              >
+                {selectMode ? 'Cancel' : 'Select'}
+              </button>
+
+              {/* Share to Chat Button */}
+              {selectMode && selectedFilesCount > 0 && (
+                <button
+                  onClick={onShareToChat}
+                  className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
+                  style={{
+                    background: THEME.accent,
+                    color: '#ffffff',
+                  }}
+                >
+                  Share ({selectedFilesCount})
+                </button>
+              )}
+
+              {/* Files Button - Switch back to chat */}
+              <button
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-md border transition-colors"
+                style={{ borderColor: THEME.border, background: THEME.card }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = THEME.hover)}
+                onMouseLeave={(e) => (e.currentTarget.style.background = THEME.card)}
+                onClick={onToggleFiles}
+                title="Back to chat"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
+                </svg>
+              </button>
+            </>
+          ) : (
+            <button
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-md border transition-colors"
+              style={{ borderColor: THEME.border, background: THEME.card }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = THEME.hover)}
+              onMouseLeave={(e) => (e.currentTarget.style.background = THEME.card)}
+              onClick={onToggleFiles}
+              title="Files"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
     </header>

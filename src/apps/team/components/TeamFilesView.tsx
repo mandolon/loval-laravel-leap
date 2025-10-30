@@ -5,6 +5,13 @@ import { useProjectFiles } from '@/lib/api/hooks/useProjectFiles';
 interface TeamFilesViewProps {
   projectId: string;
   onFileSelect?: (fileId: string) => void;
+  viewMode?: 'grid' | 'list';
+  onViewModeChange?: (mode: 'grid' | 'list') => void;
+  selectMode?: boolean;
+  onSelectModeChange?: (mode: boolean) => void;
+  selectedFiles?: Set<string>;
+  onSelectedFilesChange?: (files: Set<string>) => void;
+  onShareToChat?: () => void;
 }
 
 const THEME = {
@@ -17,33 +24,73 @@ const THEME = {
   hover: "#f1f5f9",
 };
 
-export default function TeamFilesView({ projectId, onFileSelect }: TeamFilesViewProps) {
+export default function TeamFilesView({ 
+  projectId, 
+  onFileSelect,
+  viewMode: externalViewMode,
+  onViewModeChange,
+  selectMode: externalSelectMode,
+  onSelectModeChange,
+  selectedFiles: externalSelectedFiles,
+  onSelectedFilesChange,
+  onShareToChat
+}: TeamFilesViewProps) {
   const { data: files = [], isLoading } = useProjectFiles(projectId);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [selectMode, setSelectMode] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+  const [internalViewMode, setInternalViewMode] = useState<'grid' | 'list'>('grid');
+  const [internalSelectMode, setInternalSelectMode] = useState(false);
+  const [internalSelectedFiles, setInternalSelectedFiles] = useState<Set<string>>(new Set());
+
+  const viewMode = externalViewMode ?? internalViewMode;
+  const selectMode = externalSelectMode ?? internalSelectMode;
+  const selectedFiles = externalSelectedFiles ?? internalSelectedFiles;
+
+  const setViewMode = (mode: 'grid' | 'list') => {
+    if (onViewModeChange) {
+      onViewModeChange(mode);
+    } else {
+      setInternalViewMode(mode);
+    }
+  };
+
+  const setSelectMode = (mode: boolean) => {
+    if (onSelectModeChange) {
+      onSelectModeChange(mode);
+    } else {
+      setInternalSelectMode(mode);
+    }
+  };
+
+  const setSelectedFiles = (files: Set<string>) => {
+    if (onSelectedFilesChange) {
+      onSelectedFilesChange(files);
+    } else {
+      setInternalSelectedFiles(files);
+    }
+  };
 
   const handleFileClick = (fileId: string) => {
     if (selectMode) {
-      setSelectedFiles((prev) => {
-        const next = new Set(prev);
-        if (next.has(fileId)) {
-          next.delete(fileId);
-        } else {
-          next.add(fileId);
-        }
-        return next;
-      });
+      const next = new Set(selectedFiles);
+      if (next.has(fileId)) {
+        next.delete(fileId);
+      } else {
+        next.add(fileId);
+      }
+      setSelectedFiles(next);
     } else if (onFileSelect) {
       onFileSelect(fileId);
     }
   };
 
   const handleShareToChat = () => {
-    // Share selected files to chat
-    selectedFiles.forEach((fileId) => {
-      if (onFileSelect) onFileSelect(fileId);
-    });
+    if (onShareToChat) {
+      onShareToChat();
+    } else {
+      // Share selected files to chat
+      selectedFiles.forEach((fileId) => {
+        if (onFileSelect) onFileSelect(fileId);
+      });
+    }
     setSelectedFiles(new Set());
     setSelectMode(false);
   };
@@ -67,65 +114,6 @@ export default function TeamFilesView({ projectId, onFileSelect }: TeamFilesView
 
   return (
     <div className="flex flex-col h-full">
-      {/* Controls Bar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: THEME.border }}>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setViewMode('grid')}
-            className="p-2 rounded-md transition-colors"
-            style={{
-              background: viewMode === 'grid' ? THEME.hover : 'transparent',
-              color: viewMode === 'grid' ? THEME.accent : THEME.textSecondary,
-            }}
-            title="Grid view"
-          >
-            <Grid3x3 className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => setViewMode('list')}
-            className="p-2 rounded-md transition-colors"
-            style={{
-              background: viewMode === 'list' ? THEME.hover : 'transparent',
-              color: viewMode === 'list' ? THEME.accent : THEME.textSecondary,
-            }}
-            title="List view"
-          >
-            <List className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => {
-              setSelectMode(!selectMode);
-              if (selectMode) {
-                setSelectedFiles(new Set());
-              }
-            }}
-            className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
-            style={{
-              background: selectMode ? 'rgba(76, 117, 209, 0.1)' : THEME.hover,
-              color: selectMode ? THEME.accent : THEME.text,
-            }}
-          >
-            {selectMode ? 'Cancel' : 'Select'}
-          </button>
-
-          {selectMode && selectedFiles.size > 0 && (
-            <button
-              onClick={handleShareToChat}
-              className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
-              style={{
-                background: THEME.accent,
-                color: '#ffffff',
-              }}
-            >
-              Share to chat ({selectedFiles.size})
-            </button>
-          )}
-        </div>
-      </div>
-
       {/* Files Grid/List */}
       <div className="flex-1 overflow-y-auto p-4">
         {sortedFiles.length === 0 ? (
@@ -141,7 +129,7 @@ export default function TeamFilesView({ projectId, onFileSelect }: TeamFilesView
             </div>
           </div>
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
             {sortedFiles.map((file) => (
               <FileCard
                 key={file.id}

@@ -76,6 +76,9 @@ export default function TeamChatSlim({
   const [replyingTo, setReplyingTo] = useState<{ messageId: string; userName: string } | null>(null);
   const [isWorkspaceChat, setIsWorkspaceChat] = useState(false);
   const [isSidePanelCollapsed, setIsSidePanelCollapsed] = useState(false);
+  const [fileViewMode, setFileViewMode] = useState<'grid' | 'list'>('grid');
+  const [fileSelectMode, setFileSelectMode] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Fetch project messages or workspace messages based on mode
@@ -264,6 +267,14 @@ export default function TeamChatSlim({
     return () => window.removeEventListener("showMobilePopover", handleShowPopover);
   }, []);
 
+  // Reset file select mode when changing pages or projects
+  useEffect(() => {
+    if (page === 'chat' || !selectedProject) {
+      setFileSelectMode(false);
+      setSelectedFiles(new Set());
+    }
+  }, [page, selectedProject]);
+
   // If showing files view, render that instead
   if (page === 'files' && selectedProject) {
     return (
@@ -319,12 +330,42 @@ export default function TeamChatSlim({
             onProjectSelect={onProjectSelect}
             onToggleChatSelector={() => setShowChatSelector(!showChatSelector)}
             onCloseChatSelector={() => setShowChatSelector(false)}
+            showFilesControls={true}
+            viewMode={fileViewMode}
+            onViewModeChange={setFileViewMode}
+            selectMode={fileSelectMode}
+            onSelectModeChange={setFileSelectMode}
+            selectedFilesCount={selectedFiles.size}
+            onShareToChat={() => {
+              // Share selected files to chat
+              selectedFiles.forEach((fileId) => {
+                if (onFileSelect) onFileSelect(fileId);
+              });
+              setSelectedFiles(new Set());
+              setFileSelectMode(false);
+              if (onPageChange) onPageChange('chat');
+            }}
           />
 
           <TeamFilesView
             projectId={selectedProject.id}
             onFileSelect={(fileId) => {
               if (onFileSelect) onFileSelect(fileId);
+              if (onPageChange) onPageChange('chat');
+            }}
+            viewMode={fileViewMode}
+            onViewModeChange={setFileViewMode}
+            selectMode={fileSelectMode}
+            onSelectModeChange={setFileSelectMode}
+            selectedFiles={selectedFiles}
+            onSelectedFilesChange={setSelectedFiles}
+            onShareToChat={() => {
+              // Share selected files to chat
+              selectedFiles.forEach((fileId) => {
+                if (onFileSelect) onFileSelect(fileId);
+              });
+              setSelectedFiles(new Set());
+              setFileSelectMode(false);
               if (onPageChange) onPageChange('chat');
             }}
           />
