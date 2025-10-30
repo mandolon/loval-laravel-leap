@@ -10,6 +10,7 @@ import { useProjectFiles } from "@/lib/api/hooks/useProjectFiles";
 import type { Project } from "@/lib/api/types";
 import TeamFilesView from "./TeamFilesView";
 import { ChatHeader } from "./chat/ChatHeader";
+import { ChatSidePanel } from "./chat/ChatSidePanel";
 
 // Theme Configuration - Exact from reference
 const THEME = {
@@ -40,6 +41,8 @@ interface TeamChatSlimProps {
   onFileSelect?: (fileId: string) => void;
   page?: 'chat' | 'files';
   onPageChange?: (page: 'chat' | 'files') => void;
+  showSidePanel?: boolean;
+  workspaceId?: string;
 }
 
 export default function TeamChatSlim({
@@ -51,6 +54,8 @@ export default function TeamChatSlim({
   onFileSelect,
   page = 'chat',
   onPageChange,
+  showSidePanel = false,
+  workspaceId,
 }: TeamChatSlimProps) {
   const { user } = useUser();
   const [text, setText] = useState("");
@@ -232,40 +237,52 @@ export default function TeamChatSlim({
   }
 
   return (
-    <div
-      className="team-app flex min-h-screen flex-col relative"
-      onDragOver={handleDragOver}
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      onClick={(e) => {
-        const chatSelector = document.querySelector(".chat-selector-dropdown");
-        const tagSelector = document.querySelector(".tag-selector-dropdown");
-        const chatButton = (e.target as HTMLElement).closest("button");
+    <div className="flex h-full">
+      {/* Side Panel */}
+      {showSidePanel && (
+        <ChatSidePanel
+          projects={projects}
+          selectedProject={selectedProject}
+          onProjectSelect={onProjectSelect}
+          workspaceId={workspaceId}
+        />
+      )}
 
-        if (
-          showChatSelector &&
-          chatSelector &&
-          !chatSelector.contains(e.target as Node) &&
-          (!chatButton || (!chatButton.textContent?.includes(headerTitle.name) && !chatButton.textContent?.includes('Select project')))
-        ) {
-          setShowChatSelector(false);
-        }
+      {/* Main Chat Area */}
+      <div
+        className="team-app flex min-h-screen flex-col relative flex-1"
+        onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={(e) => {
+          const chatSelector = document.querySelector(".chat-selector-dropdown");
+          const tagSelector = document.querySelector(".tag-selector-dropdown");
+          const chatButton = (e.target as HTMLElement).closest("button");
 
-        if (
-          showTagSelector &&
-          tagSelector &&
-          !tagSelector.contains(e.target as Node) &&
-          (!chatButton || !availableTags.some((tag) => chatButton.textContent?.includes(tag)))
-        ) {
-          setShowTagSelector(false);
-        }
-      }}
-      style={{
-        background: THEME.background,
-        color: THEME.text,
-      }}
-    >
+          if (
+            showChatSelector &&
+            chatSelector &&
+            !chatSelector.contains(e.target as Node) &&
+            (!chatButton || (!chatButton.textContent?.includes(headerTitle.name) && !chatButton.textContent?.includes('Select project')))
+          ) {
+            setShowChatSelector(false);
+          }
+
+          if (
+            showTagSelector &&
+            tagSelector &&
+            !tagSelector.contains(e.target as Node) &&
+            (!chatButton || !availableTags.some((tag) => chatButton.textContent?.includes(tag)))
+          ) {
+            setShowTagSelector(false);
+          }
+        }}
+        style={{
+          background: THEME.background,
+          color: THEME.text,
+        }}
+      >
       {isDragging && (
         <div
           className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none"
@@ -621,6 +638,7 @@ export default function TeamChatSlim({
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

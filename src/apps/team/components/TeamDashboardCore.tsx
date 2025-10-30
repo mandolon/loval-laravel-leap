@@ -1001,6 +1001,8 @@ const ChatView = memo(function ChatView() {
         onFileSelect={setSelectedFileId}
         page={page}
         onPageChange={setPage}
+        showSidePanel={!sidebarCollapsed}
+        workspaceId={currentWorkspaceId || undefined}
       />
     </div>
   );
