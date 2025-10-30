@@ -42,6 +42,12 @@ export default function ExcalidrawCanvas({
   };
   
   const handleChange = useCallback((elements: any, appState: any, files: any) => {
+    // Ensure collaborators is always a Map
+    const sanitizedAppState = {
+      ...appState,
+      collaborators: new Map(),
+    };
+    
     // Apply arrow counter if enabled
     if (arrowCounterEnabled && excaliRef.current && inchesPerSceneUnit) {
       handleArrowCounter(
@@ -55,12 +61,13 @@ export default function ExcalidrawCanvas({
       onArrowStatsChange({ count: 0, values: [] });
     }
     
-    // Auto-save after 3 seconds
+    // Auto-save after 3 seconds (without collaborators field)
     if (persistRef.current) clearTimeout(persistRef.current);
     persistRef.current = setTimeout(() => {
+      const { collaborators, ...appStateToSave } = sanitizedAppState;
       updatePage.mutate({
         pageId,
-        excalidrawData: { elements, appState, files }
+        excalidrawData: { elements, appState: appStateToSave, files }
       });
     }, 3000);
   }, [pageId, arrowCounterEnabled, inchesPerSceneUnit, onArrowStatsChange, updatePage]);
