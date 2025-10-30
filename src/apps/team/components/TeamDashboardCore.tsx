@@ -348,14 +348,6 @@ export default function RehomeDoubleSidebar() {
           >
             {active === "projects" ? (
               <div className="h-full flex flex-col">
-                {selected?.tab === "projects" && (
-                  <div className="px-6 pt-2 pb-4 border-b border-slate-200">
-                    <span className="rounded-full border border-[#d2e3fc] bg-[#f0f5fe] text-[#3a78bd] text-[12px] px-3 py-1">
-                      {selected.item}
-                    </span>
-                  </div>
-                )}
-                
                 {/* File Viewer Area */}
                 <div className="flex-1 min-h-0">
                   {selectedFile ? (
