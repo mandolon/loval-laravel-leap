@@ -987,6 +987,12 @@ const ChatView = memo(function ChatView() {
   const [page, setPage] = useState<'chat' | 'files'>('chat');
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
 
+  // Reset to home/default chat view when component mounts
+  React.useEffect(() => {
+    setSelectedProject(null);
+    setPage('chat');
+  }, []); // Empty dependency array means this only runs on mount
+
   const handleToggleSidebar = () => setSidebarCollapsed((prev) => !prev);
   const handleToggleFiles = () => setPage((prev) => prev === 'chat' ? 'files' : 'chat');
 
