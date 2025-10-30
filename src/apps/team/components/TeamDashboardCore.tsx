@@ -344,9 +344,14 @@ export default function RehomeDoubleSidebar() {
             }
           >
             {active === "projects" ? (
-              <div className="h-full flex overflow-hidden relative">
-                {/* Main content area */}
-                <div className="flex-1 px-6 pt-2 pb-12 overflow-auto">
+              <div className="h-full flex overflow-hidden">
+                {/* Main content area - resizes when panel is visible */}
+                <div 
+                  className="flex-1 px-6 pt-2 pb-12 overflow-auto transition-all duration-300 ease-out"
+                  style={{
+                    marginRight: projectPanelCollapsed ? 0 : 0,
+                  }}
+                >
                   {selected?.tab === "projects" && (
                     <div className="mb-3">
                       <div className="flex items-center justify-start">
@@ -368,22 +373,22 @@ export default function RehomeDoubleSidebar() {
                   )}
                 </div>
                 
-                {/* Collapsible ProjectPanel */}
+                {/* ProjectPanel - slides in/out, part of flex layout */}
                 {selected?.tab === "projects" && (
                   <div
-                    className={`absolute top-0 right-0 bottom-0 transition-transform duration-300 ease-out ${
-                      projectPanelCollapsed ? 'translate-x-full' : 'translate-x-0'
-                    }`}
+                    className="h-full flex-shrink-0 transition-all duration-300 ease-out overflow-hidden border-l border-slate-200"
                     style={{
-                      width: '240px',
-                      boxShadow: projectPanelCollapsed ? 'none' : '-2px 0 8px rgba(0,0,0,0.1)',
+                      width: projectPanelCollapsed ? 0 : '240px',
+                      opacity: projectPanelCollapsed ? 0 : 1,
                     }}
                   >
-                    <ProjectPanel
-                      projectId={userProjects.find((p: any) => p.name === selected.item)?.id || ''}
-                      projectName={selected.item}
-                      onBreadcrumb={(crumb) => console.log('Breadcrumb:', crumb)}
-                    />
+                    <div className="h-full w-[240px]">
+                      <ProjectPanel
+                        projectId={userProjects.find((p: any) => p.name === selected.item)?.id || ''}
+                        projectName={selected.item}
+                        onBreadcrumb={(crumb) => console.log('Breadcrumb:', crumb)}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
