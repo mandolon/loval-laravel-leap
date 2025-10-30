@@ -364,7 +364,7 @@ export default function RehomeDoubleSidebar() {
                 {/* File/Whiteboard Viewer Area */}
                 <div className="flex-1 min-h-0 relative">
                   {selectedWhiteboard ? (
-                    <div className="absolute inset-0 w-full h-full">
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex' }}>
                       <ExcalidrawCanvas
                         pageId={selectedWhiteboard.pageId}
                         projectId={userProjects.find((p: any) => p.name === selected?.item)?.id || ''}
