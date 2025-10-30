@@ -322,7 +322,7 @@ export default function TeamChatSlim({
         }
       `}</style>
 
-      {/* Header */}
+      {/* Header - only show when project is selected */}
       {selectedProject && (
         <header
           className="sticky top-0 z-20 w-full backdrop-blur-md"
@@ -351,7 +351,7 @@ export default function TeamChatSlim({
             </div>
 
             {/* Center: Project selector */}
-            <div className="absolute left-1/2 -translate-x-1/2 flex items-center relative">
+            <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
               <button
                 onClick={() => setShowChatSelector(!showChatSelector)}
                 className="flex items-center gap-2 transition-all text-[16px] px-3 py-1.5 rounded-lg"
@@ -363,70 +363,60 @@ export default function TeamChatSlim({
               </button>
 
               {showChatSelector && (
-                <>
-                  {/* Backdrop */}
-                  <div 
-                    className="fixed inset-0 z-40" 
-                    onClick={() => setShowChatSelector(false)}
-                    style={{ background: 'transparent' }}
-                  />
-                  
-                  {/* Dropdown */}
-                  <div
-                    className="chat-selector-dropdown absolute top-full left-1/2 -translate-x-1/2 mt-2 w-80 rounded-2xl border shadow-lg z-50 max-h-96 overflow-y-auto"
-                    style={{
-                      borderColor: THEME.border,
-                      background: THEME.card,
-                    }}
-                  >
-                    <div className="p-3">
-                      <div className="text-xs font-semibold opacity-60 mb-2 px-2">
-                        RECENT PROJECTS
-                      </div>
-                      {projects.map((project) => (
-                        <button
-                          key={project.id}
-                          onClick={() => {
-                            onProjectSelect(project);
-                            setShowChatSelector(false);
-                          }}
-                          className="w-full text-left px-3 py-2 rounded-lg transition-colors"
-                          style={{
-                            background:
-                              project.id === selectedProject?.id
-                                ? "rgba(76, 117, 209, 0.1)"
-                                : "transparent",
-                          }}
-                          onMouseEnter={(e) =>
-                            (e.currentTarget.style.background =
-                              project.id === selectedProject?.id
-                                ? "rgba(76, 117, 209, 0.15)"
-                                : THEME.hover)
-                          }
-                          onMouseLeave={(e) =>
-                            (e.currentTarget.style.background =
-                              project.id === selectedProject?.id
-                                ? "rgba(76, 117, 209, 0.1)"
-                                : "transparent")
-                          }
-                        >
-                          <div
-                            className="font-medium text-sm"
-                            style={{
-                              color:
-                                project.id === selectedProject?.id ? "#4C75D1" : THEME.text,
-                            }}
-                          >
-                            {project.name}
-                          </div>
-                          <div className="text-xs opacity-60 truncate">
-                            {project.description || ""}
-                          </div>
-                        </button>
-                      ))}
+                <div
+                  className="chat-selector-dropdown absolute top-full left-1/2 -translate-x-1/2 mt-2 w-80 rounded-2xl border shadow-lg z-30 max-h-96 overflow-y-auto"
+                  style={{
+                    borderColor: THEME.border,
+                    background: THEME.card,
+                  }}
+                >
+                  <div className="p-3">
+                    <div className="text-xs font-semibold opacity-60 mb-2 px-2">
+                      RECENT PROJECTS
                     </div>
+                    {projects.map((project) => (
+                      <button
+                        key={project.id}
+                        onClick={() => {
+                          onProjectSelect(project);
+                          setShowChatSelector(false);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-lg transition-colors"
+                        style={{
+                          background:
+                            project.id === selectedProject?.id
+                              ? "rgba(76, 117, 209, 0.1)"
+                              : "transparent",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.background =
+                            project.id === selectedProject?.id
+                              ? "rgba(76, 117, 209, 0.15)"
+                              : THEME.hover)
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.background =
+                            project.id === selectedProject?.id
+                              ? "rgba(76, 117, 209, 0.1)"
+                              : "transparent")
+                        }
+                      >
+                        <div
+                          className="font-medium text-sm"
+                          style={{
+                            color:
+                              project.id === selectedProject?.id ? "#4C75D1" : THEME.text,
+                          }}
+                        >
+                          {project.name}
+                        </div>
+                        <div className="text-xs opacity-60 truncate">
+                          {project.description || ""}
+                        </div>
+                      </button>
+                    ))}
                   </div>
-                </>
+                </div>
               )}
             </div>
 
