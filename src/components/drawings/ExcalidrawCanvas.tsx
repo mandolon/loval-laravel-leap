@@ -93,7 +93,7 @@ export default function ExcalidrawCanvas({
   };
   
   return (
-    <div className="h-full">
+    <div className="w-full h-full" style={{ width: '100%', height: '100%' }}>
       <Excalidraw
         excalidrawAPI={(api) => {
           excaliRef.current = api;
