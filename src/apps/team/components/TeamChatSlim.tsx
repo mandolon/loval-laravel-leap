@@ -9,6 +9,7 @@ import {
 import { useProjectFiles } from "@/lib/api/hooks/useProjectFiles";
 import type { Project } from "@/lib/api/types";
 import TeamFilesView from "./TeamFilesView";
+import { ChatHeader } from "./chat/ChatHeader";
 
 // Theme Configuration - Exact from reference
 const THEME = {
@@ -321,6 +322,18 @@ export default function TeamChatSlim({
           }
         }
       `}</style>
+
+      {/* Chat Header */}
+      <ChatHeader
+        selectedProject={selectedProject}
+        projects={projects}
+        showChatSelector={showChatSelector}
+        onToggleSidebar={onToggleSidebar}
+        onToggleFiles={onToggleFiles}
+        onProjectSelect={onProjectSelect}
+        onToggleChatSelector={() => setShowChatSelector(!showChatSelector)}
+        onCloseChatSelector={() => setShowChatSelector(false)}
+      />
 
       {/* Messages or Empty State */}
       <div
