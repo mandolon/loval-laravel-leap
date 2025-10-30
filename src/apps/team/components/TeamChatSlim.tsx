@@ -19,7 +19,7 @@ const THEME = {
   accent: "#4C75D1",
   hover: "#f1f5f9",
   highlight: "#f1f5f9",
-  backdrop: "rgba(252, 252, 252, 0.8)",
+  backdrop: "#ffffff",
   avatarBackground: "#000000",
   avatarBorder: "#000000",
   avatarText: "#ffffff",
@@ -315,7 +315,7 @@ export default function TeamChatSlim({
       {/* Header - only show when chat is active */}
       {selectedProject && (
         <header
-          className="sticky top-0 z-20 w-full backdrop-blur-md"
+          className="sticky top-0 z-20 w-full"
           style={{ background: THEME.backdrop }}
         >
           <div className="flex h-16 w-full items-center justify-between px-4">
@@ -499,7 +499,7 @@ export default function TeamChatSlim({
 
       {/* Composer */}
       <div
-        className="sticky bottom-0 z-10 w-full backdrop-blur-md"
+        className="sticky bottom-0 z-10 w-full"
         style={{ background: THEME.backdrop }}
       >
         <div className="mx-auto max-w-3xl px-4 py-2">

@@ -15,7 +15,3 @@
   isolation: isolate;
 }
 
-/* Ensure team dashboard fills viewport */
-.team-app > * {
-  min-height: 100vh;
-}
