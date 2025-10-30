@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, PanelLeftClose, PanelLeft } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   useProjectMessages, 
   useCreateMessage, 
@@ -74,7 +75,8 @@ export default function TeamChatSlim({
   const [popoverMessageId, setPopoverMessageId] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<{ messageId: string; userName: string } | null>(null);
   const [isWorkspaceChat, setIsWorkspaceChat] = useState(false);
-  const listRef = useRef<HTMLDivElement>(null);
+  const [isSidePanelCollapsed, setIsSidePanelCollapsed] = useState(false);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Fetch project messages or workspace messages based on mode
   const { data: rawProjectMessages = [] } = useProjectMessages(
@@ -158,7 +160,10 @@ export default function TeamChatSlim({
         textarea.style.height = "auto";
       }
       setTimeout(() => {
-        listRef.current?.scrollTo({ top: 999999, behavior: "smooth" });
+        const viewport = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+        if (viewport) {
+          viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
+        }
       }, 50);
     });
   };
@@ -187,7 +192,8 @@ export default function TeamChatSlim({
 
   const handleScrollToMessage = (messageId: string) => {
     const messageElement = document.getElementById(`message-${messageId}`);
-    if (messageElement && listRef.current) {
+    const viewport = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+    if (messageElement && viewport) {
       messageElement.scrollIntoView({ behavior: "smooth", block: "center" });
       messageElement.style.transition = "background 0.3s";
       messageElement.style.background = THEME.highlight;
@@ -274,7 +280,7 @@ export default function TeamChatSlim({
   return (
     <div className="flex h-full w-full">
       {/* Side Panel */}
-      {showSidePanel && (
+      {showSidePanel && !isSidePanelCollapsed && (
         <ChatSidePanel
           projects={projects}
           selectedProject={selectedProject}
@@ -398,54 +404,73 @@ export default function TeamChatSlim({
       )}
 
       {/* Messages or Empty State */}
-      <div
-        ref={listRef}
-        className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-2 md:gap-3 px-4 pt-8 pb-0"
-      >
-        {!selectedProject && !isWorkspaceChat ? (
-          <div className="flex flex-col items-center justify-start h-full pt-32">
-            <div className="text-center max-w-md">
-              <h2 className="text-2xl font-semibold mb-3" style={{ color: THEME.text }}>
-                Welcome to your workspace
-              </h2>
-              <p className="text-base mb-6" style={{ color: THEME.textSecondary }}>
-                Select a project to start chatting.
-              </p>
+      <ScrollArea className="flex-1" ref={scrollAreaRef}>
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-2 md:gap-3 px-4 pt-8 pb-4">
+          {!selectedProject && !isWorkspaceChat ? (
+            <div className="flex flex-col items-center justify-start pt-32 relative">
+              {/* Collapse/Expand Button - Top Left */}
+              {showSidePanel && (
+                <button
+                  onClick={() => setIsSidePanelCollapsed(!isSidePanelCollapsed)}
+                  className="absolute top-0 left-0 p-2 rounded-lg transition-colors"
+                  style={{
+                    color: THEME.textSecondary,
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = THEME.hover)}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  title={isSidePanelCollapsed ? "Expand panel" : "Collapse panel"}
+                >
+                  {isSidePanelCollapsed ? (
+                    <PanelLeft className="h-5 w-5" />
+                  ) : (
+                    <PanelLeftClose className="h-5 w-5" />
+                  )}
+                </button>
+              )}
 
-              <div className="flex flex-col gap-2 mt-8">
-                <div className="text-xs font-semibold opacity-60 mb-2 text-left">
-                  RECENT PROJECTS
+              <div className="text-center max-w-md">
+                <h2 className="text-2xl font-semibold mb-3" style={{ color: THEME.text }}>
+                  Welcome to your workspace
+                </h2>
+                <p className="text-base mb-6" style={{ color: THEME.textSecondary }}>
+                  Select a project to start chatting.
+                </p>
+
+                <div className="flex flex-col gap-2 mt-8">
+                  <div className="text-xs font-semibold opacity-60 mb-2 text-left">
+                    RECENT PROJECTS
+                  </div>
+                  {projects.slice(0, 4).map((project) => (
+                    <button
+                      key={project.id}
+                      onClick={() => onProjectSelect(project)}
+                      className="w-full text-left px-4 py-3 rounded-xl border transition-colors"
+                      style={{
+                        borderColor: THEME.border,
+                        background: THEME.card,
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = THEME.hover)}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = THEME.card)}
+                    >
+                      <div className="font-medium text-base">{project.name}</div>
+                    </button>
+                  ))}
                 </div>
-                {projects.slice(0, 4).map((project) => (
-                  <button
-                    key={project.id}
-                    onClick={() => onProjectSelect(project)}
-                    className="w-full text-left px-4 py-3 rounded-xl border transition-colors"
-                    style={{
-                      borderColor: THEME.border,
-                      background: THEME.card,
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = THEME.hover)}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = THEME.card)}
-                  >
-                    <div className="font-medium text-base">{project.name}</div>
-                  </button>
-                ))}
               </div>
             </div>
-          </div>
-        ) : (
-          messages.map((msg: any) => (
-            <MessageBlock
-              key={msg.id}
-              msg={msg}
-              currentUserId={user?.id}
-              onReply={handleReply}
-              onScrollToMessage={handleScrollToMessage}
-            />
-          ))
-        )}
-      </div>
+          ) : (
+            messages.map((msg: any) => (
+              <MessageBlock
+                key={msg.id}
+                msg={msg}
+                currentUserId={user?.id}
+                onReply={handleReply}
+                onScrollToMessage={handleScrollToMessage}
+              />
+            ))
+          )}
+        </div>
+      </ScrollArea>
 
       {/* Composer */}
       <div

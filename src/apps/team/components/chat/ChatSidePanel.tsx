@@ -1,5 +1,6 @@
 import { ChevronRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const THEME = {
   background: "#fcfcfc",
@@ -103,7 +104,7 @@ export function ChatSidePanel({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto">
+      <ScrollArea className="flex-1">
         {/* Recent Projects */}
         {recentProjects.length > 0 && (
           <div className="p-4">
@@ -184,7 +185,7 @@ export function ChatSidePanel({
             ))}
           </div>
         </div>
-      </div>
+      </ScrollArea>
     </div>
   );
 }
