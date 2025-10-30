@@ -69,6 +69,9 @@ interface TopHeaderProps {
 interface PageHeaderProps {
   tabKey: string;
   title: string;
+  selected?: { tab: string; item: string } | null;
+  projectPanelCollapsed?: boolean;
+  onToggleProjectPanel?: () => void;
 }
 
 interface TabsRowProps {
@@ -325,7 +328,13 @@ export default function RehomeDoubleSidebar() {
         }}
       >
         <div className="h-full overflow-hidden flex flex-col">
-          <PageHeader tabKey={active} title={TITLES[active as keyof typeof TITLES] || active} />
+          <PageHeader 
+            tabKey={active} 
+            title={TITLES[active as keyof typeof TITLES] || active}
+            selected={selected}
+            projectPanelCollapsed={projectPanelCollapsed}
+            onToggleProjectPanel={() => setProjectPanelCollapsed(!projectPanelCollapsed)}
+          />
 
           <div
             className={
@@ -340,24 +349,10 @@ export default function RehomeDoubleSidebar() {
                 <div className="flex-1 px-6 pt-2 pb-12 overflow-auto">
                   {selected?.tab === "projects" && (
                     <div className="mb-3">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-start">
                         <span className="rounded-full border border-[#d2e3fc] bg-[#f0f5fe] text-[#3a78bd] text-[12px] px-3 py-1">
                           {selected.item}
                         </span>
-                        
-                        {/* Collapse button */}
-                        <button
-                          onClick={() => setProjectPanelCollapsed(!projectPanelCollapsed)}
-                          className="h-8 w-8 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors group"
-                          aria-label={projectPanelCollapsed ? "Show project panel" : "Hide project panel"}
-                          title={projectPanelCollapsed ? "Show Files & Whiteboards" : "Hide Files & Whiteboards"}
-                        >
-                          {projectPanelCollapsed ? (
-                            <ChevronLeft className="h-4 w-4 text-slate-600 group-hover:text-slate-900" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4 text-slate-600 group-hover:text-slate-900" />
-                          )}
-                        </button>
                       </div>
                       
                       {/* Project details placeholder */}
@@ -833,8 +828,15 @@ const TopHeader = memo(function TopHeader({
 // ----------------------------------
 // Page Header (inside content)
 // ----------------------------------
-const PageHeader = memo(function PageHeader({ tabKey, title }: PageHeaderProps) {
+const PageHeader = memo(function PageHeader({ 
+  tabKey, 
+  title, 
+  selected, 
+  projectPanelCollapsed, 
+  onToggleProjectPanel 
+}: PageHeaderProps) {
   const Icon = ICON_MAP[tabKey] || Home;
+  const showCollapseButton = tabKey === "projects" && selected?.tab === "projects";
 
   return (
     <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b border-slate-200/70 rounded-t-xl">
@@ -847,7 +849,22 @@ const PageHeader = memo(function PageHeader({ tabKey, title }: PageHeaderProps) 
             {title}
           </span>
         </div>
-        <div className="w-20 h-4" aria-hidden />
+        <div className="flex items-center gap-2">
+          {showCollapseButton && onToggleProjectPanel && (
+            <button
+              onClick={onToggleProjectPanel}
+              className="h-7 w-7 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors group"
+              aria-label={projectPanelCollapsed ? "Show project panel" : "Hide project panel"}
+              title={projectPanelCollapsed ? "Show Files & Whiteboards" : "Hide Files & Whiteboards"}
+            >
+              {projectPanelCollapsed ? (
+                <ChevronLeft className="h-4 w-4 text-slate-600 group-hover:text-slate-900" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-slate-600 group-hover:text-slate-900" />
+              )}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
