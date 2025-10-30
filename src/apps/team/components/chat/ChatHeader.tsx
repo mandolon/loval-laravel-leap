@@ -35,10 +35,6 @@ export function ChatHeader({
 }: ChatHeaderProps) {
   const headerTitle = selectedProject?.name || "Workspace";
 
-  if (!selectedProject) {
-    return null;
-  }
-
   return (
     <header
       className="sticky top-0 z-20 w-full backdrop-blur-md"

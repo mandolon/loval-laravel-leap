@@ -6,6 +6,11 @@ import {
   useCreateMessage, 
   useDeleteMessage 
 } from "@/lib/api/hooks/useProjectChat";
+import {
+  useWorkspaceMessages,
+  useCreateWorkspaceMessage,
+  useDeleteWorkspaceMessage
+} from "@/lib/api/hooks/useWorkspaceChat";
 import { useProjectFiles } from "@/lib/api/hooks/useProjectFiles";
 import type { Project } from "@/lib/api/types";
 import TeamFilesView from "./TeamFilesView";
@@ -68,12 +73,26 @@ export default function TeamChatSlim({
   const [popoverPosition, setPopoverPosition] = useState({ x: 0, y: 0 });
   const [popoverMessageId, setPopoverMessageId] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<{ messageId: string; userName: string } | null>(null);
+  const [isWorkspaceChat, setIsWorkspaceChat] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const { data: rawMessages = [] } = useProjectMessages(selectedProject?.id || "");
+  // Fetch project messages or workspace messages based on mode
+  const { data: rawProjectMessages = [] } = useProjectMessages(
+    isWorkspaceChat ? "" : (selectedProject?.id || "")
+  );
+  const { data: rawWorkspaceMessages = [] } = useWorkspaceMessages(
+    isWorkspaceChat ? (workspaceId || "") : ""
+  );
   const { data: projectFiles = [] } = useProjectFiles(selectedProject?.id || "");
-  const createMessage = useCreateMessage();
-  const deleteMessage = useDeleteMessage();
+  const createProjectMessage = useCreateMessage();
+  const createWorkspaceChatMessage = useCreateWorkspaceMessage();
+  const deleteProjectMessage = useDeleteMessage();
+  const deleteWorkspaceChatMessage = useDeleteWorkspaceMessage();
+
+  // Use appropriate messages based on mode
+  const rawMessages = isWorkspaceChat ? rawWorkspaceMessages : rawProjectMessages;
+  const createMessage = isWorkspaceChat ? createWorkspaceChatMessage : createProjectMessage;
+  const deleteMessage = isWorkspaceChat ? deleteWorkspaceChatMessage : deleteProjectMessage;
 
   // Transform messages to include file data
   const messages = useMemo(() => {
@@ -110,13 +129,24 @@ export default function TeamChatSlim({
   const handleSend = () => {
     const body = text.trim();
     if (!body && attachedFiles.length === 0) return;
-    if (!selectedProject || !user) return;
-
-    createMessage.mutate({
-      projectId: selectedProject.id,
-      content: body,
-      replyToMessageId: replyingTo?.messageId,
-    });
+    if (!user) return;
+    
+    if (isWorkspaceChat) {
+      if (!workspaceId) return;
+      createWorkspaceChatMessage.mutate({
+        workspace_id: workspaceId,
+        content: body,
+        reply_to_message_id: replyingTo?.messageId,
+        referenced_files: attachedFiles.map(f => f.id),
+      });
+    } else {
+      if (!selectedProject) return;
+      createProjectMessage.mutate({
+        projectId: selectedProject.id,
+        content: body,
+        replyToMessageId: replyingTo?.messageId,
+      });
+    }
 
     setText("");
     setAttachedFiles([]);
@@ -168,8 +198,13 @@ export default function TeamChatSlim({
   };
 
   const handleDeleteMessage = (messageId: string) => {
-    if (!selectedProject) return;
-    deleteMessage.mutate({ id: messageId, projectId: selectedProject.id });
+    if (isWorkspaceChat) {
+      if (!workspaceId) return;
+      deleteWorkspaceChatMessage.mutate({ id: messageId, workspace_id: workspaceId });
+    } else {
+      if (!selectedProject) return;
+      deleteProjectMessage.mutate({ id: messageId, projectId: selectedProject.id });
+    }
     setShowMobilePopover(false);
   };
 
@@ -243,8 +278,16 @@ export default function TeamChatSlim({
         <ChatSidePanel
           projects={projects}
           selectedProject={selectedProject}
-          onProjectSelect={onProjectSelect}
+          onProjectSelect={(project) => {
+            onProjectSelect(project as any);
+            setIsWorkspaceChat(false);
+          }}
           workspaceId={workspaceId}
+          isWorkspaceChat={isWorkspaceChat}
+          onWorkspaceChatSelect={() => {
+            onProjectSelect(null);
+            setIsWorkspaceChat(true);
+          }}
         />
       )}
 
@@ -341,23 +384,25 @@ export default function TeamChatSlim({
       `}</style>
 
       {/* Chat Header */}
-      <ChatHeader
-        selectedProject={selectedProject}
-        projects={projects}
-        showChatSelector={showChatSelector}
-        onToggleSidebar={onToggleSidebar}
-        onToggleFiles={onToggleFiles}
-        onProjectSelect={onProjectSelect}
-        onToggleChatSelector={() => setShowChatSelector(!showChatSelector)}
-        onCloseChatSelector={() => setShowChatSelector(false)}
-      />
+      {(selectedProject || isWorkspaceChat) && (
+        <ChatHeader
+          selectedProject={isWorkspaceChat ? { id: '', name: 'Workspace chat' } : selectedProject}
+          projects={projects}
+          showChatSelector={showChatSelector}
+          onToggleSidebar={onToggleSidebar}
+          onToggleFiles={onToggleFiles}
+          onProjectSelect={onProjectSelect}
+          onToggleChatSelector={() => setShowChatSelector(!showChatSelector)}
+          onCloseChatSelector={() => setShowChatSelector(false)}
+        />
+      )}
 
       {/* Messages or Empty State */}
       <div
         ref={listRef}
         className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-2 md:gap-3 px-4 pt-8 pb-0"
       >
-        {!selectedProject ? (
+        {!selectedProject && !isWorkspaceChat ? (
           <div className="flex flex-col items-center justify-start h-full pt-32">
             <div className="text-center max-w-md">
               <h2 className="text-2xl font-semibold mb-3" style={{ color: THEME.text }}>
@@ -498,24 +543,26 @@ export default function TeamChatSlim({
                 </button>
                 <div className="relative">
                   <button
-                    onClick={() => !selectedProject && setShowChatSelector(true)}
+                    onClick={() => !isWorkspaceChat && !selectedProject && setShowChatSelector(true)}
                     className="flex h-8 items-center gap-1.5 rounded-md border px-2.5 transition-colors text-sm whitespace-nowrap"
                     style={{
                       borderColor: THEME.border,
-                      cursor: !selectedProject ? "pointer" : "default",
+                      cursor: isWorkspaceChat || selectedProject ? "default" : "pointer",
+                      opacity: isWorkspaceChat ? 0.7 : 1,
                     }}
                     onMouseEnter={(e) =>
-                      !selectedProject && (e.currentTarget.style.background = THEME.hover)
+                      !isWorkspaceChat && !selectedProject && (e.currentTarget.style.background = THEME.hover)
                     }
                     onMouseLeave={(e) =>
-                      !selectedProject && (e.currentTarget.style.background = "transparent")
+                      !isWorkspaceChat && !selectedProject && (e.currentTarget.style.background = "transparent")
                     }
+                    disabled={isWorkspaceChat || !!selectedProject}
                   >
-                    <span>{selectedProject?.name || "Select project..."}</span>
-                    {!selectedProject && <ChevronDown className="h-3.5 w-3.5 opacity-60" />}
+                    <span>{isWorkspaceChat ? "Workspace chat" : (selectedProject?.name || "Select project...")}</span>
+                    {!isWorkspaceChat && !selectedProject && <ChevronDown className="h-3.5 w-3.5 opacity-60" />}
                   </button>
 
-                  {!selectedProject && showChatSelector && (
+                  {!isWorkspaceChat && !selectedProject && showChatSelector && (
                     <div
                       className="absolute bottom-full left-0 mb-2 w-80 rounded-2xl border shadow-lg z-30 max-h-96 overflow-y-auto"
                       style={{

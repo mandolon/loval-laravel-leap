@@ -8,6 +8,7 @@ const THEME = {
   text: "#0f172a",
   textSecondary: "#475569",
   hover: "#f1f5f9",
+  activeBackground: "rgba(76, 117, 209, 0.1)",
 };
 
 interface Project {
@@ -23,6 +24,8 @@ interface ChatSidePanelProps {
   selectedProject: Project | null;
   onProjectSelect: (project: Project) => void;
   workspaceId?: string;
+  isWorkspaceChat: boolean;
+  onWorkspaceChatSelect: () => void;
 }
 
 export function ChatSidePanel({
@@ -30,6 +33,8 @@ export function ChatSidePanel({
   selectedProject,
   onProjectSelect,
   workspaceId,
+  isWorkspaceChat,
+  onWorkspaceChatSelect,
 }: ChatSidePanelProps) {
   // Sort projects by most recent activity
   const sortedProjects = [...projects].sort((a, b) => {
@@ -60,7 +65,21 @@ export function ChatSidePanel({
     >
       {/* Header */}
       <div className="p-4 border-b" style={{ borderColor: THEME.border }}>
-        <div className="flex items-center justify-between">
+        <button
+          onClick={onWorkspaceChatSelect}
+          className="w-full flex items-center justify-between transition-colors p-2 -m-2 rounded-lg"
+          style={{
+            background: isWorkspaceChat ? THEME.activeBackground : "transparent",
+          }}
+          onMouseEnter={(e) => {
+            if (!isWorkspaceChat) {
+              e.currentTarget.style.background = THEME.hover;
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = isWorkspaceChat ? THEME.activeBackground : "transparent";
+          }}
+        >
           <div className="flex items-center gap-2">
             <svg className="h-5 w-5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -70,7 +89,7 @@ export function ChatSidePanel({
                 d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
               />
             </svg>
-            <div>
+            <div className="text-left">
               <div className="text-sm font-medium" style={{ color: THEME.text }}>
                 Workspace chat
               </div>
@@ -80,7 +99,7 @@ export function ChatSidePanel({
             </div>
           </div>
           <ChevronRight className="h-4 w-4 opacity-40" />
-        </div>
+        </button>
       </div>
 
       {/* Content */}
@@ -102,7 +121,7 @@ export function ChatSidePanel({
                   className="w-full text-left px-3 py-2 rounded-lg transition-colors"
                   style={{
                     background:
-                      project.id === selectedProject?.id
+                      project.id === selectedProject?.id && !isWorkspaceChat
                         ? THEME.hover
                         : "transparent",
                   }}
@@ -111,7 +130,7 @@ export function ChatSidePanel({
                   }
                   onMouseLeave={(e) =>
                     (e.currentTarget.style.background =
-                      project.id === selectedProject?.id
+                      project.id === selectedProject?.id && !isWorkspaceChat
                         ? THEME.hover
                         : "transparent")
                   }
@@ -144,7 +163,7 @@ export function ChatSidePanel({
                 className="w-full text-left px-3 py-2 rounded-lg transition-colors"
                 style={{
                   background:
-                    project.id === selectedProject?.id
+                    project.id === selectedProject?.id && !isWorkspaceChat
                       ? THEME.hover
                       : "transparent",
                 }}
@@ -153,7 +172,7 @@ export function ChatSidePanel({
                 }
                 onMouseLeave={(e) =>
                   (e.currentTarget.style.background =
-                    project.id === selectedProject?.id
+                    project.id === selectedProject?.id && !isWorkspaceChat
                       ? THEME.hover
                       : "transparent")
                 }

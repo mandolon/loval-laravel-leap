@@ -1545,6 +1545,51 @@ export type Database = {
           },
         ]
       }
+      workspace_chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          referenced_files: string[] | null
+          referenced_tasks: string[] | null
+          reply_to_message_id: string | null
+          short_id: string
+          updated_at: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          referenced_files?: string[] | null
+          referenced_tasks?: string[] | null
+          reply_to_message_id?: string | null
+          short_id?: string
+          updated_at?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          referenced_files?: string[] | null
+          referenced_tasks?: string[] | null
+          reply_to_message_id?: string | null
+          short_id?: string
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
       workspace_members: {
         Row: {
           created_at: string
