@@ -450,7 +450,7 @@ export default function TeamChatSlim({
         className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-2 md:gap-3 px-4 pt-8 pb-0"
       >
         {!selectedProject ? (
-          <div className="flex flex-col items-center justify-center h-full py-16">
+          <div className="flex flex-col items-center justify-start h-full pt-16">
             <div className="text-center max-w-md">
               <h2 className="text-2xl font-semibold mb-3" style={{ color: THEME.text }}>
                 Welcome to your workspace
