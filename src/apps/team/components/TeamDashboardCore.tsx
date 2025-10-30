@@ -29,6 +29,8 @@ import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { TeamAvatarMenu } from "./TeamAvatarMenu";
 import ProjectPanel from "./ProjectPanel";
 import TeamFileViewer from "./viewers/TeamFileViewer";
+import ExcalidrawCanvas from '@/components/drawings/ExcalidrawCanvas';
+import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
 
 // ----------------------------------
 // Theme & constants
@@ -185,6 +187,11 @@ export default function RehomeDoubleSidebar() {
   const [railCollapsed, setRailCollapsed] = useState(false);
   const [projectPanelCollapsed, setProjectPanelCollapsed] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
+  const [selectedWhiteboard, setSelectedWhiteboard] = useState<{ pageId: string; pageName: string; versionTitle: string } | null>(null);
+  const [arrowCounterEnabled, setArrowCounterEnabled] = useState(true);
+  const [currentScale, setCurrentScale] = useState<ScalePreset>("1/4\" = 1'");
+  const [arrowStats, setArrowStats] = useState<ArrowCounterStats>({ count: 0, values: [] });
+  const [inchesPerSceneUnit, setInchesPerSceneUnit] = useState<number>(getInchesPerSceneUnit(SCALE_PRESETS["1/4\" = 1'"]));
   const [chatResetTrigger, setChatResetTrigger] = useState(0);
   const mdUp = useMediaQuery("(min-width: 768px)");
   const { currentWorkspaceId } = useWorkspaces();
@@ -354,15 +361,24 @@ export default function RehomeDoubleSidebar() {
           >
             {active === "projects" ? (
               <div className="h-full flex flex-col">
-                {/* File Viewer Area */}
+                {/* File/Whiteboard Viewer Area */}
                 <div className="flex-1 min-h-0">
-                  {selectedFile ? (
+                  {selectedWhiteboard ? (
+                    <ExcalidrawCanvas
+                      pageId={selectedWhiteboard.pageId}
+                      projectId={userProjects.find((p: any) => p.name === selected?.item)?.id || ''}
+                      onApiReady={(api) => {/* Optional: store api reference */}}
+                      arrowCounterEnabled={arrowCounterEnabled}
+                      inchesPerSceneUnit={inchesPerSceneUnit}
+                      onArrowStatsChange={setArrowStats}
+                    />
+                  ) : selectedFile ? (
                     <TeamFileViewer file={selectedFile} />
                   ) : (
                     <div className="h-full flex items-center justify-center">
                       <div className="text-center text-slate-600">
-                        <p className="text-sm font-medium">No file selected</p>
-                        <p className="text-xs mt-1">Select a file from the panel to preview</p>
+                        <p className="text-sm font-medium">No file or whiteboard selected</p>
+                        <p className="text-xs mt-1">Select from the panel to preview</p>
                       </div>
                     </div>
                   )}
@@ -398,7 +414,22 @@ export default function RehomeDoubleSidebar() {
               projectId={userProjects.find((p: any) => p.name === selected.item)?.id || ''}
               projectName={selected.item}
               onBreadcrumb={(crumb) => console.log('Breadcrumb:', crumb)}
-              onFileSelect={(file) => setSelectedFile(file)}
+              onFileSelect={(file) => {
+                setSelectedFile(file);
+                setSelectedWhiteboard(null);
+              }}
+              onWhiteboardSelect={(wb) => {
+                setSelectedWhiteboard(wb);
+                setSelectedFile(null);
+              }}
+              arrowCounterEnabled={arrowCounterEnabled}
+              onArrowCounterToggle={() => setArrowCounterEnabled(!arrowCounterEnabled)}
+              currentScale={currentScale}
+              onScaleChange={(scale) => {
+                setCurrentScale(scale);
+                setInchesPerSceneUnit(getInchesPerSceneUnit(SCALE_PRESETS[scale]));
+              }}
+              arrowStats={arrowStats}
             />
         </div>
       )}

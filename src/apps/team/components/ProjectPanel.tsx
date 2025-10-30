@@ -3,7 +3,6 @@ import { Search, FolderClosed, BookOpen, MoreVertical } from "lucide-react";
 import { useProjectFolders, useProjectFiles } from '@/lib/api/hooks/useProjectFiles';
 import { useDrawingVersions, useUpdateDrawingScale } from '@/lib/api/hooks/useDrawings';
 import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
-import ExcalidrawCanvas from '@/components/drawings/ExcalidrawCanvas';
 
 /**
  * PROJECT PANEL — Files & Whiteboards now share identical interaction rules
@@ -245,12 +244,24 @@ export default function ProjectPanel({
   projectId, 
   projectName = "Project Files",
   onBreadcrumb,
-  onFileSelect
+  onFileSelect,
+  onWhiteboardSelect,
+  arrowCounterEnabled,
+  onArrowCounterToggle,
+  currentScale,
+  onScaleChange,
+  arrowStats
 }: { 
   projectId: string; 
   projectName?: string; 
   onBreadcrumb?: (breadcrumb: string) => void;
   onFileSelect?: (file: ProjectFile | null) => void;
+  onWhiteboardSelect?: (whiteboard: { pageId: string; pageName: string; versionTitle: string } | null) => void;
+  arrowCounterEnabled?: boolean;
+  onArrowCounterToggle?: () => void;
+  currentScale?: ScalePreset;
+  onScaleChange?: (scale: ScalePreset) => void;
+  arrowStats?: ArrowCounterStats;
 }) {
   const [tab, setTab] = useState<'files' | 'whiteboards'>('files');
   const [query, setQuery] = useState("");
@@ -339,14 +350,7 @@ export default function ProjectPanel({
     return pages;
   }, [drawingVersions]);
   
-  // Excalidraw measurement state
-  const [excaliApi, setExcaliApi] = useState<any>(null);
-  const [arrowCounterEnabled, setArrowCounterEnabled] = useState(true);
-  const [currentScale, setCurrentScale] = useState<ScalePreset>("1/4\" = 1'");
-  const [arrowStats, setArrowStats] = useState<ArrowCounterStats>({ count: 0, values: [] });
-  const [inchesPerSceneUnit, setInchesPerSceneUnit] = useState<number>(
-    getInchesPerSceneUnit(SCALE_PRESETS["1/4\" = 1'"])
-  );
+  // Remove local measurement state - now controlled by parent
 
   // Expanded/collapsed (whiteboards)
   const [wbExpanded, setWbExpanded] = useState<any>({ v2: true, v15: true, v10: true });
@@ -389,7 +393,11 @@ export default function ProjectPanel({
 
   const openWBProps = (versionId: string, versionTitle: string, pageId: string, pageName: string) => {
     setSelectedWB({ versionId, versionTitle, pageId, pageName });
+    setWbSelectedId(pageId);
     if (onBreadcrumb) onBreadcrumb(`Whiteboards › ${versionTitle} › ${pageName}`);
+    if (onWhiteboardSelect) {
+      onWhiteboardSelect({ pageId, pageName, versionTitle });
+    }
   };
 
   // ---- Files: item drag/drop ----
@@ -879,23 +887,8 @@ export default function ProjectPanel({
               </div>
             )}
 
-            {/* Canvas + Properties view */}
+            {/* Properties view (when whiteboard is selected) */}
             {selectedWB && (
-              <div className="absolute inset-0 bg-white flex">
-                {/* Excalidraw Canvas */}
-                <div className="flex-1">
-                  <ExcalidrawCanvas
-                    pageId={selectedWB.pageId}
-                    projectId={projectId}
-                    onApiReady={setExcaliApi}
-                    arrowCounterEnabled={arrowCounterEnabled}
-                    inchesPerSceneUnit={inchesPerSceneUnit}
-                    onArrowStatsChange={setArrowStats}
-                  />
-                </div>
-                
-                {/* Properties Panel */}
-                <div className="w-[240px] border-l border-slate-200 bg-[#fcfcfc] overflow-y-auto no-scrollbar">
               <div className="px-2.5 pt-1.5 pb-3">
                 <div className="group relative flex items-center gap-1 py-[2px] px-1 rounded-lg select-none">
                   <span className="inline-flex items-center justify-center" style={{ width: SOFT_SQUARE, height: SOFT_SQUARE }}>
@@ -942,7 +935,7 @@ export default function ProjectPanel({
                     <div className="mb-4">
                       <div className="text-[10px] text-slate-600 mb-1.5">Arrow Counter</div>
                       <button
-                        onClick={() => setArrowCounterEnabled(!arrowCounterEnabled)}
+                        onClick={() => onArrowCounterToggle?.()}
                         className={`w-full h-10 rounded-lg border flex items-center justify-center gap-2 text-sm font-medium transition-colors ${
                           arrowCounterEnabled
                             ? 'border-purple-400 bg-purple-50 text-purple-700'
@@ -965,8 +958,7 @@ export default function ProjectPanel({
                         value={currentScale}
                         onChange={(e) => {
                           const scale = e.target.value as ScalePreset;
-                          setCurrentScale(scale);
-                          setInchesPerSceneUnit(getInchesPerSceneUnit(SCALE_PRESETS[scale]));
+                          onScaleChange?.(scale);
                           
                           // Update database
                           if (selectedWB?.pageId) {
@@ -986,7 +978,7 @@ export default function ProjectPanel({
                     </div>
 
                     {/* Live Statistics - matching design from screenshot */}
-                    {arrowCounterEnabled && arrowStats.count > 0 && (
+                    {arrowCounterEnabled && arrowStats && arrowStats.count > 0 && (
                       <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                         <div className="text-center text-purple-700 font-semibold text-sm mb-1">
                           {arrowStats.count} arrow{arrowStats.count !== 1 ? 's' : ''} labeled
@@ -999,8 +991,6 @@ export default function ProjectPanel({
                       </div>
                     )}
                   </div>
-                </div>
-              </div>
                 </div>
               </div>
             )}
