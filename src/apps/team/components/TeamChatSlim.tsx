@@ -351,7 +351,7 @@ export default function TeamChatSlim({
             </div>
 
             {/* Center: Project selector */}
-            <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
+            <div className="absolute left-1/2 -translate-x-1/2 flex items-center relative">
               <button
                 onClick={() => setShowChatSelector(!showChatSelector)}
                 className="flex items-center gap-2 transition-all text-[16px] px-3 py-1.5 rounded-lg"
