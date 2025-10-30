@@ -75,7 +75,7 @@ export default function TeamChatSlim({
   const [popoverMessageId, setPopoverMessageId] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<{ messageId: string; userName: string } | null>(null);
   const [isWorkspaceChat, setIsWorkspaceChat] = useState(false);
-  const [isSidePanelCollapsed, setIsSidePanelCollapsed] = useState(false);
+  const [isSidePanelCollapsed, setIsSidePanelCollapsed] = useState(true);
   const [fileViewMode, setFileViewMode] = useState<'grid' | 'list'>('grid');
   const [fileSelectMode, setFileSelectMode] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
