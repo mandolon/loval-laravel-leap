@@ -983,43 +983,25 @@ const ChatView = memo(function ChatView() {
   const { data: projects = [] } = useProjects(currentWorkspaceId || '');
 
   const [selectedProject, setSelectedProject] = React.useState<any>(null);
-  const [selectedFileId, setSelectedFileId] = React.useState<string | null>(null);
-  const [projectPanelCollapsed, setProjectPanelCollapsed] = React.useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [page, setPage] = useState<'chat' | 'files'>('chat');
+  const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
 
-  const handleToggleFiles = () => {
-    setProjectPanelCollapsed(false);
-  };
+  const handleToggleSidebar = () => setSidebarCollapsed((prev) => !prev);
+  const handleToggleFiles = () => setPage((prev) => prev === 'chat' ? 'files' : 'chat');
 
   return (
-    <div className="flex h-full relative">
-      <div className="flex-1 min-w-0">
-        <TeamChatSlim
-          projects={projects}
-          selectedProject={selectedProject}
-          onProjectSelect={setSelectedProject}
-          onToggleSidebar={() => setProjectPanelCollapsed(!projectPanelCollapsed)}
-          onToggleFiles={handleToggleFiles}
-          onFileSelect={setSelectedFileId}
-        />
-      </div>
-      
-      {/* Project Panel - Files & Whiteboards */}
-      {selectedProject && (
-        <div
-          className="transition-all duration-300 ease-out border-l border-slate-200 bg-white overflow-hidden"
-          style={{
-            width: projectPanelCollapsed ? '0px' : '280px',
-            opacity: projectPanelCollapsed ? 0 : 1,
-          }}
-        >
-          <ProjectPanel
-            projectId={selectedProject.id}
-            projectName={selectedProject.name}
-            onBreadcrumb={(crumb) => console.log('Breadcrumb:', crumb)}
-            onFileSelect={(file) => setSelectedFileId(file?.id || null)}
-          />
-        </div>
-      )}
+    <div className="flex h-full">
+      <TeamChatSlim
+        projects={projects}
+        selectedProject={selectedProject}
+        onProjectSelect={setSelectedProject}
+        onToggleSidebar={handleToggleSidebar}
+        onToggleFiles={handleToggleFiles}
+        onFileSelect={setSelectedFileId}
+        page={page}
+        onPageChange={setPage}
+      />
     </div>
   );
 });
