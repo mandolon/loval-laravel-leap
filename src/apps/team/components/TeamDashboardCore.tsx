@@ -314,17 +314,18 @@ export default function RehomeDoubleSidebar() {
 
       {/* Content frame */}
       <div
-        className="fixed z-30 rounded-xl border border-slate-200 bg-white/80 backdrop-blur-sm shadow-sm"
+        className="fixed z-30 rounded-xl border border-slate-200 bg-white/80 backdrop-blur-sm shadow-sm transition-all duration-300 ease-out"
         style={{
           top: "calc(0.375rem + 2.25rem + 0.25rem)",
           bottom: "0.75rem",
-          right: "0.375rem",
+          right: active === "projects" && selected?.tab === "projects" && !projectPanelCollapsed
+            ? "calc(240px + 0.375rem + 0.5rem)" // panel width + margin + gap
+            : "0.375rem",
           left: railCollapsed
             ? mdUp
               ? "calc(0.375rem + 6px + 0.75rem)"
               : "0.375rem"
             : "calc(0.375rem + 3.5rem + 0.75rem)",
-          transition: "left 260ms cubic-bezier(0.22, 1, 0.36, 1)",
         }}
       >
         <div className="h-full overflow-hidden flex flex-col">
@@ -344,52 +345,25 @@ export default function RehomeDoubleSidebar() {
             }
           >
             {active === "projects" ? (
-              <div className="h-full flex overflow-hidden">
-                {/* Main content area - resizes when panel is visible */}
-                <div 
-                  className="flex-1 px-6 pt-2 pb-12 overflow-auto transition-all duration-300 ease-out"
-                  style={{
-                    marginRight: projectPanelCollapsed ? 0 : 0,
-                  }}
-                >
-                  {selected?.tab === "projects" && (
-                    <div className="mb-3">
-                      <div className="flex items-center justify-start">
-                        <span className="rounded-full border border-[#d2e3fc] bg-[#f0f5fe] text-[#3a78bd] text-[12px] px-3 py-1">
-                          {selected.item}
-                        </span>
-                      </div>
-                      
-                      {/* Project details placeholder */}
-                      <div className="mt-6 p-4 border border-slate-200 rounded-lg bg-slate-50/50">
-                        <h2 className="text-sm font-semibold mb-2">{selected.item}</h2>
-                        <p className="text-xs text-slate-600">Project details will appear here</p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {!selected && (
-                    <div className="text-slate-600 text-sm">Select a project from the sidebar</div>
-                  )}
-                </div>
-                
-                {/* ProjectPanel - slides in/out, part of flex layout */}
+              <div className="h-full px-6 pt-2 pb-12 overflow-auto">
                 {selected?.tab === "projects" && (
-                  <div
-                    className="h-full flex-shrink-0 transition-all duration-300 ease-out overflow-hidden border-l border-slate-200"
-                    style={{
-                      width: projectPanelCollapsed ? 0 : '240px',
-                      opacity: projectPanelCollapsed ? 0 : 1,
-                    }}
-                  >
-                    <div className="h-full w-[240px]">
-                      <ProjectPanel
-                        projectId={userProjects.find((p: any) => p.name === selected.item)?.id || ''}
-                        projectName={selected.item}
-                        onBreadcrumb={(crumb) => console.log('Breadcrumb:', crumb)}
-                      />
+                  <div className="mb-3">
+                    <div className="flex items-center justify-start">
+                      <span className="rounded-full border border-[#d2e3fc] bg-[#f0f5fe] text-[#3a78bd] text-[12px] px-3 py-1">
+                        {selected.item}
+                      </span>
+                    </div>
+                    
+                    {/* Project details placeholder */}
+                    <div className="mt-6 p-4 border border-slate-200 rounded-lg bg-slate-50/50">
+                      <h2 className="text-sm font-semibold mb-2">{selected.item}</h2>
+                      <p className="text-xs text-slate-600">Project details will appear here</p>
                     </div>
                   </div>
+                )}
+                
+                {!selected && (
+                  <div className="text-slate-600 text-sm">Select a project from the sidebar</div>
                 )}
               </div>
             ) : active === "details" ? (
@@ -404,6 +378,27 @@ export default function RehomeDoubleSidebar() {
           </div>
         </div>
       </div>
+
+      {/* ProjectPanel - separate fixed element outside the content frame */}
+      {active === "projects" && selected?.tab === "projects" && (
+        <div
+          className="fixed z-30 rounded-xl border border-slate-200 bg-white shadow-sm transition-all duration-300 ease-out"
+          style={{
+            top: "calc(0.375rem + 2.25rem + 0.25rem)",
+            bottom: "0.75rem",
+            right: "0.375rem",
+            width: projectPanelCollapsed ? 0 : "240px",
+            opacity: projectPanelCollapsed ? 0 : 1,
+            overflow: "hidden",
+          }}
+        >
+          <ProjectPanel
+            projectId={userProjects.find((p: any) => p.name === selected.item)?.id || ''}
+            projectName={selected.item}
+            onBreadcrumb={(crumb) => console.log('Breadcrumb:', crumb)}
+          />
+        </div>
+      )}
     </div>
   );
 }
