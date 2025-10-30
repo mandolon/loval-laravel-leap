@@ -222,7 +222,7 @@ export default function TeamChatSlim({
 
   return (
     <div
-      className="team-app flex min-h-screen flex-col relative"
+      className="team-app flex h-full flex-col relative"
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
@@ -437,7 +437,7 @@ export default function TeamChatSlim({
       {/* Messages or Empty State */}
       <div
         ref={listRef}
-        className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-2 md:gap-3 px-4 pt-8 pb-0"
+        className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-2 md:gap-3 px-4 pt-8 pb-0 overflow-y-auto"
       >
         {!selectedProject ? (
           // Empty state
