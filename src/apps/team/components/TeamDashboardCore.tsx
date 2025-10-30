@@ -991,7 +991,7 @@ const ChatView = memo(function ChatView() {
   const handleToggleFiles = () => setPage((prev) => prev === 'chat' ? 'files' : 'chat');
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full w-full">
       <TeamChatSlim
         projects={projects}
         selectedProject={selectedProject}

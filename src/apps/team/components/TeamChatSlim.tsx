@@ -237,7 +237,7 @@ export default function TeamChatSlim({
   }
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full w-full">
       {/* Side Panel */}
       {showSidePanel && (
         <ChatSidePanel
