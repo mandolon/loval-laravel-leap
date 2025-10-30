@@ -194,3 +194,15 @@ All colors MUST be HSL.
 .chat-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.5);
 }
+
+/* Excalidraw customizations */
+.excalidraw .arrowhead {
+  transform: scale(0.08) !important;
+}
+
+.excalidraw [data-type="arrow"],
+.excalidraw [data-type="rectangle"],
+.excalidraw [data-type="ellipse"],
+.excalidraw [data-type="line"] {
+  stroke-width: 0.5;
+}

@@ -16,6 +16,7 @@ export * from './useLedgerEntries'
 export * from './useUserRole'
 export * from './useDetailLibrary'
 export * from './useProjectFiles'
+export * from './useDrawings'
 
 // Re-export useAllWorkspaces specifically for admin UI
 export { useAllWorkspaces } from './useWorkspaces'

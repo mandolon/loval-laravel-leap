@@ -1,6 +1,9 @@
 import React, { useMemo, useState, useEffect, useRef, forwardRef } from "react";
 import { Search, FolderClosed, BookOpen, MoreVertical } from "lucide-react";
 import { useProjectFolders, useProjectFiles } from '@/lib/api/hooks/useProjectFiles';
+import { useDrawingVersions, useUpdateDrawingScale } from '@/lib/api/hooks/useDrawings';
+import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
+import ExcalidrawCanvas from '@/components/drawings/ExcalidrawCanvas';
 
 /**
  * PROJECT PANEL — Files & Whiteboards now share identical interaction rules
@@ -319,24 +322,31 @@ export default function ProjectPanel({
     }
   }, [menu.show]);
 
-  // Whiteboards data (versions → pages) - MOCK DATA
-  const [wbSections, setWbSections] = useState([
-    { id: "v2", title: "v2.0" },
-    { id: "v15", title: "v1.5" },
-    { id: "v10", title: "v1.0" },
-  ]);
-  const [wbPages, setWbPages] = useState<any>({
-    v2: [
-      { id: "w21", name: "Page 1" },
-      { id: "w22", name: "Page 2" },
-      { id: "w23", name: "Page 3" },
-    ],
-    v15: [
-      { id: "w151", name: "Page 1" },
-      { id: "w152", name: "Kitchen Plan" },
-    ],
-    v10: [{ id: "w101", name: "Site Notes" }],
-  });
+  // Whiteboards data - fetch from database
+  const { data: drawingVersions, isLoading: wbLoading } = useDrawingVersions(projectId);
+  const updateDrawingScale = useUpdateDrawingScale();
+  
+  // Transform to UI format
+  const wbSections = useMemo(() => 
+    drawingVersions?.map(v => ({ id: v.id, title: v.version_number })) || []
+  , [drawingVersions]);
+
+  const wbPages = useMemo(() => {
+    const pages: Record<string, any[]> = {};
+    drawingVersions?.forEach(v => {
+      pages[v.id] = v.drawing_pages.map(p => ({ id: p.id, name: p.name }));
+    });
+    return pages;
+  }, [drawingVersions]);
+  
+  // Excalidraw measurement state
+  const [excaliApi, setExcaliApi] = useState<any>(null);
+  const [arrowCounterEnabled, setArrowCounterEnabled] = useState(true);
+  const [currentScale, setCurrentScale] = useState<ScalePreset>("1/4\" = 1'");
+  const [arrowStats, setArrowStats] = useState<ArrowCounterStats>({ count: 0, values: [] });
+  const [inchesPerSceneUnit, setInchesPerSceneUnit] = useState<number>(
+    getInchesPerSceneUnit(SCALE_PRESETS["1/4\" = 1'"])
+  );
 
   // Expanded/collapsed (whiteboards)
   const [wbExpanded, setWbExpanded] = useState<any>({ v2: true, v15: true, v10: true });
@@ -558,30 +568,10 @@ export default function ProjectPanel({
     e.dataTransfer.effectAllowed = "move";
   };
   const handleWbItemDragOver = (version: string, index: number, e: any) => {
-    if (!wbDragState) return;
-    e.preventDefault();
-    e.stopPropagation();
-    const bounds = e.currentTarget.getBoundingClientRect();
-    const midY = bounds.top + bounds.height / 2;
-    const position = e.clientY < midY ? "above" : "below";
-    setWbDragOverState({ version, index, position });
+    // Disabled - needs API implementation
   };
   const handleWbItemDrop = (version: string, index: number, e: any) => {
-    if (!wbDragState) return;
-    e.preventDefault();
-    e.stopPropagation();
-    const { fromVersion, pageId } = wbDragState;
-    const item = (wbPages[fromVersion] || []).find((i: any) => i.id === pageId);
-    if (!item) return;
-    setWbPages((prev: any) => ({ ...prev, [fromVersion]: prev[fromVersion].filter((i: any) => i.id !== pageId) }));
-    setWbPages((prev: any) => {
-      const target = [...(prev[version] || [])];
-      const insertIndex = wbDragOverState?.position === "above" ? index : index + 1;
-      target.splice(insertIndex, 0, item);
-      return { ...prev, [version]: target };
-    });
-    setWbDragState(null);
-    setWbDragOverState(null);
+    // Disabled - needs API implementation
   };
   const handleWbItemDragEnd = () => {
     setWbDragState(null);
@@ -590,30 +580,14 @@ export default function ProjectPanel({
 
   // ---- Whiteboards: section drag/drop (versions) ----
   const handleWbSectionDragStart = (versionId: string, e: any) => {
-    e.stopPropagation();
-    setWbSectionDragId(versionId);
-    e.dataTransfer.effectAllowed = "move";
+    // Disabled - needs API implementation
+    e.preventDefault();
   };
   const handleWbSectionDragOver = (index: number, e: any) => {
-    if (!wbSectionDragId) return;
-    e.preventDefault();
-    e.stopPropagation();
-    setWbSectionDropIndex(index);
+    // Disabled - needs API implementation
   };
   const handleWbSectionDrop = (e: any) => {
-    if (!wbSectionDragId || wbSectionDropIndex < 0) return;
-    e.preventDefault();
-    e.stopPropagation();
-    const dragIndex = wbSections.findIndex((s) => s.id === wbSectionDragId);
-    if (dragIndex === -1) return;
-    setWbSections((prev) => {
-      const next = [...prev];
-      const [dragged] = next.splice(dragIndex, 1);
-      next.splice(wbSectionDropIndex, 0, dragged);
-      return next;
-    });
-    setWbSectionDragId(null);
-    setWbSectionDropIndex(-1);
+    // Disabled - needs API implementation
   };
   const handleWbSectionDragEnd = () => {
     setWbSectionDragId(null);
@@ -644,10 +618,10 @@ export default function ProjectPanel({
             }}
             editing={isEditing}
             onCommitEdit={(name: string) => {
-              setWbSections((prev) => prev.map((s) => (s.id === id ? { ...s, title: name } : s)));
+              // TODO: Implement rename with API mutation
               setWbEditing(null);
             }}
-            draggable={true}
+            draggable={false}
             onDragStart={(e: any) => handleWbSectionDragStart(id, e)}
             onDragOver={() => {}}
             onDrop={() => {}}
@@ -677,17 +651,14 @@ export default function ProjectPanel({
                     }}
                     editing={isItemEditing}
                     onCommitEdit={(name: string) => {
-                      setWbPages((prev: any) => ({
-                        ...prev,
-                        [id]: prev[id].map((i: any) => (i.id === item.id ? { ...i, name } : i)),
-                      }));
+                      // TODO: Implement rename with API mutation
                       setWbEditing(null);
                     }}
-                    draggable={!isItemEditing}
+                    draggable={false}
                     onDragStart={(e: any) => handleWbItemDragStart(id, item.id, e)}
                     onDragOver={(e: any) => handleWbItemDragOver(id, idx, e)}
                     onDrop={(e: any) => handleWbItemDrop(id, idx, e)}
-                    dragOverPosition={isDragOver ? wbDragOverState.position : null}
+                    dragOverPosition={null}
                   />
                 );
               })}
@@ -847,18 +818,24 @@ export default function ProjectPanel({
             </div>
 
             {/* List view */}
-            <div className={selectedWB ? "hidden px-2.5 pt-1.5 pb-2" : "px-2.5 pt-1.5 pb-2"} onDragEnd={handleWbItemDragEnd}>
-              <SectionHeader
-                title="Whiteboards"
-                open={true}
-                onToggle={() => {}}
-                onContextMenu={(e: any) => e.preventDefault()}
-                icon={<BookOpen className="h-3 w-3 text-slate-700" />}
-              />
-              <div className="mt-1" onDragEnd={handleWbSectionDragEnd}>
-                {(wbQuery ? filterSections(wbQuery, wbSections, wbPages) : wbSections).map((s, idx) => renderWbSection(s, idx))}
+            {wbLoading ? (
+              <div className="px-2.5 py-4 text-[11px] text-slate-500 text-center">
+                Loading whiteboards...
               </div>
-            </div>
+            ) : (
+              <div className={selectedWB ? "hidden px-2.5 pt-1.5 pb-2" : "px-2.5 pt-1.5 pb-2"} onDragEnd={handleWbItemDragEnd}>
+                <SectionHeader
+                  title="Whiteboards"
+                  open={true}
+                  onToggle={() => {}}
+                  onContextMenu={(e: any) => e.preventDefault()}
+                  icon={<BookOpen className="h-3 w-3 text-slate-700" />}
+                />
+                <div className="mt-1" onDragEnd={handleWbSectionDragEnd}>
+                  {(wbQuery ? filterSections(wbQuery, wbSections, wbPages) : wbSections).map((s, idx) => renderWbSection(s, idx))}
+                </div>
+              </div>
+            )}
 
             {/* Context Menu (Whiteboards) */}
             {wbMenu.show && (
@@ -871,8 +848,11 @@ export default function ProjectPanel({
                   className="block w-full px-3 py-1.5 text-left text-[11px] text-slate-800 hover:bg-slate-100"
                   onClick={() => {
                     if (!wbMenu.target) return;
-                    if (wbMenu.target.type === "item") setWbEditing({ type: "item", list: wbMenu.target.list, id: wbMenu.target.id });
-                    else setWbEditing({ type: "section", list: wbMenu.target.list });
+                    if (wbMenu.target.type === "item") {
+                      setWbEditing({ type: "item", list: wbMenu.target.list, id: wbMenu.target.id });
+                    } else {
+                      setWbEditing({ type: "section", list: wbMenu.target.list });
+                    }
                     setWbMenu((m: any) => ({ ...m, show: false }));
                   }}
                 >
@@ -881,20 +861,7 @@ export default function ProjectPanel({
                 <button
                   className="block w-full px-3 py-1.5 text-left text-[11px] text-red-600 hover:bg-red-50"
                   onClick={() => {
-                    if (!wbMenu.target) return;
-                    if (wbMenu.target.type === "item") {
-                      const { list, id } = wbMenu.target;
-                      setWbPages((prev: any) => ({ ...prev, [list]: prev[list].filter((i: any) => i.id !== id) }));
-                      if (wbSelectedId === id) setWbSelectedId(null);
-                    } else {
-                      const { list } = wbMenu.target;
-                      setWbSections((prev) => prev.filter((s) => s.id !== list));
-                      setWbPages((prev: any) => {
-                        const next = { ...prev };
-                        delete next[list];
-                        return next;
-                      });
-                    }
+                    // TODO: Implement delete with API mutation
                     setWbMenu((m: any) => ({ ...m, show: false }));
                   }}
                 >
@@ -903,13 +870,7 @@ export default function ProjectPanel({
                 <button
                   className="block w-full px-3 py-1.5 text-left text-[11px] text-slate-800 hover:bg-slate-100"
                   onClick={() => {
-                    const titles = wbSections.map((s) => s.title);
-                    const defaultName = nextNewVersionName(titles);
-                    const id = "ver_" + Date.now();
-                    setWbSections((prev) => [{ id, title: defaultName }, ...prev]);
-                    setWbPages((prev: any) => ({ ...prev, [id]: [] }));
-                    setWbExpanded((prev: any) => ({ ...prev, [id]: true }));
-                    setWbEditing({ type: "section", list: id });
+                    // TODO: Implement create version with API mutation
                     setWbMenu((m: any) => ({ ...m, show: false }));
                   }}
                 >
@@ -918,8 +879,23 @@ export default function ProjectPanel({
               </div>
             )}
 
-            {/* Properties view */}
+            {/* Canvas + Properties view */}
             {selectedWB && (
+              <div className="absolute inset-0 bg-white flex">
+                {/* Excalidraw Canvas */}
+                <div className="flex-1">
+                  <ExcalidrawCanvas
+                    pageId={selectedWB.pageId}
+                    projectId={projectId}
+                    onApiReady={setExcaliApi}
+                    arrowCounterEnabled={arrowCounterEnabled}
+                    inchesPerSceneUnit={inchesPerSceneUnit}
+                    onArrowStatsChange={setArrowStats}
+                  />
+                </div>
+                
+                {/* Properties Panel */}
+                <div className="w-[240px] border-l border-slate-200 bg-[#fcfcfc] overflow-y-auto no-scrollbar">
               <div className="px-2.5 pt-1.5 pb-3">
                 <div className="group relative flex items-center gap-1 py-[2px] px-1 rounded-lg select-none">
                   <span className="inline-flex items-center justify-center" style={{ width: SOFT_SQUARE, height: SOFT_SQUARE }}>
@@ -960,34 +936,69 @@ export default function ProjectPanel({
                     })()}
                   </div>
                   <div className="mt-4 pt-3 border-t border-slate-200 space-y-3">
-                    <div className="text-[11px] font-semibold text-slate-900">Drawing Tools</div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-slate-600">Arrow Counter</span>
-                        <div className="flex items-center gap-1.5">
-                          <button className="h-6 w-6 rounded border border-slate-300 hover:bg-slate-100 grid place-items-center text-[10px] font-medium text-slate-700">-</button>
-                          <span className="text-[10px] font-mono text-slate-700 min-w-[20px] text-center">12</span>
-                          <button className="h-6 w-6 rounded border border-slate-300 hover:bg-slate-100 grid place-items-center text-[10px] font-medium text-slate-700">+</button>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-slate-600">Drawing Scale</span>
-                        <select className="h-6 px-1.5 text-[10px] border border-slate-300 rounded bg-white">
-                          <option>1/8" = 1'</option>
-                          <option>3/16" = 1'</option>
-                          <option>1/4" = 1'</option>
-                          <option>1/2" = 1'</option>
-                          <option>1" = 1'</option>
-                        </select>
-                      </div>
+                    <div className="text-[11px] font-semibold text-slate-900 mb-2.5">Drawing Tools</div>
+                    
+                    {/* Arrow Counter Toggle - matching purple/pink design from screenshot */}
+                    <div className="mb-4">
+                      <div className="text-[10px] text-slate-600 mb-1.5">Arrow Counter</div>
+                      <button
+                        onClick={() => setArrowCounterEnabled(!arrowCounterEnabled)}
+                        className={`w-full h-10 rounded-lg border flex items-center justify-center gap-2 text-sm font-medium transition-colors ${
+                          arrowCounterEnabled
+                            ? 'border-purple-400 bg-purple-50 text-purple-700'
+                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        {arrowCounterEnabled && (
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                        {arrowCounterEnabled ? 'Enabled' : 'Disabled'}
+                      </button>
                     </div>
+
+                    {/* Drawing Scale Dropdown */}
+                    <div className="mb-4">
+                      <div className="text-[10px] text-slate-600 mb-1.5">Drawing Scale</div>
+                      <select
+                        value={currentScale}
+                        onChange={(e) => {
+                          const scale = e.target.value as ScalePreset;
+                          setCurrentScale(scale);
+                          setInchesPerSceneUnit(getInchesPerSceneUnit(SCALE_PRESETS[scale]));
+                          
+                          // Update database
+                          if (selectedWB?.pageId) {
+                            updateDrawingScale.mutate({
+                              pageId: selectedWB.pageId,
+                              scaleName: scale,
+                              inchesPerSceneUnit: getInchesPerSceneUnit(SCALE_PRESETS[scale])
+                            });
+                          }
+                        }}
+                        className="w-full h-10 px-3 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      >
+                        {Object.keys(SCALE_PRESETS).map(scale => (
+                          <option key={scale} value={scale}>{scale}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Live Statistics - matching design from screenshot */}
+                    {arrowCounterEnabled && arrowStats.count > 0 && (
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                        <div className="text-center text-purple-700 font-semibold text-sm mb-1">
+                          {arrowStats.count} arrow{arrowStats.count !== 1 ? 's' : ''} labeled
+                        </div>
+                        {arrowStats.values.length > 0 && (
+                          <div className="text-center text-xs text-slate-600">
+                            Values: {arrowStats.values.join(', ')}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             )}
-          </>
-        )}
-      </div>
-    </div>
-  );
-}

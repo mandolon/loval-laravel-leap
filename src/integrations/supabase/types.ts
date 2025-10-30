@@ -397,6 +397,165 @@ export type Database = {
           },
         ]
       }
+      drawing_pages: {
+        Row: {
+          background_image_path: string | null
+          created_at: string | null
+          drawing_id: string
+          excalidraw_data: Json
+          id: string
+          name: string
+          page_number: number
+          short_id: string
+          sort_order: number | null
+          thumbnail_storage_path: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          background_image_path?: string | null
+          created_at?: string | null
+          drawing_id: string
+          excalidraw_data?: Json
+          id?: string
+          name?: string
+          page_number: number
+          short_id?: string
+          sort_order?: number | null
+          thumbnail_storage_path?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          background_image_path?: string | null
+          created_at?: string | null
+          drawing_id?: string
+          excalidraw_data?: Json
+          id?: string
+          name?: string
+          page_number?: number
+          short_id?: string
+          sort_order?: number | null
+          thumbnail_storage_path?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drawing_pages_drawing_id_fkey"
+            columns: ["drawing_id"]
+            isOneToOne: false
+            referencedRelation: "drawings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      drawing_scales: {
+        Row: {
+          created_at: string | null
+          drawing_page_id: string
+          id: string
+          inches_per_scene_unit: number
+          is_active: boolean | null
+          scale_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          drawing_page_id: string
+          id?: string
+          inches_per_scene_unit: number
+          is_active?: boolean | null
+          scale_name: string
+        }
+        Update: {
+          created_at?: string | null
+          drawing_page_id?: string
+          id?: string
+          inches_per_scene_unit?: number
+          is_active?: boolean | null
+          scale_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drawing_scales_drawing_page_id_fkey"
+            columns: ["drawing_page_id"]
+            isOneToOne: false
+            referencedRelation: "drawing_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      drawings: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          description: string | null
+          id: string
+          name: string
+          project_id: string
+          short_id: string
+          updated_at: string | null
+          version_number: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          project_id: string
+          short_id?: string
+          updated_at?: string | null
+          version_number?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          project_id?: string
+          short_id?: string
+          updated_at?: string | null
+          version_number?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drawings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drawings_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drawings_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drawings_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       file_annotations: {
         Row: {
           annotation_data: Json
