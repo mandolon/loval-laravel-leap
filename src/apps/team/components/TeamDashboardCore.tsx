@@ -13,6 +13,8 @@ import {
   Bot,
   Book,
   MessageSquare,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   useReactTable,
@@ -25,6 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/contexts/UserContext";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { TeamAvatarMenu } from "./TeamAvatarMenu";
+import ProjectPanel from "./ProjectPanel";
 
 // ----------------------------------
 // Theme & constants
@@ -176,6 +179,7 @@ export default function RehomeDoubleSidebar() {
   const [openTab, setOpenTab] = useState<string | null>(null);
   const [selected, setSelected] = useState<{ tab: string; item: string } | null>(null);
   const [railCollapsed, setRailCollapsed] = useState(false);
+  const [projectPanelCollapsed, setProjectPanelCollapsed] = useState(false);
   const mdUp = useMediaQuery("(min-width: 768px)");
   const { currentWorkspaceId } = useWorkspaces();
   const { user } = useUser();
@@ -211,14 +215,14 @@ export default function RehomeDoubleSidebar() {
       }
 
       console.log('Fetched user projects:', data);
-      const projectNames = data?.map((pm: any) => pm.projects.name) || [];
-      console.log('Project names:', projectNames);
-      return projectNames;
+      const projects = data?.map((pm: any) => ({ id: pm.projects.id, name: pm.projects.name })) || [];
+      console.log('User projects:', projects);
+      return projects;
     },
     enabled: !!currentWorkspaceId && !!user?.id,
   });
 
-  const projectItems = userProjects.length > 0 ? userProjects : ITEMS_CONFIG.projects;
+  const projectItems = userProjects.length > 0 ? userProjects.map((p: any) => p.name) : ITEMS_CONFIG.projects;
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
@@ -331,12 +335,60 @@ export default function RehomeDoubleSidebar() {
             }
           >
             {active === "projects" ? (
-              <div className="px-6 pt-2 pb-12">
+              <div className="h-full flex overflow-hidden relative">
+                {/* Main content area */}
+                <div className="flex-1 px-6 pt-2 pb-12 overflow-auto">
+                  {selected?.tab === "projects" && (
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between">
+                        <span className="rounded-full border border-[#d2e3fc] bg-[#f0f5fe] text-[#3a78bd] text-[12px] px-3 py-1">
+                          {selected.item}
+                        </span>
+                        
+                        {/* Collapse button */}
+                        <button
+                          onClick={() => setProjectPanelCollapsed(!projectPanelCollapsed)}
+                          className="h-8 w-8 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors group"
+                          aria-label={projectPanelCollapsed ? "Show project panel" : "Hide project panel"}
+                          title={projectPanelCollapsed ? "Show Files & Whiteboards" : "Hide Files & Whiteboards"}
+                        >
+                          {projectPanelCollapsed ? (
+                            <ChevronLeft className="h-4 w-4 text-slate-600 group-hover:text-slate-900" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 text-slate-600 group-hover:text-slate-900" />
+                          )}
+                        </button>
+                      </div>
+                      
+                      {/* Project details placeholder */}
+                      <div className="mt-6 p-4 border border-slate-200 rounded-lg bg-slate-50/50">
+                        <h2 className="text-sm font-semibold mb-2">{selected.item}</h2>
+                        <p className="text-xs text-slate-600">Project details will appear here</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {!selected && (
+                    <div className="text-slate-600 text-sm">Select a project from the sidebar</div>
+                  )}
+                </div>
+                
+                {/* Collapsible ProjectPanel */}
                 {selected?.tab === "projects" && (
-                  <div className="flex items-center justify-end mb-3">
-                    <span className="rounded-full border border-[#d2e3fc] bg-[#f0f5fe] text-[#3a78bd] text-[12px] px-3 py-1">
-                      {selected.item}
-                    </span>
+                  <div
+                    className={`absolute top-0 right-0 bottom-0 transition-transform duration-300 ease-out ${
+                      projectPanelCollapsed ? 'translate-x-full' : 'translate-x-0'
+                    }`}
+                    style={{
+                      width: '240px',
+                      boxShadow: projectPanelCollapsed ? 'none' : '-2px 0 8px rgba(0,0,0,0.1)',
+                    }}
+                  >
+                    <ProjectPanel
+                      projectId={userProjects.find((p: any) => p.name === selected.item)?.id || ''}
+                      projectName={selected.item}
+                      onBreadcrumb={(crumb) => console.log('Breadcrumb:', crumb)}
+                    />
                   </div>
                 )}
               </div>
