@@ -108,25 +108,6 @@ export default function ExcalidrawCanvas({
     }, 3000);
   }, [pageId, arrowCounterEnabled, inchesPerSceneUnit, onArrowStatsChange, updatePage]);
   
-  if (isLoading) {
-    return (
-      <div className="h-full flex items-center justify-center text-slate-500">
-        Loading drawing...
-      </div>
-    );
-  }
-  
-  // Safely parse excalidraw data
-  const excalidrawData = pageData?.excalidraw_data as any;
-  
-  // Ensure collaborators is always a Map
-  const savedAppState = excalidrawData?.appState || {};
-  const mergedAppState = {
-    ...defaultAppState,
-    ...savedAppState,
-    collaborators: new Map(), // Always use a fresh Map
-  };
-  
   // 🎨 DIAGNOSTIC: Handle Excalidraw API ready
   const handleExcalidrawAPI = useCallback((api: any) => {
     excaliRef.current = api;
@@ -200,6 +181,25 @@ export default function ExcalidrawCanvas({
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+  
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center text-slate-500">
+        Loading drawing...
+      </div>
+    );
+  }
+  
+  // Safely parse excalidraw data
+  const excalidrawData = pageData?.excalidraw_data as any;
+  
+  // Ensure collaborators is always a Map
+  const savedAppState = excalidrawData?.appState || {};
+  const mergedAppState = {
+    ...defaultAppState,
+    ...savedAppState,
+    collaborators: new Map(), // Always use a fresh Map
+  };
   
   return (
     <div className="h-full">
