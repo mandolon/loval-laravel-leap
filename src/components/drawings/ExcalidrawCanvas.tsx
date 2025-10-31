@@ -192,12 +192,57 @@ export default function ExcalidrawCanvas({
           const rect = canvas.getBoundingClientRect();
           const pixelRatio = canvas.width / rect.width;
           
+          // 🔍 NEW: Traverse parent hierarchy
+          const parents = [];
+          let current = canvas.parentElement;
+          let depth = 0;
+          while (current && depth < 10) {
+            const computedStyle = window.getComputedStyle(current);
+            parents.push({
+              depth,
+              tagName: current.tagName,
+              className: current.className,
+              clientWidth: current.clientWidth,
+              clientHeight: current.clientHeight,
+              offsetWidth: current.offsetWidth,
+              offsetHeight: current.offsetHeight,
+              scrollWidth: current.scrollWidth,
+              scrollHeight: current.scrollHeight,
+              display: computedStyle.display,
+              position: computedStyle.position,
+              width: computedStyle.width,
+              height: computedStyle.height,
+              maxWidth: computedStyle.maxWidth,
+              maxHeight: computedStyle.maxHeight,
+              flex: computedStyle.flex,
+              flexGrow: computedStyle.flexGrow,
+              flexShrink: computedStyle.flexShrink,
+              overflow: computedStyle.overflow,
+            });
+            current = current.parentElement;
+            depth++;
+          }
+          
+          // 🔍 NEW: Get canvas computed styles
+          const canvasStyle = window.getComputedStyle(canvas);
+          
           logger.log(`📐 ${label}`, {
             // Canvas element properties
             canvasWidth: canvas.width,
             canvasHeight: canvas.height,
             canvasStyleWidth: canvas.style.width,
             canvasStyleHeight: canvas.style.height,
+            
+            // 🆕 Canvas computed styles
+            canvasComputed: {
+              width: canvasStyle.width,
+              height: canvasStyle.height,
+              maxWidth: canvasStyle.maxWidth,
+              maxHeight: canvasStyle.maxHeight,
+              display: canvasStyle.display,
+              position: canvasStyle.position,
+              transform: canvasStyle.transform,
+            },
             
             // Computed/rendered dimensions
             computedWidth: rect.width,
@@ -206,6 +251,17 @@ export default function ExcalidrawCanvas({
             // Container dimensions
             containerWidth: container?.clientWidth,
             containerHeight: container?.clientHeight,
+            containerOffsetWidth: container?.offsetWidth,
+            containerOffsetHeight: container?.offsetHeight,
+            
+            // 🆕 Container computed styles
+            containerComputed: container ? {
+              width: window.getComputedStyle(container).width,
+              height: window.getComputedStyle(container).height,
+              maxWidth: window.getComputedStyle(container).maxWidth,
+              display: window.getComputedStyle(container).display,
+              position: window.getComputedStyle(container).position,
+            } : null,
             
             // Device & pixel ratio
             devicePixelRatio: window.devicePixelRatio,
@@ -226,7 +282,10 @@ export default function ExcalidrawCanvas({
             zoom: api.getAppState()?.zoom,
             
             // Quality indicator
-            qualityIndicator: pixelRatio >= window.devicePixelRatio ? '✅ SHARP' : '⚠️ BLURRY'
+            qualityIndicator: pixelRatio >= window.devicePixelRatio ? '✅ SHARP' : '⚠️ BLURRY',
+            
+            // 🆕 Parent hierarchy
+            parentHierarchy: parents
           });
         } else {
           logger.log(`📐 ${label} - Canvas not found`);
