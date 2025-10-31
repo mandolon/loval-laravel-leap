@@ -3,7 +3,6 @@ import { Excalidraw } from '@excalidraw/excalidraw';
 import { useDrawingPage, useUpdateDrawingPage } from '@/lib/api/hooks/useDrawings';
 import { handleArrowCounter, resetArrowCounterState, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
 import { logger } from '@/utils/logger';
-import { patchExcalidrawImageResize, MAX_IMAGE_SIZE } from '@/lib/excalidraw-fork/runtime-patch';
 
 // Stable fallback values outside component to prevent re-renders
 const EMPTY_ELEMENTS: any[] = [];
@@ -50,11 +49,8 @@ export default function ExcalidrawCanvas({
       pageId,
       projectId,
       timestamp: new Date().toISOString(),
-      customMaxImageSize: MAX_IMAGE_SIZE // 🔥 Our custom limit
+      customMaxImageSize: 10000 // 🔥 Modified in Excalidraw fork source
     });
-    
-    // 🔥 Install runtime patch - runs once per component mount
-    patchExcalidrawImageResize();
   }, [pageId, projectId]);
   
   // Reset arrow counter state when switching pages

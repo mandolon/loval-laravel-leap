@@ -374,7 +374,7 @@ export const MAX_DECIMALS_FOR_SVG_EXPORT = 2;
 export const EXPORT_SCALES = [1, 2, 3];
 export const DEFAULT_EXPORT_PADDING = 10; // px
 
-export const DEFAULT_MAX_IMAGE_WIDTH_OR_HEIGHT = 4096;
+export const DEFAULT_MAX_IMAGE_WIDTH_OR_HEIGHT = 10000;
 
 export const MAX_ALLOWED_FILE_BYTES = 50 * 1024 * 1024;
 
