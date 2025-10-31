@@ -4,6 +4,10 @@ import { useDrawingPage, useUpdateDrawingPage } from '@/lib/api/hooks/useDrawing
 import { handleArrowCounter, resetArrowCounterState, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
 import { logger } from '@/utils/logger';
 
+// Stable fallback values outside component to prevent re-renders
+const EMPTY_ELEMENTS: any[] = [];
+const EMPTY_FILES: Record<string, any> = {};
+
 interface Props {
   pageId: string;
   projectId: string;
@@ -106,10 +110,10 @@ export default function ExcalidrawCanvas({
   
   // Memoize initialData to prevent new object references on every render
   const initialData = useMemo(() => ({
-    elements: excalidrawData?.elements || [],
+    elements: excalidrawData?.elements ?? EMPTY_ELEMENTS,
     appState: mergedAppState,
-    files: excalidrawData?.files || {},
-  }), [excalidrawData, mergedAppState]);
+    files: excalidrawData?.files ?? EMPTY_FILES,
+  }), [excalidrawData?.elements, excalidrawData?.files, mergedAppState]);
   
   const handleChange = useCallback((elements: any, appState: any, files: any) => {
     changeCountRef.current++;
