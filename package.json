@@ -10,7 +10,7 @@
     "build:desktop": "vite build --mode production",
     "lint": "eslint .",
     "preview": "vite preview",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package && node scripts/check-fork.js"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.3",

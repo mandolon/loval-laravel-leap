@@ -293,25 +293,35 @@ export default function ProjectPanel({
     return grouped;
   }, [rawFiles]);
 
-  // Local state for drag/drop mutations
+  // Local state for drag/drop mutations - initialize from database data
   const [localSections, setLocalSections] = useState<typeof sections>([]);
   const [localLists, setLocalLists] = useState<typeof lists>({});
 
+  // Only update local state when data actually changes (deep comparison)
   useEffect(() => {
-    setLocalSections(sections);
-    setLocalLists(lists);
-  }, [sections, lists]);
+    if (JSON.stringify(localSections) !== JSON.stringify(sections)) {
+      setLocalSections(sections);
+    }
+  }, [sections]);
 
-  // Expanded/collapsed (files) - initialize from database
+  useEffect(() => {
+    if (JSON.stringify(localLists) !== JSON.stringify(lists)) {
+      setLocalLists(lists);
+    }
+  }, [lists]);
+
+  // Expanded/collapsed (files) - initialize from database only once
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   
   useEffect(() => {
-    const initial: Record<string, boolean> = {};
-    rawFolders.forEach(folder => {
-      initial[folder.id] = true; // All folders open by default
-    });
-    setExpanded(initial);
-  }, [rawFolders]);
+    if (rawFolders.length > 0 && Object.keys(expanded).length === 0) {
+      const initial: Record<string, boolean> = {};
+      rawFolders.forEach(folder => {
+        initial[folder.id] = true; // All folders open by default
+      });
+      setExpanded(initial);
+    }
+  }, [rawFolders, expanded]);
 
   // Drag & drop state (files)
   const [dragState, setDragState] = useState<any>(null);

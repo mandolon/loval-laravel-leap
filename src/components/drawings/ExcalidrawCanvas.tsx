@@ -49,8 +49,11 @@ export default function ExcalidrawCanvas({
       pageId,
       projectId,
       timestamp: new Date().toISOString(),
-      customMaxImageSize: 10000 // 🔥 Modified in Excalidraw fork source
+      customMaxImageSize: 10000 // 🔥 TODO: Modify in fork source
     });
+    
+    // 🔥 DISABLED: Runtime patch - causes React rendering errors with fork
+    // patchExcalidrawImageResize();
   }, [pageId, projectId]);
   
   // Reset arrow counter state when switching pages

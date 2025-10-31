@@ -13,6 +13,19 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Force fork packages to use main project's React to avoid type conflicts
+      "react": path.resolve(__dirname, "./node_modules/react"),
+      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
     },
+  },
+  optimizeDeps: {
+    exclude: [
+      "@excalidraw/excalidraw",
+      "@excalidraw/common",
+      "@excalidraw/element", 
+      "@excalidraw/math",
+      "@excalidraw/utils"
+    ],
+    include: [],
   },
 }));

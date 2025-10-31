@@ -59,6 +59,52 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- Supabase (backend/database)
+- Custom Excalidraw fork (see below)
+
+## Excalidraw Fork Setup (Local Development Only)
+
+This project uses a **custom Excalidraw fork** for local development with enhanced features:
+- Auto-dimensioning arrow counter
+- Multi-page drawing system
+- Custom image size limits
+- Feet-inches measurement formatting
+
+### Local Development Setup
+
+The fork is **NOT** committed to git. To use it locally:
+
+```bash
+# 1. Navigate to the fork directory
+cd "excalidraw-fork 2"
+
+# 2. Install fork dependencies
+yarn install
+
+# 3. Build all fork packages
+yarn build:packages
+
+# 4. Return to project root
+cd ..
+
+# 5. Install main project dependencies
+npm install
+
+# 6. Start development server
+npm run dev
+```
+
+### Lovable/CI Deployment
+
+When deployed to Lovable or other hosting platforms:
+- The app automatically falls back to npm packages (`@excalidraw/excalidraw@^0.18.0`)
+- Fork customizations are **not** available in hosted environments
+- This is intentional until a production build pipeline is configured
+
+**Note:** The fork must be rebuilt locally whenever you:
+- Pull changes that modify fork source code
+- Make changes to fork packages yourself
+- Switch between branches with different fork versions
 
 ## How can I deploy this project?
 
