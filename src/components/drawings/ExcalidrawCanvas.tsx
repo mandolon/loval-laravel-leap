@@ -31,7 +31,7 @@ export default function ExcalidrawCanvas({
     resetArrowCounterState();
   }, [pageId]);
   
-  // Custom defaults (thin lines, sharp arrows, small text)
+  // Custom defaults (thin lines, sharp arrows, small text, high-quality images)
   const defaultAppState = {
     currentItemStrokeWidth: 0.5,
     currentItemArrowType: 'sharp',
@@ -39,6 +39,9 @@ export default function ExcalidrawCanvas({
     currentItemRoughness: 0,
     currentItemFontSize: 8,
     collaborators: new Map(),
+    // High-quality image rendering settings
+    exportWithDarkMode: false,
+    exportBackground: true,
   };
   
   const handleChange = useCallback((elements: any, appState: any, files: any) => {
@@ -92,7 +95,7 @@ export default function ExcalidrawCanvas({
   };
   
   return (
-    <div className="h-full">
+    <div className="h-full" style={{ imageRendering: 'crisp-edges' }}>
       <Excalidraw
         excalidrawAPI={(api) => {
           excaliRef.current = api;
@@ -104,6 +107,7 @@ export default function ExcalidrawCanvas({
           files: excalidrawData?.files || {},
         }}
         onChange={handleChange}
+        renderTopRightUI={() => null}
       />
     </div>
   );
