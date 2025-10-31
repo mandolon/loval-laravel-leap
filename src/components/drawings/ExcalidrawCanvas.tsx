@@ -142,63 +142,6 @@ export default function ExcalidrawCanvas({
       });
     }
     
-    // 🔥 CUSTOM IMAGE PROCESSING: Intercept new images and process them
-    if (files && Object.keys(files).length > 0 && excaliRef.current) {
-      Object.entries(files).forEach(async ([id, file]: [string, any]) => {
-        if (file.dataURL && !file._processed) {
-          try {
-            // Extract image from data URL
-            const response = await fetch(file.dataURL);
-            const blob = await response.blob();
-            const originalFile = new File([blob], file.id || 'image.png', { type: blob.type });
-            
-            logger.log('🖼️ New Image Detected - Processing', {
-              fileId: id,
-              originalType: originalFile.type,
-              originalSize: originalFile.size
-            });
-            
-            // Process with our custom handler (10000px limit)
-            const processedFile = await handleImageUpload(originalFile);
-            
-            // Convert back to data URL
-            const reader = new FileReader();
-            reader.onload = () => {
-              const processedDataURL = reader.result as string;
-              
-              // Update the file in Excalidraw with processed version
-              const updatedFiles = {
-                ...files,
-                [id]: {
-                  ...file,
-                  dataURL: processedDataURL,
-                  _processed: true // Mark as processed to avoid re-processing
-                }
-              };
-              
-              // Update through Excalidraw API
-              if (excaliRef.current) {
-                excaliRef.current.updateScene({
-                  elements,
-                  appState,
-                  files: updatedFiles
-                });
-                
-                logger.log('✅ Image Processed and Updated', {
-                  fileId: id,
-                  processedSize: processedFile.size
-                });
-              }
-            };
-            reader.readAsDataURL(processedFile);
-            
-          } catch (error) {
-            logger.error('❌ Image Processing Failed', error);
-          }
-        }
-      });
-    }
-    
     // 📸 ULTRA-DIAGNOSTIC: Log EVERYTHING about image imports
     if (files && Object.keys(files).length > 0) {
       Object.entries(files).forEach(([id, file]: [string, any]) => {
@@ -465,7 +408,7 @@ export default function ExcalidrawCanvas({
         excalidrawData: { elements, appState: appStateToSave, files }
       });
     }, 3000);
-  }, [pageId, arrowCounterEnabled, inchesPerSceneUnit, onArrowStatsChange, updatePage, handleImageUpload]);
+  }, [pageId, arrowCounterEnabled, inchesPerSceneUnit, onArrowStatsChange, updatePage]);
   
   // 🎨 DIAGNOSTIC: Handle Excalidraw API ready
   const handleExcalidrawAPI = useCallback((api: any) => {
