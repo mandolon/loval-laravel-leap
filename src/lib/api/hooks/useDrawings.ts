@@ -244,3 +244,51 @@ export async function uploadLargeImage(
   
   return urlData.signedUrl;
 }
+
+// 7. Create new page in a drawing
+export function useCreateDrawingPage() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ 
+      drawingId,
+      projectId 
+    }: { 
+      drawingId: string;
+      projectId: string;
+    }) => {
+      // Get max page number for this drawing
+      const { data: existingPages } = await supabase
+        .from('drawing_pages')
+        .select('page_number')
+        .eq('drawing_id', drawingId)
+        .order('page_number', { ascending: false })
+        .limit(1);
+      
+      const nextPageNumber = (existingPages && existingPages.length > 0) 
+        ? existingPages[0].page_number + 1 
+        : 1;
+      
+      const { data, error } = await supabase
+        .from('drawing_pages')
+        .insert({
+          drawing_id: drawingId,
+          page_number: nextPageNumber,
+          name: `Page ${nextPageNumber}`,
+          excalidraw_data: { elements: [], appState: {}, files: {} },
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: drawingKeys.list(variables.projectId) });
+      toast.success('New page created');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to create page: ${error.message}`);
+    },
+  });
+}
