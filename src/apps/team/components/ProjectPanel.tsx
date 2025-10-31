@@ -250,7 +250,9 @@ export default function ProjectPanel({
   onArrowCounterToggle,
   currentScale,
   onScaleChange,
-  arrowStats
+  arrowStats,
+  onCalibrate,
+  inchesPerSceneUnit
 }: { 
   projectId: string; 
   projectName?: string; 
@@ -262,6 +264,8 @@ export default function ProjectPanel({
   currentScale?: ScalePreset;
   onScaleChange?: (scale: ScalePreset) => void;
   arrowStats?: ArrowCounterStats;
+  onCalibrate?: () => void;
+  inchesPerSceneUnit?: number;
 }) {
   const [tab, setTab] = useState<'files' | 'whiteboards'>('files');
   const [query, setQuery] = useState("");
@@ -960,21 +964,37 @@ export default function ProjectPanel({
                     {/* Arrow Counter Toggle - matching purple/pink design from screenshot */}
                     <div className="mb-4">
                       <div className="text-[10px] text-slate-600 mb-1.5">Arrow Counter</div>
-                      <button
-                        onClick={() => onArrowCounterToggle?.()}
-                        className={`w-full h-10 rounded-lg border flex items-center justify-center gap-2 text-sm font-medium transition-colors ${
-                          arrowCounterEnabled
-                            ? 'border-purple-400 bg-purple-50 text-purple-700'
-                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                        }`}
-                      >
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => onArrowCounterToggle?.()}
+                          className={`flex-1 h-10 rounded-lg border flex items-center justify-center gap-2 text-sm font-medium transition-colors ${
+                            arrowCounterEnabled
+                              ? 'border-purple-400 bg-purple-50 text-purple-700'
+                              : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          {arrowCounterEnabled && (
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                          {arrowCounterEnabled ? 'Enabled' : 'Disabled'}
+                        </button>
                         {arrowCounterEnabled && (
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
+                          <button
+                            onClick={() => onCalibrate?.()}
+                            className="px-4 h-10 rounded-lg border border-blue-400 bg-blue-50 text-blue-700 text-sm font-medium hover:bg-blue-100 transition-colors whitespace-nowrap"
+                            title="Set scale by calibrating with a known measurement"
+                          >
+                            Set Scale
+                          </button>
                         )}
-                        {arrowCounterEnabled ? 'Enabled' : 'Disabled'}
-                      </button>
+                      </div>
+                      {arrowCounterEnabled && inchesPerSceneUnit && (
+                        <div className="mt-2 text-[10px] text-slate-500">
+                          Current scale: {(1 / inchesPerSceneUnit).toFixed(3)} px/inch
+                        </div>
+                      )}
                     </div>
 
                     {/* Drawing Scale Dropdown */}

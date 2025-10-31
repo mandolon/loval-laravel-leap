@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useMemo } from 'react';
 import { Excalidraw } from '@excalidraw/excalidraw';
 import { useDrawingPage, useUpdateDrawingPage } from '@/lib/api/hooks/useDrawings';
-import { handleArrowCounter, resetArrowCounterState, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
+import { handleArrowCounter, resetArrowCounterState, lengthOfArrow, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
 import { logger } from '@/utils/logger';
 
 // Stable fallback values outside component to prevent re-renders
@@ -15,6 +15,7 @@ interface Props {
   arrowCounterEnabled: boolean;
   inchesPerSceneUnit: number | null;
   onArrowStatsChange: (stats: ArrowCounterStats) => void;
+  onCalibrationChange?: (pxPerStep: number) => void;
 }
 
 export default function ExcalidrawCanvas({
@@ -23,12 +24,14 @@ export default function ExcalidrawCanvas({
   onApiReady,
   arrowCounterEnabled,
   inchesPerSceneUnit,
-  onArrowStatsChange
+  onArrowStatsChange,
+  onCalibrationChange
 }: Props) {
   const excaliRef = useRef<any>(null);
   const persistRef = useRef<any>(null);
   const changeCountRef = useRef(0);
   const onApiReadyRef = useRef(onApiReady);
+  const loggedImageIdsRef = useRef<Set<string>>(new Set());
   
   const { data: pageData, isLoading } = useDrawingPage(pageId);
   const updatePage = useUpdateDrawingPage();
@@ -60,7 +63,76 @@ export default function ExcalidrawCanvas({
   useEffect(() => {
     resetArrowCounterState();
     changeCountRef.current = 0;
+    loggedImageIdsRef.current.clear(); // Reset logged image IDs when switching pages
   }, [pageId]);
+  
+  // Handle calibration event from ProjectPanel
+  useEffect(() => {
+    const handleCalibrationTrigger = () => {
+      if (!excaliRef.current || !arrowCounterEnabled) {
+        alert('Please enable Arrow Counter first');
+        return;
+      }
+
+      // Get current scene elements
+      const elements = excaliRef.current.getSceneElements();
+      const appState = excaliRef.current.getAppState();
+
+      // Find selected arrow element
+      const selectedIds = appState.selectedElementIds || {};
+      const selectedElements = elements.filter((el: any) => selectedIds[el.id]);
+      const arrowElements = selectedElements.filter((el: any) => 
+        el.type === 'arrow' && !el.isDeleted
+      );
+
+      if (arrowElements.length === 0) {
+        alert('Please select an arrow to calibrate the scale');
+        return;
+      }
+
+      if (arrowElements.length > 1) {
+        alert('Please select only one arrow for calibration');
+        return;
+      }
+
+      // Calculate arrow length in pixels - USE CORRECT FUNCTION
+      const arrow = arrowElements[0];
+      const lengthPx = lengthOfArrow(arrow);  // ✅ Uses proper multi-segment calculation
+
+      // Prompt user for real-world measurement
+      const input = prompt(
+        `Enter the real-world measurement for this arrow (in inches):\n\nArrow length: ${lengthPx.toFixed(2)} pixels`,
+        '12'
+      );
+
+      if (!input) return;
+
+      const inches = parseFloat(input);
+      if (isNaN(inches) || inches <= 0) {
+        alert('Please enter a valid positive number for the measurement in inches.');
+        return;
+      }
+
+      // Calculate new calibration using wrapper's formula
+      // pxPerStep = arrowLengthPx / inches
+      // But we store inchesPerSceneUnit, so: inchesPerSceneUnit = inches / arrowLengthPx
+      const newInchesPerSceneUnit = inches / lengthPx;
+
+      // Call the callback to update parent state
+      onCalibrationChange?.(newInchesPerSceneUnit);
+
+      logger.log('🎯 Calibration Complete', {
+        arrowLengthPx: lengthPx,
+        realWorldInches: inches,
+        newInchesPerSceneUnit,
+        pxPerInch: 1 / newInchesPerSceneUnit
+      });
+    };
+
+    window.addEventListener('trigger-calibration', handleCalibrationTrigger);
+    return () => window.removeEventListener('trigger-calibration', handleCalibrationTrigger);
+  }, [arrowCounterEnabled, onCalibrationChange]);
+
   
   // Custom defaults (thin lines, sharp arrows, small text) - memoized to prevent infinite re-renders
   const defaultAppState = useMemo(() => ({
@@ -111,7 +183,15 @@ export default function ExcalidrawCanvas({
     // 📸 ULTRA-DIAGNOSTIC: Log EVERYTHING about image imports
     if (files && Object.keys(files).length > 0) {
       Object.entries(files).forEach(([id, file]: [string, any]) => {
+        // Skip if this image has already been logged to prevent infinite loops
+        if (loggedImageIdsRef.current.has(id)) {
+          return;
+        }
+        
         if (file.dataURL) {
+          // Mark this image as logged before processing
+          loggedImageIdsRef.current.add(id);
+          
           const img = new Image();
           img.onload = () => {
             // Get ALL canvas elements and contexts
