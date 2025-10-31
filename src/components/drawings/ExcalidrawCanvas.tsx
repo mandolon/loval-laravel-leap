@@ -3,6 +3,7 @@ import { Excalidraw } from '@excalidraw/excalidraw';
 import { useDrawingPage, useUpdateDrawingPage } from '@/lib/api/hooks/useDrawings';
 import { handleArrowCounter, resetArrowCounterState, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
 import { logger } from '@/utils/logger';
+import { resizeImageFile, MAX_IMAGE_SIZE } from '@/lib/excalidraw-fork/image-override';
 
 // Stable fallback values outside component to prevent re-renders
 const EMPTY_ELEMENTS: any[] = [];
@@ -48,9 +49,46 @@ export default function ExcalidrawCanvas({
       screenHeight: window.screen.height,
       pageId,
       projectId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      customMaxImageSize: MAX_IMAGE_SIZE // 🔥 Our custom limit
     });
   }, [pageId, projectId]);
+  
+  // 🔥 CUSTOM IMAGE HANDLER: Pre-process images before Excalidraw gets them
+  const handleImageUpload = useCallback(async (file: File): Promise<File> => {
+    logger.log('🖼️ Custom Image Handler - Processing', {
+      originalFileName: file.name,
+      originalSize: file.size,
+      originalType: file.type,
+      timestamp: Date.now()
+    });
+    
+    // Only process raster images (not SVG)
+    if (file.type === 'image/svg+xml') {
+      logger.log('✅ SVG - Passing through without resize');
+      return file;
+    }
+    
+    // Use our custom resizer with 10000px limit
+    try {
+      const resizedFile = await resizeImageFile(file, {
+        maxWidthOrHeight: MAX_IMAGE_SIZE
+      });
+      
+      logger.log('✅ Custom Image Handler - Complete', {
+        originalSize: file.size,
+        resizedSize: resizedFile.size,
+        compressionRatio: ((resizedFile.size / file.size) * 100).toFixed(1) + '%',
+        maxAllowedSize: MAX_IMAGE_SIZE
+      });
+      
+      return resizedFile;
+    } catch (error) {
+      logger.error('❌ Custom Image Handler - Failed', error);
+      // Fallback to original file if resize fails
+      return file;
+    }
+  }, []);
   
   // Reset arrow counter state when switching pages
   useEffect(() => {
@@ -101,6 +139,63 @@ export default function ExcalidrawCanvas({
         scrollY: appState?.scrollY,
         elementsCount: elements?.length,
         filesCount: Object.keys(files || {}).length
+      });
+    }
+    
+    // 🔥 CUSTOM IMAGE PROCESSING: Intercept new images and process them
+    if (files && Object.keys(files).length > 0 && excaliRef.current) {
+      Object.entries(files).forEach(async ([id, file]: [string, any]) => {
+        if (file.dataURL && !file._processed) {
+          try {
+            // Extract image from data URL
+            const response = await fetch(file.dataURL);
+            const blob = await response.blob();
+            const originalFile = new File([blob], file.id || 'image.png', { type: blob.type });
+            
+            logger.log('🖼️ New Image Detected - Processing', {
+              fileId: id,
+              originalType: originalFile.type,
+              originalSize: originalFile.size
+            });
+            
+            // Process with our custom handler (10000px limit)
+            const processedFile = await handleImageUpload(originalFile);
+            
+            // Convert back to data URL
+            const reader = new FileReader();
+            reader.onload = () => {
+              const processedDataURL = reader.result as string;
+              
+              // Update the file in Excalidraw with processed version
+              const updatedFiles = {
+                ...files,
+                [id]: {
+                  ...file,
+                  dataURL: processedDataURL,
+                  _processed: true // Mark as processed to avoid re-processing
+                }
+              };
+              
+              // Update through Excalidraw API
+              if (excaliRef.current) {
+                excaliRef.current.updateScene({
+                  elements,
+                  appState,
+                  files: updatedFiles
+                });
+                
+                logger.log('✅ Image Processed and Updated', {
+                  fileId: id,
+                  processedSize: processedFile.size
+                });
+              }
+            };
+            reader.readAsDataURL(processedFile);
+            
+          } catch (error) {
+            logger.error('❌ Image Processing Failed', error);
+          }
+        }
       });
     }
     
@@ -370,7 +465,7 @@ export default function ExcalidrawCanvas({
         excalidrawData: { elements, appState: appStateToSave, files }
       });
     }, 3000);
-  }, [pageId, arrowCounterEnabled, inchesPerSceneUnit, onArrowStatsChange, updatePage]);
+  }, [pageId, arrowCounterEnabled, inchesPerSceneUnit, onArrowStatsChange, updatePage, handleImageUpload]);
   
   // 🎨 DIAGNOSTIC: Handle Excalidraw API ready
   const handleExcalidrawAPI = useCallback((api: any) => {
