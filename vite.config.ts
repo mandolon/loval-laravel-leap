@@ -19,6 +19,15 @@ export default defineConfig(({ mode }) => ({
     },
   },
   optimizeDeps: {
+    // Exclude Excalidraw itself (using fork)
+    exclude: ["@excalidraw/excalidraw"],
+    // Include CommonJS dependencies that Excalidraw uses - these need pre-bundling
+    include: [
+      "es6-promise-pool",
+      "png-chunks-extract",
+      "png-chunks-encode",
+      "png-chunk-text",
+    ],
     entries: ['index.html', 'src/**/*.{ts,tsx,js,jsx}'],
   },
 }));
