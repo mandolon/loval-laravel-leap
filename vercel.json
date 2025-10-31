@@ -1,0 +1,20 @@
+{
+  "buildCommand": "cd 'excalidraw-fork 2' && yarn install && yarn build:packages && cd .. && npm install && npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "installCommand": "npm install",
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
+}
