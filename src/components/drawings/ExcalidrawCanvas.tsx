@@ -497,25 +497,32 @@ export default function ExcalidrawCanvas({
     logCanvasMetrics('Canvas After 500ms', 500);
     logCanvasMetrics('Canvas After 1000ms', 1000);
     
-    // 🎯 FIX: Force high-quality image smoothing
+    // 🎯 FIX: Force high-quality image rendering
     const forceHighQualityRendering = () => {
       const canvas = document.querySelector('.excalidraw canvas') as HTMLCanvasElement;
       if (canvas) {
+        // Fix CSS image-rendering (CRITICAL - was "pixelated")
+        canvas.style.imageRendering = 'auto';
+        canvas.style.setProperty('image-rendering', 'auto', 'important');
+        
+        // Fix canvas context smoothing quality
         const ctx = canvas.getContext('2d');
         if (ctx) {
           const wasLowQuality = ctx.imageSmoothingQuality === 'low';
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = 'high';
-          logger.log('🎯 Canvas Rendering Quality Changed', {
-            before: wasLowQuality ? 'low' : 'already high',
-            after: ctx.imageSmoothingQuality,
-            imageSmoothingEnabled: ctx.imageSmoothingEnabled
+          
+          logger.log('🎯 Canvas Rendering Quality Fixed', {
+            cssImageRendering: canvas.style.imageRendering,
+            contextSmoothingQuality: ctx.imageSmoothingQuality,
+            contextSmoothingEnabled: ctx.imageSmoothingEnabled,
+            wasLowQuality
           });
           
-          // Force a re-render by triggering resize
+          // Force a re-render
           if (wasLowQuality) {
             api.refresh();
-            logger.log('🔄 Forced canvas refresh after quality change');
+            logger.log('🔄 Forced canvas refresh after quality fix');
           }
         }
       }
