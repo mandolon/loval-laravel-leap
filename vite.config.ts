@@ -25,9 +25,15 @@ export default defineConfig(({ mode }) => ({
       "png-chunks-extract",
       "png-chunks-encode",
       "png-chunk-text",
-      "@braintree/sanitize-url"
+      "@braintree/sanitize-url",
+      "lodash.throttle"
     ], // Pre-bundle CommonJS packages used by Excalidraw
     entries: ['index.html', 'src/**/*.{ts,tsx,js,jsx}'], // Only scan our source files, not fork
+    esbuildOptions: {
+      // Excalidraw requires es2022 for "Arbitrary module namespace identifier names"
+      target: "es2022",
+      treeShaking: true,
+    },
   },
   build: {
     commonjsOptions: {
