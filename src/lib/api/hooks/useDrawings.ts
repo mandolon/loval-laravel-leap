@@ -292,11 +292,17 @@ export async function uploadLargeImage(
 }
 
 // 8. Create new page in a drawing version
-export function useCreateDrawingPage(drawingId: string) {
+export function useCreateDrawingPage() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ pageName }: { pageName: string }) => {
+    mutationFn: async ({ 
+      drawingId,
+      pageName 
+    }: { 
+      drawingId: string;
+      pageName: string;
+    }) => {
       // Get current max page number
       const { data: existingPages } = await supabase
         .from('drawing_pages')

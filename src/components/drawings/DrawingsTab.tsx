@@ -28,12 +28,11 @@ export function DrawingsTab({ projectId, workspaceId }: DrawingsTabProps) {
   const [arrowCounterEnabled, setArrowCounterEnabled] = useState(false);
   const [selectedScale, setSelectedScale] = useState<ScalePreset>('1/4" = 1\'');
   const [arrowStats, setArrowStats] = useState<ArrowCounterStats>({ count: 0, values: [] });
-  const [selectedVersionForPage, setSelectedVersionForPage] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
   const { data: versions = [], isLoading } = useDrawingVersions(projectId);
   const createVersionMutation = useCreateDrawingVersion(projectId);
-  const createPageMutation = useCreateDrawingPage(selectedVersionForPage || '');
+  const createPageMutation = useCreateDrawingPage();
 
   // Real-time subscriptions for drawings
   useEffect(() => {
@@ -115,12 +114,14 @@ export function DrawingsTab({ projectId, workspaceId }: DrawingsTabProps) {
   }, []);
 
   const handleCreatePage = useCallback((versionId: string) => {
-    setSelectedVersionForPage(versionId);
     const version = versions.find(v => v.id === versionId);
     const pages = (version as any)?.drawing_pages || [];
     const pageName = `Page ${pages.length + 1}`;
     
-    createPageMutation.mutate({ pageName }, {
+    createPageMutation.mutate({ 
+      drawingId: versionId,
+      pageName 
+    }, {
       onSuccess: () => {
         // Expand the version to show the new page
         setExpandedVersions(prev => new Set(prev).add(versionId));
