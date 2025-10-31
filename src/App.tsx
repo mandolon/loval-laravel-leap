@@ -23,7 +23,6 @@ import DetailLibraryPage from "./pages/DetailLibraryPage";
 import TrashPage from "./pages/TrashPage";
 import NotFound from "./pages/NotFound";
 import NoWorkspacePage from "./pages/NoWorkspacePage";
-import ExcalidrawTestPage from "./pages/ExcalidrawTestPage";
 
 const queryClient = new QueryClient();
 
@@ -217,7 +216,6 @@ function AppRouter() {
               }
             />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="/excalidraw-test" element={<ExcalidrawTestPage />} />
             <Route path="*" element={<NotFound />} />
       </Routes>
     );
@@ -400,7 +398,6 @@ function AppRouter() {
           </ProtectedRoute>
         }
       />
-      <Route path="/excalidraw-test" element={<ExcalidrawTestPage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

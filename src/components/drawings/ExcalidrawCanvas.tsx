@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Excalidraw } from '@excalidraw/excalidraw';
 import { useDrawingPage, useUpdateDrawingPage } from '@/lib/api/hooks/useDrawings';
 import { handleArrowCounter, resetArrowCounterState, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
+import { logger } from '@/utils/logger';
 
 interface Props {
   pageId: string;
@@ -22,13 +23,30 @@ export default function ExcalidrawCanvas({
 }: Props) {
   const excaliRef = useRef<any>(null);
   const persistRef = useRef<any>(null);
+  const changeCountRef = useRef(0);
+  const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
   
   const { data: pageData, isLoading } = useDrawingPage(pageId);
   const updatePage = useUpdateDrawingPage();
   
+  // 🔍 DIAGNOSTIC: Log initial environment
+  useEffect(() => {
+    logger.log('🔍 ExcalidrawCanvas - Initial Environment', {
+      devicePixelRatio: window.devicePixelRatio,
+      innerWidth: window.innerWidth,
+      innerHeight: window.innerHeight,
+      screenWidth: window.screen.width,
+      screenHeight: window.screen.height,
+      pageId,
+      projectId,
+      timestamp: new Date().toISOString()
+    });
+  }, [pageId, projectId]);
+  
   // Reset arrow counter state when switching pages
   useEffect(() => {
     resetArrowCounterState();
+    changeCountRef.current = 0;
   }, [pageId]);
   
   // Custom defaults (thin lines, sharp arrows, small text)
@@ -42,6 +60,19 @@ export default function ExcalidrawCanvas({
   };
   
   const handleChange = useCallback((elements: any, appState: any, files: any) => {
+    changeCountRef.current++;
+    
+    // 🔄 DIAGNOSTIC: Log first 3 changes
+    if (changeCountRef.current <= 3) {
+      logger.log(`🔄 Change #${changeCountRef.current}`, {
+        zoom: appState?.zoom,
+        scrollX: appState?.scrollX,
+        scrollY: appState?.scrollY,
+        elementsCount: elements?.length,
+        filesCount: Object.keys(files || {}).length
+      });
+    }
+    
     // Ensure collaborators is always a Map
     const sanitizedAppState = {
       ...appState,
@@ -91,13 +122,89 @@ export default function ExcalidrawCanvas({
     collaborators: new Map(), // Always use a fresh Map
   };
   
+  // 🎨 DIAGNOSTIC: Handle Excalidraw API ready
+  const handleExcalidrawAPI = useCallback((api: any) => {
+    excaliRef.current = api;
+    setExcalidrawAPI(api);
+    onApiReady(api);
+    
+    logger.log('🎨 Excalidraw API Ready', {
+      appState: api.getAppState(),
+      zoom: api.getAppState()?.zoom,
+      viewBackgroundColor: api.getAppState()?.viewBackgroundColor
+    });
+    
+    // 📐 DIAGNOSTIC: Log canvas metrics after API ready
+    setTimeout(() => {
+      const canvas = document.querySelector('.excalidraw canvas') as HTMLCanvasElement;
+      if (canvas) {
+        logger.log('📐 Canvas Element Metrics (100ms after API ready)', {
+          canvasWidth: canvas.width,
+          canvasHeight: canvas.height,
+          styleWidth: canvas.style.width,
+          styleHeight: canvas.style.height,
+          computedWidth: canvas.getBoundingClientRect().width,
+          computedHeight: canvas.getBoundingClientRect().height,
+          expectedWidth: window.innerWidth * window.devicePixelRatio,
+          expectedHeight: window.innerHeight * window.devicePixelRatio
+        });
+      }
+    }, 100);
+  }, [onApiReady]);
+  
+  // ⚡ DIAGNOSTIC: Force resize after 500ms
+  useEffect(() => {
+    if (excalidrawAPI) {
+      const timer = setTimeout(() => {
+        const canvas = document.querySelector('.excalidraw canvas') as HTMLCanvasElement;
+        const beforeMetrics = canvas ? {
+          canvasWidth: canvas.width,
+          canvasHeight: canvas.height,
+          zoom: excalidrawAPI.getAppState()?.zoom
+        } : null;
+        
+        logger.log('⚡ Triggering forced resize...', beforeMetrics);
+        window.dispatchEvent(new Event('resize'));
+        
+        // Log after forced resize
+        setTimeout(() => {
+          if (canvas) {
+            logger.log('📐 Canvas Metrics After Forced Resize', {
+              canvasWidth: canvas.width,
+              canvasHeight: canvas.height,
+              zoom: excalidrawAPI.getAppState()?.zoom,
+              changed: beforeMetrics && (
+                canvas.width !== beforeMetrics.canvasWidth ||
+                canvas.height !== beforeMetrics.canvasHeight
+              )
+            });
+          }
+        }, 100);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [excalidrawAPI]);
+  
+  // 📏 DIAGNOSTIC: Monitor window resize events
+  useEffect(() => {
+    const handleResize = () => {
+      logger.log('📏 Window resized', {
+        devicePixelRatio: window.devicePixelRatio,
+        innerWidth: window.innerWidth,
+        innerHeight: window.innerHeight,
+        zoom: excalidrawAPI?.getAppState()?.zoom
+      });
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [excalidrawAPI]);
+  
   return (
     <div className="h-full">
       <Excalidraw
-        excalidrawAPI={(api) => {
-          excaliRef.current = api;
-          onApiReady(api);
-        }}
+        excalidrawAPI={handleExcalidrawAPI}
         initialData={{
           elements: excalidrawData?.elements || [],
           appState: mergedAppState,
