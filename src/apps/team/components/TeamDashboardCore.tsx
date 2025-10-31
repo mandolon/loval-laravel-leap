@@ -362,7 +362,7 @@ export default function RehomeDoubleSidebar() {
             {active === "projects" ? (
               <div className="h-full flex flex-col">
                 {/* File/Whiteboard Viewer Area */}
-                <div className="flex-1 min-h-0">
+                <div className="flex-1 min-h-0 h-full">
                   {selectedWhiteboard ? (
                     <ExcalidrawCanvas
                       pageId={selectedWhiteboard.pageId}
