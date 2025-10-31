@@ -20,6 +20,7 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     exclude: ["@excalidraw/excalidraw"],
+    include: ["es6-promise-pool"], // Pre-bundle to fix default export issue
     entries: ['index.html', 'src/**/*.{ts,tsx,js,jsx}'], // Only scan our source files, not fork
   },
 }));
