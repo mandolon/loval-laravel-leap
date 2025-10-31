@@ -28,6 +28,7 @@ export function DrawingsTab({ projectId, workspaceId }: DrawingsTabProps) {
   const [arrowCounterEnabled, setArrowCounterEnabled] = useState(false);
   const [selectedScale, setSelectedScale] = useState<ScalePreset>('1/4" = 1\'');
   const [arrowStats, setArrowStats] = useState<ArrowCounterStats>({ count: 0, values: [] });
+  const [contextVersion, setContextVersion] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
   const { data: versions = [], isLoading } = useDrawingVersions(projectId);
@@ -151,22 +152,14 @@ export function DrawingsTab({ projectId, workspaceId }: DrawingsTabProps) {
   return (
     <div className="h-full flex">
       {/* Sidebar: Version/Page List */}
-      <div className="w-64 border-r border-slate-200 dark:border-[#1a2030]/60 flex flex-col bg-white dark:bg-[#0E1118]">
-            <ContextMenu>
-              <ContextMenuTrigger asChild>
-                <div className="p-3 border-b border-slate-200 dark:border-[#1a2030]/60 cursor-context-menu">
-                  <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">Whiteboards</span>
-                </div>
-              </ContextMenuTrigger>
-          <ContextMenuContent>
-            <ContextMenuItem onClick={handleCreateVersion} disabled={createVersionMutation.isPending}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Drawing Version
-            </ContextMenuItem>
-          </ContextMenuContent>
-        </ContextMenu>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <div className="w-64 border-r border-slate-200 dark:border-[#1a2030]/60 flex flex-col bg-white dark:bg-[#0E1118] cursor-context-menu">
+            <div className="p-3 border-b border-slate-200 dark:border-[#1a2030]/60">
+              <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">Whiteboards</span>
+            </div>
 
-        <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1">
           <div className="p-2 space-y-1">
             {versions.length === 0 ? (
               <div className="p-4 text-center text-sm text-slate-500 dark:text-neutral-400">
@@ -179,30 +172,21 @@ export function DrawingsTab({ projectId, workspaceId }: DrawingsTabProps) {
                 return (
                   <div key={version.id} className="space-y-1">
                     {/* Version Header */}
-                    <ContextMenu>
-                      <ContextMenuTrigger asChild>
-                        <button
-                          onClick={() => toggleVersion(version.id)}
-                          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-[#141C28] transition-colors text-left"
-                        >
-                          {isExpanded ? (
-                            <ChevronDown className="h-4 w-4 text-slate-500 dark:text-neutral-400" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4 text-slate-500 dark:text-neutral-400" />
-                          )}
-                          <FileText className="h-4 w-4 text-slate-500 dark:text-neutral-400" />
-                          <span className="flex-1 text-sm font-medium text-slate-700 dark:text-neutral-300 truncate">
-                            {version.name}
-                          </span>
-                        </button>
-                      </ContextMenuTrigger>
-                      <ContextMenuContent>
-                        <ContextMenuItem onClick={() => handleCreatePage(version.id)} disabled={createPageMutation.isPending}>
-                          <Plus className="h-4 w-4 mr-2" />
-                          New Page
-                        </ContextMenuItem>
-                      </ContextMenuContent>
-                    </ContextMenu>
+                    <button
+                      onClick={() => toggleVersion(version.id)}
+                      onMouseEnter={() => setContextVersion(version.id)}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-[#141C28] transition-colors text-left"
+                    >
+                      {isExpanded ? (
+                        <ChevronDown className="h-4 w-4 text-slate-500 dark:text-neutral-400" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-slate-500 dark:text-neutral-400" />
+                      )}
+                      <FileText className="h-4 w-4 text-slate-500 dark:text-neutral-400" />
+                      <span className="flex-1 text-sm font-medium text-slate-700 dark:text-neutral-300 truncate">
+                        {version.name}
+                      </span>
+                    </button>
 
                     {/* Pages */}
                     {isExpanded && (
@@ -234,7 +218,24 @@ export function DrawingsTab({ projectId, workspaceId }: DrawingsTabProps) {
             )}
           </div>
         </ScrollArea>
-      </div>
+          </div>
+        </ContextMenuTrigger>
+        <ContextMenuContent>
+          <ContextMenuItem onClick={handleCreateVersion} disabled={createVersionMutation.isPending}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Drawing Version
+          </ContextMenuItem>
+          {versions.length > 0 && (
+            <ContextMenuItem 
+              onClick={() => handleCreatePage(contextVersion || versions[0].id)} 
+              disabled={createPageMutation.isPending}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              New Page {contextVersion && versions.find(v => v.id === contextVersion) && `(in ${versions.find(v => v.id === contextVersion)?.name})`}
+            </ContextMenuItem>
+          )}
+        </ContextMenuContent>
+      </ContextMenu>
 
       {/* Main Canvas Area */}
       <div className="flex-1 flex flex-col min-w-0">
