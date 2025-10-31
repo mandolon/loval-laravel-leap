@@ -33,6 +33,48 @@ export default function ExcalidrawCanvas({
     resetArrowCounterState();
   }, [pageId]);
 
+  // Force crisp canvas rendering by disabling image smoothing
+  useEffect(() => {
+    const container = document.querySelector('.excalidraw');
+    if (!container) return;
+
+    const disableSmoothing = () => {
+      const canvases = container.querySelectorAll('canvas');
+      let count = 0;
+      canvases.forEach((canvas) => {
+        const ctx = (canvas as HTMLCanvasElement).getContext('2d');
+        if (ctx) {
+          ctx.imageSmoothingEnabled = false;
+          ctx.imageSmoothingQuality = 'high';
+          count++;
+        }
+      });
+      if (count > 0) {
+        console.log(`[ExcalidrawCanvas] Applied crisp rendering to ${count} canvases`);
+      }
+    };
+
+    // Initial application with delay for Excalidraw mount
+    setTimeout(disableSmoothing, 100);
+
+    // Reapply when Excalidraw recreates canvases
+    const observer = new MutationObserver(disableSmoothing);
+    observer.observe(container, { 
+      childList: true, 
+      subtree: true, 
+      attributes: true 
+    });
+
+    // Reapply on window resize
+    const resizeHandler = () => setTimeout(disableSmoothing, 50);
+    window.addEventListener('resize', resizeHandler);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', resizeHandler);
+    };
+  }, [pageData]);
+
   // Handle image paste/drop - intercept before Excalidraw compresses
   const handleImageUpload = useCallback(async (file: File): Promise<string | null> => {
     if (!pageData?.drawings?.id) return null;
@@ -155,18 +197,44 @@ export default function ExcalidrawCanvas({
               const dataURL = await handleImageUpload(file);
               if (dataURL && excaliRef.current) {
                 console.log('[ExcalidrawCanvas] Adding image to canvas with dataURL length:', dataURL.length);
-                // Create an image to get dimensions
+                
                 const img = new Image();
                 img.src = dataURL;
                 img.onload = () => {
-                  console.log('[ExcalidrawCanvas] Image loaded, dimensions:', img.width, 'x', img.height);
-                  excaliRef.current?.addFiles([{
-                    id: `image-${Date.now()}`,
+                  const width = img.naturalWidth;
+                  const height = img.naturalHeight;
+                  console.log('[ExcalidrawCanvas] Image loaded, native dimensions:', width, 'x', height);
+                  
+                  // Create file ID
+                  const fileId = `image-${Date.now()}`;
+                  
+                  // First add to files map
+                  excaliRef.current.addFiles([{
+                    id: fileId,
                     dataURL: dataURL,
                     mimeType: file.type,
                     created: Date.now(),
                   }]);
-                  toast.success('Image added at full resolution');
+                  
+                  // Then create image element at native resolution
+                  const imageElement = excaliRef.current.createElement({
+                    type: 'image',
+                    fileId: fileId,
+                    x: 100,
+                    y: 100,
+                    width: width,
+                    height: height,
+                  });
+                  
+                  if (imageElement) {
+                    const existingElements = excaliRef.current.getSceneElements();
+                    excaliRef.current.updateScene({
+                      elements: [...existingElements, imageElement],
+                    });
+                    
+                    toast.success(`Image added at native resolution (${width}×${height}px)`);
+                    console.log('[ExcalidrawCanvas] Image element created at native dimensions');
+                  }
                 };
               }
             }
