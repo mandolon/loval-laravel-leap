@@ -91,6 +91,19 @@ export default function ExcalidrawCanvas({
     collaborators: new Map(),
   }), []);
   
+  // Safely parse excalidraw data - memoized to prevent infinite re-renders
+  const excalidrawData = useMemo(() => pageData?.excalidraw_data as any, [pageData]);
+  
+  // Ensure collaborators is always a Map - memoized to prevent infinite re-renders
+  const mergedAppState = useMemo(() => {
+    const savedAppState = excalidrawData?.appState || {};
+    return {
+      ...defaultAppState,
+      ...savedAppState,
+      collaborators: new Map(), // Always use a fresh Map
+    };
+  }, [excalidrawData, defaultAppState]);
+  
   const handleChange = useCallback((elements: any, appState: any, files: any) => {
     changeCountRef.current++;
     
@@ -237,19 +250,6 @@ export default function ExcalidrawCanvas({
       </div>
     );
   }
-  
-  // Safely parse excalidraw data - memoized to prevent infinite re-renders
-  const excalidrawData = useMemo(() => pageData?.excalidraw_data as any, [pageData]);
-  
-  // Ensure collaborators is always a Map - memoized to prevent infinite re-renders
-  const mergedAppState = useMemo(() => {
-    const savedAppState = excalidrawData?.appState || {};
-    return {
-      ...defaultAppState,
-      ...savedAppState,
-      collaborators: new Map(), // Always use a fresh Map
-    };
-  }, [excalidrawData, defaultAppState]);
   
   return (
     <div ref={wrapperRef} className="h-full w-full">
