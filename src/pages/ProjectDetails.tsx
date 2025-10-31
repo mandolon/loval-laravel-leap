@@ -47,6 +47,7 @@ import { ExcelTab } from "@/components/excel/ExcelTab";
 import { TasksTableTab } from "@/components/taskboard/TasksTableTab";
 import { TaskDetailDialog } from "@/components/TaskDetailDialog";
 import { useProjectMembers } from "@/lib/api/hooks/useProjectMembers";
+import { DrawingsTab } from "@/components/drawings/DrawingsTab";
 
 // PanelRightClose icon import
 import { PanelRightClose } from "lucide-react";
@@ -242,6 +243,38 @@ const ProjectDetails = () => {
       )
       .subscribe();
 
+    // Subscribe to drawings/whiteboards
+    const drawingsChannel = supabase
+      .channel(`drawings-${id}-changes`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'drawings',
+          filter: `project_id=eq.${id}`
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['drawings', 'list', { projectId: id }] });
+        }
+      )
+      .subscribe();
+
+    const drawingPagesChannel = supabase
+      .channel(`drawing-pages-${id}-changes`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'drawing_pages'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['drawings', 'list', { projectId: id }] });
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(projectChannel);
       supabase.removeChannel(tasksChannel);
@@ -250,6 +283,8 @@ const ProjectDetails = () => {
       supabase.removeChannel(invoicesChannel);
       supabase.removeChannel(linksChannel);
       supabase.removeChannel(filesChannel);
+      supabase.removeChannel(drawingsChannel);
+      supabase.removeChannel(drawingPagesChannel);
     };
   }, [id, queryClient]);
 
@@ -410,6 +445,17 @@ const ProjectDetails = () => {
                 }`}
               >
                 Notes
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("whiteboards")}
+                className={`px-2.5 py-1 rounded-[8px] transition-colors focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 ${
+                  activeTab === "whiteboards"
+                    ? "bg-white dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium"
+                    : "text-slate-500 dark:text-neutral-400 hover:bg-white/60 dark:hover:bg-[#141C28] hover:text-slate-700 dark:hover:text-blue-300"
+                }`}
+              >
+                Whiteboards
               </button>
             </div>
           </div>
@@ -656,6 +702,10 @@ const ProjectDetails = () => {
                 </CardContent>
               </Card>
               </div>
+            </TabsContent>
+
+            <TabsContent value="whiteboards" className="mt-0 flex-1 min-h-0 flex flex-col">
+              <DrawingsTab projectId={id || ''} workspaceId={workspaceId || ''} />
             </TabsContent>
           </Tabs>
         </div>
