@@ -102,38 +102,120 @@ export default function ExcalidrawCanvas({
       });
     }
     
-    // 📸 DIAGNOSTIC: Log image imports
+    // 📸 DIAGNOSTIC: Log image imports with EXTENSIVE details
     if (files && Object.keys(files).length > 0) {
       Object.entries(files).forEach(([id, file]: [string, any]) => {
         if (file.dataURL) {
           const img = new Image();
           img.onload = () => {
-            // Get canvas metrics
+            // Get canvas and all rendering contexts
             const canvas = document.querySelector('.excalidraw canvas') as HTMLCanvasElement;
+            const canvasContext = canvas?.getContext('2d');
+            
+            // 🆕 Parse dataURL to get format and size info
+            const dataURLParts = file.dataURL.split(',');
+            const header = dataURLParts[0]; // e.g., "data:image/png;base64"
+            const base64Data = dataURLParts[1];
+            const format = header.match(/image\/(\w+)/)?.[1] || 'unknown';
+            const isBase64 = header.includes('base64');
+            const dataSize = base64Data ? base64Data.length : 0;
+            const estimatedBytes = isBase64 ? (dataSize * 3) / 4 : dataSize;
+            
+            // 🆕 Check if image element in DOM has any transforms/filters
+            const imageElements = Array.from(document.querySelectorAll('.excalidraw img, .excalidraw image'));
+            const matchingImgElement = imageElements.find((imgEl: any) => imgEl.src?.includes(id.substring(0, 20)));
+            const imgStyle = matchingImgElement ? window.getComputedStyle(matchingImgElement as Element) : null;
+            
+            // 🆕 Find the Excalidraw image element data
+            const imageElement = elements?.find((el: any) => el.type === 'image' && el.fileId === id);
+            
             const canvasMetrics = canvas ? {
               canvasWidth: canvas.width,
               canvasHeight: canvas.height,
               styleWidth: canvas.style.width,
               styleHeight: canvas.style.height,
               computedWidth: canvas.getBoundingClientRect().width,
-              computedHeight: canvas.getBoundingClientRect().height
+              computedHeight: canvas.getBoundingClientRect().height,
+              // 🆕 Canvas rendering settings
+              imageSmoothingEnabled: canvasContext?.imageSmoothingEnabled,
+              imageSmoothingQuality: canvasContext?.imageSmoothingQuality,
             } : null;
             
-            logger.log('📸 Image Imported - DETAILED METRICS', {
+            logger.log('📸 Image Import - FULL DIAGNOSTIC', {
+              // Basic image info
               imageId: id,
               imageNaturalWidth: img.width,
               imageNaturalHeight: img.height,
+              
+              // 🆕 Image data format & quality
+              imageData: {
+                format,
+                isBase64,
+                dataURLLength: file.dataURL.length,
+                base64Length: dataSize,
+                estimatedBytes,
+                estimatedKB: (estimatedBytes / 1024).toFixed(2),
+                estimatedMB: (estimatedBytes / 1024 / 1024).toFixed(3),
+                compressionRatio: img.width && img.height ? 
+                  ((estimatedBytes / (img.width * img.height * 4)) * 100).toFixed(1) + '%' : 'N/A'
+              },
+              
+              // 🆕 Excalidraw element data
+              excalidrawElement: imageElement ? {
+                width: imageElement.width,
+                height: imageElement.height,
+                x: imageElement.x,
+                y: imageElement.y,
+                scale: imageElement.scale,
+                angle: imageElement.angle,
+                locked: imageElement.locked,
+              } : 'Not found in elements',
+              
+              // 🆕 Rendered scale calculation
+              renderScale: imageElement ? {
+                scaleX: imageElement.width / img.width,
+                scaleY: imageElement.height / img.height,
+                isDownscaled: imageElement.width < img.width || imageElement.height < img.height,
+                isUpscaled: imageElement.width > img.width || imageElement.height > img.height,
+                scaleFactor: ((imageElement.width / img.width) * 100).toFixed(1) + '%'
+              } : null,
+              
+              // 🆕 DOM image element CSS (if found)
+              domImageStyle: imgStyle ? {
+                transform: imgStyle.transform,
+                filter: imgStyle.filter,
+                imageRendering: imgStyle.imageRendering,
+                backfaceVisibility: imgStyle.backfaceVisibility,
+                willChange: imgStyle.willChange,
+                opacity: imgStyle.opacity,
+              } : 'DOM image element not found',
+              
+              // Device & viewport
               devicePixelRatio: window.devicePixelRatio,
               viewportWidth: window.innerWidth,
               viewportHeight: window.innerHeight,
+              
+              // Canvas state
               canvas: canvasMetrics,
-              expectedCanvasWidth: window.innerWidth * window.devicePixelRatio,
-              expectedCanvasHeight: window.innerHeight * window.devicePixelRatio,
+              
+              // 🆕 Current zoom level from appState
+              currentZoom: appState?.zoom?.value || appState?.zoom || 1,
+              
+              // Quality indicators
               imageScaleToViewport: {
                 width: ((window.innerWidth / img.width) * 100).toFixed(1) + '%',
                 height: ((window.innerHeight / img.height) * 100).toFixed(1) + '%'
               },
-              pixelDensityMatch: canvas ? (canvas.width / canvas.getBoundingClientRect().width).toFixed(2) : 'N/A'
+              pixelDensityMatch: canvas ? (canvas.width / canvas.getBoundingClientRect().width).toFixed(2) : 'N/A',
+              
+              // 🆕 Blur risk assessment
+              blurRiskFactors: {
+                lowResolutionSource: img.width < 1920 || img.height < 1080,
+                heavyCompression: estimatedBytes < (img.width * img.height * 0.5),
+                upscaling: imageElement && (imageElement.width > img.width || imageElement.height > img.height),
+                zoomLevel: (appState?.zoom?.value || appState?.zoom || 1) > 1,
+                devicePixelRatio: window.devicePixelRatio > 1,
+              }
             });
           };
           img.src = file.dataURL;
