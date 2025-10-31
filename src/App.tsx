@@ -1,9 +1,11 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { UserProvider, useUser } from "./contexts/UserContext";
+import { supabase } from "@/integrations/supabase/client";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { NewAppLayout } from "./components/layout/NewAppLayout";
 import { ThemeProvider } from "./components/ThemeProvider";
@@ -29,12 +31,32 @@ const queryClient = new QueryClient();
 function AppRouter() {
   const { user, loading } = useUser();
   const location = useLocation();
+  const navigate = useNavigate();
   
   // Extract workspace ID from URL path
   const workspaceIdMatch = location.pathname.match(/^\/workspace\/([^/]+)/);
   const workspaceId = workspaceIdMatch ? workspaceIdMatch[1] : undefined;
   
   const { role, loading: roleLoading } = useWorkspaceRole(workspaceId);
+  
+  // Redirect to first workspace if at root without workspace
+  useEffect(() => {
+    if (!loading && !roleLoading && user && location.pathname === '/') {
+      // Fetch user's first workspace
+      supabase
+        .from('workspace_members')
+        .select('workspace_id, workspaces(id)')
+        .eq('user_id', user.id)
+        .is('deleted_at', null)
+        .limit(1)
+        .single()
+        .then(({ data }) => {
+          if (data?.workspace_id) {
+            navigate(`/workspace/${data.workspace_id}`, { replace: true });
+          }
+        });
+    }
+  }, [loading, roleLoading, user, location.pathname, navigate]);
   
   if (loading || roleLoading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
