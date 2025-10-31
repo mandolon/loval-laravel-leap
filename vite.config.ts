@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
+import { viteCommonjs } from "@originjs/vite-plugin-commonjs";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -9,7 +10,11 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [
+    react(),
+    viteCommonjs(), // Handle all CommonJS dependencies automatically
+    mode === "development" && componentTagger()
+  ].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -19,25 +24,17 @@ export default defineConfig(({ mode }) => ({
     },
   },
   optimizeDeps: {
-    exclude: ["@excalidraw/excalidraw"],
-    include: [
-      "es6-promise-pool",
-      "png-chunks-extract",
-      "png-chunks-encode",
-      "png-chunk-text",
-      "@braintree/sanitize-url",
-      "lodash.throttle"
-    ], // Pre-bundle CommonJS packages used by Excalidraw
-    entries: ['index.html', 'src/**/*.{ts,tsx,js,jsx}'], // Only scan our source files, not fork
+    include: ["@excalidraw/excalidraw"], // Pre-bundle Excalidraw
+    entries: ['index.html', 'src/**/*.{ts,tsx,js,jsx}'],
     esbuildOptions: {
-      // Excalidraw requires es2022 for "Arbitrary module namespace identifier names"
       target: "es2022",
       treeShaking: true,
     },
   },
   build: {
     commonjsOptions: {
-      include: [/node_modules/], // Handle all CommonJS modules during build
+      include: [/node_modules/],
+      transformMixedEsModules: true,
     },
   },
 }));
