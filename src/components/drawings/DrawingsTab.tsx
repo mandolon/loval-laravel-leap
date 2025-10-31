@@ -152,12 +152,12 @@ export function DrawingsTab({ projectId, workspaceId }: DrawingsTabProps) {
     <div className="h-full flex">
       {/* Sidebar: Version/Page List */}
       <div className="w-64 border-r border-slate-200 dark:border-[#1a2030]/60 flex flex-col bg-white dark:bg-[#0E1118]">
-        <ContextMenu>
-          <ContextMenuTrigger>
-            <div className="p-3 border-b border-slate-200 dark:border-[#1a2030]/60 cursor-context-menu">
-              <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">Whiteboards</span>
-            </div>
-          </ContextMenuTrigger>
+            <ContextMenu>
+              <ContextMenuTrigger asChild>
+                <div className="p-3 border-b border-slate-200 dark:border-[#1a2030]/60 cursor-context-menu">
+                  <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">Whiteboards</span>
+                </div>
+              </ContextMenuTrigger>
           <ContextMenuContent>
             <ContextMenuItem onClick={handleCreateVersion} disabled={createVersionMutation.isPending}>
               <Plus className="h-4 w-4 mr-2" />
