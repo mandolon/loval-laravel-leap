@@ -381,6 +381,97 @@ export default function ExcalidrawCanvas({
       viewBackgroundColor: api.getAppState()?.viewBackgroundColor
     });
     
+    // 🔥 NEW: Monitor drawImage calls
+    setTimeout(() => {
+      const canvas = document.querySelector('.excalidraw canvas') as HTMLCanvasElement;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          const originalDrawImage = ctx.drawImage.bind(ctx);
+          let drawImageCallCount = 0;
+          
+          (ctx as any).drawImage = function(...args: any[]) {
+            drawImageCallCount++;
+            
+            // Log first 5 drawImage calls for images
+            if (drawImageCallCount <= 5 && args[0] instanceof HTMLImageElement) {
+              logger.log('🖼️ drawImage called', {
+                callNumber: drawImageCallCount,
+                imageSrc: args[0].src?.substring(0, 100),
+                imageNaturalWidth: args[0].naturalWidth,
+                imageNaturalHeight: args[0].naturalHeight,
+                args: args.slice(1), // dx, dy, dw, dh, sx, sy, sw, sh
+                currentSmoothingEnabled: ctx.imageSmoothingEnabled,
+                currentSmoothingQuality: ctx.imageSmoothingQuality,
+                currentImageRendering: canvas.style.imageRendering,
+                canvasTransform: ctx.getTransform ? {
+                  a: ctx.getTransform().a,
+                  d: ctx.getTransform().d,
+                } : null
+              });
+            }
+            
+            // ALWAYS ensure high quality before drawing
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            
+            return originalDrawImage.apply(this, args);
+          };
+          
+          logger.log('✅ drawImage interceptor installed');
+        }
+      }
+    }, 100);
+    
+    // 🔥 NEW: Monitor canvas property changes
+    setTimeout(() => {
+      const canvas = document.querySelector('.excalidraw canvas') as HTMLCanvasElement;
+      if (canvas) {
+        const observer = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            if (mutation.type === 'attributes') {
+              logger.log('⚠️ Canvas attribute changed', {
+                attribute: mutation.attributeName,
+                oldValue: mutation.oldValue,
+                newValue: canvas.getAttribute(mutation.attributeName || ''),
+                imageRendering: canvas.style.imageRendering,
+                timestamp: Date.now()
+              });
+            }
+          });
+        });
+        
+        observer.observe(canvas, {
+          attributes: true,
+          attributeOldValue: true,
+          attributeFilter: ['style', 'class', 'width', 'height']
+        });
+        
+        logger.log('✅ Canvas mutation observer installed');
+      }
+    }, 100);
+    
+    // 🔥 NEW: Check for multiple canvases
+    setTimeout(() => {
+      const allCanvases = document.querySelectorAll('.excalidraw canvas');
+      logger.log('🔍 All Excalidraw canvases found', {
+        count: allCanvases.length,
+        canvases: Array.from(allCanvases).map((c, i) => {
+          const canvas = c as HTMLCanvasElement;
+          const ctx = canvas.getContext('2d');
+          return {
+            index: i,
+            className: canvas.className,
+            width: canvas.width,
+            height: canvas.height,
+            imageRendering: window.getComputedStyle(canvas).imageRendering,
+            imageSmoothingEnabled: ctx?.imageSmoothingEnabled,
+            imageSmoothingQuality: ctx?.imageSmoothingQuality,
+          };
+        })
+      });
+    }, 200);
+    
     // 📐 DIAGNOSTIC: Log canvas metrics immediately and after delays
     const logCanvasMetrics = (label: string, delay: number) => {
       setTimeout(() => {
@@ -441,6 +532,7 @@ export default function ExcalidrawCanvas({
               display: canvasStyle.display,
               position: canvasStyle.position,
               transform: canvasStyle.transform,
+              imageRendering: canvasStyle.imageRendering,
             },
             
             // Computed/rendered dimensions
