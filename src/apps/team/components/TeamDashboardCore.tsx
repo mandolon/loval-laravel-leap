@@ -188,7 +188,7 @@ export default function RehomeDoubleSidebar() {
   const [projectPanelCollapsed, setProjectPanelCollapsed] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [selectedWhiteboard, setSelectedWhiteboard] = useState<{ pageId: string; pageName: string; versionTitle: string } | null>(null);
-  const [arrowCounterEnabled, setArrowCounterEnabled] = useState(true);
+  const [showArrowStats, setShowArrowStats] = useState(true); // Toggle visibility of stats display
   const [currentScale, setCurrentScale] = useState<ScalePreset>("1/4\" = 1'");
   const [arrowStats, setArrowStats] = useState<ArrowCounterStats>({ count: 0, values: [] });
   const [inchesPerSceneUnit, setInchesPerSceneUnit] = useState<number>(getInchesPerSceneUnit(SCALE_PRESETS["1/4\" = 1'"]));
@@ -373,7 +373,6 @@ export default function RehomeDoubleSidebar() {
                       pageId={selectedWhiteboard.pageId}
                       projectId={userProjects.find((p: any) => p.name === selected?.item)?.id || ''}
                       onApiReady={(api) => {/* Optional: store api reference */}}
-                      arrowCounterEnabled={arrowCounterEnabled}
                       inchesPerSceneUnit={inchesPerSceneUnit}
                       onArrowStatsChange={setArrowStats}
                       onCalibrationChange={(newInchesPerSceneUnit) => setInchesPerSceneUnit(newInchesPerSceneUnit)}
@@ -428,8 +427,8 @@ export default function RehomeDoubleSidebar() {
                 setSelectedWhiteboard(wb);
                 setSelectedFile(null);
               }}
-              arrowCounterEnabled={arrowCounterEnabled}
-              onArrowCounterToggle={() => setArrowCounterEnabled(!arrowCounterEnabled)}
+              showArrowStats={showArrowStats}
+              onToggleArrowStats={() => setShowArrowStats(!showArrowStats)}
               currentScale={currentScale}
               onScaleChange={(scale) => {
                 setCurrentScale(scale);

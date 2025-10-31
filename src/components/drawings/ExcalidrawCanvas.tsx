@@ -1,8 +1,28 @@
-import React, { useCallback, useEffect, useRef, useMemo } from 'react';
+import React, { useCallback, useEffect, useRef, useMemo, useState } from 'react';
 import { Excalidraw } from '@excalidraw/excalidraw';
 import { useDrawingPage, useUpdateDrawingPage } from '@/lib/api/hooks/useDrawings';
 import { handleArrowCounter, resetArrowCounterState, lengthOfArrow, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
 import { logger } from '@/utils/logger';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 
 // Stable fallback values outside component to prevent re-renders
 const EMPTY_ELEMENTS: any[] = [];
@@ -12,7 +32,6 @@ interface Props {
   pageId: string;
   projectId: string;
   onApiReady: (api: any) => void;
-  arrowCounterEnabled: boolean;
   inchesPerSceneUnit: number | null;
   onArrowStatsChange: (stats: ArrowCounterStats) => void;
   onCalibrationChange?: (pxPerStep: number) => void;
@@ -22,7 +41,6 @@ export default function ExcalidrawCanvas({
   pageId,
   projectId,
   onApiReady,
-  arrowCounterEnabled,
   inchesPerSceneUnit,
   onArrowStatsChange,
   onCalibrationChange
@@ -32,6 +50,14 @@ export default function ExcalidrawCanvas({
   const changeCountRef = useRef(0);
   const onApiReadyRef = useRef(onApiReady);
   const loggedImageIdsRef = useRef<Set<string>>(new Set());
+  
+  // Popup state (styled like existing page UI)
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+  const [calibrateOpen, setCalibrateOpen] = useState(false);
+  const [calibrateInput, setCalibrateInput] = useState('');
+  const [calibrateError, setCalibrateError] = useState<string | null>(null);
+  const pendingArrowLengthPxRef = useRef<number | null>(null);
   
   const { data: pageData, isLoading } = useDrawingPage(pageId);
   const updatePage = useUpdateDrawingPage();
@@ -66,11 +92,33 @@ export default function ExcalidrawCanvas({
     loggedImageIdsRef.current.clear(); // Reset logged image IDs when switching pages
   }, [pageId]);
   
+  // Always run arrow counter when inchesPerSceneUnit is available
+  // Only run when pageId is actually set (page is loaded)
+  useEffect(() => {
+    if (!pageId || !excaliRef.current || !inchesPerSceneUnit) return;
+    
+    try {
+      const elements = excaliRef.current.getSceneElements();
+      if (elements && elements.length > 0) {
+        handleArrowCounter(
+          elements,
+          excaliRef.current,
+          inchesPerSceneUnit,
+          onArrowStatsChange
+        );
+      }
+    } catch (error) {
+      console.error('Error in arrow counter useEffect:', error);
+      // Don't throw - just log and continue
+    }
+  }, [inchesPerSceneUnit, pageId, onArrowStatsChange]);
+  
   // Handle calibration event from ProjectPanel
   useEffect(() => {
     const handleCalibrationTrigger = () => {
-      if (!excaliRef.current || !arrowCounterEnabled) {
-        alert('Please enable Arrow Counter first');
+      if (!excaliRef.current) {
+        setAlertMessage('Excalidraw not ready');
+        setAlertOpen(true);
         return;
       }
 
@@ -85,13 +133,9 @@ export default function ExcalidrawCanvas({
         el.type === 'arrow' && !el.isDeleted
       );
 
-      if (arrowElements.length === 0) {
-        alert('Please select an arrow to calibrate the scale');
-        return;
-      }
-
-      if (arrowElements.length > 1) {
-        alert('Please select only one arrow for calibration');
+      if (arrowElements.length === 0 || arrowElements.length > 1) {
+        setAlertMessage('Please select an arrow to calibrate the scale');
+        setAlertOpen(true);
         return;
       }
 
@@ -99,39 +143,39 @@ export default function ExcalidrawCanvas({
       const arrow = arrowElements[0];
       const lengthPx = lengthOfArrow(arrow);  // ✅ Uses proper multi-segment calculation
 
-      // Prompt user for real-world measurement
-      const input = prompt(
-        `Enter the real-world measurement for this arrow (in inches):\n\nArrow length: ${lengthPx.toFixed(2)} pixels`,
-        '12'
-      );
-
-      if (!input) return;
-
-      const inches = parseFloat(input);
-      if (isNaN(inches) || inches <= 0) {
-        alert('Please enter a valid positive number for the measurement in inches.');
-        return;
-      }
-
-      // Calculate new calibration using wrapper's formula
-      // pxPerStep = arrowLengthPx / inches
-      // But we store inchesPerSceneUnit, so: inchesPerSceneUnit = inches / arrowLengthPx
-      const newInchesPerSceneUnit = inches / lengthPx;
-
-      // Call the callback to update parent state
-      onCalibrationChange?.(newInchesPerSceneUnit);
-
-      logger.log('🎯 Calibration Complete', {
-        arrowLengthPx: lengthPx,
-        realWorldInches: inches,
-        newInchesPerSceneUnit,
-        pxPerInch: 1 / newInchesPerSceneUnit
-      });
+      // Open styled Calibration dialog
+      pendingArrowLengthPxRef.current = lengthPx;
+      setCalibrateInput('');
+      setCalibrateError(null);
+      setCalibrateOpen(true);
     };
 
-    window.addEventListener('trigger-calibration', handleCalibrationTrigger);
-    return () => window.removeEventListener('trigger-calibration', handleCalibrationTrigger);
-  }, [arrowCounterEnabled, onCalibrationChange]);
+      window.addEventListener('trigger-calibration', handleCalibrationTrigger);
+      return () => window.removeEventListener('trigger-calibration', handleCalibrationTrigger);
+    }, [onCalibrationChange]);
+
+  // Submit handler for calibration dialog
+  const handleCalibrateSubmit = useCallback(() => {
+    const lengthPx = pendingArrowLengthPxRef.current;
+    if (!lengthPx) {
+      setCalibrateOpen(false);
+      return;
+    }
+    const inches = parseFloat(calibrateInput);
+    if (isNaN(inches) || inches <= 0) {
+      setCalibrateError('Please enter a valid positive number');
+      return;
+    }
+    const newInchesPerSceneUnit = inches / lengthPx;
+    onCalibrationChange?.(newInchesPerSceneUnit);
+    logger.log('🎯 Calibration Complete', {
+      arrowLengthPx: lengthPx,
+      realWorldInches: inches,
+      newInchesPerSceneUnit,
+      pxPerInch: 1 / newInchesPerSceneUnit,
+    });
+    setCalibrateOpen(false);
+  }, [calibrateInput, onCalibrationChange]);
 
   
   // Custom defaults (thin lines, sharp arrows, small text) - memoized to prevent infinite re-renders
@@ -432,17 +476,14 @@ export default function ExcalidrawCanvas({
       collaborators: new Map(),
     };
     
-    // Apply arrow counter if enabled
-    if (arrowCounterEnabled && excaliRef.current && inchesPerSceneUnit) {
+    // Always apply arrow counter if inchesPerSceneUnit is available
+    if (excaliRef.current && inchesPerSceneUnit) {
       handleArrowCounter(
         elements, 
         excaliRef.current, 
         inchesPerSceneUnit,
         onArrowStatsChange
       );
-    } else if (!arrowCounterEnabled) {
-      // Clear stats when disabled
-      onArrowStatsChange({ count: 0, values: [] });
     }
     
     // Auto-save after 3 seconds (without collaborators field)
@@ -454,7 +495,7 @@ export default function ExcalidrawCanvas({
         excalidrawData: { elements, appState: appStateToSave, files }
       });
     }, 3000);
-  }, [pageId, arrowCounterEnabled, inchesPerSceneUnit, onArrowStatsChange, updatePage]);
+  }, [pageId, inchesPerSceneUnit, onArrowStatsChange, updatePage]);
   
   // 🎨 DIAGNOSTIC: Handle Excalidraw API ready
   const handleExcalidrawAPI = useCallback((api: any) => {
@@ -755,6 +796,62 @@ export default function ExcalidrawCanvas({
           />
         </div>
       </div>
+
+      {/* Alert for selection/enable issues */}
+      <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Calibration</AlertDialogTitle>
+            <AlertDialogDescription>
+              {alertMessage}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction asChild>
+              <Button onClick={() => setAlertOpen(false)}>OK</Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Calibration dialog with lighter overlay (match Help style) */}
+      <DialogPrimitive.Root open={calibrateOpen} onOpenChange={setCalibrateOpen}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+          <DialogPrimitive.Content
+            className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-4 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg"
+          >
+            <div className="flex flex-col space-y-1.5 text-center sm:text-left">
+              <h2 className="text-lg font-semibold leading-none tracking-tight">Calibrate arrow</h2>
+              <p className="text-base text-muted-foreground">What is this arrow’s length per plan?</p>
+            </div>
+            <div className="grid gap-3 py-2">
+              <Input
+                placeholder="Enter arrow length in inches."
+                value={calibrateInput}
+                onChange={(e) => {
+                  setCalibrateInput(e.target.value);
+                  if (calibrateError) setCalibrateError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleCalibrateSubmit();
+                  }
+                }}
+                inputMode="decimal"
+              />
+              {calibrateError && (
+                <p className="text-xs text-red-600">{calibrateError}</p>
+              )}
+            </div>
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
+              <Button variant="outline" onClick={() => setCalibrateOpen(false)}>Cancel</Button>
+              <Button onClick={handleCalibrateSubmit}>Set</Button>
+            </div>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
     </div>
   );
 }

@@ -246,8 +246,8 @@ export default function ProjectPanel({
   onBreadcrumb,
   onFileSelect,
   onWhiteboardSelect,
-  arrowCounterEnabled,
-  onArrowCounterToggle,
+  showArrowStats,
+  onToggleArrowStats,
   currentScale,
   onScaleChange,
   arrowStats,
@@ -259,8 +259,8 @@ export default function ProjectPanel({
   onBreadcrumb?: (breadcrumb: string) => void;
   onFileSelect?: (file: ProjectFile | null) => void;
   onWhiteboardSelect?: (whiteboard: { pageId: string; pageName: string; versionTitle: string } | null) => void;
-  arrowCounterEnabled?: boolean;
-  onArrowCounterToggle?: () => void;
+  showArrowStats?: boolean;
+  onToggleArrowStats?: () => void;
   currentScale?: ScalePreset;
   onScaleChange?: (scale: ScalePreset) => void;
   arrowStats?: ArrowCounterStats;
@@ -348,7 +348,7 @@ export default function ProjectPanel({
   }, [menu.show]);
 
   // Whiteboards data - fetch from database
-  const { data: drawingVersions, isLoading: wbLoading } = useDrawingVersions(projectId);
+  const { data: drawingVersions, isLoading: wbLoading, error: wbError } = useDrawingVersions(projectId);
   const updateDrawingScale = useUpdateDrawingScale();
   const createDrawingPage = useCreateDrawingPage();
   
@@ -845,6 +845,15 @@ export default function ProjectPanel({
               <div className="px-2.5 py-4 text-[11px] text-slate-500 text-center">
                 Loading whiteboards...
               </div>
+            ) : wbError ? (
+              <div className="px-2.5 py-4 text-[11px] text-red-600 text-center">
+                Error loading whiteboards. Please refresh the page.
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="mt-1 text-[10px] text-slate-500">
+                    {String(wbError)}
+                  </div>
+                )}
+              </div>
             ) : (
               <div className={selectedWB ? "hidden px-2.5 pt-1.5 pb-2" : "px-2.5 pt-1.5 pb-2"} onDragEnd={handleWbItemDragEnd}>
                 <SectionHeader
@@ -961,36 +970,34 @@ export default function ProjectPanel({
                   <div className="mt-4 pt-3 border-t border-slate-200 space-y-3">
                     <div className="text-[11px] font-semibold text-slate-900 mb-2.5">Drawing Tools</div>
                     
-                    {/* Arrow Counter Toggle - matching purple/pink design from screenshot */}
+                    {/* Arrow Counter - always enabled, button toggles stats visibility */}
                     <div className="mb-4">
                       <div className="text-[10px] text-slate-600 mb-1.5">Arrow Counter</div>
                       <div className="flex gap-2">
                         <button
-                          onClick={() => onArrowCounterToggle?.()}
+                          onClick={() => onToggleArrowStats?.()}
                           className={`flex-1 h-10 rounded-lg border flex items-center justify-center gap-2 text-sm font-medium transition-colors ${
-                            arrowCounterEnabled
+                            showArrowStats
                               ? 'border-purple-400 bg-purple-50 text-purple-700'
                               : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
                           }`}
                         >
-                          {arrowCounterEnabled && (
+                          {showArrowStats && (
                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
                           )}
-                          {arrowCounterEnabled ? 'Enabled' : 'Disabled'}
+                          {showArrowStats ? 'Hide Values' : 'Show Values'}
                         </button>
-                        {arrowCounterEnabled && (
-                          <button
-                            onClick={() => onCalibrate?.()}
-                            className="px-4 h-10 rounded-lg border border-blue-400 bg-blue-50 text-blue-700 text-sm font-medium hover:bg-blue-100 transition-colors whitespace-nowrap"
-                            title="Set scale by calibrating with a known measurement"
-                          >
-                            Set Scale
-                          </button>
-                        )}
+                        <button
+                          onClick={() => onCalibrate?.()}
+                          className="px-4 h-10 rounded-lg border border-blue-400 bg-blue-50 text-blue-700 text-sm font-medium hover:bg-blue-100 transition-colors whitespace-nowrap"
+                          title="Set scale by calibrating with a known measurement"
+                        >
+                          Set Scale
+                        </button>
                       </div>
-                      {arrowCounterEnabled && inchesPerSceneUnit && (
+                      {inchesPerSceneUnit && (
                         <div className="mt-2 text-[10px] text-slate-500">
                           Current scale: {(1 / inchesPerSceneUnit).toFixed(3)} px/inch
                         </div>
@@ -1024,7 +1031,7 @@ export default function ProjectPanel({
                     </div>
 
                     {/* Live Statistics - matching design from screenshot */}
-                    {arrowCounterEnabled && arrowStats && arrowStats.count > 0 && (
+                    {showArrowStats && arrowStats && arrowStats.count > 0 && (
                       <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                         <div className="text-center text-purple-700 font-semibold text-sm mb-1">
                           {arrowStats.count} arrow{arrowStats.count !== 1 ? 's' : ''} labeled

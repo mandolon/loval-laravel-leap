@@ -112,7 +112,7 @@ function makeTextElementAt(x: number, y: number, text: string): any {
     type: "text",
     text,
     originalText: text, // Required for export - must be a string for Fonts.getCharsPerFamily
-    fontSize: 8,
+    fontSize: 4,
     fontFamily: 1,
     textAlign: "center",
     verticalAlign: "middle",
