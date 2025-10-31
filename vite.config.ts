@@ -9,10 +9,7 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
-  plugins: [
-    react(),
-    mode === "development" && componentTagger()
-  ].filter(Boolean),
+  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -22,25 +19,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   optimizeDeps: {
-    // Exclude Excalidraw itself (using fork)
     exclude: ["@excalidraw/excalidraw"],
-    // Include CommonJS dependencies that Excalidraw uses - these need pre-bundling
-    include: [
-      "es6-promise-pool",
-      "png-chunks-extract",
-      "png-chunks-encode",
-      "png-chunk-text",
-    ],
-    entries: ['index.html', 'src/**/*.{ts,tsx,js,jsx}'],
-    esbuildOptions: {
-      target: "es2022",
-      treeShaking: true,
-    },
-  },
-  build: {
-    commonjsOptions: {
-      include: [/node_modules/],
-      transformMixedEsModules: true,
-    },
+    entries: ['index.html', 'src/**/*.{ts,tsx,js,jsx}'], // Only scan our source files, not fork
   },
 }));
