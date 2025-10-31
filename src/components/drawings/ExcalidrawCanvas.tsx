@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useMemo } from 'react';
 import { Excalidraw } from '@excalidraw/excalidraw';
 import { useDrawingPage, useUpdateDrawingPage } from '@/lib/api/hooks/useDrawings';
 import { handleArrowCounter, resetArrowCounterState, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
@@ -54,15 +54,15 @@ export default function ExcalidrawCanvas({
     changeCountRef.current = 0;
   }, [pageId]);
   
-  // Custom defaults (thin lines, sharp arrows, small text)
-  const defaultAppState = {
+  // Custom defaults (thin lines, sharp arrows, small text) - memoized to prevent infinite re-renders
+  const defaultAppState = useMemo(() => ({
     currentItemStrokeWidth: 0.5,
     currentItemArrowType: 'sharp',
     currentItemEndArrowhead: 'triangle',
     currentItemRoughness: 0,
     currentItemFontSize: 8,
     collaborators: new Map(),
-  };
+  }), []);
   
   const handleChange = useCallback((elements: any, appState: any, files: any) => {
     changeCountRef.current++;
@@ -190,16 +190,18 @@ export default function ExcalidrawCanvas({
     );
   }
   
-  // Safely parse excalidraw data
-  const excalidrawData = pageData?.excalidraw_data as any;
+  // Safely parse excalidraw data - memoized to prevent infinite re-renders
+  const excalidrawData = useMemo(() => pageData?.excalidraw_data as any, [pageData]);
   
-  // Ensure collaborators is always a Map
-  const savedAppState = excalidrawData?.appState || {};
-  const mergedAppState = {
-    ...defaultAppState,
-    ...savedAppState,
-    collaborators: new Map(), // Always use a fresh Map
-  };
+  // Ensure collaborators is always a Map - memoized to prevent infinite re-renders
+  const mergedAppState = useMemo(() => {
+    const savedAppState = excalidrawData?.appState || {};
+    return {
+      ...defaultAppState,
+      ...savedAppState,
+      collaborators: new Map(), // Always use a fresh Map
+    };
+  }, [excalidrawData, defaultAppState]);
   
   return (
     <div className="h-full">
