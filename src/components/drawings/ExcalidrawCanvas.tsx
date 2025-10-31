@@ -24,10 +24,15 @@ export default function ExcalidrawCanvas({
   const excaliRef = useRef<any>(null);
   const persistRef = useRef<any>(null);
   const changeCountRef = useRef(0);
-  const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
+  const onApiReadyRef = useRef(onApiReady);
   
   const { data: pageData, isLoading } = useDrawingPage(pageId);
   const updatePage = useUpdateDrawingPage();
+  
+  // Keep ref updated
+  useEffect(() => {
+    onApiReadyRef.current = onApiReady;
+  }, [onApiReady]);
   
   // 🔍 DIAGNOSTIC: Log initial environment
   useEffect(() => {
@@ -125,8 +130,7 @@ export default function ExcalidrawCanvas({
   // 🎨 DIAGNOSTIC: Handle Excalidraw API ready
   const handleExcalidrawAPI = useCallback((api: any) => {
     excaliRef.current = api;
-    setExcalidrawAPI(api);
-    onApiReady(api);
+    onApiReadyRef.current(api);
     
     logger.log('🎨 Excalidraw API Ready', {
       appState: api.getAppState(),
@@ -150,56 +154,52 @@ export default function ExcalidrawCanvas({
         });
       }
     }, 100);
-  }, [onApiReady]);
-  
-  // ⚡ DIAGNOSTIC: Force resize after 500ms
-  useEffect(() => {
-    if (excalidrawAPI) {
-      const timer = setTimeout(() => {
-        const canvas = document.querySelector('.excalidraw canvas') as HTMLCanvasElement;
-        const beforeMetrics = canvas ? {
-          canvasWidth: canvas.width,
-          canvasHeight: canvas.height,
-          zoom: excalidrawAPI.getAppState()?.zoom
-        } : null;
-        
-        logger.log('⚡ Triggering forced resize...', beforeMetrics);
-        window.dispatchEvent(new Event('resize'));
-        
-        // Log after forced resize
-        setTimeout(() => {
-          if (canvas) {
-            logger.log('📐 Canvas Metrics After Forced Resize', {
-              canvasWidth: canvas.width,
-              canvasHeight: canvas.height,
-              zoom: excalidrawAPI.getAppState()?.zoom,
-              changed: beforeMetrics && (
-                canvas.width !== beforeMetrics.canvasWidth ||
-                canvas.height !== beforeMetrics.canvasHeight
-              )
-            });
-          }
-        }, 100);
-      }, 500);
+    
+    // ⚡ DIAGNOSTIC: Force resize after 500ms
+    setTimeout(() => {
+      const canvas = document.querySelector('.excalidraw canvas') as HTMLCanvasElement;
+      const beforeMetrics = canvas ? {
+        canvasWidth: canvas.width,
+        canvasHeight: canvas.height,
+        zoom: api.getAppState()?.zoom
+      } : null;
       
-      return () => clearTimeout(timer);
-    }
-  }, [excalidrawAPI]);
+      logger.log('⚡ Triggering forced resize...', beforeMetrics);
+      window.dispatchEvent(new Event('resize'));
+      
+      // Log after forced resize
+      setTimeout(() => {
+        if (canvas) {
+          logger.log('📐 Canvas Metrics After Forced Resize', {
+            canvasWidth: canvas.width,
+            canvasHeight: canvas.height,
+            zoom: api.getAppState()?.zoom,
+            changed: beforeMetrics && (
+              canvas.width !== beforeMetrics.canvasWidth ||
+              canvas.height !== beforeMetrics.canvasHeight
+            )
+          });
+        }
+      }, 100);
+    }, 500);
+  }, []);
   
-  // 📏 DIAGNOSTIC: Monitor window resize events
+  // 📏 DIAGNOSTIC: Monitor window resize events (only set up once)
   useEffect(() => {
     const handleResize = () => {
-      logger.log('📏 Window resized', {
-        devicePixelRatio: window.devicePixelRatio,
-        innerWidth: window.innerWidth,
-        innerHeight: window.innerHeight,
-        zoom: excalidrawAPI?.getAppState()?.zoom
-      });
+      if (excaliRef.current) {
+        logger.log('📏 Window resized', {
+          devicePixelRatio: window.devicePixelRatio,
+          innerWidth: window.innerWidth,
+          innerHeight: window.innerHeight,
+          zoom: excaliRef.current.getAppState()?.zoom
+        });
+      }
     };
     
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [excalidrawAPI]);
+  }, []);
   
   return (
     <div className="h-full">
