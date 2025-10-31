@@ -272,12 +272,16 @@ export default function ExcalidrawCanvas({
   }
   
   return (
-    <div className="h-full w-full">
-      <Excalidraw
-        excalidrawAPI={handleExcalidrawAPI}
-        initialData={initialData}
-        onChange={handleChange}
-      />
+    <div className="h-full w-full flex flex-col">
+      <div className="flex-1 w-full relative">
+        <div className="absolute inset-0">
+          <Excalidraw
+            excalidrawAPI={handleExcalidrawAPI}
+            initialData={initialData}
+            onChange={handleChange}
+          />
+        </div>
+      </div>
     </div>
   );
 }
