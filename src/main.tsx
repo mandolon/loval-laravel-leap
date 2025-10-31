@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import "@excalidraw/excalidraw/index.css";
 
 // Disable MSW in Tauri desktop production builds
 const isTauri = typeof window !== 'undefined' && '__TAURI__' in window;
