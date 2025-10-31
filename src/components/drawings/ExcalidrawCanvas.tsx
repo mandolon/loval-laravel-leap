@@ -108,10 +108,32 @@ export default function ExcalidrawCanvas({
         if (file.dataURL) {
           const img = new Image();
           img.onload = () => {
-            logger.log('📸 Image Imported', {
+            // Get canvas metrics
+            const canvas = document.querySelector('.excalidraw canvas') as HTMLCanvasElement;
+            const canvasMetrics = canvas ? {
+              canvasWidth: canvas.width,
+              canvasHeight: canvas.height,
+              styleWidth: canvas.style.width,
+              styleHeight: canvas.style.height,
+              computedWidth: canvas.getBoundingClientRect().width,
+              computedHeight: canvas.getBoundingClientRect().height
+            } : null;
+            
+            logger.log('📸 Image Imported - DETAILED METRICS', {
               imageId: id,
-              imageWidth: img.width,
-              imageHeight: img.height
+              imageNaturalWidth: img.width,
+              imageNaturalHeight: img.height,
+              devicePixelRatio: window.devicePixelRatio,
+              viewportWidth: window.innerWidth,
+              viewportHeight: window.innerHeight,
+              canvas: canvasMetrics,
+              expectedCanvasWidth: window.innerWidth * window.devicePixelRatio,
+              expectedCanvasHeight: window.innerHeight * window.devicePixelRatio,
+              imageScaleToViewport: {
+                width: ((window.innerWidth / img.width) * 100).toFixed(1) + '%',
+                height: ((window.innerHeight / img.height) * 100).toFixed(1) + '%'
+              },
+              pixelDensityMatch: canvas ? (canvas.width / canvas.getBoundingClientRect().width).toFixed(2) : 'N/A'
             });
           };
           img.src = file.dataURL;
@@ -160,49 +182,67 @@ export default function ExcalidrawCanvas({
       viewBackgroundColor: api.getAppState()?.viewBackgroundColor
     });
     
-    // 📐 DIAGNOSTIC: Log canvas metrics after API ready
-    setTimeout(() => {
-      const canvas = document.querySelector('.excalidraw canvas') as HTMLCanvasElement;
-      if (canvas) {
-        logger.log('📐 Canvas Element Metrics (100ms after API ready)', {
-          canvasWidth: canvas.width,
-          canvasHeight: canvas.height,
-          styleWidth: canvas.style.width,
-          styleHeight: canvas.style.height,
-          computedWidth: canvas.getBoundingClientRect().width,
-          computedHeight: canvas.getBoundingClientRect().height,
-          expectedWidth: window.innerWidth * window.devicePixelRatio,
-          expectedHeight: window.innerHeight * window.devicePixelRatio
-        });
-      }
-    }, 100);
+    // 📐 DIAGNOSTIC: Log canvas metrics immediately and after delays
+    const logCanvasMetrics = (label: string, delay: number) => {
+      setTimeout(() => {
+        const canvas = document.querySelector('.excalidraw canvas') as HTMLCanvasElement;
+        const container = document.querySelector('.excalidraw') as HTMLElement;
+        
+        if (canvas) {
+          const rect = canvas.getBoundingClientRect();
+          const pixelRatio = canvas.width / rect.width;
+          
+          logger.log(`📐 ${label}`, {
+            // Canvas element properties
+            canvasWidth: canvas.width,
+            canvasHeight: canvas.height,
+            canvasStyleWidth: canvas.style.width,
+            canvasStyleHeight: canvas.style.height,
+            
+            // Computed/rendered dimensions
+            computedWidth: rect.width,
+            computedHeight: rect.height,
+            
+            // Container dimensions
+            containerWidth: container?.clientWidth,
+            containerHeight: container?.clientHeight,
+            
+            // Device & pixel ratio
+            devicePixelRatio: window.devicePixelRatio,
+            actualPixelRatio: pixelRatio.toFixed(2),
+            pixelRatioMatch: Math.abs(pixelRatio - window.devicePixelRatio) < 0.1 ? '✅ MATCH' : '❌ MISMATCH',
+            
+            // Viewport
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight,
+            
+            // Expected vs Actual
+            expectedCanvasWidth: window.innerWidth * window.devicePixelRatio,
+            expectedCanvasHeight: window.innerHeight * window.devicePixelRatio,
+            widthDelta: canvas.width - (window.innerWidth * window.devicePixelRatio),
+            heightDelta: canvas.height - (window.innerHeight * window.devicePixelRatio),
+            
+            // Zoom
+            zoom: api.getAppState()?.zoom,
+            
+            // Quality indicator
+            qualityIndicator: pixelRatio >= window.devicePixelRatio ? '✅ SHARP' : '⚠️ BLURRY'
+          });
+        } else {
+          logger.log(`📐 ${label} - Canvas not found`);
+        }
+      }, delay);
+    };
+    
+    logCanvasMetrics('Canvas @ API Ready (0ms)', 0);
+    logCanvasMetrics('Canvas After 100ms', 100);
+    logCanvasMetrics('Canvas After 500ms', 500);
+    logCanvasMetrics('Canvas After 1000ms', 1000);
     
     // ⚡ DIAGNOSTIC: Force resize after 500ms
     setTimeout(() => {
-      const canvas = document.querySelector('.excalidraw canvas') as HTMLCanvasElement;
-      const beforeMetrics = canvas ? {
-        canvasWidth: canvas.width,
-        canvasHeight: canvas.height,
-        zoom: api.getAppState()?.zoom
-      } : null;
-      
-      logger.log('⚡ Triggering forced resize...', beforeMetrics);
+      logger.log('⚡ Triggering forced resize...');
       window.dispatchEvent(new Event('resize'));
-      
-      // Log after forced resize
-      setTimeout(() => {
-        if (canvas) {
-          logger.log('📐 Canvas Metrics After Forced Resize', {
-            canvasWidth: canvas.width,
-            canvasHeight: canvas.height,
-            zoom: api.getAppState()?.zoom,
-            changed: beforeMetrics && (
-              canvas.width !== beforeMetrics.canvasWidth ||
-              canvas.height !== beforeMetrics.canvasHeight
-            )
-          });
-        }
-      }, 100);
     }, 500);
   }, []);
   
