@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import { Excalidraw } from '@excalidraw/excalidraw';
-import { useDrawingPage, useUpdateDrawingPage } from '@/lib/api/hooks/useDrawings';
+import { useDrawingPage, useUpdateDrawingPage, uploadDrawingImage } from '@/lib/api/hooks/useDrawings';
 import { handleArrowCounter, resetArrowCounterState, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
+import { toast } from 'sonner';
 
 interface Props {
   pageId: string;
@@ -22,6 +23,7 @@ export default function ExcalidrawCanvas({
 }: Props) {
   const excaliRef = useRef<any>(null);
   const persistRef = useRef<any>(null);
+  const uploadingRef = useRef<Set<string>>(new Set());
   
   const { data: pageData, isLoading } = useDrawingPage(pageId);
   const updatePage = useUpdateDrawingPage();
@@ -30,6 +32,32 @@ export default function ExcalidrawCanvas({
   useEffect(() => {
     resetArrowCounterState();
   }, [pageId]);
+
+  // Handle image paste/drop - intercept before Excalidraw compresses
+  const handleImageUpload = useCallback(async (file: File): Promise<string | null> => {
+    if (!pageData?.drawings?.id) return null;
+    
+    const uploadId = `${file.name}-${Date.now()}`;
+    
+    if (uploadingRef.current.has(uploadId)) {
+      return null; // Prevent duplicate uploads
+    }
+    
+    uploadingRef.current.add(uploadId);
+    
+    try {
+      toast.info('Uploading image at full quality...');
+      const imageUrl = await uploadDrawingImage(file, projectId, pageData.drawings.id);
+      toast.success('Image uploaded successfully');
+      uploadingRef.current.delete(uploadId);
+      return imageUrl;
+    } catch (error) {
+      console.error('Image upload failed:', error);
+      toast.error('Failed to upload image. Using embedded version instead.');
+      uploadingRef.current.delete(uploadId);
+      return null; // Let Excalidraw handle it with compression
+    }
+  }, [projectId, pageData]);
   
   // Custom defaults (thin lines, sharp arrows, small text, high-quality images)
   const defaultAppState = {
@@ -95,7 +123,38 @@ export default function ExcalidrawCanvas({
   };
   
   return (
-    <div className="h-full" style={{ imageRendering: 'crisp-edges' }}>
+    <div 
+      className="h-full" 
+      style={{ imageRendering: 'crisp-edges' }}
+      onPaste={async (e) => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+        
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].type.startsWith('image/')) {
+            e.preventDefault();
+            const file = items[i].getAsFile();
+            if (file) {
+              const imageUrl = await handleImageUpload(file);
+              if (imageUrl && excaliRef.current) {
+                // Insert image as URL reference
+                const img = new Image();
+                img.src = imageUrl;
+                img.onload = () => {
+                  excaliRef.current?.addFiles([{
+                    id: `image-${Date.now()}`,
+                    dataURL: imageUrl,
+                    mimeType: file.type,
+                    created: Date.now(),
+                  }]);
+                };
+              }
+            }
+            break;
+          }
+        }
+      }}
+    >
       <Excalidraw
         excalidrawAPI={(api) => {
           excaliRef.current = api;

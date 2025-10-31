@@ -214,7 +214,53 @@ export function useUpdateDrawingScale() {
   });
 }
 
-// 6. Upload large image to storage (for 60MB architectural plans)
+// 6. Upload image to storage for Excalidraw (prevents compression)
+export async function uploadDrawingImage(
+  file: File, 
+  projectId: string, 
+  drawingId: string
+): Promise<string> {
+  // Validate file is an image
+  if (!file.type.startsWith('image/')) {
+    throw new Error('File must be an image');
+  }
+
+  // Limit to reasonable size (20MB)
+  const MAX_SIZE = 20 * 1024 * 1024;
+  if (file.size > MAX_SIZE) {
+    throw new Error('Image must be less than 20MB');
+  }
+
+  const timestamp = Date.now();
+  const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+  const storagePath = `${projectId}/${drawingId}/${timestamp}_${sanitizedName}`;
+  
+  const { error } = await supabase.storage
+    .from('drawing-images')
+    .upload(storagePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.type
+    });
+
+  if (error) {
+    console.error('Image upload error:', error);
+    throw new Error('Failed to upload image');
+  }
+
+  // Get signed URL valid for 1 year
+  const { data: urlData } = await supabase.storage
+    .from('drawing-images')
+    .createSignedUrl(storagePath, 60 * 60 * 24 * 365);
+
+  if (!urlData) {
+    throw new Error('Failed to get image URL');
+  }
+
+  return urlData.signedUrl;
+}
+
+// 7. Upload large background image (for 60MB architectural plans)
 export async function uploadLargeImage(
   file: File, 
   projectId: string, 
