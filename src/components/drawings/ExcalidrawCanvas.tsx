@@ -33,48 +33,6 @@ export default function ExcalidrawCanvas({
     resetArrowCounterState();
   }, [pageId]);
 
-  // Force crisp canvas rendering by disabling image smoothing
-  useEffect(() => {
-    const container = document.querySelector('.excalidraw');
-    if (!container) return;
-
-    const disableSmoothing = () => {
-      const canvases = container.querySelectorAll('canvas');
-      let count = 0;
-      canvases.forEach((canvas) => {
-        const ctx = (canvas as HTMLCanvasElement).getContext('2d');
-        if (ctx) {
-          ctx.imageSmoothingEnabled = false;
-          ctx.imageSmoothingQuality = 'high';
-          count++;
-        }
-      });
-      if (count > 0) {
-        console.log(`[ExcalidrawCanvas] Applied crisp rendering to ${count} canvases`);
-      }
-    };
-
-    // Initial application with delay for Excalidraw mount
-    setTimeout(disableSmoothing, 100);
-
-    // Reapply when Excalidraw recreates canvases
-    const observer = new MutationObserver(disableSmoothing);
-    observer.observe(container, { 
-      childList: true, 
-      subtree: true, 
-      attributes: true 
-    });
-
-    // Reapply on window resize
-    const resizeHandler = () => setTimeout(disableSmoothing, 50);
-    window.addEventListener('resize', resizeHandler);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener('resize', resizeHandler);
-    };
-  }, [pageData]);
-
   // Handle image paste/drop - intercept before Excalidraw compresses
   const handleImageUpload = useCallback(async (file: File): Promise<string | null> => {
     if (!pageData?.drawings?.id) return null;
@@ -88,29 +46,13 @@ export default function ExcalidrawCanvas({
     uploadingRef.current.add(uploadId);
     
     try {
-      console.log('[ExcalidrawCanvas] Starting image upload, original size:', file.size);
       toast.info('Uploading image at full quality...');
       const imageUrl = await uploadDrawingImage(file, projectId, pageData.drawings.id);
-      
-      // Load the image from the URL and convert to full-quality dataURL
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      console.log('[ExcalidrawCanvas] Image loaded from storage, size:', blob.size);
-      
-      // Convert to dataURL at full quality (no compression)
-      const reader = new FileReader();
-      const dataURL = await new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-      
-      console.log('[ExcalidrawCanvas] DataURL created, length:', dataURL.length);
-      toast.success('Image loaded at full quality');
+      toast.success('Image uploaded successfully');
       uploadingRef.current.delete(uploadId);
-      return dataURL;
+      return imageUrl;
     } catch (error) {
-      console.error('[ExcalidrawCanvas] Image upload failed:', error);
+      console.error('Image upload failed:', error);
       toast.error('Failed to upload image. Using embedded version instead.');
       uploadingRef.current.delete(uploadId);
       return null; // Let Excalidraw handle it with compression
@@ -193,48 +135,18 @@ export default function ExcalidrawCanvas({
             e.preventDefault();
             const file = items[i].getAsFile();
             if (file) {
-              console.log('[ExcalidrawCanvas] Image pasted, size:', file.size);
-              const dataURL = await handleImageUpload(file);
-              if (dataURL && excaliRef.current) {
-                console.log('[ExcalidrawCanvas] Adding image to canvas with dataURL length:', dataURL.length);
-                
+              const imageUrl = await handleImageUpload(file);
+              if (imageUrl && excaliRef.current) {
+                // Insert image as URL reference
                 const img = new Image();
-                img.src = dataURL;
+                img.src = imageUrl;
                 img.onload = () => {
-                  const width = img.naturalWidth;
-                  const height = img.naturalHeight;
-                  console.log('[ExcalidrawCanvas] Image loaded, native dimensions:', width, 'x', height);
-                  
-                  // Create file ID
-                  const fileId = `image-${Date.now()}`;
-                  
-                  // First add to files map
-                  excaliRef.current.addFiles([{
-                    id: fileId,
-                    dataURL: dataURL,
+                  excaliRef.current?.addFiles([{
+                    id: `image-${Date.now()}`,
+                    dataURL: imageUrl,
                     mimeType: file.type,
                     created: Date.now(),
                   }]);
-                  
-                  // Then create image element at native resolution
-                  const imageElement = excaliRef.current.createElement({
-                    type: 'image',
-                    fileId: fileId,
-                    x: 100,
-                    y: 100,
-                    width: width,
-                    height: height,
-                  });
-                  
-                  if (imageElement) {
-                    const existingElements = excaliRef.current.getSceneElements();
-                    excaliRef.current.updateScene({
-                      elements: [...existingElements, imageElement],
-                    });
-                    
-                    toast.success(`Image added at native resolution (${width}×${height}px)`);
-                    console.log('[ExcalidrawCanvas] Image element created at native dimensions');
-                  }
                 };
               }
             }

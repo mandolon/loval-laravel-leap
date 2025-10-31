@@ -206,16 +206,3 @@ All colors MUST be HSL.
 .excalidraw [data-type="line"] {
   stroke-width: 0.5;
 }
-
-/* Force crisp image rendering in Excalidraw canvas */
-.excalidraw canvas {
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-  image-rendering: pixelated;
-}
-
-.excalidraw .App-canvas canvas {
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-  image-rendering: pixelated;
-}
