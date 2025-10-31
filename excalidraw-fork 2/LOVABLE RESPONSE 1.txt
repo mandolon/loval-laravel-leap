@@ -1,0 +1,1615 @@
+I'll analyze your current application structure to provide a comprehensive integration roadmap for the Excalidraw multi-page drawing application. Let me gather the necessary information systematically.
+
+Now let me examine more key files:
+
+Now let me check the database schema and look at a few more important files:
+
+Perfect! Now I have a comprehensive understanding of your application. Let me create a detailed integration roadmap for the Excalidraw multi-page drawing feature.
+
+# **EXCALIDRAW MULTI-PAGE DRAWING INTEGRATION ROADMAP**
+
+## **EXECUTIVE SUMMARY**
+
+Your application is a **construction project management SPA** built with:
+- **Frontend**: React 18 + Vite + TypeScript + Tailwind CSS + Shadcn/ui
+- **Backend**: Supabase (via Lovable Cloud) for database, auth, storage
+- **State**: TanStack Query v5 for server state, React Context for auth/layout
+- **Desktop**: Tauri v2 (optional cross-platform build)
+- **Auth**: 4 role system stored in `user_roles` table (admin, team, consultant, client)
+- **Navigation**: React Router v6 with workspace-based routing
+
+This integration will add **architectural drawing capabilities** with multi-page support, similar to Autocad sheet sets, fully integrated with your existing project management system.
+
+---
+
+## **1. PROJECT STRUCTURE ANALYSIS**
+
+### **Current Directory Structure**
+```
+src/
+├── components/         # Reusable UI components (Shadcn/ui based)
+│   ├── ui/            # Base components (button, dialog, tabs, etc.)
+│   ├── layout/        # Header, Sidebar, layouts
+│   ├── files/         # File management (PDFViewer, ImageViewer, FileExplorer)
+│   ├── project/       # Project-specific components
+│   ├── taskboard/     # Task management
+│   └── [others]/      # Notes, links, invoices, chat, etc.
+├── pages/             # Route components
+│   ├── ProjectDetails.tsx  # Main project detail page (8 tabs)
+│   ├── Index.tsx      # Projects list page
+│   └── [others]/      # Home, Tasks, Team, etc.
+├── lib/
+│   ├── api/
+│   │   ├── hooks/     # TanStack Query hooks (useProjects, useTasks, etc.)
+│   │   ├── types.ts   # TypeScript interfaces
+│   │   └── errors.ts  # Error handling
+│   ├── design-tokens.ts  # UI constants and styles
+│   └── utils.ts       # Utility functions
+├── contexts/
+│   ├── UserContext.tsx    # Auth state (user profile, session, signOut)
+│   └── LayoutContext.tsx  # UI state (sidebar collapsed, workspace)
+├── services/
+│   └── fileService.ts  # File CRUD operations for Supabase storage
+├── apps/
+│   └── team/          # Separate team dashboard app (role-based routing)
+└── integrations/
+    └── supabase/
+        ├── client.ts  # Supabase client (auto-generated)
+        └── types.ts   # Database types (auto-generated)
+```
+
+### **Routing Structure**
+- **Pattern**: `/workspace/:workspaceId/`
+- **Example**: `/workspace/53717b7e.../project/abc123`
+- **Role-based**: Admins see standard layout, "team" role sees TeamApp, others see standard
+- **Project Details**: `/workspace/:workspaceId/project/:id` (8 tabs: files, tasks, invoices, excel, links, project, notes, [future: drawings])
+
+---
+
+## **2. STATE MANAGEMENT PATTERNS**
+
+### **Authentication**
+```typescript
+// src/contexts/UserContext.tsx
+interface UserProfile {
+  id: string;
+  auth_id: string;
+  name: string;
+  email: string;
+  is_admin: boolean;
+  // ...
+}
+
+const { user, session, loading, updateUser, signOut } = useUser();
+```
+
+### **Server State (TanStack Query)**
+```typescript
+// Example: src/lib/api/hooks/useProjects.ts
+export const useProjects = (workspaceId: string) => {
+  return useQuery({
+    queryKey: ['projects', workspaceId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('workspace_id', workspaceId);
+      // ...
+    },
+  });
+};
+
+export const useUpdateProject = (workspaceId: string) => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ id, input }) => { /* ... */ },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects', workspaceId] });
+      toast({ title: 'Project updated' });
+    },
+  });
+};
+```
+
+### **Realtime Updates**
+```typescript
+// src/pages/ProjectDetails.tsx (lines 123-254)
+useEffect(() => {
+  const channel = supabase
+    .channel(`tasks-${id}-changes`)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'tasks',
+      filter: `project_id=eq.${id}`
+    }, () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
+    })
+    .subscribe();
+
+  return () => supabase.removeChannel(channel);
+}, [id]);
+```
+
+---
+
+## **3. AUTHENTICATION & AUTHORIZATION**
+
+### **Supabase Client**
+```typescript
+// src/integrations/supabase/client.ts (auto-generated, DO NOT EDIT)
+export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: { storage: localStorage, persistSession: true }
+});
+```
+
+### **User Roles (4 types)**
+```sql
+-- Database enum: app_role
+create type public.app_role as enum ('admin', 'team', 'consultant', 'client');
+
+-- Table: user_roles
+user_id uuid REFERENCES users(id)
+role app_role NOT NULL
+```
+
+### **Permission Checking**
+```typescript
+// src/hooks/useWorkspaceRole.ts
+const { role, isTeam, isConsultant, isClient, loading } = useWorkspaceRole(workspaceId);
+
+// Usage:
+if (user?.is_admin || isTeam) {
+  // Allow editing drawings
+}
+```
+
+### **Security Pattern**
+```typescript
+// Database functions use SECURITY DEFINER to bypass RLS
+CREATE FUNCTION has_role(_user_id uuid, _role app_role)
+RETURNS boolean
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM user_roles
+    WHERE user_id = _user_id AND role = _role
+  )
+$$;
+```
+
+---
+
+## **4. DATABASE SCHEMA**
+
+### **Existing Relevant Tables**
+
+#### **projects**
+```sql
+id uuid PRIMARY KEY
+workspace_id uuid
+name text
+status text (pending, in_progress, completed, on_hold)
+phase text (Pre-Design, Design, Permit, Build)
+address jsonb
+primary_client_first_name, primary_client_last_name, etc.
+created_by uuid, created_at, updated_at, deleted_at
+```
+
+#### **files**
+```sql
+id uuid PRIMARY KEY
+project_id uuid
+folder_id uuid (links to folders table)
+task_id uuid (nullable)
+filename text
+storage_path text (e.g., "projectId/Design/file.pdf")
+mimetype text
+filesize bigint
+version_number integer DEFAULT 1
+uploaded_by uuid
+created_at, updated_at, deleted_at
+```
+
+#### **folders**
+```sql
+id uuid PRIMARY KEY
+project_id uuid
+name text (Pre-Design, Design, Permit, Build, Plans, Photos, Attachments)
+is_system_folder boolean
+path text
+parent_folder_id uuid (nullable, for subfolders)
+```
+
+### **Naming Convention**
+- **Database**: `snake_case` (e.g., `created_at`, `project_id`)
+- **TypeScript**: `camelCase` (e.g., `createdAt`, `projectId`)
+- **Transforms**: Manual mapping in hooks (see `transformProject` function)
+
+### **Storage Buckets**
+1. **project-files** (private) - Used for project documents
+2. **detail-library** (private) - Used for company-wide detail library
+
+---
+
+## **5. FILE/ASSET MANAGEMENT PATTERNS**
+
+### **Upload Flow**
+```typescript
+// src/lib/api/hooks/useFiles.ts
+export const useUploadTaskFile = () => {
+  return useMutation({
+    mutationFn: async ({ file, taskId, projectId }) => {
+      // 1. Get current user
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', userData.user!.id)
+        .single();
+
+      // 2. Upload to storage bucket
+      const storagePath = `${taskId}/${timestamp}-${file.name}`;
+      await supabase.storage
+        .from('project-files')
+        .upload(storagePath, file);
+
+      // 3. Create metadata record
+      await supabase
+        .from('files')
+        .insert({
+          project_id: projectId,
+          folder_id: folderId,
+          filename: file.name,
+          storage_path: storagePath,
+          mimetype: file.type,
+          filesize: file.size,
+          uploaded_by: userProfile.id,
+        });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['files'] });
+      toast({ title: 'File uploaded' });
+    },
+  });
+};
+```
+
+### **Signed URLs for Access**
+```typescript
+// src/components/files/FileViewerPane.tsx
+const { data } = await supabase.storage
+  .from('project-files')
+  .createSignedUrl(file.storage_path, 3600); // 1 hour expiry
+```
+
+---
+
+## **6. UI/STYLING SYSTEM**
+
+### **CSS Framework: Tailwind CSS + Shadcn/ui**
+```typescript
+// tailwind.config.ts
+colors: {
+  primary: "hsl(var(--primary))",
+  background: "hsl(var(--background))",
+  // ... HSL-based design tokens
+}
+
+fontSize: {
+  'base': ['0.75rem', { lineHeight: '1rem' }],  // 12px default
+  'lg': ['0.875rem', { lineHeight: '1.25rem' }], // 14px headings
+}
+```
+
+### **Design Tokens**
+```typescript
+// src/lib/design-tokens.ts
+export const DESIGN_TOKENS = {
+  panel: 'bg-white dark:bg-[#0E1118]',
+  radius: 'rounded-[8px]',
+  border: 'border-[#bbbbbb] dark:border-[#1a2030]/60',
+  // ... centralized styling constants
+};
+```
+
+### **Components**
+- **Base**: `src/components/ui/` (button, dialog, tabs, card, etc.)
+- **Icons**: `lucide-react` (e.g., ``, ``)
+- **Patterns**:
+  - Dialogs for forms (CreateProjectDialog, CreateTaskDialog)
+  - Cards for list items (ProjectCard, TaskItem)
+  - Tabs for multi-view content (ProjectDetails tabs)
+
+---
+
+## **7. CURRENT DASHBOARD LAYOUT**
+
+### **ProjectDetails Page Structure**
+```typescript
+// src/pages/ProjectDetails.tsx (751 lines)
+
+    {/* Header with tab navigation */}
+
+      Back
+
+        [Files] [Tasks] [Invoices] [Excel] [Links] [Project] [Notes]
+
+      Chat
+
+    {/* Tab content */}
+    {activeTab === 'files' && }
+    {activeTab === 'tasks' && }
+    {/* ... */}
+
+  {chatOpen && (
+    <>
+
+  )}
+
+```
+
+### **FilesTab Structure**
+```typescript
+// src/components/files/FilesTab.tsx
+}  // Tree view of folders
+  rightPanel={} // PDF/Image preview
+  onFillPageChange={(fill) => /* collapse sidebar */}
+/>
+```
+
+### **Navigation**
+- **Sidebar**: Left navigation (Home, Projects, Tasks, AI, Detail Library)
+- **Header**: User avatar, theme toggle, workspace switcher
+- **Breadcrumbs**: None currently, but could add for drawings
+
+---
+
+## **8. DATA FLOW PATTERNS**
+
+### **Create Pattern**
+```typescript
+// 1. User clicks "Create Drawing" button
+
+     {
+      e.preventDefault();
+      const formData = new FormData(e.currentTarget);
+      createDrawing.mutate({
+        name: formData.get('name'),
+        projectId: project.id,
+      });
+    }}>
+
+      Create
+
+// 2. Mutation hook handles API call
+const createDrawing = useCreateDrawing(projectId);
+// internally: supabase.from('drawings').insert(...)
+
+// 3. On success: invalidate queries, show toast, close dialog
+onSuccess: () => {
+  queryClient.invalidateQueries({ queryKey: ['drawings', projectId] });
+  toast({ title: 'Drawing created' });
+  setOpen(false);
+}
+```
+
+### **Edit Pattern**
+```typescript
+// 1. Fetch data with React Query
+const { data: drawing } = useDrawing(drawingId);
+
+// 2. Update mutation
+const updateDrawing = useUpdateDrawing(projectId);
+
+// 3. Optimistic updates (optional but recommended)
+onMutate: async (newData) => {
+  await queryClient.cancelQueries({ queryKey: ['drawings', drawingId] });
+  const previous = queryClient.getQueryData(['drawings', drawingId]);
+  queryClient.setQueryData(['drawings', drawingId], newData);
+  return { previous };
+},
+onError: (err, newData, context) => {
+  queryClient.setQueryData(['drawings', drawingId], context.previous);
+},
+```
+
+### **Realtime Updates**
+```typescript
+// Auto-refresh when other users edit
+useEffect(() => {
+  const channel = supabase
+    .channel(`drawings-${projectId}`)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'drawings',
+      filter: `project_id=eq.${projectId}`,
+    }, () => {
+      queryClient.invalidateQueries({ queryKey: ['drawings', projectId] });
+    })
+    .subscribe();
+
+  return () => supabase.removeChannel(channel);
+}, [projectId]);
+```
+
+### **Error Handling**
+```typescript
+// Centralized error handler
+export function handleApiError(error: unknown): string {
+  if (isApiError(error)) return error.error.message;
+  if (error instanceof Error) return error.message;
+  return 'An unexpected error occurred';
+}
+
+// Usage in mutations
+onError: (error) => {
+  toast({
+    title: 'Failed to save drawing',
+    description: handleApiError(error),
+    variant: 'destructive',
+  });
+}
+```
+
+### **Loading States**
+```typescript
+const { data, isLoading, error } = useDrawings(projectId);
+
+if (isLoading) return ;
+if (error) return {error.message};
+if (!data?.length) return ;
+
+return ;
+```
+
+---
+
+## **9. DEPLOYMENT & BUILD**
+
+### **Environment Variables**
+```bash
+# .env (auto-generated by Lovable Cloud, DO NOT EDIT)
+VITE_SUPABASE_URL=https://npphriqbofeaiblczoee.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGci...
+VITE_SUPABASE_PROJECT_ID=npphriqbofeaiblczoee
+```
+
+### **Vite Configuration**
+```typescript
+// vite.config.ts
+server: {
+  host: "::",
+  port: 8080,
+},
+resolve: {
+  alias: { "@": path.resolve(__dirname, "./src") },
+}
+```
+
+### **Build Commands**
+```json
+// package.json
+{
+  "scripts": {
+    "dev": "vite",                        // Web development
+    "build": "vite build",                // Production web build
+    "build:desktop": "vite build --mode production", // Tauri build prep
+  }
+}
+```
+
+### **Tauri Configuration**
+```json
+// src-tauri/tauri.conf.json
+{
+  "build": {
+    "beforeBuildCommand": "npm run build:desktop",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [{
+      "title": "Loval Laravel Leap",
+      "width": 1280,
+      "height": 800
+    }]
+  }
+}
+```
+
+---
+
+## **10. TAURI-SPECIFIC CONSIDERATIONS**
+
+### **Current Tauri Setup**
+- **Version**: Tauri v2.8.0
+- **Plugins**: updater, opener, process
+- **Capabilities**: Auto-update from GitHub releases
+- **No custom commands yet** - Everything uses web APIs + Supabase
+
+### **File System Access**
+Currently, all file operations use **Supabase Storage** (via HTTP), not local file system. This means:
+- Drawings will be stored in Supabase, not locally
+- Auto-save will upload to cloud
+- Export (SVG/PNG) can use browser download or Tauri save dialog
+
+### **Future Enhancements (Optional)**
+```rust
+// src-tauri/src/main.rs (if needed)
+#[tauri::command]
+fn save_drawing_locally(path: String, data: Vec) -> Result<(), String> {
+  std::fs::write(path, data).map_err(|e| e.to_string())
+}
+
+// Then use from React:
+import { invoke } from '@tauri-apps/api/core';
+await invoke('save_drawing_locally', { path, data });
+```
+
+---
+
+## **11. EXCALIDRAW INTEGRATION REQUIREMENTS**
+
+### **A. Database Schema Design**
+
+#### **New Tables**
+
+```sql
+-- Drawings (one per "sheet set")
+CREATE TABLE drawings (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  short_id text NOT NULL DEFAULT generate_short_id('DRW'),
+  project_id uuid NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  description text,
+  thumbnail_url text, -- Preview image stored in storage
+  created_by uuid NOT NULL REFERENCES users(id),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  updated_by uuid REFERENCES users(id),
+  deleted_at timestamptz,
+  deleted_by uuid REFERENCES users(id)
+);
+
+-- Drawing pages/sheets (multi-page support)
+CREATE TABLE drawing_pages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  short_id text NOT NULL DEFAULT generate_short_id('DRP'),
+  drawing_id uuid NOT NULL REFERENCES drawings(id) ON DELETE CASCADE,
+  page_number integer NOT NULL, -- 1, 2, 3, etc.
+  name text NOT NULL, -- "Sheet 1 - Floor Plan", "Sheet 2 - Elevations"
+  excalidraw_data jsonb NOT NULL DEFAULT '{}'::jsonb, -- Full Excalidraw scene
+  thumbnail_url text,
+  sort_order integer NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(drawing_id, page_number)
+);
+
+-- Drawing scale calibrations (for measurement tool)
+CREATE TABLE drawing_scales (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  drawing_page_id uuid NOT NULL REFERENCES drawing_pages(id) ON DELETE CASCADE,
+  scale_ratio text NOT NULL, -- "1/8" = 1', "1/4" = 1', etc.
+  pixels_per_foot numeric NOT NULL, -- Calculated from user calibration
+  calibration_line jsonb, -- {x1, y1, x2, y2, knownLength}
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- Auto-save versions (optional but recommended)
+CREATE TABLE drawing_versions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  drawing_page_id uuid NOT NULL REFERENCES drawing_pages(id) ON DELETE CASCADE,
+  version_number integer NOT NULL,
+  excalidraw_data jsonb NOT NULL,
+  created_by uuid NOT NULL REFERENCES users(id),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(drawing_page_id, version_number)
+);
+
+-- Enable RLS
+ALTER TABLE drawings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE drawing_pages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE drawing_scales ENABLE ROW LEVEL SECURITY;
+ALTER TABLE drawing_versions ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies (workspace members can access)
+CREATE POLICY "Workspace members can view drawings"
+  ON drawings FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM projects p
+      JOIN workspace_members wm ON wm.workspace_id = p.workspace_id
+      WHERE p.id = drawings.project_id
+        AND wm.user_id = auth.uid()
+        AND drawings.deleted_at IS NULL
+    )
+  );
+
+CREATE POLICY "Team members can edit drawings"
+  ON drawings FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM projects p
+      JOIN workspace_members wm ON wm.workspace_id = p.workspace_id
+      JOIN user_roles ur ON ur.user_id = wm.user_id
+      WHERE p.id = drawings.project_id
+        AND wm.user_id = auth.uid()
+        AND ur.role IN ('admin', 'team')
+    )
+  );
+
+-- Similar policies for drawing_pages, drawing_scales, drawing_versions
+```
+
+### **B. Storage Strategy**
+
+#### **Thumbnails & Exports**
+```
+Storage bucket: project-files
+Path structure: {projectId}/drawings/{drawingId}/{pageId}/thumbnail.png
+                {projectId}/drawings/{drawingId}/{pageId}/export-{timestamp}.svg
+                {projectId}/drawings/{drawingId}/{pageId}/export-{timestamp}.png
+```
+
+#### **Large Image Handling (7200×4800px)**
+- Store reference images in `project-files` bucket
+- Excalidraw stores image URLs in scene JSON
+- Use signed URLs with longer expiry (24 hours) to avoid re-fetching
+- Consider image optimization on upload (resize for preview, keep original)
+
+### **C. Routing & Navigation**
+
+#### **New Routes**
+```typescript
+// Add to App.tsx
+
+  }
+/>
+
+  }
+/>
+```
+
+#### **Navigation Integration**
+```typescript
+// Option 1: Add "Drawings" tab to ProjectDetails.tsx
+// Modify lines 336-414 to add:
+ setActiveTab("drawings")}
+  className={/* ... same styling as other tabs */}
+>
+  Drawings
+
+// Option 2: Separate dedicated page (recommended for fullscreen)
+// Navigate from ProjectDetails header:
+ navigate(`/workspace/${workspaceId}/project/${id}/drawings`)}>
+
+  Drawings
+
+```
+
+### **D. Component Structure**
+
+```
+src/
+├── components/
+│   └── drawings/
+│       ├── DrawingsList.tsx           # List all drawings in project
+│       ├── DrawingCard.tsx            # Card with thumbnail, name, last edited
+│       ├── CreateDrawingDialog.tsx    # Dialog to create new drawing set
+│       ├── DrawingEditor.tsx          # Main Excalidraw wrapper component
+│       ├── DrawingPageTabs.tsx        # Sheet/page navigation (tabs at top)
+│       ├── DrawingToolbar.tsx         # Custom toolbar (measurement, scale, export)
+│       ├── ScaleCalibrationModal.tsx  # Dialog to set scale (1/8"=1', etc.)
+│       ├── MeasurementTool.tsx        # Arrow tool with calibrated dimensions
+│       ├── ExportDialog.tsx           # Export to SVG/PNG with options
+│       └── DrawingAutoSave.tsx        # Auto-save indicator component
+├── lib/
+│   └── api/
+│       └── hooks/
+│           ├── useDrawings.ts         # CRUD for drawings table
+│           ├── useDrawingPages.ts     # CRUD for drawing_pages
+│           ├── useDrawingScales.ts    # CRUD for drawing_scales
+│           └── useDrawingVersions.ts  # Version history management
+├── pages/
+│   ├── DrawingsPage.tsx               # List view (gallery of all drawings)
+│   └── DrawingEditorPage.tsx          # Full-screen editor view
+└── types/
+    └── drawing.types.ts               # TypeScript interfaces for drawings
+```
+
+### **E. Excalidraw Integration Details**
+
+#### **Dependencies to Add**
+```json
+// package.json
+{
+  "dependencies": {
+    "@excalidraw/excalidraw": "^0.17.0",  // Latest stable version
+    "react-sketch-canvas": "^6.2.0"       // Optional: for freehand annotations
+  }
+}
+```
+
+#### **DrawingEditor Component (Core)**
+```typescript
+// src/components/drawings/DrawingEditor.tsx
+import { Excalidraw, MainMenu, WelcomeScreen } from '@excalidraw/excalidraw';
+import { ExcalidrawElement } from '@excalidraw/excalidraw/types/element/types';
+import { AppState } from '@excalidraw/excalidraw/types/types';
+import { useCallback, useState, useEffect, useRef } from 'react';
+import { useParams } from 'react-router-dom';
+import { useDrawing, useUpdateDrawingPage } from '@/lib/api/hooks/useDrawings';
+import { useUser } from '@/contexts/UserContext';
+import { toast } from 'sonner';
+
+export function DrawingEditor() {
+  const { drawingId, pageId } = useParams<{ drawingId: string; pageId: string }>();
+  const { user } = useUser();
+  const { data: drawing } = useDrawing(drawingId!);
+  const updatePage = useUpdateDrawingPage(drawingId!);
+
+  const [excalidrawAPI, setExcalidrawAPI] = useState(null);
+  const autoSaveTimeout = useRef(null);
+
+  // Load drawing data from database
+  const currentPage = drawing?.pages.find(p => p.id === pageId);
+
+  // Auto-save handler (debounced 3 seconds)
+  const handleChange = useCallback((elements: readonly ExcalidrawElement[], appState: AppState) => {
+    if (autoSaveTimeout.current) clearTimeout(autoSaveTimeout.current);
+
+    autoSaveTimeout.current = setTimeout(() => {
+      updatePage.mutate({
+        pageId: pageId!,
+        data: {
+          excalidrawData: {
+            elements,
+            appState: {
+              viewBackgroundColor: appState.viewBackgroundColor,
+              // ... save relevant appState properties
+            }
+          }
+        }
+      }, {
+        onSuccess: () => {
+          toast.success('Drawing auto-saved');
+        }
+      });
+    }, 3000);
+  }, [pageId, updatePage]);
+
+  // Export to PNG/SVG
+  const handleExport = useCallback(async (format: 'png' | 'svg') => {
+    if (!excalidrawAPI) return;
+
+    const blob = await excalidrawAPI.exportToBlob({
+      mimeType: format === 'png' ? 'image/png' : 'image/svg+xml',
+      quality: 0.95,
+    });
+
+    // Upload to Supabase storage
+    const path = `${drawingId}/exports/${pageId}/${Date.now()}.${format}`;
+    await supabase.storage.from('project-files').upload(path, blob);
+
+    toast.success(`Exported as ${format.toUpperCase()}`);
+  }, [excalidrawAPI, drawingId, pageId]);
+
+  return (
+
+       setExcalidrawAPI(api)}
+        initialData={{
+          elements: currentPage?.excalidrawData?.elements || [],
+          appState: currentPage?.excalidrawData?.appState || {},
+        }}
+        onChange={handleChange}
+        renderTopRightUI={() => (
+
+             handleExport('png')}>Export PNG
+             handleExport('svg')}>Export SVG
+
+        )}
+      >
+
+           {/* Scale calibration modal */}}>
+            Set Scale
+
+           {/* Measurement tool */}}>
+            Measure Distance
+
+  );
+}
+```
+
+#### **Multi-Page Navigation**
+```typescript
+// src/components/drawings/DrawingPageTabs.tsx
+export function DrawingPageTabs({ drawingId, activePageId, onPageChange }) {
+  const { data: pages } = useDrawingPages(drawingId);
+  const createPage = useCreateDrawingPage(drawingId);
+
+  return (
+
+      {pages?.map((page) => (
+         onPageChange(page.id)}
+          className={cn(
+            'px-4 py-2 rounded-lg',
+            activePageId === page.id ? 'bg-blue-500 text-white' : 'bg-gray-100'
+          )}
+        >
+          {page.name}
+
+      ))}
+       createPage.mutate({
+          name: `Sheet ${pages.length + 1}`,
+          pageNumber: pages.length + 1,
+        })}
+      >
+        + Add Sheet
+
+  );
+}
+```
+
+#### **Scale Calibration & Measurement Tool**
+```typescript
+// src/components/drawings/MeasurementTool.tsx
+interface MeasurementToolProps {
+  scale: { pixelsPerFoot: number; ratio: string }; // e.g., {pixelsPerFoot: 96, ratio: "1/4\"=1'"}
+  excalidrawAPI: any;
+}
+
+export function MeasurementTool({ scale, excalidrawAPI }: MeasurementToolProps) {
+  const handleMeasure = useCallback(() => {
+    // 1. User draws an arrow using Excalidraw's arrow tool
+    // 2. Get arrow element from excalidrawAPI
+    const selectedElements = excalidrawAPI.getAppState().selectedElementIds;
+    const arrow = excalidrawAPI.getSceneElements().find(
+      (el: any) => selectedElements[el.id] && el.type === 'arrow'
+    );
+
+    if (!arrow) {
+      toast.error('Please select an arrow to measure');
+      return;
+    }
+
+    // 3. Calculate pixel distance
+    const pixelDistance = Math.sqrt(
+      Math.pow(arrow.x2 - arrow.x1, 2) + Math.pow(arrow.y2 - arrow.y1, 2)
+    );
+
+    // 4. Convert to feet using calibrated scale
+    const feetDistance = pixelDistance / scale.pixelsPerFoot;
+
+    // 5. Add text label to arrow
+    const label = {
+      type: 'text',
+      x: (arrow.x1 + arrow.x2) / 2,
+      y: (arrow.y1 + arrow.y2) / 2,
+      text: `${feetDistance.toFixed(2)} ft (${scale.ratio})`,
+    };
+
+    excalidrawAPI.updateScene({ elements: [...elements, label] });
+
+    toast.success(`Distance: ${feetDistance.toFixed(2)} feet`);
+  }, [scale, excalidrawAPI]);
+
+  return (
+
+      Measure
+
+  );
+}
+```
+
+### **F. Auto-Save Implementation**
+
+```typescript
+// src/components/drawings/DrawingAutoSave.tsx
+import { useEffect, useState } from 'react';
+import { Clock } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+
+interface DrawingAutoSaveProps {
+  lastSaved: Date | null;
+  isSaving: boolean;
+}
+
+export function DrawingAutoSave({ lastSaved, isSaving }: DrawingAutoSaveProps) {
+  const [, setTick] = useState(0);
+
+  // Re-render every 10 seconds to update "X minutes ago"
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+
+      {isSaving ? (
+        Saving...
+      ) : lastSaved ? (
+        Saved {formatDistanceToNow(lastSaved, { addSuffix: true })}
+      ) : (
+        Not saved
+      )}
+
+  );
+}
+```
+
+### **G. Role-Based Permissions**
+
+```typescript
+// src/lib/api/hooks/useDrawings.ts
+export const useCreateDrawing = (projectId: string) => {
+  const { role, loading } = useWorkspaceRole(workspaceId);
+
+  return useMutation({
+    mutationFn: async (input) => {
+      // Check permissions before mutation
+      if (role !== 'team' && role !== 'admin') {
+        throw new Error('Only team members can create drawings');
+      }
+
+      const { data, error } = await supabase
+        .from('drawings')
+        .insert({
+          project_id: projectId,
+          name: input.name,
+          description: input.description,
+          created_by: user?.id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Create first page automatically
+      await supabase.from('drawing_pages').insert({
+        drawing_id: data.id,
+        page_number: 1,
+        name: 'Sheet 1',
+        excalidraw_data: { elements: [], appState: {} },
+      });
+
+      return data;
+    },
+    // ... onSuccess, onError
+  });
+};
+```
+
+### **H. Realtime Collaboration (Optional Enhancement)**
+
+```typescript
+// src/components/drawings/DrawingEditor.tsx (enhanced)
+useEffect(() => {
+  if (!pageId) return;
+
+  // Subscribe to drawing page changes
+  const channel = supabase
+    .channel(`drawing-page-${pageId}`)
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'drawing_pages',
+      filter: `id=eq.${pageId}`,
+    }, (payload) => {
+      // Merge remote changes with local state
+      const remoteData = payload.new.excalidraw_data;
+
+      // Only update if not currently editing
+      if (!isLocallyEditing) {
+        excalidrawAPI?.updateScene(remoteData);
+        toast.info('Drawing updated by another user');
+      }
+    })
+    .subscribe();
+
+  return () => supabase.removeChannel(channel);
+}, [pageId, excalidrawAPI]);
+```
+
+---
+
+## **12. INTEGRATION RECOMMENDATIONS**
+
+### **A. Where Should Drawing Files Be Stored?**
+
+**Recommendation**: Store drawing data in **dedicated tables** (`drawings`, `drawing_pages`), not as files.
+
+**Rationale**:
+- Excalidraw scenes are **JSON data**, not binary files
+- Enables **faster querying** (e.g., "get all drawings for project X")
+- Supports **versioning** and **realtime collaboration**
+- Allows **metadata searches** (e.g., find drawings with specific scale)
+
+**Storage Bucket Usage**:
+- `project-files` bucket for:
+  - Thumbnail images (generated from Excalidraw export)
+  - Final exports (PNG/SVG for client delivery)
+  - Background reference images (architectural plans to trace over)
+
+### **B. What Table Relationships Make Sense?**
+
+```
+workspaces
+  └── projects
+      ├── drawings (1:many)
+      │   └── drawing_pages (1:many)
+      │       ├── drawing_scales (1:many)
+      │       └── drawing_versions (1:many)
+      ├── files (existing)
+      └── tasks (existing)
+```
+
+**Foreign Key Cascade**:
+- `drawings.project_id` → `projects.id` (ON DELETE CASCADE)
+- `drawing_pages.drawing_id` → `drawings.id` (ON DELETE CASCADE)
+- Soft deletes at `drawings` level propagate to children
+
+### **C. How Should This Integrate Into Navigation/Routing?**
+
+**Option 1: Add "Drawings" Tab to ProjectDetails** (Simpler)
+- Pros: Consistent with current UX, easy to discover
+- Cons: Limited screen space (shares with Files/Tasks tabs)
+- Best for: Quick access, list view of drawings
+
+**Option 2: Dedicated `/drawings` Route** (Recommended)
+- Pros: Full-screen editor, better performance, dedicated URL
+- Cons: Requires extra navigation step
+- Best for: Immersive editing experience
+
+**Hybrid Approach** (Best of Both):
+1. Add "Drawings" tab to ProjectDetails showing **list/gallery** of all drawings
+2. Click drawing card → navigate to `/workspace/:workspaceId/project/:id/drawing/:drawingId` for **full-screen editor**
+3. Back button returns to project details
+
+### **D. File Size/Storage Considerations**
+
+**Excalidraw JSON Size**:
+- Average scene: **50-200 KB**
+- Complex scene (1000+ elements): **1-2 MB**
+- With embedded images (base64): Can reach **10-50 MB**
+
+**Optimization Strategies**:
+1. **Store images separately**: Don't embed base64 in Excalidraw JSON
+   ```typescript
+   // Instead of embedding:
+   element.fileId = "base64datahere..."; // ❌ Bad (huge JSON)
+
+   // Store reference:
+   element.fileId = "uuid-reference-to-files-table"; // ✅ Good
+   ```
+
+2. **Compression**: gzip JSON before storing (PostgreSQL supports this)
+   ```sql
+   -- Use jsonb column type (automatically compressed)
+   excalidraw_data jsonb NOT NULL
+   ```
+
+3. **Pagination**: Load pages on-demand, not all at once
+   ```typescript
+   // Don't load all pages:
+   const pages = await supabase.from('drawing_pages')
+     .select('*')
+     .eq('drawing_id', drawingId); // ❌ Loads all pages
+
+   // Load current page only:
+   const page = await supabase.from('drawing_pages')
+     .select('*')
+     .eq('id', activePageId)
+     .single(); // ✅ Loads one page
+   ```
+
+4. **Versioning Limits**: Keep last 10 versions only
+   ```typescript
+   // Cleanup old versions
+   const versionsToDelete = await supabase
+     .from('drawing_versions')
+     .select('id')
+     .eq('drawing_page_id', pageId)
+     .order('version_number', { ascending: false })
+     .range(10, 1000); // Delete versions 11+
+   ```
+
+### **E. Should This Be a Route, Modal, or Separate Page?**
+
+**Recommended**: **Separate full-screen page** at `/workspace/:workspaceId/project/:id/drawing/:drawingId`
+
+**Why**:
+- Excalidraw needs **maximum screen real estate** for drawing
+- Modal dialogs are too constrained (users need to zoom, pan)
+- Separate page allows **keyboard shortcuts** without conflicts
+- Enables **browser back/forward navigation** between drawings
+- Supports **direct URL sharing** (e.g., "check out Sheet 3")
+
+**Layout for Editor Page**:
+```typescript
+// src/pages/DrawingEditorPage.tsx
+export function DrawingEditorPage() {
+  return (
+
+      {/* Top nav bar (minimal) */}
+
+         navigate(-1)}>
+
+        {drawingName}
+
+      {/* Page tabs (sheets) */}
+
+      {/* Full-screen Excalidraw */}
+
+  );
+}
+```
+
+---
+
+## **13. IMPLEMENTATION PLAN (STEP-BY-STEP)**
+
+### **Phase 1: Database Setup (1-2 hours)**
+1. Create migration file with 4 tables (`drawings`, `drawing_pages`, `drawing_scales`, `drawing_versions`)
+2. Add RLS policies for role-based access
+3. Create database functions for permission checking (if needed)
+4. Test migrations in dev environment
+
+### **Phase 2: API Layer (2-3 hours)**
+1. Create TypeScript types (`src/types/drawing.types.ts`)
+2. Build React Query hooks:
+   - `useDrawings(projectId)` - Fetch all drawings for project
+   - `useDrawing(drawingId)` - Fetch single drawing with pages
+   - `useCreateDrawing(projectId)` - Create new drawing
+   - `useUpdateDrawing()` - Update drawing metadata
+   - `useDeleteDrawing()` - Soft delete drawing
+   - `useDrawingPages(drawingId)` - Fetch all pages
+   - `useCreateDrawingPage()` - Add new sheet
+   - `useUpdateDrawingPage()` - Save Excalidraw data
+   - `useDeleteDrawingPage()` - Remove sheet
+3. Add error handling, toast notifications, query invalidation
+
+### **Phase 3: UI Components (4-6 hours)**
+1. Create component directory (`src/components/drawings/`)
+2. Build base components:
+   - `DrawingsList.tsx` - Gallery view with thumbnails
+   - `DrawingCard.tsx` - Individual drawing card
+   - `CreateDrawingDialog.tsx` - Form to create drawing
+3. Build editor components:
+   - `DrawingEditor.tsx` - Excalidraw wrapper with auto-save
+   - `DrawingPageTabs.tsx` - Sheet navigation
+   - `DrawingAutoSave.tsx` - Save status indicator
+4. Add to Shadcn/ui theme for consistency
+
+### **Phase 4: Routing Integration (1 hour)**
+1. Add routes to `App.tsx`:
+   - `/workspace/:workspaceId/project/:id/drawings` (list view)
+   - `/workspace/:workspaceId/project/:id/drawing/:drawingId` (editor)
+2. Update `ProjectDetails.tsx` to add "Drawings" button/tab
+3. Test navigation flow
+
+### **Phase 5: Excalidraw Integration (3-4 hours)**
+1. Install `@excalidraw/excalidraw` package
+2. Implement `DrawingEditor.tsx`:
+   - Load/save Excalidraw JSON from database
+   - Handle auto-save (debounced 3 seconds)
+   - Add export functionality (PNG/SVG)
+   - Customize toolbar and menu
+3. Test drawing creation, editing, saving
+
+### **Phase 6: Scale & Measurement Tools (2-3 hours)**
+1. Build `ScaleCalibrationModal.tsx`:
+   - User draws line of known length
+   - Input actual length (e.g., "20 feet")
+   - Calculate `pixelsPerFoot` ratio
+   - Save to `drawing_scales` table
+2. Build `MeasurementTool.tsx`:
+   - User draws arrow
+   - Calculate pixel distance
+   - Convert to feet using scale
+   - Add text label to arrow
+3. Add to Excalidraw custom toolbar
+
+### **Phase 7: Multi-Page Support (2 hours)**
+1. Implement `DrawingPageTabs.tsx`:
+   - List all pages/sheets
+   - Highlight active page
+   - "Add Sheet" button
+   - Drag-to-reorder (optional)
+2. Update editor to load active page only
+3. Test switching between pages
+
+### **Phase 8: Thumbnails & Export (2 hours)**
+1. Generate thumbnails on save:
+   ```typescript
+   const blob = await excalidrawAPI.exportToBlob({ mimeType: 'image/png' });
+   const path = `${projectId}/drawings/${drawingId}/thumbnail.png`;
+   await supabase.storage.from('project-files').upload(path, blob);
+   ```
+2. Build `ExportDialog.tsx`:
+   - Export formats: PNG, SVG
+   - Options: transparent background, scale, DPI
+   - Download or save to project files
+3. Test exports at various sizes
+
+### **Phase 9: Permissions & Security (1-2 hours)**
+1. Implement role checks in hooks:
+   - Admin/Team: Full access (create, edit, delete)
+   - Consultant: View-only
+   - Client: View-only
+2. Add UI guards (disable buttons for non-team users)
+3. Test with different user roles
+
+### **Phase 10: Realtime & Collaboration (2-3 hours, Optional)**
+1. Add Supabase realtime subscriptions to `DrawingEditor`
+2. Handle merge conflicts (last-write-wins or CRDT)
+3. Show "User X is editing" indicator
+4. Test with multiple users
+
+### **Phase 11: Testing & Polish (2-3 hours)**
+1. Test entire flow:
+   - Create project → Create drawing → Add pages → Draw → Save → Export
+2. Test error scenarios:
+   - Network failures
+   - Invalid data
+   - Permission denied
+3. Add loading skeletons, empty states, error boundaries
+4. Optimize performance (lazy loading, memoization)
+
+### **Phase 12: Documentation (1 hour)**
+1. Update README with drawings feature
+2. Add inline comments to complex logic
+3. Create user guide (how to calibrate scale, measure)
+
+---
+
+## **14. EXAMPLE CODE: COMPLETE FEATURE FLOW**
+
+### **Full Flow: Button Click → Supabase → UI Update**
+
+```typescript
+// 1. USER CLICKS "CREATE DRAWING" BUTTON
+// src/pages/DrawingsPage.tsx
+export function DrawingsPage() {
+  const { id: projectId, workspaceId } = useParams();
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const { data: drawings, isLoading } = useDrawings(projectId!);
+
+  return (
+
+        Drawings
+         setCreateDialogOpen(true)}>
+          + New Drawing
+
+      {isLoading ? (
+
+          {[...Array(6)].map((_, i) => (
+
+          ))}
+
+      ) : drawings?.length === 0 ? (
+        }
+          title="No drawings yet"
+          description="Create your first drawing to get started"
+          action={ setCreateDialogOpen(true)}>Create Drawing}
+        />
+      ) : (
+
+          {drawings?.map(drawing => (
+             navigate(`/workspace/${workspaceId}/project/${projectId}/drawing/${drawing.id}`)}
+            />
+          ))}
+
+      )}
+
+  );
+}
+
+// 2. DIALOG FORM SUBMISSION
+// src/components/drawings/CreateDrawingDialog.tsx
+export function CreateDrawingDialog({ open, onOpenChange, projectId }) {
+  const createDrawing = useCreateDrawing(projectId);
+  const form = useForm<{ name: string; description: string }>({
+    defaultValues: { name: '', description: '' },
+  });
+
+  const onSubmit = (data: { name: string; description: string }) => {
+    createDrawing.mutate(data, {
+      onSuccess: (newDrawing) => {
+        onOpenChange(false);
+        form.reset();
+        // Navigate to editor
+        navigate(`/workspace/${workspaceId}/project/${projectId}/drawing/${newDrawing.id}`);
+      },
+    });
+  };
+
+  return (
+
+          Create New Drawing
+
+              Drawing Name
+
+              Description (optional)
+                          </div>
+          </div>
+          <DialogFooter className="mt-6">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={createDrawing.isPending}>
+              {createDrawing.isPending ? 'Creating...' : 'Create'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// 3. REACT QUERY MUTATION HOOK
+// src/lib/api/hooks/useDrawings.ts
+export const useCreateDrawing = (projectId: string) => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { user } = useUser();
+
+  return useMutation({
+    mutationFn: async (input: { name: string; description?: string }) => {
+      // Step A: Insert drawing record
+      const { data: drawing, error: drawingError } = await supabase
+        .from('drawings')
+        .insert({
+          project_id: projectId,
+          name: input.name,
+          description: input.description,
+          created_by: user!.id,
+        })
+        .select()
+        .single();
+
+      if (drawingError) throw drawingError;
+
+      // Step B: Create first page/sheet automatically
+      const { data: page, error: pageError } = await supabase
+        .from('drawing_pages')
+        .insert({
+          drawing_id: drawing.id,
+          page_number: 1,
+          name: 'Sheet 1',
+          excalidraw_data: {
+            elements: [],
+            appState: {
+              viewBackgroundColor: '#ffffff',
+            },
+          },
+          sort_order: 0,
+        })
+        .select()
+        .single();
+
+      if (pageError) throw pageError;
+
+      // Step C: Generate thumbnail placeholder
+      const placeholderBlob = new Blob(['<svg>...</svg>'], { type: 'image/svg+xml' });
+      const thumbnailPath = `${projectId}/drawings/${drawing.id}/thumbnail.png`;
+      await supabase.storage
+        .from('project-files')
+        .upload(thumbnailPath, placeholderBlob);
+
+      // Step D: Update drawing with thumbnail URL
+      await supabase
+        .from('drawings')
+        .update({ thumbnail_url: thumbnailPath })
+        .eq('id', drawing.id);
+
+      return { ...drawing, pages: [page] };
+    },
+
+    // Step E: Optimistic update (optional but UX+++)
+    onMutate: async (input) => {
+      // Cancel outgoing queries
+      await queryClient.cancelQueries({ queryKey: ['drawings', projectId] });
+
+      // Snapshot previous value
+      const previousDrawings = queryClient.getQueryData<Drawing[]>(['drawings', projectId]);
+
+      // Optimistically update
+      const optimisticDrawing = {
+        id: 'temp-' + Date.now(),
+        name: input.name,
+        description: input.description,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        // ... other fields
+      };
+
+      queryClient.setQueryData<Drawing[]>(
+        ['drawings', projectId],
+        old => [...(old || []), optimisticDrawing]
+      );
+
+      return { previousDrawings };
+    },
+
+    // Step F: On error, rollback
+    onError: (error, variables, context) => {
+      queryClient.setQueryData(['drawings', projectId], context?.previousDrawings);
+
+      toast({
+        title: 'Failed to create drawing',
+        description: handleApiError(error),
+        variant: 'destructive',
+      });
+    },
+
+    // Step G: On success, invalidate and refetch
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['drawings', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['projects', projectId] }); // Update project stats
+
+      toast({
+        title: 'Drawing created',
+        description: `"${data.name}" is ready to edit`,
+      });
+    },
+  });
+};
+
+// 4. FETCH DRAWINGS (LIST VIEW)
+export const useDrawings = (projectId: string) => {
+  return useQuery({
+    queryKey: ['drawings', projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('drawings')
+        .select(`
+          *,
+          pages:drawing_pages(id, name, page_number, thumbnail_url)
+        `)
+        .eq('project_id', projectId)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data.map(transformDrawing);
+    },
+    enabled: !!projectId,
+  });
+};
+
+// 5. REALTIME SUBSCRIPTION (AUTO-REFRESH)
+useEffect(() => {
+  if (!projectId) return;
+
+  const channel = supabase
+    .channel(`drawings-${projectId}`)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'drawings',
+      filter: `project_id=eq.${projectId}`,
+    }, () => {
+      queryClient.invalidateQueries({ queryKey: ['drawings', projectId] });
+    })
+    .subscribe();
+
+  return () => supabase.removeChannel(channel);
+}, [projectId, queryClient]);
+```
+
+---
+
+## **15. SECURITY WARNINGS & CRITICAL FIXES NEEDED**
+
+### **⚠️ RLS POLICY GAPS (27 LINTER ERRORS)**
+
+Your database currently has **NO RLS policies enabled** on most tables. This is a **critical security vulnerability**. Before adding drawings, you MUST fix existing security issues:
+
+```sql
+-- ENABLE RLS ON ALL TABLES (immediate action required)
+ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE files ENABLE ROW LEVEL SECURITY;
+ALTER TABLE folders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE links ENABLE ROW LEVEL SECURITY;
+ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE project_chat_messages ENABLE ROW LEVEL SECURITY;
+-- ... and all other tables
+
+-- ADD WORKSPACE-BASED POLICIES (example for projects)
+CREATE POLICY "Users can view workspace projects"
+  ON projects FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM workspace_members
+      WHERE workspace_members.workspace_id = projects.workspace_id
+        AND workspace_members.user_id = auth.uid()
+        AND workspace_members.deleted_at IS NULL
+    )
+  );
+
+CREATE POLICY "Team members can create projects"
+  ON projects FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM workspace_members
+      JOIN user_roles ON user_roles.user_id = workspace_members.user_id
+      WHERE workspace_members.workspace_id = projects.workspace_id
+        AND workspace_members.user_id = auth.uid()
+        AND user_roles.role IN ('admin', 'team')
+    )
+  );
+
+-- REPEAT FOR UPDATE, DELETE OPERATIONS
+```
+
+### **Function Security Issues**
+Four functions have `search_path` vulnerabilities. Add `SET search_path = public` to all functions:
+
+```sql
+ALTER FUNCTION is_workspace_member SET search_path = public;
+ALTER FUNCTION is_workspace_team_member SET search_path = public;
+ALTER FUNCTION get_user_role SET search_path = public;
+ALTER FUNCTION workspace_has_no_members SET search_path = public;
+```
+
+---
+
+## **16. FINAL RECOMMENDATIONS**
+
+### **Architecture Decisions**
+1. ✅ **Use Supabase for everything** (no local file system)
+2. ✅ **Store drawing data as JSONB** (not binary files)
+3. ✅ **Dedicated routes for editor** (not modals)
+4. ✅ **Multi-page support from day one** (easier than retrofitting)
+5. ✅ **Auto-save every 3 seconds** (prevents data loss)
+
+### **Performance Optimizations**
+1. Lazy load Excalidraw (code splitting)
+2. Paginate drawing pages (don't load all 50 sheets at once)
+3. Debounce auto-save (avoid spamming database)
+4. Use signed URLs with 24h expiry (reduce storage API calls)
+5. Compress JSONB data (PostgreSQL handles this automatically)
+
+### **UX Enhancements**
+1. Keyboard shortcuts (Ctrl+S to save, Esc to exit)
+2. Breadcrumb navigation (Project → Drawings → Sheet 3)
+3. Recent drawings list on homepage
+4. Version history (optional but valuable)
+5. Collaborative editing indicators (optional)
+
+### **Testing Checklist**
+- [ ] Create drawing with 1 page
+- [ ] Add 10 pages to drawing
+- [ ] Draw 500+ elements (stress test)
+- [ ] Auto-save works reliably
+- [ ] Export to PNG/SVG
+- [ ] Set scale calibration
+- [ ] Measure distances with arrow tool
+- [ ] Test as different user roles (admin, team, consultant, client)
+- [ ] Test offline behavior (Tauri desktop)
+- [ ] Test with 7200×4800px background image
+
+---
+
+## **17. NEXT STEPS**
+
+1. **Review and approve this plan** with your team
+2. **Fix critical RLS security issues** before proceeding
+3. **Create database migration** (Phase 1)
+4. **Install Excalidraw package** and test basic integration
+5. **Build MVP** (create drawing → add 1 page → draw → save)
+6. **Iterate** based on user feedback
+
+</lov-plan>
+
+<lov-actions>
+<lov-message-prompt message="Implement the Excalidraw integration plan">Implement the plan</lov-message-prompt>
+</lov-actions>

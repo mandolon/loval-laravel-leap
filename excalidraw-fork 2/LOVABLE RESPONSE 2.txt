@@ -1,0 +1,944 @@
+I'll analyze your existing codebase in detail and create a comprehensive, specific integration plan for your Excalidraw multi-page drawing application.
+
+Let me start by examining the current structure more closely:
+
+Let me examine a few more key files to complete the integration plan:
+
+Now I have a comprehensive understanding of your application. Let me create a detailed, specific integration plan for your Excalidraw multi-page drawing application.
+
+---
+
+# **EXCALIDRAW MULTI-PAGE DRAWING INTEGRATION PLAN**
+
+## **EXECUTIVE SUMMARY**
+
+Your application is a construction project management system with workspace-based access control, 4-role security (admin, team, consultant, client), and Supabase backend. This plan integrates your existing multi-page Excalidraw application with measurement calibration tools into the project management workflow.
+
+---
+
+## **1. FILE STRUCTURE & PLACEMENT**
+
+### **New Directory Structure**
+
+```
+src/
+├── components/
+│   └── drawings/
+│       ├── DrawingsList.tsx              # Gallery view of all drawings
+│       ├── DrawingCard.tsx               # Individual drawing card with thumbnail
+│       ├── CreateDrawingDialog.tsx       # Modal to create new drawing
+│       ├── DrawingEditor.tsx             # Main Excalidraw wrapper component
+│       ├── DrawingPageTabs.tsx           # Multi-page navigation (sheet tabs)
+│       ├── DrawingToolbar.tsx            # Custom toolbar with measurement tools
+│       ├── ScaleCalibrationDialog.tsx    # Dialog to calibrate scale
+│       ├── MeasurementTool.tsx           # Arrow tool with dimension labels
+│       ├── ExportDrawingDialog.tsx       # Export to SVG/PNG options
+│       ├── DrawingAutoSave.tsx           # Auto-save status indicator
+│       ├── DrawingPageManager.tsx        # Add/delete/reorder pages
+│       └── ImageImportDialog.tsx         # Import architectural plans
+├── lib/
+│   └── api/
+│       └── hooks/
+│           ├── useDrawings.ts            # CRUD for drawings table
+│           ├── useDrawingPages.ts        # CRUD for drawing_pages table
+│           ├── useDrawingScales.ts       # CRUD for drawing_scales table
+│           └── useDrawingVersions.ts     # Version history management
+├── pages/
+│   ├── DrawingsPage.tsx                  # List view (gallery of drawings)
+│   └── DrawingEditorPage.tsx             # Full-screen editor
+├── types/
+│   └── drawing.types.ts                  # TypeScript interfaces
+└── utils/
+    ├── excalidraw-helpers.ts             # Helper functions for Excalidraw
+    └── measurement-utils.ts              # Measurement calculations
+```
+
+---
+
+## **2. DATABASE SCHEMA DESIGN**
+
+### **Migration SQL** (`supabase/migrations/YYYYMMDDHHMMSS_add_drawings.sql`)
+
+```sql
+-- ============================================
+-- DRAWINGS TABLES
+-- ============================================
+
+-- Main drawings table (one per "drawing set")
+CREATE TABLE public.drawings (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  short_id text NOT NULL DEFAULT generate_short_id('DRW'),
+  project_id uuid NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  description text,
+  thumbnail_storage_path text, -- Path in project-files bucket
+  created_by uuid NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  updated_by uuid,
+  deleted_at timestamptz,
+  deleted_by uuid,
+  CONSTRAINT drawings_short_id_unique UNIQUE (short_id)
+);
+
+-- Drawing pages/sheets (multi-page support)
+CREATE TABLE public.drawing_pages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  short_id text NOT NULL DEFAULT generate_short_id('DRP'),
+  drawing_id uuid NOT NULL REFERENCES public.drawings(id) ON DELETE CASCADE,
+  page_number integer NOT NULL CHECK (page_number > 0),
+  name text NOT NULL,
+  excalidraw_data jsonb NOT NULL DEFAULT '{}'::jsonb,
+  thumbnail_storage_path text,
+  background_image_path text, -- Optional architectural plan as background
+  sort_order integer NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT drawing_pages_short_id_unique UNIQUE (short_id),
+  CONSTRAINT drawing_pages_unique_number_per_drawing UNIQUE(drawing_id, page_number)
+);
+
+-- Scale calibrations for measurement tool
+CREATE TABLE public.drawing_scales (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  short_id text NOT NULL DEFAULT generate_short_id('DRS'),
+  drawing_page_id uuid NOT NULL REFERENCES public.drawing_pages(id) ON DELETE CASCADE,
+  scale_name text NOT NULL, -- "1/8\" = 1'", "1/4\" = 1'", etc.
+  pixels_per_foot numeric NOT NULL CHECK (pixels_per_foot > 0),
+  calibration_data jsonb, -- {lineStart: {x,y}, lineEnd: {x,y}, knownLengthFeet: number}
+  is_active boolean NOT NULL DEFAULT true, -- Only one active scale per page
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT drawing_scales_short_id_unique UNIQUE (short_id)
+);
+
+-- Version history for auto-save (optional but recommended)
+CREATE TABLE public.drawing_versions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  short_id text NOT NULL DEFAULT generate_short_id('DRV'),
+  drawing_page_id uuid NOT NULL REFERENCES public.drawing_pages(id) ON DELETE CASCADE,
+  version_number integer NOT NULL CHECK (version_number > 0),
+  excalidraw_data jsonb NOT NULL,
+  created_by uuid NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT drawing_versions_short_id_unique UNIQUE (short_id),
+  CONSTRAINT drawing_versions_unique_version_per_page UNIQUE(drawing_page_id, version_number)
+);
+
+-- ============================================
+-- INDEXES
+-- ============================================
+
+CREATE INDEX idx_drawings_project_id ON public.drawings(project_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_drawings_created_by ON public.drawings(created_by);
+CREATE INDEX idx_drawing_pages_drawing_id ON public.drawing_pages(drawing_id);
+CREATE INDEX idx_drawing_pages_page_number ON public.drawing_pages(drawing_id, page_number);
+CREATE INDEX idx_drawing_scales_page_id ON public.drawing_scales(drawing_page_id);
+CREATE INDEX idx_drawing_scales_active ON public.drawing_scales(drawing_page_id, is_active) WHERE is_active = true;
+CREATE INDEX idx_drawing_versions_page_id ON public.drawing_versions(drawing_page_id);
+
+-- ============================================
+-- RLS POLICIES
+-- ============================================
+
+ALTER TABLE public.drawings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.drawing_pages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.drawing_scales ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.drawing_versions ENABLE ROW LEVEL SECURITY;
+
+-- Drawings: Workspace members can view
+CREATE POLICY "Workspace members can view drawings"
+  ON public.drawings FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.projects p
+      JOIN public.workspace_members wm ON wm.workspace_id = p.workspace_id
+      WHERE p.id = drawings.project_id
+        AND wm.user_id = (SELECT id FROM public.users WHERE auth_id = auth.uid())
+        AND drawings.deleted_at IS NULL
+        AND wm.deleted_at IS NULL
+    )
+  );
+
+-- Drawings: Team/Admin can create
+CREATE POLICY "Team members can create drawings"
+  ON public.drawings FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.projects p
+      JOIN public.workspace_members wm ON wm.workspace_id = p.workspace_id
+      JOIN public.users u ON u.id = wm.user_id
+      JOIN public.user_roles ur ON ur.user_id = u.id
+      WHERE p.id = drawings.project_id
+        AND u.auth_id = auth.uid()
+        AND (u.is_admin = true OR ur.role IN ('admin', 'team'))
+    )
+  );
+
+-- Drawings: Team/Admin can update
+CREATE POLICY "Team members can update drawings"
+  ON public.drawings FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.projects p
+      JOIN public.workspace_members wm ON wm.workspace_id = p.workspace_id
+      JOIN public.users u ON u.id = wm.user_id
+      JOIN public.user_roles ur ON ur.user_id = u.id
+      WHERE p.id = drawings.project_id
+        AND u.auth_id = auth.uid()
+        AND (u.is_admin = true OR ur.role IN ('admin', 'team'))
+        AND drawings.deleted_at IS NULL
+    )
+  );
+
+-- Drawings: Team/Admin can delete (soft delete)
+CREATE POLICY "Team members can delete drawings"
+  ON public.drawings FOR UPDATE
+  USING (
+    deleted_at IS NULL
+    AND EXISTS (
+      SELECT 1 FROM public.projects p
+      JOIN public.workspace_members wm ON wm.workspace_id = p.workspace_id
+      JOIN public.users u ON u.id = wm.user_id
+      JOIN public.user_roles ur ON ur.user_id = u.id
+      WHERE p.id = drawings.project_id
+        AND u.auth_id = auth.uid()
+        AND (u.is_admin = true OR ur.role IN ('admin', 'team'))
+    )
+  );
+
+-- Drawing Pages: Inherit permissions from parent drawing
+CREATE POLICY "Users can view drawing pages"
+  ON public.drawing_pages FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.drawings d
+      JOIN public.projects p ON p.id = d.project_id
+      JOIN public.workspace_members wm ON wm.workspace_id = p.workspace_id
+      WHERE d.id = drawing_pages.drawing_id
+        AND wm.user_id = (SELECT id FROM public.users WHERE auth_id = auth.uid())
+        AND d.deleted_at IS NULL
+        AND wm.deleted_at IS NULL
+    )
+  );
+
+CREATE POLICY "Team members can manage drawing pages"
+  ON public.drawing_pages FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.drawings d
+      JOIN public.projects p ON p.id = d.project_id
+      JOIN public.workspace_members wm ON wm.workspace_id = p.workspace_id
+      JOIN public.users u ON u.id = wm.user_id
+      JOIN public.user_roles ur ON ur.user_id = u.id
+      WHERE d.id = drawing_pages.drawing_id
+        AND u.auth_id = auth.uid()
+        AND (u.is_admin = true OR ur.role IN ('admin', 'team'))
+        AND d.deleted_at IS NULL
+    )
+  );
+
+-- Similar policies for drawing_scales and drawing_versions
+CREATE POLICY "Users can view drawing scales"
+  ON public.drawing_scales FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.drawing_pages dp
+      JOIN public.drawings d ON d.id = dp.drawing_id
+      JOIN public.projects p ON p.id = d.project_id
+      JOIN public.workspace_members wm ON wm.workspace_id = p.workspace_id
+      WHERE dp.id = drawing_scales.drawing_page_id
+        AND wm.user_id = (SELECT id FROM public.users WHERE auth_id = auth.uid())
+        AND d.deleted_at IS NULL
+        AND wm.deleted_at IS NULL
+    )
+  );
+
+CREATE POLICY "Team members can manage drawing scales"
+  ON public.drawing_scales FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.drawing_pages dp
+      JOIN public.drawings d ON d.id = dp.drawing_id
+      JOIN public.projects p ON p.id = d.project_id
+      JOIN public.workspace_members wm ON wm.workspace_id = p.workspace_id
+      JOIN public.users u ON u.id = wm.user_id
+      JOIN public.user_roles ur ON ur.user_id = u.id
+      WHERE dp.id = drawing_scales.drawing_page_id
+        AND u.auth_id = auth.uid()
+        AND (u.is_admin = true OR ur.role IN ('admin', 'team'))
+        AND d.deleted_at IS NULL
+    )
+  );
+
+CREATE POLICY "Users can view drawing versions"
+  ON public.drawing_versions FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.drawing_pages dp
+      JOIN public.drawings d ON d.id = dp.drawing_id
+      JOIN public.projects p ON p.id = d.project_id
+      JOIN public.workspace_members wm ON wm.workspace_id = p.workspace_id
+      WHERE dp.id = drawing_versions.drawing_page_id
+        AND wm.user_id = (SELECT id FROM public.users WHERE auth_id = auth.uid())
+        AND d.deleted_at IS NULL
+        AND wm.deleted_at IS NULL
+    )
+  );
+
+CREATE POLICY "Team members can create drawing versions"
+  ON public.drawing_versions FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.drawing_pages dp
+      JOIN public.drawings d ON d.id = dp.drawing_id
+      JOIN public.projects p ON p.id = d.project_id
+      JOIN public.workspace_members wm ON wm.workspace_id = p.workspace_id
+      JOIN public.users u ON u.id = wm.user_id
+      JOIN public.user_roles ur ON ur.user_id = u.id
+      WHERE dp.id = drawing_versions.drawing_page_id
+        AND u.auth_id = auth.uid()
+        AND (u.is_admin = true OR ur.role IN ('admin', 'team'))
+        AND d.deleted_at IS NULL
+    )
+  );
+
+-- ============================================
+-- TRIGGERS
+-- ============================================
+
+-- Auto-update timestamps
+CREATE OR REPLACE FUNCTION update_drawings_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_drawings_timestamp
+  BEFORE UPDATE ON public.drawings
+  FOR EACH ROW
+  EXECUTE FUNCTION update_drawings_timestamp();
+
+CREATE TRIGGER update_drawing_pages_timestamp
+  BEFORE UPDATE ON public.drawing_pages
+  FOR EACH ROW
+  EXECUTE FUNCTION update_drawings_timestamp();
+
+CREATE TRIGGER update_drawing_scales_timestamp
+  BEFORE UPDATE ON public.drawing_scales
+  FOR EACH ROW
+  EXECUTE FUNCTION update_drawings_timestamp();
+
+-- Ensure only one active scale per page
+CREATE OR REPLACE FUNCTION ensure_single_active_scale()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.is_active = true THEN
+    UPDATE public.drawing_scales
+    SET is_active = false
+    WHERE drawing_page_id = NEW.drawing_page_id
+      AND id != NEW.id
+      AND is_active = true;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER ensure_single_active_scale_trigger
+  BEFORE INSERT OR UPDATE ON public.drawing_scales
+  FOR EACH ROW
+  EXECUTE FUNCTION ensure_single_active_scale();
+
+-- Auto-increment page numbers
+CREATE OR REPLACE FUNCTION auto_increment_page_number()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.page_number IS NULL THEN
+    SELECT COALESCE(MAX(page_number), 0) + 1
+    INTO NEW.page_number
+    FROM public.drawing_pages
+    WHERE drawing_id = NEW.drawing_id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER auto_increment_page_number_trigger
+  BEFORE INSERT ON public.drawing_pages
+  FOR EACH ROW
+  WHEN (NEW.page_number IS NULL)
+  EXECUTE FUNCTION auto_increment_page_number();
+```
+
+---
+
+## **3. API LAYER DESIGN**
+
+### **Type Definitions** (`src/types/drawing.types.ts`)
+
+```typescript
+// src/types/drawing.types.ts
+export interface Drawing {
+  id: string;
+  shortId: string;
+  projectId: string;
+  name: string;
+  description?: string;
+  thumbnailStoragePath?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  updatedBy?: string;
+  deletedAt?: string;
+  deletedBy?: string;
+  // Joined data
+  pages?: DrawingPage[];
+  pageCount?: number;
+}
+
+export interface DrawingPage {
+  id: string;
+  shortId: string;
+  drawingId: string;
+  pageNumber: number;
+  name: string;
+  excalidrawData: ExcalidrawData;
+  thumbnailStoragePath?: string;
+  backgroundImagePath?: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+  // Joined data
+  activeScale?: DrawingScale;
+}
+
+export interface ExcalidrawData {
+  elements: any[]; // Excalidraw element array
+  appState: any;   // Excalidraw app state
+  files?: Record; // Embedded images (avoid for large files)
+}
+
+export interface DrawingScale {
+  id: string;
+  shortId: string;
+  drawingPageId: string;
+  scaleName: string; // "1/8\" = 1'", "1/4\" = 1'", etc.
+  pixelsPerFoot: number;
+  calibrationData?: {
+    lineStart: { x: number; y: number };
+    lineEnd: { x: number; y: number };
+    knownLengthFeet: number;
+  };
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DrawingVersion {
+  id: string;
+  shortId: string;
+  drawingPageId: string;
+  versionNumber: number;
+  excalidrawData: ExcalidrawData;
+  createdBy: string;
+  createdAt: string;
+}
+
+// Input types
+export interface CreateDrawingInput {
+  projectId: string;
+  name: string;
+  description?: string;
+}
+
+export interface UpdateDrawingInput {
+  name?: string;
+  description?: string;
+  thumbnailStoragePath?: string;
+}
+
+export interface CreateDrawingPageInput {
+  drawingId: string;
+  pageNumber?: number; // Auto-increment if not provided
+  name: string;
+  excalidrawData?: ExcalidrawData;
+  backgroundImagePath?: string;
+}
+
+export interface UpdateDrawingPageInput {
+  name?: string;
+  excalidrawData?: ExcalidrawData;
+  thumbnailStoragePath?: string;
+  backgroundImagePath?: string;
+}
+
+export interface CreateDrawingScaleInput {
+  drawingPageId: string;
+  scaleName: string;
+  pixelsPerFoot: number;
+  calibrationData?: {
+    lineStart: { x: number; y: number };
+    lineEnd: { x: number; y: number };
+    knownLengthFeet: number;
+  };
+}
+```
+
+### **React Query Hooks** (`src/lib/api/hooks/useDrawings.ts`)
+
+```typescript
+// src/lib/api/hooks/useDrawings.ts
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { handleApiError } from '../errors';
+import type { Drawing, CreateDrawingInput, UpdateDrawingInput } from '@/types/drawing.types';
+
+// Query key factory
+export const drawingKeys = {
+  all: ['drawings'] as const,
+  lists: () => [...drawingKeys.all, 'list'] as const,
+  list: (projectId: string) => [...drawingKeys.lists(), projectId] as const,
+  details: () => [...drawingKeys.all, 'detail'] as const,
+  detail: (id: string) => [...drawingKeys.details(), id] as const,
+};
+
+// Transform database row to Drawing type
+const transformDrawing = (row: any): Drawing => ({
+  id: row.id,
+  shortId: row.short_id,
+  projectId: row.project_id,
+  name: row.name,
+  description: row.description,
+  thumbnailStoragePath: row.thumbnail_storage_path,
+  createdBy: row.created_by,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+  updatedBy: row.updated_by,
+  deletedAt: row.deleted_at,
+  deletedBy: row.deleted_by,
+  pages: row.drawing_pages?.map((p: any) => ({
+    id: p.id,
+    shortId: p.short_id,
+    drawingId: p.drawing_id,
+    pageNumber: p.page_number,
+    name: p.name,
+    excalidrawData: p.excalidraw_data,
+    thumbnailStoragePath: p.thumbnail_storage_path,
+    backgroundImagePath: p.background_image_path,
+    sortOrder: p.sort_order,
+    createdAt: p.created_at,
+    updatedAt: p.updated_at,
+  })),
+  pageCount: row.drawing_pages?.length || 0,
+});
+
+// Fetch all drawings for a project
+export const useDrawings = (projectId: string) => {
+  return useQuery({
+    queryKey: drawingKeys.list(projectId),
+    queryFn: async (): Promise => {
+      const { data, error } = await supabase
+        .from('drawings')
+        .select(`
+          *,
+          drawing_pages (
+            id,
+            short_id,
+            page_number,
+            name,
+            thumbnail_storage_path,
+            sort_order
+          )
+        `)
+        .eq('project_id', projectId)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data.map(transformDrawing);
+    },
+    enabled: !!projectId,
+  });
+};
+
+// Fetch single drawing with full details
+export const useDrawing = (drawingId: string) => {
+  return useQuery({
+    queryKey: drawingKeys.detail(drawingId),
+    queryFn: async (): Promise => {
+      const { data, error } = await supabase
+        .from('drawings')
+        .select(`
+          *,
+          drawing_pages (
+            *,
+            drawing_scales (*)
+          )
+        `)
+        .eq('id', drawingId)
+        .is('deleted_at', null)
+        .single();
+
+      if (error) throw error;
+      return transformDrawing(data);
+    },
+    enabled: !!drawingId,
+  });
+};
+
+// Create drawing
+export const useCreateDrawing = (projectId: string) => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (input: CreateDrawingInput) => {
+      // Get current user's ID (from users table, not auth)
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) throw new Error('Not authenticated');
+
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', authUser.id)
+        .single();
+
+      if (!userProfile) throw new Error('User profile not found');
+
+      // Create drawing
+      const { data: drawing, error: drawingError } = await supabase
+        .from('drawings')
+        .insert({
+          project_id: input.projectId,
+          name: input.name,
+          description: input.description,
+          created_by: userProfile.id,
+        })
+        .select()
+        .single();
+
+      if (drawingError) throw drawingError;
+
+      // Create first page automatically
+      const { data: firstPage, error: pageError } = await supabase
+        .from('drawing_pages')
+        .insert({
+          drawing_id: drawing.id,
+          page_number: 1,
+          name: 'Sheet 1',
+          excalidraw_data: {
+            elements: [],
+            appState: {
+              viewBackgroundColor: '#ffffff',
+              currentItemFontFamily: 1,
+              gridSize: null,
+            },
+          },
+          sort_order: 0,
+        })
+        .select()
+        .single();
+
+      if (pageError) throw pageError;
+
+      return transformDrawing({ ...drawing, drawing_pages: [firstPage] });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: drawingKeys.list(projectId) });
+      toast({
+        title: 'Drawing created',
+        description: 'New drawing set has been created',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Failed to create drawing',
+        description: handleApiError(error),
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+// Update drawing
+export const useUpdateDrawing = (projectId: string) => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ id, input }: { id: string; input: UpdateDrawingInput }) => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) throw new Error('Not authenticated');
+
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', authUser.id)
+        .single();
+
+      const { data, error } = await supabase
+        .from('drawings')
+        .update({
+          ...input,
+          updated_by: userProfile?.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return transformDrawing(data);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: drawingKeys.list(projectId) });
+      queryClient.invalidateQueries({ queryKey: drawingKeys.detail(variables.id) });
+      toast({
+        title: 'Drawing updated',
+        description: 'Changes have been saved',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Failed to update drawing',
+        description: handleApiError(error),
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+// Soft delete drawing
+export const useDeleteDrawing = (projectId: string) => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) throw new Error('Not authenticated');
+
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', authUser.id)
+        .single();
+
+      const { error } = await supabase
+        .from('drawings')
+        .update({
+          deleted_at: new Date().toISOString(),
+          deleted_by: userProfile?.id,
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: drawingKeys.list(projectId) });
+      toast({
+        title: 'Drawing deleted',
+        description: 'Drawing has been moved to trash',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Failed to delete drawing',
+        description: handleApiError(error),
+        variant: 'destructive',
+      });
+    },
+  });
+};
+```
+
+**(Continue to next message for Drawing Pages, Scales, and remaining implementation details)**
+
+# EXCALIDRAW INTEGRATION DETAILED PLAN
+
+## Phase 1: Database Setup (2-3 hours)
+1. Create migration file with 4 tables (drawings, drawing_pages, drawing_scales, drawing_versions)
+2. Add RLS policies for workspace-based access control (4 roles: admin, team, consultant, client)
+3. Create indexes for performance
+4. Add triggers for timestamp updates and scale management
+5. Test migration in development environment
+
+## Phase 2: Type Definitions (1 hour)
+1. Create `src/types/drawing.types.ts` with interfaces for Drawing, DrawingPage, DrawingScale, DrawingVersion
+2. Add input types for Create/Update operations
+3. Export all types from central location
+
+## Phase 3: API Hooks Layer (3-4 hours)
+Create React Query hooks following existing patterns:
+1. `src/lib/api/hooks/useDrawings.ts` - CRUD for drawings
+2. `src/lib/api/hooks/useDrawingPages.ts` - CRUD for pages
+3. `src/lib/api/hooks/useDrawingScales.ts` - Scale calibration
+4. `src/lib/api/hooks/useDrawingVersions.ts` - Version history
+5. Export from `src/lib/api/hooks/index.ts`
+
+## Phase 4: Component Structure (6-8 hours)
+Build component hierarchy:
+1. `CreateDrawingDialog.tsx` - Form to create new drawing (similar to CreateProjectDialog pattern)
+2. `DrawingsList.tsx` - Gallery view with cards
+3. `DrawingCard.tsx` - Individual card with thumbnail and metadata
+4. `DrawingEditor.tsx` - Main Excalidraw wrapper with auto-save
+5. `DrawingPageTabs.tsx` - Multi-page navigation
+6. `DrawingToolbar.tsx` - Custom toolbar with measurement tools
+7. `ScaleCalibrationDialog.tsx` - Set scale ratio
+8. `MeasurementTool.tsx` - Arrow with dimension labels
+9. `ExportDrawingDialog.tsx` - Export options
+10. `ImageImportDialog.tsx` - Import architectural plans as background
+
+## Phase 5: Routing Integration (2 hours)
+1. Add routes to `src/App.tsx`:
+   - `/workspace/:workspaceId/project/:id/drawings` (list view)
+   - `/workspace/:workspaceId/project/:id/drawing/:drawingId` (editor)
+2. Update `src/pages/ProjectDetails.tsx` to add "Drawings" tab button (lines 336-414)
+3. Create `src/pages/DrawingsPage.tsx` and `src/pages/DrawingEditorPage.tsx`
+
+## Phase 6: Excalidraw Integration (4-5 hours)
+1. Install package: `npm install @excalidraw/excalidraw`
+2. Implement DrawingEditor component:
+   - Load/save Excalidraw JSON from database
+   - Handle auto-save with 3-second debounce (recursion-guarded)
+   - Custom toolbar integration
+   - Export to PNG/SVG
+3. Implement multi-page support with DrawingPageTabs
+4. Handle state management per page
+
+## Phase 7: Scale & Measurement Tools (3-4 hours)
+1. Implement ScaleCalibrationDialog:
+   - User draws calibration line
+   - Input known length in feet
+   - Calculate pixelsPerFoot ratio
+   - Save to drawing_scales table
+2. Implement MeasurementTool:
+   - User draws arrow
+   - Calculate pixel distance
+   - Convert to feet using active scale
+   - Add text label to arrow
+   - Support preset scales (1/8", 1/4", 1/2", 1"=1')
+3. Add to Excalidraw custom menu
+
+## Phase 8: Image Import & Background (2-3 hours)
+1. Build ImageImportDialog for uploading architectural plans
+2. Upload to `project-files` bucket
+3. Store path in `drawing_pages.background_image_path`
+4. Load background image into Excalidraw at full resolution (7200×4800px support)
+5. Handle signed URLs with 24-hour expiry
+
+## Phase 9: Auto-Save & Version History (2-3 hours)
+1. Implement debounced auto-save (3 seconds)
+2. Create DrawingAutoSave indicator component
+3. Save versions to drawing_versions table
+4. Limit to last 10 versions per page
+5. Add "Restore Version" functionality
+
+## Phase 10: Thumbnails & Export (2 hours)
+1. Generate thumbnails on save using Excalidraw's exportToBlob
+2. Upload to `project-files` bucket
+3. Update `drawings.thumbnail_storage_path` and `drawing_pages.thumbnail_storage_path`
+4. Implement ExportDrawingDialog:
+   - Format options: PNG, SVG
+   - Size options
+   - Transparent background toggle
+   - Download or save to project files
+
+## Phase 11: Permission Checks (1-2 hours)
+1. Use `useWorkspaceRole` hook to check user role
+2. Admin/Team: Full access (create, edit, delete)
+3. Consultant/Client: View-only
+4. Disable UI buttons for non-team users
+5. Test with different user roles
+
+## Phase 12: Realtime Updates (2-3 hours, Optional)
+1. Add Supabase realtime subscription to DrawingEditor
+2. Subscribe to drawing_pages table changes
+3. Handle merge conflicts (last-write-wins)
+4. Show "User X is editing" indicator
+5. Test with multiple simultaneous users
+
+## Phase 13: Testing & Polish (3-4 hours)
+1. Test complete flow:
+   - Create project → Create drawing → Add pages → Draw → Auto-save → Export
+2. Test error scenarios:
+   - Network failures during save
+   - Invalid data
+   - Permission denied
+3. Add loading skeletons and empty states
+4. Add error boundaries
+5. Optimize performance (lazy loading, code splitting)
+6. Test with large drawings (500+ elements)
+7. Test image import at 7200×4800px
+
+## Implementation Checklist
+
+### Database
+- [ ] Create migration file
+- [ ] Add drawings table
+- [ ] Add drawing_pages table
+- [ ] Add drawing_scales table
+- [ ] Add drawing_versions table
+- [ ] Add RLS policies for all tables
+- [ ] Add indexes
+- [ ] Add triggers
+- [ ] Test migration
+
+### Types & API
+- [ ] Create drawing.types.ts
+- [ ] Implement useDrawings hook
+- [ ] Implement useDrawingPages hook
+- [ ] Implement useDrawingScales hook
+- [ ] Implement useDrawingVersions hook
+- [ ] Export hooks from index.ts
+- [ ] Add transform functions for snake_case ↔ camelCase
+
+### Components
+- [ ] CreateDrawingDialog.tsx
+- [ ] DrawingsList.tsx
+- [ ] DrawingCard.tsx
+- [ ] DrawingEditor.tsx
+- [ ] DrawingPageTabs.tsx
+- [ ] DrawingToolbar.tsx
+- [ ] ScaleCalibrationDialog.tsx
+- [ ] MeasurementTool.tsx
+- [ ] ExportDrawingDialog.tsx
+- [ ] DrawingAutoSave.tsx
+- [ ] ImageImportDialog.tsx
+
+### Pages & Routing
+- [ ] Create DrawingsPage.tsx
+- [ ] Create DrawingEditorPage.tsx
+- [ ] Add routes to App.tsx
+- [ ] Add "Drawings" button to ProjectDetails.tsx
+- [ ] Test navigation flow
+
+### Features
+- [ ] Install @excalidraw/excalidraw
+- [ ] Implement multi-page support
+- [ ] Implement auto-save (3 sec debounce)
+- [ ] Implement scale calibration
+- [ ] Implement measurement tool
+- [ ] Implement preset scales (1/8", 1/4", 1/2", 1"=1')
+- [ ] Implement image import
+- [ ] Implement thumbnail generation
+- [ ] Implement SVG/PNG export
+- [ ] Implement version history
+- [ ] Add permission checks
+- [ ] Test with all user roles
+
+### Polish
+- [ ] Add loading states
+- [ ] Add empty states
+- [ ] Add error boundaries
+- [ ] Optimize performance
+- [ ] Test with large files
+- [ ] Test with slow network
+- [ ] Add keyboard shortcuts
+- [ ] Add tooltips and help text
+- [ ] Document component usage
+
+Implement the plan

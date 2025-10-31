@@ -9,14 +9,19 @@
     "build:dev": "vite build --mode development",
     "build:desktop": "vite build --mode production",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.3",
     "@capacitor/cli": "^7.4.3",
     "@capacitor/core": "^7.4.3",
     "@capacitor/ios": "^7.4.3",
-    "@excalidraw/excalidraw": "^0.18.0",
+    "@excalidraw/common": "file:./excalidraw-fork 2/packages/common",
+    "@excalidraw/element": "file:./excalidraw-fork 2/packages/element",
+    "@excalidraw/excalidraw": "file:./excalidraw-fork 2/packages/excalidraw",
+    "@excalidraw/math": "file:./excalidraw-fork 2/packages/math",
+    "@excalidraw/utils": "file:./excalidraw-fork 2/packages/utils",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
