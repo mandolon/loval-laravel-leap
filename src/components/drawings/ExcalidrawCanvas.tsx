@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useMemo } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react';
 import { Excalidraw } from '@excalidraw/excalidraw';
 import { useDrawingPage, useUpdateDrawingPage } from '@/lib/api/hooks/useDrawings';
 import { handleArrowCounter, resetArrowCounterState, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
@@ -25,6 +25,8 @@ export default function ExcalidrawCanvas({
   const persistRef = useRef<any>(null);
   const changeCountRef = useRef(0);
   const onApiReadyRef = useRef(onApiReady);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   
   const { data: pageData, isLoading } = useDrawingPage(pageId);
   const updatePage = useUpdateDrawingPage();
@@ -47,6 +49,31 @@ export default function ExcalidrawCanvas({
       timestamp: new Date().toISOString()
     });
   }, [pageId, projectId]);
+  
+  // Measure container dimensions and update on resize
+  useLayoutEffect(() => {
+    if (!wrapperRef.current) return;
+    
+    const updateDimensions = () => {
+      const rect = wrapperRef.current!.getBoundingClientRect();
+      setDimensions({ 
+        width: Math.floor(rect.width), 
+        height: Math.floor(rect.height) 
+      });
+      
+      logger.log('📐 Container Dimensions Updated', {
+        width: Math.floor(rect.width),
+        height: Math.floor(rect.height),
+        devicePixelRatio: window.devicePixelRatio
+      });
+    };
+    
+    updateDimensions();
+    const observer = new ResizeObserver(updateDimensions);
+    observer.observe(wrapperRef.current);
+    
+    return () => observer.disconnect();
+  }, []);
   
   // Reset arrow counter state when switching pages
   useEffect(() => {
@@ -78,6 +105,27 @@ export default function ExcalidrawCanvas({
       });
     }
     
+    // 📸 DIAGNOSTIC: Log image imports
+    if (files && Object.keys(files).length > 0) {
+      Object.entries(files).forEach(([id, file]: [string, any]) => {
+        if (file.dataURL) {
+          const img = new Image();
+          img.onload = () => {
+            logger.log('📸 Image Imported', {
+              imageId: id,
+              imageWidth: img.width,
+              imageHeight: img.height,
+              canvasWidth: dimensions.width,
+              canvasHeight: dimensions.height,
+              scaleFactorWidth: (dimensions.width / img.width * 100).toFixed(1) + '%',
+              scaleFactorHeight: (dimensions.height / img.height * 100).toFixed(1) + '%'
+            });
+          };
+          img.src = file.dataURL;
+        }
+      });
+    }
+    
     // Ensure collaborators is always a Map
     const sanitizedAppState = {
       ...appState,
@@ -106,7 +154,7 @@ export default function ExcalidrawCanvas({
         excalidrawData: { elements, appState: appStateToSave, files }
       });
     }, 3000);
-  }, [pageId, arrowCounterEnabled, inchesPerSceneUnit, onArrowStatsChange, updatePage]);
+  }, [pageId, arrowCounterEnabled, inchesPerSceneUnit, onArrowStatsChange, updatePage, dimensions]);
   
   // 🎨 DIAGNOSTIC: Handle Excalidraw API ready
   const handleExcalidrawAPI = useCallback((api: any) => {
@@ -204,16 +252,20 @@ export default function ExcalidrawCanvas({
   }, [excalidrawData, defaultAppState]);
   
   return (
-    <div className="h-full">
-      <Excalidraw
-        excalidrawAPI={handleExcalidrawAPI}
-        initialData={{
-          elements: excalidrawData?.elements || [],
-          appState: mergedAppState,
-          files: excalidrawData?.files || {},
-        }}
-        onChange={handleChange}
-      />
+    <div ref={wrapperRef} className="h-full w-full">
+      {dimensions.width > 0 && (
+        <div style={{ width: dimensions.width, height: dimensions.height }}>
+          <Excalidraw
+            excalidrawAPI={handleExcalidrawAPI}
+            initialData={{
+              elements: excalidrawData?.elements || [],
+              appState: mergedAppState,
+              files: excalidrawData?.files || {},
+            }}
+            onChange={handleChange}
+          />
+        </div>
+      )}
     </div>
   );
 }
