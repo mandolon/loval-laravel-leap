@@ -19,13 +19,6 @@ export default defineConfig(({ mode }) => ({
     },
   },
   optimizeDeps: {
-    exclude: [
-      "@excalidraw/excalidraw",
-      "@excalidraw/common",
-      "@excalidraw/element", 
-      "@excalidraw/math",
-      "@excalidraw/utils"
-    ],
-    include: [],
+    exclude: ["@excalidraw/excalidraw"],
   },
 }));
