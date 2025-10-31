@@ -195,8 +195,8 @@ All colors MUST be HSL.
   background: rgba(148, 163, 184, 0.5);
 }
 
-/* Excalidraw customizations */
-.excalidraw .arrowhead {
+/* Excalidraw customizations - DISABLED FOR TESTING */
+/* .excalidraw .arrowhead {
   transform: scale(0.08) !important;
 }
 
@@ -205,4 +205,4 @@ All colors MUST be HSL.
 .excalidraw [data-type="ellipse"],
 .excalidraw [data-type="line"] {
   stroke-width: 0.5;
-}
+} */
