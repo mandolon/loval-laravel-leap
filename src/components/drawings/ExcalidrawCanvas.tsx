@@ -66,6 +66,8 @@ export default function ExcalidrawCanvas({
     currentItemRoughness: 0,
     currentItemFontSize: 8,
     collaborators: new Map(),
+    // 🔥 CRITICAL: Use higher devicePixelRatio for sharper rendering at zoom
+    devicePixelRatio: Math.max(2, window.devicePixelRatio),
   }), []);
   
   // Safely parse excalidraw data - memoized to prevent infinite re-renders
