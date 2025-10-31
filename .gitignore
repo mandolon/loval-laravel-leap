@@ -27,3 +27,8 @@ Cargo.lock
 *.njsproj
 *.sln
 *.sw?
+
+# Excalidraw fork (built from source, not tracked)
+excalidraw-fork/
+excalidraw-fork 2/
+*.lnk

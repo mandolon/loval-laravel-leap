@@ -1,6 +1,0 @@
-diff --git a/node_modules/@excalidraw/excalidraw/dist/excalidraw.production.min.js b/node_modules/@excalidraw/excalidraw/dist/excalidraw.production.min.js
---- a/node_modules/@excalidraw/excalidraw/dist/excalidraw.production.min.js
-+++ b/node_modules/@excalidraw/excalidraw/dist/excalidraw.production.min.js
-@@ -1,1 +1,1 @@
--// Search for maxWidthOrHeight=1440 and replace with 10000
-+// Search for maxWidthOrHeight=1440 and replace with 10000
