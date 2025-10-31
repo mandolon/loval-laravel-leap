@@ -5,10 +5,16 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Plus, FileText, ChevronDown, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import ExcalidrawCanvas from './ExcalidrawCanvas';
-import { useDrawingVersions, useCreateDrawingVersion, type DrawingVersion, drawingKeys } from '@/lib/api/hooks/useDrawings';
+import { useDrawingVersions, useCreateDrawingVersion, useCreateDrawingPage, type DrawingVersion, drawingKeys } from '@/lib/api/hooks/useDrawings';
 import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu';
 
 interface DrawingsTabProps {
   projectId: string;
@@ -22,10 +28,12 @@ export function DrawingsTab({ projectId, workspaceId }: DrawingsTabProps) {
   const [arrowCounterEnabled, setArrowCounterEnabled] = useState(false);
   const [selectedScale, setSelectedScale] = useState<ScalePreset>('1/4" = 1\'');
   const [arrowStats, setArrowStats] = useState<ArrowCounterStats>({ count: 0, values: [] });
+  const [selectedVersionForPage, setSelectedVersionForPage] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
   const { data: versions = [], isLoading } = useDrawingVersions(projectId);
   const createVersionMutation = useCreateDrawingVersion(projectId);
+  const createPageMutation = useCreateDrawingPage(selectedVersionForPage || '');
 
   // Real-time subscriptions for drawings
   useEffect(() => {
@@ -106,6 +114,20 @@ export function DrawingsTab({ projectId, workspaceId }: DrawingsTabProps) {
     });
   }, []);
 
+  const handleCreatePage = useCallback((versionId: string) => {
+    setSelectedVersionForPage(versionId);
+    const version = versions.find(v => v.id === versionId);
+    const pages = (version as any)?.drawing_pages || [];
+    const pageName = `Page ${pages.length + 1}`;
+    
+    createPageMutation.mutate({ pageName }, {
+      onSuccess: () => {
+        // Expand the version to show the new page
+        setExpandedVersions(prev => new Set(prev).add(versionId));
+      }
+    });
+  }, [versions, createPageMutation]);
+
   const selectedPage = useMemo(() => {
     if (!selectedPageId) return null;
     for (const version of versions) {
@@ -129,17 +151,19 @@ export function DrawingsTab({ projectId, workspaceId }: DrawingsTabProps) {
     <div className="h-full flex">
       {/* Sidebar: Version/Page List */}
       <div className="w-64 border-r border-slate-200 dark:border-[#1a2030]/60 flex flex-col bg-white dark:bg-[#0E1118]">
-        <div className="p-3 border-b border-slate-200 dark:border-[#1a2030]/60">
-          <Button
-            onClick={handleCreateVersion}
-            disabled={createVersionMutation.isPending}
-            className="w-full"
-            size="sm"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            New Drawing
-          </Button>
-        </div>
+        <ContextMenu>
+          <ContextMenuTrigger>
+            <div className="p-3 border-b border-slate-200 dark:border-[#1a2030]/60 cursor-context-menu">
+              <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">Whiteboards</span>
+            </div>
+          </ContextMenuTrigger>
+          <ContextMenuContent>
+            <ContextMenuItem onClick={handleCreateVersion} disabled={createVersionMutation.isPending}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Drawing Version
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
 
         <ScrollArea className="flex-1">
           <div className="p-2 space-y-1">
@@ -154,20 +178,30 @@ export function DrawingsTab({ projectId, workspaceId }: DrawingsTabProps) {
                 return (
                   <div key={version.id} className="space-y-1">
                     {/* Version Header */}
-                    <button
-                      onClick={() => toggleVersion(version.id)}
-                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-[#141C28] transition-colors text-left"
-                    >
-                      {isExpanded ? (
-                        <ChevronDown className="h-4 w-4 text-slate-500 dark:text-neutral-400" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4 text-slate-500 dark:text-neutral-400" />
-                      )}
-                      <FileText className="h-4 w-4 text-slate-500 dark:text-neutral-400" />
-                      <span className="flex-1 text-sm font-medium text-slate-700 dark:text-neutral-300 truncate">
-                        {version.name}
-                      </span>
-                    </button>
+                    <ContextMenu>
+                      <ContextMenuTrigger asChild>
+                        <button
+                          onClick={() => toggleVersion(version.id)}
+                          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-[#141C28] transition-colors text-left"
+                        >
+                          {isExpanded ? (
+                            <ChevronDown className="h-4 w-4 text-slate-500 dark:text-neutral-400" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 text-slate-500 dark:text-neutral-400" />
+                          )}
+                          <FileText className="h-4 w-4 text-slate-500 dark:text-neutral-400" />
+                          <span className="flex-1 text-sm font-medium text-slate-700 dark:text-neutral-300 truncate">
+                            {version.name}
+                          </span>
+                        </button>
+                      </ContextMenuTrigger>
+                      <ContextMenuContent>
+                        <ContextMenuItem onClick={() => handleCreatePage(version.id)} disabled={createPageMutation.isPending}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          New Page
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    </ContextMenu>
 
                     {/* Pages */}
                     {isExpanded && (
