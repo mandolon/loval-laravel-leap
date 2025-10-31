@@ -102,52 +102,152 @@ export default function ExcalidrawCanvas({
       });
     }
     
-    // 📸 DIAGNOSTIC: Log image imports with EXTENSIVE details
+    // 📸 ULTRA-DIAGNOSTIC: Log EVERYTHING about image imports
     if (files && Object.keys(files).length > 0) {
       Object.entries(files).forEach(([id, file]: [string, any]) => {
         if (file.dataURL) {
           const img = new Image();
           img.onload = () => {
-            // Get canvas and all rendering contexts
-            const canvas = document.querySelector('.excalidraw canvas') as HTMLCanvasElement;
+            // Get ALL canvas elements and contexts
+            const canvases = Array.from(document.querySelectorAll('.excalidraw canvas')) as HTMLCanvasElement[];
+            const canvas = canvases[0];
             const canvasContext = canvas?.getContext('2d');
+            const canvasContext2 = canvas?.getContext('2d', { alpha: true, desynchronized: false });
             
-            // 🆕 Parse dataURL to get format and size info
+            // 🔥 NEW: Get ALL canvas attributes
+            const allCanvasAttributes: any = {};
+            if (canvas) {
+              for (let i = 0; i < canvas.attributes.length; i++) {
+                const attr = canvas.attributes[i];
+                allCanvasAttributes[attr.name] = attr.value;
+              }
+            }
+            
+            // Parse dataURL
             const dataURLParts = file.dataURL.split(',');
-            const header = dataURLParts[0]; // e.g., "data:image/png;base64"
+            const header = dataURLParts[0];
             const base64Data = dataURLParts[1];
             const format = header.match(/image\/(\w+)/)?.[1] || 'unknown';
             const isBase64 = header.includes('base64');
             const dataSize = base64Data ? base64Data.length : 0;
             const estimatedBytes = isBase64 ? (dataSize * 3) / 4 : dataSize;
             
-            // 🆕 Check if image element in DOM has any transforms/filters
-            const imageElements = Array.from(document.querySelectorAll('.excalidraw img, .excalidraw image'));
-            const matchingImgElement = imageElements.find((imgEl: any) => imgEl.src?.includes(id.substring(0, 20)));
-            const imgStyle = matchingImgElement ? window.getComputedStyle(matchingImgElement as Element) : null;
+            // 🔥 NEW: Find ALL image-related elements in DOM
+            const allImgElements = Array.from(document.querySelectorAll('.excalidraw *')).filter((el: any) => {
+              const tag = el.tagName?.toLowerCase();
+              return tag === 'img' || tag === 'image' || tag === 'svg' || el.style?.backgroundImage;
+            });
             
-            // 🆕 Find the Excalidraw image element data
+            // 🔥 NEW: Get parent container hierarchy
+            let parentChain: any[] = [];
+            let current = canvas?.parentElement;
+            let depth = 0;
+            while (current && depth < 15) {
+              const rect = current.getBoundingClientRect();
+              const computedStyle = window.getComputedStyle(current);
+              parentChain.push({
+                depth,
+                tagName: current.tagName,
+                className: current.className,
+                id: current.id,
+                width: rect.width,
+                height: rect.height,
+                position: computedStyle.position,
+                display: computedStyle.display,
+                overflow: computedStyle.overflow,
+                transform: computedStyle.transform,
+                willChange: computedStyle.willChange,
+              });
+              current = current.parentElement;
+              depth++;
+            }
+            
+            // Find the Excalidraw image element data
             const imageElement = elements?.find((el: any) => el.type === 'image' && el.fileId === id);
             
-            const canvasMetrics = canvas ? {
-              canvasWidth: canvas.width,
-              canvasHeight: canvas.height,
-              styleWidth: canvas.style.width,
-              styleHeight: canvas.style.height,
-              computedWidth: canvas.getBoundingClientRect().width,
-              computedHeight: canvas.getBoundingClientRect().height,
-              // 🆕 Canvas rendering settings
-              imageSmoothingEnabled: canvasContext?.imageSmoothingEnabled,
-              imageSmoothingQuality: canvasContext?.imageSmoothingQuality,
+            // 🔥 NEW: Get ALL canvas context properties
+            const contextProps = canvasContext ? {
+              // Drawing state
+              fillStyle: canvasContext.fillStyle,
+              strokeStyle: canvasContext.strokeStyle,
+              globalAlpha: canvasContext.globalAlpha,
+              globalCompositeOperation: canvasContext.globalCompositeOperation,
+              
+              // Line styles
+              lineWidth: canvasContext.lineWidth,
+              lineCap: canvasContext.lineCap,
+              lineJoin: canvasContext.lineJoin,
+              miterLimit: canvasContext.miterLimit,
+              lineDashOffset: canvasContext.lineDashOffset,
+              
+              // Text
+              font: canvasContext.font,
+              textAlign: canvasContext.textAlign,
+              textBaseline: canvasContext.textBaseline,
+              direction: canvasContext.direction,
+              
+              // Image smoothing (CRITICAL)
+              imageSmoothingEnabled: canvasContext.imageSmoothingEnabled,
+              imageSmoothingQuality: canvasContext.imageSmoothingQuality,
+              
+              // Shadows
+              shadowBlur: canvasContext.shadowBlur,
+              shadowColor: canvasContext.shadowColor,
+              shadowOffsetX: canvasContext.shadowOffsetX,
+              shadowOffsetY: canvasContext.shadowOffsetY,
+              
+              // Transforms
+              currentTransform: canvasContext.getTransform ? {
+                a: canvasContext.getTransform().a,
+                b: canvasContext.getTransform().b,
+                c: canvasContext.getTransform().c,
+                d: canvasContext.getTransform().d,
+                e: canvasContext.getTransform().e,
+                f: canvasContext.getTransform().f,
+              } : 'Not available',
             } : null;
             
-            logger.log('📸 Image Import - FULL DIAGNOSTIC', {
-              // Basic image info
+            // 🔥 NEW: Check image decode status
+            const imageDecodeInfo: any = {
+              complete: img.complete,
+              naturalWidth: img.naturalWidth,
+              naturalHeight: img.naturalHeight,
+              width: img.width,
+              height: img.height,
+              decoding: (img as any).decoding || 'unknown',
+            };
+            
+            // 🔥 NEW: Get browser rendering hints
+            const renderingHints = {
+              hardwareConcurrency: navigator.hardwareConcurrency,
+              deviceMemory: (navigator as any).deviceMemory || 'unknown',
+              maxTouchPoints: navigator.maxTouchPoints,
+              userAgent: navigator.userAgent.substring(0, 100),
+            };
+            
+            // 🔥 NEW: Check all CSS properties affecting rendering
+            const canvasComputedStyle = canvas ? window.getComputedStyle(canvas) : null;
+            const canvasRenderingCSS = canvasComputedStyle ? {
+              imageRendering: canvasComputedStyle.imageRendering,
+              transform: canvasComputedStyle.transform,
+              transformOrigin: canvasComputedStyle.transformOrigin,
+              transformStyle: canvasComputedStyle.transformStyle,
+              backfaceVisibility: canvasComputedStyle.backfaceVisibility,
+              perspective: canvasComputedStyle.perspective,
+              willChange: canvasComputedStyle.willChange,
+              filter: canvasComputedStyle.filter,
+              opacity: canvasComputedStyle.opacity,
+              mixBlendMode: canvasComputedStyle.mixBlendMode,
+              isolation: canvasComputedStyle.isolation,
+            } : null;
+            
+            logger.log('🔥 ULTRA-DIAGNOSTIC: Image Import', {
+              // Basic
               imageId: id,
               imageNaturalWidth: img.width,
               imageNaturalHeight: img.height,
               
-              // 🆕 Image data format & quality
+              // Image data
               imageData: {
                 format,
                 isBase64,
@@ -160,61 +260,78 @@ export default function ExcalidrawCanvas({
                   ((estimatedBytes / (img.width * img.height * 4)) * 100).toFixed(1) + '%' : 'N/A'
               },
               
-              // 🆕 Excalidraw element data
-              excalidrawElement: imageElement ? {
-                width: imageElement.width,
-                height: imageElement.height,
-                x: imageElement.x,
-                y: imageElement.y,
-                scale: imageElement.scale,
-                angle: imageElement.angle,
-                locked: imageElement.locked,
-              } : 'Not found in elements',
+              // 🔥 NEW: Image decode info
+              imageDecodeInfo,
               
-              // 🆕 Rendered scale calculation
+              // Excalidraw element
+              excalidrawElement: imageElement || 'Not found',
+              
+              // Render scale
               renderScale: imageElement ? {
                 scaleX: imageElement.width / img.width,
                 scaleY: imageElement.height / img.height,
                 isDownscaled: imageElement.width < img.width || imageElement.height < img.height,
                 isUpscaled: imageElement.width > img.width || imageElement.height > img.height,
-                scaleFactor: ((imageElement.width / img.width) * 100).toFixed(1) + '%'
+                scaleFactor: ((imageElement.width / img.width) * 100).toFixed(1) + '%',
+                actualDisplayWidth: imageElement.width,
+                actualDisplayHeight: imageElement.height,
+                pixelLoss: img.width > 0 ? ((1 - imageElement.width / img.width) * 100).toFixed(1) + '%' : 'N/A'
               } : null,
               
-              // 🆕 DOM image element CSS (if found)
-              domImageStyle: imgStyle ? {
-                transform: imgStyle.transform,
-                filter: imgStyle.filter,
-                imageRendering: imgStyle.imageRendering,
-                backfaceVisibility: imgStyle.backfaceVisibility,
-                willChange: imgStyle.willChange,
-                opacity: imgStyle.opacity,
-              } : 'DOM image element not found',
+              // Canvas info
+              canvas: canvas ? {
+                width: canvas.width,
+                height: canvas.height,
+                clientWidth: canvas.clientWidth,
+                clientHeight: canvas.clientHeight,
+                offsetWidth: canvas.offsetWidth,
+                offsetHeight: canvas.offsetHeight,
+                scrollWidth: canvas.scrollWidth,
+                scrollHeight: canvas.scrollHeight,
+                styleWidth: canvas.style.width,
+                styleHeight: canvas.style.height,
+                boundingRect: canvas.getBoundingClientRect(),
+              } : null,
               
-              // Device & viewport
+              // 🔥 NEW: All canvas attributes
+              canvasAttributes: allCanvasAttributes,
+              
+              // 🔥 NEW: Canvas rendering CSS
+              canvasRenderingCSS,
+              
+              // 🔥 NEW: ALL context properties
+              canvasContextProperties: contextProps,
+              
+              // 🔥 NEW: Parent container chain
+              parentChain,
+              
+              // 🔥 NEW: All image elements found
+              allImageElementsFound: allImgElements.length,
+              
+              // Device
               devicePixelRatio: window.devicePixelRatio,
               viewportWidth: window.innerWidth,
               viewportHeight: window.innerHeight,
               
-              // Canvas state
-              canvas: canvasMetrics,
+              // 🔥 NEW: Browser hints
+              renderingHints,
               
-              // 🆕 Current zoom level from appState
+              // Zoom
               currentZoom: appState?.zoom?.value || appState?.zoom || 1,
               
-              // Quality indicators
-              imageScaleToViewport: {
-                width: ((window.innerWidth / img.width) * 100).toFixed(1) + '%',
-                height: ((window.innerHeight / img.height) * 100).toFixed(1) + '%'
-              },
+              // Quality
               pixelDensityMatch: canvas ? (canvas.width / canvas.getBoundingClientRect().width).toFixed(2) : 'N/A',
               
-              // 🆕 Blur risk assessment
+              // Blur risks
               blurRiskFactors: {
                 lowResolutionSource: img.width < 1920 || img.height < 1080,
                 heavyCompression: estimatedBytes < (img.width * img.height * 0.5),
                 upscaling: imageElement && (imageElement.width > img.width || imageElement.height > img.height),
+                downscaling: imageElement && (imageElement.width < img.width || imageElement.height < img.height),
                 zoomLevel: (appState?.zoom?.value || appState?.zoom || 1) > 1,
                 devicePixelRatio: window.devicePixelRatio > 1,
+                lowQualitySmoothing: canvasContext?.imageSmoothingQuality === 'low' || canvasContext?.imageSmoothingQuality === 'medium',
+                imageRenderingCSS: canvasComputedStyle?.imageRendering,
               }
             });
           };
