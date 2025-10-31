@@ -83,17 +83,16 @@ export default function ExcalidrawCanvas({
   // Safely parse excalidraw data
   const excalidrawData = pageData?.excalidraw_data as any;
   
-  // Ensure collaborators is always a Map by setting it AFTER spreading saved state
+  // Ensure collaborators is always a Map
   const savedAppState = excalidrawData?.appState || {};
-  const { collaborators, ...savedAppStateWithoutCollaborators } = savedAppState;
   const mergedAppState = {
     ...defaultAppState,
-    ...savedAppStateWithoutCollaborators,
-    collaborators: new Map(), // This MUST be a Map instance, not a plain object
+    ...savedAppState,
+    collaborators: new Map(), // Always use a fresh Map
   };
   
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div className="h-full">
       <Excalidraw
         excalidrawAPI={(api) => {
           excaliRef.current = api;

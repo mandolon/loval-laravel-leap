@@ -302,18 +302,15 @@ export default function ProjectPanel({
     setLocalLists(lists);
   }, [sections, lists]);
 
-  // Expanded/collapsed (files) - initialize from database once
+  // Expanded/collapsed (files) - initialize from database
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const hasInitialized = useRef(false);
   
   useEffect(() => {
-    if (hasInitialized.current || rawFolders.length === 0) return;
     const initial: Record<string, boolean> = {};
     rawFolders.forEach(folder => {
       initial[folder.id] = true; // All folders open by default
     });
     setExpanded(initial);
-    hasInitialized.current = true;
   }, [rawFolders]);
 
   // Drag & drop state (files)

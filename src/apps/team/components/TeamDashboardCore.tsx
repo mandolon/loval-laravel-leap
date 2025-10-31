@@ -362,18 +362,16 @@ export default function RehomeDoubleSidebar() {
             {active === "projects" ? (
               <div className="h-full flex flex-col">
                 {/* File/Whiteboard Viewer Area */}
-                <div className="flex-1 min-h-0 relative">
+                <div className="flex-1 min-h-0">
                   {selectedWhiteboard ? (
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex' }}>
-                      <ExcalidrawCanvas
-                        pageId={selectedWhiteboard.pageId}
-                        projectId={userProjects.find((p: any) => p.name === selected?.item)?.id || ''}
-                        onApiReady={(api) => {/* Optional: store api reference */}}
-                        arrowCounterEnabled={arrowCounterEnabled}
-                        inchesPerSceneUnit={inchesPerSceneUnit}
-                        onArrowStatsChange={setArrowStats}
-                      />
-                    </div>
+                    <ExcalidrawCanvas
+                      pageId={selectedWhiteboard.pageId}
+                      projectId={userProjects.find((p: any) => p.name === selected?.item)?.id || ''}
+                      onApiReady={(api) => {/* Optional: store api reference */}}
+                      arrowCounterEnabled={arrowCounterEnabled}
+                      inchesPerSceneUnit={inchesPerSceneUnit}
+                      onArrowStatsChange={setArrowStats}
+                    />
                   ) : selectedFile ? (
                     <TeamFileViewer file={selectedFile} />
                   ) : (
