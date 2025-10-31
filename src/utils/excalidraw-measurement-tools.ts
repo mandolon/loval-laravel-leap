@@ -78,21 +78,30 @@ function midPointOfArrow(el: any): { x: number; y: number } {
 }
 
 /**
- * Convert scene length to formatted dimension string
+ * Convert scene length to formatted dimension string (discrete 1-inch steps)
+ * Matches wrapper logic: uses floor division with 1-inch steps
  */
 function valueForLength(sceneLength: number, inchesPerSceneUnit: number): string {
-  const totalInches = Math.round(sceneLength * inchesPerSceneUnit);
-  return formatInchesToFeetInches(Math.max(0, totalInches));
+  // Convert inchesPerSceneUnit to pxPerStep equivalent
+  // inchesPerSceneUnit = inches/pixel, so pxPerStep (pixels/1-inch-step) = 1/inchesPerSceneUnit
+  const pxPerStep = 1 / inchesPerSceneUnit;
+  const steps = Math.max(0, Math.floor(sceneLength / pxPerStep));
+  const totalInches = 0 + steps * 1; // startInches=0, stepInches=1
+  return formatInchesToFeetInches(totalInches);
 }
 
 /**
- * Get dimension value for an arrow (with override support)
+ * Get dimension value for an arrow (with override support, discrete 1-inch steps)
+ * Matches wrapper logic: uses floor division with 1-inch steps
  */
 function valueForArrow(el: any, inchesPerSceneUnit: number, info?: ArrowInfo): string {
   if (info?.override != null) return info.override;
   const L = lengthOfArrow(el);
-  const totalInches = Math.round(L * inchesPerSceneUnit);
-  return formatInchesToFeetInches(Math.max(0, totalInches));
+  // Convert inchesPerSceneUnit to pxPerStep equivalent
+  const pxPerStep = 1 / inchesPerSceneUnit;
+  const steps = Math.max(0, Math.floor(L / pxPerStep));
+  const totalInches = 0 + steps * 1; // startInches=0, stepInches=1
+  return formatInchesToFeetInches(totalInches);
 }
 
 /**
@@ -102,10 +111,13 @@ function makeTextElementAt(x: number, y: number, text: string): any {
   return {
     type: "text",
     text,
-    fontSize: 8,
+    originalText: text, // Required for export - must be a string for Fonts.getCharsPerFamily
+    fontSize: 4,
     fontFamily: 1,
     textAlign: "center",
     verticalAlign: "middle",
+    lineHeight: 1.25, // Default line height as unitless value
+    autoResize: true, // Required property for text elements
     x: x,
     y: y,
     width: 0,
@@ -124,6 +136,7 @@ function makeTextElementAt(x: number, y: number, text: string): any {
     isDeleted: false,
     locked: false,
     boundElements: null,
+    containerId: null, // Required for text elements
   };
 }
 
@@ -203,6 +216,7 @@ export function handleArrowCounter(
 
       if (textEl.text !== val || textEl.x !== mid.x || textEl.y !== mid.y) {
         textEl.text = val;
+        textEl.originalText = val; // Keep originalText in sync for export compatibility
         textEl.x = mid.x;
         textEl.y = mid.y;
         needsUpdate.push(textEl);
