@@ -329,7 +329,9 @@ export default function RehomeDoubleSidebar() {
 
       {/* Content frame */}
       <div
-        className="fixed z-30 rounded-xl border border-slate-200 bg-white/80 backdrop-blur-sm shadow-sm transition-all duration-300 ease-out"
+        className={`fixed z-30 rounded-xl border border-slate-200 shadow-sm transition-all duration-300 ease-out ${
+          active === "projects" && selectedWhiteboard ? "bg-white" : "bg-white/80 backdrop-blur-sm"
+        }`}
         style={{
           top: "calc(0.375rem + 2.25rem + 0.25rem)",
           bottom: "0.75rem",
@@ -873,7 +875,9 @@ const PageHeader = memo(function PageHeader({
   const showCollapseButton = tabKey === "projects" && selected?.tab === "projects";
 
   return (
-    <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b border-slate-200/70 rounded-t-xl">
+    <div className={`sticky top-0 z-10 border-b border-slate-200/70 rounded-t-xl ${
+      tabKey === "projects" ? "bg-white" : "bg-white/80 backdrop-blur-sm"
+    }`}>
       <div className="h-10 px-4 flex items-center justify-between">
         <div className="flex items-center gap-2 min-w-0">
           <div className="h-6 w-6 rounded-md border border-slate-200 bg-white grid place-items-center shadow-sm">
