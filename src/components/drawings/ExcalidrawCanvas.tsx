@@ -104,6 +104,13 @@ export default function ExcalidrawCanvas({
     };
   }, [excalidrawData, defaultAppState]);
   
+  // Memoize initialData to prevent new object references on every render
+  const initialData = useMemo(() => ({
+    elements: excalidrawData?.elements || [],
+    appState: mergedAppState,
+    files: excalidrawData?.files || {},
+  }), [excalidrawData, mergedAppState]);
+  
   const handleChange = useCallback((elements: any, appState: any, files: any) => {
     changeCountRef.current++;
     
@@ -257,11 +264,7 @@ export default function ExcalidrawCanvas({
         <div style={{ width: dimensions.width, height: dimensions.height }}>
           <Excalidraw
             excalidrawAPI={handleExcalidrawAPI}
-            initialData={{
-              elements: excalidrawData?.elements || [],
-              appState: mergedAppState,
-              files: excalidrawData?.files || {},
-            }}
+            initialData={initialData}
             onChange={handleChange}
           />
         </div>
