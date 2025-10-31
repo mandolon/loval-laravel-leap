@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd 'excalidraw-fork 2' && yarn install && yarn build:packages && cd .. && npm install && npm run build",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
   "env": {
