@@ -89,11 +89,13 @@ export function DrawingsTab({ projectId, workspaceId }: DrawingsTabProps) {
   }, [arrowCounterEnabled, selectedScale]);
 
   const handleCreateVersion = useCallback(() => {
+    console.log('[DrawingsTab] handleCreateVersion called');
     const versionNumber = `v${versions.length + 1}.0`;
     createVersionMutation.mutate(
       { versionNumber, workspaceId },
       {
         onSuccess: (data: any) => {
+          console.log('[DrawingsTab] Version created successfully:', data);
           toast.success('New drawing version created');
           // Refresh to get the new version with pages
           // The query will automatically refetch
@@ -115,15 +117,19 @@ export function DrawingsTab({ projectId, workspaceId }: DrawingsTabProps) {
   }, []);
 
   const handleCreatePage = useCallback((versionId: string) => {
+    console.log('[DrawingsTab] handleCreatePage called with versionId:', versionId);
     const version = versions.find(v => v.id === versionId);
     const pages = (version as any)?.drawing_pages || [];
     const pageName = `Page ${pages.length + 1}`;
+    
+    console.log('[DrawingsTab] Creating page:', { versionId, pageName, version });
     
     createPageMutation.mutate({ 
       drawingId: versionId,
       pageName 
     }, {
       onSuccess: () => {
+        console.log('[DrawingsTab] Page created successfully');
         // Expand the version to show the new page
         setExpandedVersions(prev => new Set(prev).add(versionId));
       }
@@ -149,12 +155,29 @@ export function DrawingsTab({ projectId, workspaceId }: DrawingsTabProps) {
     );
   }
 
+  console.log('[DrawingsTab] Render:', { 
+    versionsCount: versions.length, 
+    selectedPageId, 
+    contextVersion,
+    expandedVersions: Array.from(expandedVersions)
+  });
+
   return (
     <div className="h-full flex">
       {/* Sidebar: Version/Page List */}
-      <ContextMenu>
-        <ContextMenuTrigger asChild>
-          <div className="w-64 border-r border-slate-200 dark:border-[#1a2030]/60 flex flex-col bg-white dark:bg-[#0E1118] cursor-context-menu">
+      <ContextMenu onOpenChange={(open) => console.log('[DrawingsTab] Context menu open state:', open)}>
+        <ContextMenuTrigger 
+          asChild
+          onContextMenu={(e) => {
+            console.log('[DrawingsTab] Context menu triggered on sidebar');
+          }}
+        >
+          <div 
+            className="w-64 border-r border-slate-200 dark:border-[#1a2030]/60 flex flex-col bg-white dark:bg-[#0E1118] cursor-context-menu"
+            onContextMenu={(e) => {
+              console.log('[DrawingsTab] Right-click on sidebar div', e);
+            }}
+          >
             <div className="p-3 border-b border-slate-200 dark:border-[#1a2030]/60">
               <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">Whiteboards</span>
             </div>
@@ -220,14 +243,24 @@ export function DrawingsTab({ projectId, workspaceId }: DrawingsTabProps) {
         </ScrollArea>
           </div>
         </ContextMenuTrigger>
-        <ContextMenuContent>
-          <ContextMenuItem onClick={handleCreateVersion} disabled={createVersionMutation.isPending}>
+        <ContextMenuContent onInteractOutside={() => console.log('[DrawingsTab] Context menu closed')}>
+          <ContextMenuItem 
+            onClick={() => {
+              console.log('[DrawingsTab] New Drawing Version clicked');
+              handleCreateVersion();
+            }} 
+            disabled={createVersionMutation.isPending}
+          >
             <Plus className="h-4 w-4 mr-2" />
             New Drawing Version
           </ContextMenuItem>
           {versions.length > 0 && (
             <ContextMenuItem 
-              onClick={() => handleCreatePage(contextVersion || versions[0].id)} 
+              onClick={() => {
+                const targetVersion = contextVersion || versions[0].id;
+                console.log('[DrawingsTab] New Page clicked, target version:', targetVersion);
+                handleCreatePage(targetVersion);
+              }} 
               disabled={createPageMutation.isPending}
             >
               <Plus className="h-4 w-4 mr-2" />
