@@ -20,5 +20,6 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     exclude: ["@excalidraw/excalidraw"],
+    entries: ['index.html', 'src/**/*.{ts,tsx,js,jsx}'], // Only scan our source files, not fork
   },
 }));
