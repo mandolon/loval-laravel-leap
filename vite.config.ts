@@ -24,8 +24,14 @@ export default defineConfig(({ mode }) => ({
       "es6-promise-pool",
       "png-chunks-extract",
       "png-chunks-encode",
-      "png-chunk-text"
+      "png-chunk-text",
+      "@braintree/sanitize-url"
     ], // Pre-bundle CommonJS packages used by Excalidraw
     entries: ['index.html', 'src/**/*.{ts,tsx,js,jsx}'], // Only scan our source files, not fork
+  },
+  build: {
+    commonjsOptions: {
+      include: [/node_modules/], // Handle all CommonJS modules during build
+    },
   },
 }));
