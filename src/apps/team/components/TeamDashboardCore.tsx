@@ -188,11 +188,10 @@ export default function RehomeDoubleSidebar() {
   const [projectPanelCollapsed, setProjectPanelCollapsed] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [selectedWhiteboard, setSelectedWhiteboard] = useState<{ pageId: string; pageName: string; versionTitle: string } | null>(null);
-  const [showArrowStats, setShowArrowStats] = useState(true); // Toggle visibility of stats display
+  const [arrowCounterEnabled, setArrowCounterEnabled] = useState(true);
   const [currentScale, setCurrentScale] = useState<ScalePreset>("1/4\" = 1'");
   const [arrowStats, setArrowStats] = useState<ArrowCounterStats>({ count: 0, values: [] });
   const [inchesPerSceneUnit, setInchesPerSceneUnit] = useState<number>(getInchesPerSceneUnit(SCALE_PRESETS["1/4\" = 1'"]));
-  const [pxPerStep, setPxPerStep] = useState(0.668); // Calibration state
   const [chatResetTrigger, setChatResetTrigger] = useState(0);
   const mdUp = useMediaQuery("(min-width: 768px)");
   const { currentWorkspaceId } = useWorkspaces();
@@ -201,10 +200,6 @@ export default function RehomeDoubleSidebar() {
   const handleChatActivate = useCallback(() => {
     setActive("chat");
     setChatResetTrigger(prev => prev + 1);
-  }, []);
-
-  const handleCalibration = useCallback(() => {
-    window.dispatchEvent(new Event('trigger-calibration'));
   }, []);
 
   // Fetch user's projects for the current workspace
@@ -373,9 +368,9 @@ export default function RehomeDoubleSidebar() {
                       pageId={selectedWhiteboard.pageId}
                       projectId={userProjects.find((p: any) => p.name === selected?.item)?.id || ''}
                       onApiReady={(api) => {/* Optional: store api reference */}}
+                      arrowCounterEnabled={arrowCounterEnabled}
                       inchesPerSceneUnit={inchesPerSceneUnit}
                       onArrowStatsChange={setArrowStats}
-                      onCalibrationChange={(newInchesPerSceneUnit) => setInchesPerSceneUnit(newInchesPerSceneUnit)}
                     />
                   ) : selectedFile ? (
                     <TeamFileViewer file={selectedFile} />
@@ -427,16 +422,14 @@ export default function RehomeDoubleSidebar() {
                 setSelectedWhiteboard(wb);
                 setSelectedFile(null);
               }}
-              showArrowStats={showArrowStats}
-              onToggleArrowStats={() => setShowArrowStats(!showArrowStats)}
+              arrowCounterEnabled={arrowCounterEnabled}
+              onArrowCounterToggle={() => setArrowCounterEnabled(!arrowCounterEnabled)}
               currentScale={currentScale}
               onScaleChange={(scale) => {
                 setCurrentScale(scale);
                 setInchesPerSceneUnit(getInchesPerSceneUnit(SCALE_PRESETS[scale]));
               }}
               arrowStats={arrowStats}
-              onCalibrate={handleCalibration}
-              inchesPerSceneUnit={inchesPerSceneUnit}
             />
         </div>
       )}

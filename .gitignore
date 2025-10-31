@@ -28,11 +28,7 @@ Cargo.lock
 *.sln
 *.sw?
 
-# Excalidraw fork - OLD/duplicate versions only
+# Excalidraw fork (built from source, not tracked)
 excalidraw-fork/
+excalidraw-fork 2/
 *.lnk
-
-# Keep excalidraw-fork 2/ in git but ignore its node_modules
-excalidraw-fork 2/node_modules/
-excalidraw-fork 2/**/node_modules/
-excalidraw-fork 2/.husky/
