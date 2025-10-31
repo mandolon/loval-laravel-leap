@@ -20,7 +20,12 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     exclude: ["@excalidraw/excalidraw"],
-    include: ["es6-promise-pool", "png-chunks-extract"], // Pre-bundle to fix default export issues
+    include: [
+      "es6-promise-pool",
+      "png-chunks-extract",
+      "png-chunks-encode",
+      "png-chunk-text"
+    ], // Pre-bundle CommonJS packages used by Excalidraw
     entries: ['index.html', 'src/**/*.{ts,tsx,js,jsx}'], // Only scan our source files, not fork
   },
 }));
