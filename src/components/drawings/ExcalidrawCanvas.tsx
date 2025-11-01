@@ -3,6 +3,10 @@ import { Excalidraw } from '@excalidraw/excalidraw';
 import { useDrawingPage, useUpdateDrawingPage } from '@/lib/api/hooks/useDrawings';
 import { handleArrowCounter, resetArrowCounterState, lengthOfArrow, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
 import { logger } from '@/utils/logger';
+import { DrawingLoadingSkeleton } from './DrawingLoadingSkeleton';
+import { useToast } from '@/hooks/use-toast';
+import { Progress } from '@/components/ui/progress';
+import { AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -59,13 +63,83 @@ export default function ExcalidrawCanvas({
   const [calibrateError, setCalibrateError] = useState<string | null>(null);
   const pendingArrowLengthPxRef = useRef<number | null>(null);
   
-  const { data: pageData, isLoading } = useDrawingPage(pageId);
+  // Loading state management
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [showTimeout, setShowTimeout] = useState(false);
+  const loadStartTimeRef = useRef<number>(Date.now());
+  const timeoutTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const { data: pageData, isLoading, error, refetch } = useDrawingPage(pageId);
   const updatePage = useUpdateDrawingPage();
+  const { toast } = useToast();
   
   // Keep ref updated
   useEffect(() => {
     onApiReadyRef.current = onApiReady;
   }, [onApiReady]);
+  
+  // Loading progress simulation and timeout tracking
+  useEffect(() => {
+    if (isLoading) {
+      loadStartTimeRef.current = Date.now();
+      setLoadingProgress(0);
+      setShowTimeout(false);
+      
+      // Simulate progress (faster early, slower later)
+      const interval = setInterval(() => {
+        setLoadingProgress(prev => {
+          if (prev >= 90) return prev; // Stop at 90% until actually loaded
+          const increment = prev < 30 ? 15 : prev < 60 ? 10 : 5;
+          return Math.min(prev + increment, 90);
+        });
+      }, 300);
+      
+      // Set timeout warning after 10 seconds
+      timeoutTimerRef.current = setTimeout(() => {
+        if (isLoading) {
+          setShowTimeout(true);
+          toast({
+            title: "Loading taking longer than expected",
+            description: "Large drawings may take a while to load. Please wait...",
+            variant: "default",
+          });
+        }
+      }, 10000);
+      
+      return () => {
+        clearInterval(interval);
+        if (timeoutTimerRef.current) clearTimeout(timeoutTimerRef.current);
+      };
+    } else if (pageData) {
+      // Complete progress when loaded
+      setLoadingProgress(100);
+      setShowTimeout(false);
+      
+      const loadTime = Date.now() - loadStartTimeRef.current;
+      const dataSizeKB = JSON.stringify(pageData.excalidraw_data).length / 1024;
+      
+      if (dataSizeKB > 2048) {
+        console.log(`Large drawing loaded: ${dataSizeKB.toFixed(0)}KB in ${loadTime}ms`);
+      }
+    }
+  }, [isLoading, pageData, toast]);
+  
+  // Handle errors
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Failed to load drawing",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+        action: (
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Retry
+          </Button>
+        ),
+      });
+    }
+  }, [error, toast, refetch]);
   
   // Reset arrow counter state when switching pages
   useEffect(() => {
@@ -250,10 +324,56 @@ export default function ExcalidrawCanvas({
     setTimeout(forceHighQualityRendering, 500);
   }, []);
   
+  // Loading state with progress indicator
   if (isLoading) {
     return (
-      <div className="h-full flex items-center justify-center text-slate-500">
-        Loading drawing...
+      <div className="h-full w-full relative">
+        <DrawingLoadingSkeleton />
+        
+        {/* Progress overlay */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="bg-background/95 backdrop-blur-sm border rounded-lg p-6 shadow-lg max-w-md w-full mx-4 pointer-events-auto">
+            <div className="flex items-center gap-3 mb-4">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <div className="flex-1">
+                <h3 className="font-semibold">Loading drawing...</h3>
+              </div>
+            </div>
+            
+            <Progress value={loadingProgress} className="mb-2" />
+            
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>{loadingProgress.toFixed(0)}%</span>
+              {showTimeout && (
+                <span className="flex items-center gap-1 text-amber-600">
+                  <AlertCircle className="h-3 w-3" />
+                  Taking longer than usual
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Error state with retry button
+  if (error) {
+    return (
+      <div className="h-full w-full flex items-center justify-center bg-muted/20">
+        <div className="text-center space-y-4 max-w-md mx-4">
+          <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
+          <div>
+            <h3 className="font-semibold text-lg mb-2">Failed to load drawing</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              {error instanceof Error ? error.message : "An unknown error occurred"}
+            </p>
+          </div>
+          <Button onClick={() => refetch()} className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Retry Loading
+          </Button>
+        </div>
       </div>
     );
   }

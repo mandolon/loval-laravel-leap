@@ -30,6 +30,7 @@ import { TeamAvatarMenu } from "./TeamAvatarMenu";
 import ProjectPanel from "./ProjectPanel";
 import TeamFileViewer from "./viewers/TeamFileViewer";
 import ExcalidrawCanvas from '@/components/drawings/ExcalidrawCanvas';
+import { DrawingErrorBoundary } from '@/components/drawings/DrawingErrorBoundary';
 import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
 
 // ----------------------------------
@@ -369,14 +370,22 @@ export default function RehomeDoubleSidebar() {
                 {/* File/Whiteboard Viewer Area */}
                 <div className="flex-1 min-h-0 h-full">
                   {selectedWhiteboard ? (
-                    <ExcalidrawCanvas
-                      pageId={selectedWhiteboard.pageId}
-                      projectId={userProjects.find((p: any) => p.name === selected?.item)?.id || ''}
-                      onApiReady={(api) => {/* Optional: store api reference */}}
-                      inchesPerSceneUnit={inchesPerSceneUnit}
-                      onArrowStatsChange={setArrowStats}
-                      onCalibrationChange={(newInchesPerSceneUnit) => setInchesPerSceneUnit(newInchesPerSceneUnit)}
-                    />
+                    <DrawingErrorBoundary 
+                      onReset={() => {
+                        // Reset whiteboard selection to force reload
+                        setSelectedWhiteboard(null);
+                        setTimeout(() => setSelectedWhiteboard(selectedWhiteboard), 100);
+                      }}
+                    >
+                      <ExcalidrawCanvas
+                        pageId={selectedWhiteboard.pageId}
+                        projectId={userProjects.find((p: any) => p.name === selected?.item)?.id || ''}
+                        onApiReady={(api) => {/* Optional: store api reference */}}
+                        inchesPerSceneUnit={inchesPerSceneUnit}
+                        onArrowStatsChange={setArrowStats}
+                        onCalibrationChange={(newInchesPerSceneUnit) => setInchesPerSceneUnit(newInchesPerSceneUnit)}
+                      />
+                    </DrawingErrorBoundary>
                   ) : selectedFile ? (
                     <TeamFileViewer file={selectedFile} />
                   ) : (

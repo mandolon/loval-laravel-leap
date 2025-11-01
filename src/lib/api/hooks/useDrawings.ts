@@ -65,7 +65,7 @@ export function useDrawingVersions(projectId: string) {
   });
 }
 
-// 2. Fetch single page with full data
+// 2. Fetch single page with full data (with retry logic)
 export function useDrawingPage(pageId: string) {
   return useQuery({
     queryKey: drawingKeys.page(pageId),
@@ -84,6 +84,9 @@ export function useDrawingPage(pageId: string) {
       return data;
     },
     enabled: !!pageId,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff: 1s, 2s, 4s (max 30s)
+    staleTime: 5000,
   });
 }
 
