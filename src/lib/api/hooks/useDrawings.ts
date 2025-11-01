@@ -18,9 +18,17 @@ export interface DrawingVersion {
   short_id: string;
   version_number: string;
   name: string;
-  drawing_pages: DrawingPage[];
+  drawing_pages: DrawingPageMetadata[];
   created_at: string;
   updated_at: string;
+}
+
+export interface DrawingPageMetadata {
+  id: string;
+  short_id: string;
+  name: string;
+  page_number: number;
+  thumbnail_storage_path?: string;
 }
 
 export interface DrawingPage {
@@ -41,7 +49,7 @@ export interface DrawingScale {
   is_active: boolean;
 }
 
-// 1. Fetch all drawing versions for a project
+// 1. Fetch all drawing versions for a project (METADATA ONLY - no heavy JSONB data)
 export function useDrawingVersions(projectId: string) {
   return useQuery({
     queryKey: drawingKeys.list(projectId),
@@ -49,19 +57,29 @@ export function useDrawingVersions(projectId: string) {
       const { data, error } = await supabase
         .from('drawings')
         .select(`
-          *,
-          drawing_pages (
-            *,
-            drawing_scales (*)
+          id,
+          short_id,
+          version_number,
+          name,
+          created_at,
+          updated_at,
+          drawing_pages!inner (
+            id,
+            short_id,
+            name,
+            page_number,
+            thumbnail_storage_path
           )
         `)
         .eq('project_id', projectId)
         .is('deleted_at', null)
-        .order('version_number', { ascending: false });
+        .order('version_number', { ascending: false })
+        .order('drawing_pages(page_number)', { ascending: true });
       
       if (error) throw error;
       return (data || []) as DrawingVersion[];
     },
+    staleTime: 30000, // Cache for 30s since this is just metadata
   });
 }
 
