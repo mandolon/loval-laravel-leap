@@ -63,7 +63,7 @@ export function useDrawingVersions(projectId: string) {
           name,
           created_at,
           updated_at,
-          drawing_pages!inner (
+          drawing_pages (
             id,
             short_id,
             name,
@@ -73,11 +73,17 @@ export function useDrawingVersions(projectId: string) {
         `)
         .eq('project_id', projectId)
         .is('deleted_at', null)
-        .order('version_number', { ascending: false })
-        .order('drawing_pages(page_number)', { ascending: true });
+        .order('version_number', { ascending: false });
       
       if (error) throw error;
-      return (data || []) as DrawingVersion[];
+      
+      // Sort pages client-side by page_number
+      const sortedData = (data || []).map(drawing => ({
+        ...drawing,
+        drawing_pages: (drawing.drawing_pages || []).sort((a, b) => a.page_number - b.page_number)
+      }));
+      
+      return sortedData as DrawingVersion[];
     },
     staleTime: 30000, // Cache for 30s since this is just metadata
   });
