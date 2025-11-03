@@ -6,7 +6,7 @@ import React, {
   useMemo,
   memo,
 } from "react";
-import { useNavigate, Outlet } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Home,
   FolderKanban,
@@ -185,7 +185,7 @@ const ITEMS_CONFIG = {
 // ----------------------------------
 // Root App
 // ----------------------------------
-export default function RehomeDoubleSidebar() {
+export default function RehomeDoubleSidebar({ children }: { children?: React.ReactNode }) {
   const [active, setActive] = useState("tasks");
   const [openTab, setOpenTab] = useState<string | null>(null);
   const [selected, setSelected] = useState<{ tab: string; item: string } | null>(null);
@@ -430,7 +430,7 @@ export default function RehomeDoubleSidebar() {
             ) : active === "home" ? (
               <HomeView />
             ) : active === "settings" ? (
-              <Outlet />
+              children
             ) : null}
           </div>
         </div>
