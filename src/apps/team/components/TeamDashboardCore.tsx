@@ -13,6 +13,7 @@ import {
   Bot,
   Book,
   MessageSquare,
+  Settings,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -112,6 +113,7 @@ const ICON_MAP = {
   ai: Bot,
   chat: MessageSquare,
   details: Book,
+  settings: Settings,
 };
 
 const TITLES = {
@@ -121,6 +123,7 @@ const TITLES = {
   ai: "AI",
   chat: "Chat",
   details: "Detail Library",
+  settings: "Settings",
 };
 
 const DETAIL_CATEGORIES = [
@@ -330,7 +333,22 @@ export default function RehomeDoubleSidebar() {
           onActivate={() => setActive("details")}
         />
 
-        <div className="mt-auto mb-2 h-px w-8 bg-white/10" />
+        <div className="mt-auto w-full flex flex-col items-center">
+          <div className="mb-2 h-px w-8 bg-white/10" />
+          <RailItem
+            tabKey="settings"
+            label={TITLES.settings}
+            icon={ICON_MAP.settings}
+            active={active === "settings"}
+            items={[]}
+            openTab={openTab}
+            setOpenTab={setOpenTab}
+            selected={selected}
+            setSelected={setSelected}
+            onActivate={() => setActive("settings")}
+            menuEnabled={false}
+          />
+        </div>
       </aside>
 
       {/* Content frame */}
