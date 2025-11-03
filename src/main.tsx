@@ -1,7 +1,11 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
-import "@excalidraw/excalidraw/index.css";
+
+// Dynamically import Excalidraw CSS - respects Vite alias configuration
+// In Lovable: resolves to npm package CSS (no fork aliases)
+// In local dev: resolves to fork CSS (fork aliases active)
+import("@excalidraw/excalidraw/index.css");
 
 // Disable MSW in Tauri desktop production builds
 const isTauri = typeof window !== 'undefined' && '__TAURI__' in window;
