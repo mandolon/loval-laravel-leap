@@ -6,10 +6,11 @@ import fs from "fs";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  // Auto-detect if fork exists (local dev) or not (Lovable build)
-  // Check for the main entry point file to ensure fork is properly set up
+  // Auto-detect if fork exists AND is built (local dev) or not (Lovable build)
+  // Check for both entry point and built CSS to ensure fork is fully ready
   const forkEntryPath = path.resolve(__dirname, "./excalidraw-fork 2/packages/excalidraw/index.tsx");
-  const hasFork = fs.existsSync(forkEntryPath);
+  const forkCSSPath = path.resolve(__dirname, "./excalidraw-fork 2/packages/excalidraw/dist/prod/index.css");
+  const hasFork = fs.existsSync(forkEntryPath) && fs.existsSync(forkCSSPath);
   
   // Base aliases (always applied)
   const alias: any[] = [
