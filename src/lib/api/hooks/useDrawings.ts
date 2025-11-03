@@ -68,7 +68,8 @@ export function useDrawingVersions(projectId: string) {
             short_id,
             name,
             page_number,
-            thumbnail_storage_path
+            thumbnail_storage_path,
+            deleted_at
           )
         `)
         .eq('project_id', projectId)
@@ -77,10 +78,12 @@ export function useDrawingVersions(projectId: string) {
       
       if (error) throw error;
       
-      // Sort pages client-side by page_number
+      // Sort pages client-side by page_number and filter out deleted pages
       const sortedData = (data || []).map(drawing => ({
         ...drawing,
-        drawing_pages: (drawing.drawing_pages || []).sort((a, b) => a.page_number - b.page_number)
+        drawing_pages: (drawing.drawing_pages || [])
+          .filter((page: any) => !page.deleted_at)
+          .sort((a, b) => a.page_number - b.page_number)
       }));
       
       return sortedData as DrawingVersion[];
@@ -102,6 +105,7 @@ export function useDrawingPage(pageId: string) {
           drawings (*)
         `)
         .eq('id', pageId)
+        .is('deleted_at', null)
         .single();
       
       if (error) throw error;
@@ -320,7 +324,7 @@ export function useCreateDrawingPage() {
   });
 }
 
-// 8. Delete drawing version
+// 8. Delete drawing version (soft delete)
 export function useDeleteDrawingVersion() {
   const queryClient = useQueryClient();
   
@@ -332,16 +336,22 @@ export function useDeleteDrawingVersion() {
       drawingId: string;
       projectId: string;
     }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+      
       const { error } = await supabase
         .from('drawings')
-        .delete()
+        .update({ 
+          deleted_at: new Date().toISOString(),
+          deleted_by: user.id 
+        })
         .eq('id', drawingId);
       
       if (error) throw error;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: drawingKeys.list(variables.projectId) });
-      toast.success('Version deleted');
+      toast.success('Version moved to trash');
     },
     onError: (error: any) => {
       toast.error(`Failed to delete version: ${error.message}`);
@@ -349,7 +359,7 @@ export function useDeleteDrawingVersion() {
   });
 }
 
-// 9. Delete drawing page
+// 9. Delete drawing page (soft delete)
 export function useDeleteDrawingPage() {
   const queryClient = useQueryClient();
   
@@ -361,16 +371,22 @@ export function useDeleteDrawingPage() {
       pageId: string;
       projectId: string;
     }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+      
       const { error } = await supabase
         .from('drawing_pages')
-        .delete()
+        .update({ 
+          deleted_at: new Date().toISOString(),
+          deleted_by: user.id 
+        })
         .eq('id', pageId);
       
       if (error) throw error;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: drawingKeys.list(variables.projectId) });
-      toast.success('Page deleted');
+      toast.success('Page moved to trash');
     },
     onError: (error: any) => {
       toast.error(`Failed to delete page: ${error.message}`);

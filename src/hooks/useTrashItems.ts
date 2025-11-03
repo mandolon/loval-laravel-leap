@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-export type TrashItemType = 'project' | 'ai_chat_thread' | 'task' | 'file' | 'folder' | 'note' | 'link' | 'drawing';
+export type TrashItemType = 'project' | 'ai_chat_thread' | 'task' | 'file' | 'folder' | 'note' | 'link' | 'drawing' | 'drawing_page';
 
 export type TrashItem = {
   id: string;
@@ -27,6 +27,7 @@ const getTableName = (type: TrashItemType): string => {
     note: 'notes',
     link: 'links',
     drawing: 'drawings',
+    drawing_page: 'drawing_pages',
   };
   return tableMap[type];
 };
@@ -44,6 +45,7 @@ const getTypeLabel = (type: TrashItemType, status?: string): string => {
     note: 'Note',
     link: 'Link',
     drawing: 'Drawing',
+    drawing_page: 'Drawing Page',
   };
   return labelMap[type];
 };
@@ -232,6 +234,35 @@ export const useTrashItems = (workspaceId: string | undefined) => {
             deleted_at: d.deleted_at!,
             deleted_by_name: (d.users as any)?.name || 'Unknown',
             project_id: d.project_id,
+          }))
+        );
+      }
+
+      // Fetch deleted drawing pages
+      const { data: drawingPages } = await supabase
+        .from('drawing_pages')
+        .select('id, short_id, name, drawing_id, deleted_at, deleted_by, users!drawing_pages_deleted_by_fkey(name), drawings(name, project_id, projects(name))')
+        .not('deleted_at', 'is', null)
+        .order('deleted_at', { ascending: false });
+
+      if (drawingPages) {
+        const workspaceProjectIds = projects?.map(p => p.id) || [];
+        const filteredPages = drawingPages.filter(dp => {
+          const projectId = (dp.drawings as any)?.project_id;
+          return projectId && workspaceProjectIds.includes(projectId);
+        });
+        
+        items.push(
+          ...filteredPages.map((dp) => ({
+            id: dp.id,
+            short_id: dp.short_id,
+            name: `${dp.name} (${(dp.drawings as any)?.name || 'Unknown Drawing'})`,
+            type: 'drawing_page' as const,
+            typeLabel: getTypeLabel('drawing_page'),
+            location: (dp.drawings as any)?.projects?.name || '—',
+            deleted_at: dp.deleted_at!,
+            deleted_by_name: (dp.users as any)?.name || 'Unknown',
+            project_id: (dp.drawings as any)?.project_id,
           }))
         );
       }

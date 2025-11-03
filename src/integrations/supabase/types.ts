@@ -401,6 +401,8 @@ export type Database = {
         Row: {
           background_image_path: string | null
           created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           drawing_id: string
           excalidraw_data: Json
           id: string
@@ -414,6 +416,8 @@ export type Database = {
         Insert: {
           background_image_path?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           drawing_id: string
           excalidraw_data?: Json
           id?: string
@@ -427,6 +431,8 @@ export type Database = {
         Update: {
           background_image_path?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           drawing_id?: string
           excalidraw_data?: Json
           id?: string
@@ -438,6 +444,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "drawing_pages_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "drawing_pages_drawing_id_fkey"
             columns: ["drawing_id"]
