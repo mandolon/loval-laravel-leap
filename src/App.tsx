@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { UserProvider, useUser } from "./contexts/UserContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { NewAppLayout } from "./components/layout/NewAppLayout";
@@ -30,6 +31,7 @@ const queryClient = new QueryClient();
 function AppRouter() {
   const { user, loading, loggingOut } = useUser();
   const location = useLocation();
+  const [routingReady, setRoutingReady] = useState(false);
   
   // Extract workspace ID from URL path
   const workspaceIdMatch = location.pathname.match(/^\/workspace\/([^/]+)/);
@@ -37,7 +39,19 @@ function AppRouter() {
   
   const { role, loading: roleLoading } = useWorkspaceRole(workspaceId);
   
-  if (loading || roleLoading) {
+  // Wait for routing decision to be finalized before showing content
+  useEffect(() => {
+    if (!loading && !roleLoading && !loggingOut) {
+      // Use setTimeout to ensure React commits to the new route before hiding spinner
+      setTimeout(() => {
+        setRoutingReady(true);
+      }, 0);
+    } else {
+      setRoutingReady(false);
+    }
+  }, [loading, roleLoading, loggingOut, role, user]);
+  
+  if (loading || roleLoading || !routingReady) {
     return <LoadingSpinner message="Loading your workspace..." />;
   }
 
