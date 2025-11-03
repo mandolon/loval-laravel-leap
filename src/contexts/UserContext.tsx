@@ -126,10 +126,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // Clear local state immediately for instant UI feedback
     setUser(null);
     setSession(null);
     navigate('/auth');
+    
+    // Clean up session in the background
+    supabase.auth.signOut().catch(err => {
+      console.error('Error during sign out:', err);
+    });
   };
 
   return (
