@@ -1,68 +1,44 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Search as SearchIcon, Filter, Trash2 } from 'lucide-react';
+import { format } from 'date-fns';
 import { SETTINGS_CONSTANTS } from '../../lib/settings-constants';
-
-type ProjectRow = {
-  id: string;
-  name: string;
-  status: 'pending' | 'active' | 'completed' | 'archived';
-  deletedOn: string;
-  deletedBy: string;
-};
-
-type ThreadRow = {
-  id: string;
-  title: string;
-  deletedOn: string;
-};
+import { useTrashItems } from '@/hooks/useTrashItems';
+import { useWorkspaces } from '@/hooks/useWorkspaces';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import type { TrashItem } from '@/hooks/useTrashItems';
 
 export function TrashContent() {
-  const [projects, setProjects] = useState<ProjectRow[]>([
-    { id: 'p1', name: 'Echo Summit Cabin', status: 'active', deletedOn: 'Oct 31, 2025', deletedBy: 'Armando' },
-    { id: 'p2', name: '1919 25th St ADU', status: 'pending', deletedOn: 'Oct 29, 2025', deletedBy: 'Matthew' },
-  ]);
+  const { currentWorkspace } = useWorkspaces();
+  const { items, isLoading, restore, deleteForever, isRestoring, isDeleting } = useTrashItems(currentWorkspace?.id);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [itemToDelete, setItemToDelete] = useState<TrashItem | null>(null);
 
-  const [threads, setThreads] = useState<ThreadRow[]>([
-    { id: 't1', title: 'Window schedule discussion', deletedOn: 'Oct 30, 2025' },
-    { id: 't2', title: 'Permit checklist Q&A', deletedOn: 'Oct 28, 2025' },
-  ]);
+  const filteredRows = useMemo(() => {
+    if (!searchQuery) return items;
+    const query = searchQuery.toLowerCase();
+    return items.filter(item => 
+      item.name.toLowerCase().includes(query) ||
+      item.typeLabel.toLowerCase().includes(query) ||
+      item.location.toLowerCase().includes(query)
+    );
+  }, [items, searchQuery]);
 
-  const restoreProject = useCallback((id: string) => {
-    setProjects(list => list.filter(p => p.id !== id));
-  }, []);
-
-  const restoreThread = useCallback((id: string) => {
-    setThreads(list => list.filter(t => t.id !== id));
-  }, []);
-
-  const deleteForever = useCallback((kind: 'project' | 'thread', id: string) => {
-    if (kind === 'project') {
-      setProjects(list => list.filter(p => p.id !== id));
-    } else {
-      setThreads(list => list.filter(t => t.id !== id));
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), 'MMM d, yyyy');
+    } catch {
+      return dateString;
     }
-  }, []);
-
-  const rows = useMemo(() => [
-    ...projects.map(p => ({
-      id: p.id,
-      name: p.name,
-      type: `Project (${p.status})`,
-      location: '—',
-      deletedOn: p.deletedOn,
-      deletedBy: p.deletedBy,
-      kind: 'project' as const,
-    })),
-    ...threads.map(t => ({
-      id: t.id,
-      name: t.title,
-      type: 'AI Chat',
-      location: '—',
-      deletedOn: t.deletedOn,
-      deletedBy: '—',
-      kind: 'thread' as const,
-    })),
-  ], [projects, threads]);
+  };
 
   return (
     <div className="p-4 md:p-6 space-y-4 text-[var(--muted)]" data-testid="trash-content">
@@ -80,6 +56,8 @@ export function TrashContent() {
         <div className="relative flex-1">
           <input
             placeholder="Search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full h-9 rounded-md border border-slate-300 pl-8 pr-2 text-sm"
           />
           <SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--muted)]" />
@@ -106,10 +84,12 @@ export function TrashContent() {
         </div>
 
         {/* Table Rows */}
-        {rows.length ? (
-          rows.map((row, i) => (
+        {isLoading ? (
+          <div className="px-3 py-6 text-sm text-[var(--muted)] text-center">Loading deleted items...</div>
+        ) : filteredRows.length ? (
+          filteredRows.map((row, i) => (
             <div
-              key={`${row.kind}:${row.id}`}
+              key={`${row.type}:${row.id}`}
               data-testid={i === 0 ? 'trash-row' : undefined}
               className={`items-center gap-2 px-3 h-11 text-[13px] text-[var(--text)] grid ${
                 i ? 'border-t border-slate-200' : ''
@@ -117,18 +97,17 @@ export function TrashContent() {
               style={{ gridTemplateColumns: SETTINGS_CONSTANTS.TRASH_COLS }}
             >
               <div className="truncate">{row.name}</div>
-              <div className="truncate">{row.type}</div>
+              <div className="truncate">{row.typeLabel}</div>
               <div className="truncate">{row.location}</div>
-              <div>{row.deletedOn}</div>
-              <div>{row.deletedBy}</div>
+              <div>{formatDate(row.deleted_at)}</div>
+              <div>{row.deleted_by_name}</div>
               <div className="flex items-center gap-2">
                 {/* Restore Button */}
                 <button
-                  onClick={() =>
-                    row.kind === 'project' ? restoreProject(row.id) : restoreThread(row.id)
-                  }
+                  onClick={() => restore(row)}
+                  disabled={isRestoring || isDeleting}
                   aria-label="Restore"
-                  className="h-7 w-7 grid place-items-center rounded-md bg-white hover:bg-slate-50"
+                  className="h-7 w-7 grid place-items-center rounded-md bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -145,9 +124,10 @@ export function TrashContent() {
 
                 {/* Delete Forever Button */}
                 <button
-                  onClick={() => deleteForever(row.kind, row.id)}
+                  onClick={() => setItemToDelete(row)}
+                  disabled={isRestoring || isDeleting}
                   aria-label="Delete forever"
-                  className="h-7 w-7 grid place-items-center rounded-md bg-red-500 hover:bg-red-600 text-white"
+                  className="h-7 w-7 grid place-items-center rounded-md bg-red-500 hover:bg-red-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -155,9 +135,37 @@ export function TrashContent() {
             </div>
           ))
         ) : (
-          <div className="px-3 py-6 text-sm text-[var(--muted)]">No deleted items.</div>
+          <div className="px-3 py-6 text-sm text-[var(--muted)]">
+            {searchQuery ? 'No items match your search.' : 'No deleted items.'}
+          </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!itemToDelete} onOpenChange={() => setItemToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete permanently?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to permanently delete "{itemToDelete?.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (itemToDelete) {
+                  deleteForever(itemToDelete);
+                  setItemToDelete(null);
+                }
+              }}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Delete Forever
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
