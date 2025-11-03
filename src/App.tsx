@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { UserProvider, useUser } from "./contexts/UserContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { NewAppLayout } from "./components/layout/NewAppLayout";
@@ -410,11 +410,11 @@ const App = () => (
         <Toaster />
         <Sonner />
         <UpdateChecker />
-        <BrowserRouter>
-          <UserProvider>
-            <AppRouter />
-          </UserProvider>
-        </BrowserRouter>
+      <HashRouter>
+        <UserProvider>
+          <AppRouter />
+        </UserProvider>
+      </HashRouter>
       </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>
