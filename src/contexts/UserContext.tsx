@@ -20,6 +20,7 @@ interface UserContextType {
   user: UserProfile | null;
   session: Session | null;
   loading: boolean;
+  loggingOut: boolean;
   updateUser: (updates: Partial<UserProfile>) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -30,12 +31,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loggingOut, setLoggingOut] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
+        // Ignore auth state changes during logout to prevent flashing
+        if (loggingOut) return;
+        
         setSession(session);
         if (session?.user) {
           setTimeout(() => {
@@ -59,7 +64,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [loggingOut]);
 
   const loadUserProfile = async (authUser: AuthUser) => {
     try {
@@ -126,19 +131,28 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    // Clear local state immediately for instant UI feedback
-    setUser(null);
-    setSession(null);
-    navigate('/auth');
-    
-    // Clean up session in the background
-    supabase.auth.signOut().catch(err => {
+    try {
+      // Set logging out flag to prevent state changes during logout
+      setLoggingOut(true);
+      
+      // Clear local state
+      setUser(null);
+      setSession(null);
+      
+      // Actually sign out from Supabase
+      await supabase.auth.signOut();
+      
+      // Navigate to auth page
+      navigate('/auth');
+    } catch (err) {
       console.error('Error during sign out:', err);
-    });
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   return (
-    <UserContext.Provider value={{ user, session, loading, updateUser, signOut }}>
+    <UserContext.Provider value={{ user, session, loading, loggingOut, updateUser, signOut }}>
       {children}
     </UserContext.Provider>
   );

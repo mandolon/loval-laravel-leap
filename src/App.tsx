@@ -28,7 +28,7 @@ import NoWorkspacePage from "./pages/NoWorkspacePage";
 const queryClient = new QueryClient();
 
 function AppRouter() {
-  const { user, loading } = useUser();
+  const { user, loading, loggingOut } = useUser();
   const location = useLocation();
   
   // Extract workspace ID from URL path
@@ -39,6 +39,11 @@ function AppRouter() {
   
   if (loading || roleLoading) {
     return <LoadingSpinner message="Loading your workspace..." />;
+  }
+
+  // During logout, show nothing to prevent flashing
+  if (loggingOut) {
+    return null;
   }
   
   // Team users get the new team dashboard (check this FIRST to prevent admin flash)
