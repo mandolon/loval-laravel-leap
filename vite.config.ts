@@ -2,12 +2,14 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
+import fs from "fs";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  // Detect if running in Lovable environment
-  // Lovable sets this automatically, or you can set VITE_LOVABLE=true in Lovable
-  const isLovable = process.env.VITE_LOVABLE === 'true' || process.env.LOVABLE === 'true';
+  // Auto-detect if fork exists (local dev) or not (Lovable build)
+  // Check for the main entry point file to ensure fork is properly set up
+  const forkEntryPath = path.resolve(__dirname, "./excalidraw-fork 2/packages/excalidraw/index.tsx");
+  const hasFork = fs.existsSync(forkEntryPath);
   
   // Base aliases (always applied)
   const alias: any[] = [
@@ -38,8 +40,8 @@ export default defineConfig(({ mode }) => {
     },
   ];
   
-  // Only add fork aliases when NOT in Lovable (use npm package in Lovable)
-  if (!isLovable) {
+  // Only add fork aliases when fork exists (local dev)
+  if (hasFork) {
     alias.push(
       // Use excalidraw-fork-2 packages instead of npm packages
       {
@@ -99,9 +101,9 @@ export default defineConfig(({ mode }) => {
       alias,
     },
     optimizeDeps: {
-      // Only exclude Excalidraw when using fork (not in Lovable)
-      // In Lovable, use the npm package which is pre-bundled correctly
-      exclude: isLovable ? [] : ["@excalidraw/excalidraw"],
+      // Only exclude Excalidraw when using fork (local dev)
+      // When fork doesn't exist (Lovable), use the npm package which is pre-bundled correctly
+      exclude: hasFork ? ["@excalidraw/excalidraw"] : [],
       // Include CommonJS dependencies that Excalidraw uses - these need pre-bundling
       include: [
         "es6-promise-pool",
