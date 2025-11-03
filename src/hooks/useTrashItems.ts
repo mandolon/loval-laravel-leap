@@ -64,7 +64,7 @@ export const useTrashItems = (workspaceId: string | undefined) => {
       // Fetch ALL projects in workspace (both deleted and active) for filtering
       const { data: allProjects } = await supabase
         .from('projects')
-        .select('id, short_id, name, status, deleted_at, deleted_by, users!projects_deleted_by_fkey(name)')
+        .select('id, short_id, name, status, deleted_at, deleted_by, users!projects_new_deleted_by_fkey(name)')
         .eq('workspace_id', workspaceId)
         .order('deleted_at', { ascending: false });
 
@@ -114,7 +114,7 @@ export const useTrashItems = (workspaceId: string | undefined) => {
       // Fetch deleted tasks (with project names)
       const { data: tasks } = await supabase
         .from('tasks')
-        .select('id, short_id, title, project_id, deleted_at, deleted_by, users!tasks_deleted_by_fkey(name), projects(name)')
+        .select('id, short_id, title, project_id, deleted_at, deleted_by, users!tasks_new_deleted_by_fkey(name), projects(name)')
         .not('deleted_at', 'is', null)
         .order('deleted_at', { ascending: false });
 
