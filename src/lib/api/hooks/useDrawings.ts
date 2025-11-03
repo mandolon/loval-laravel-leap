@@ -319,3 +319,61 @@ export function useCreateDrawingPage() {
     },
   });
 }
+
+// 8. Delete drawing version
+export function useDeleteDrawingVersion() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ 
+      drawingId,
+      projectId 
+    }: { 
+      drawingId: string;
+      projectId: string;
+    }) => {
+      const { error } = await supabase
+        .from('drawings')
+        .delete()
+        .eq('id', drawingId);
+      
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: drawingKeys.list(variables.projectId) });
+      toast.success('Version deleted');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to delete version: ${error.message}`);
+    },
+  });
+}
+
+// 9. Delete drawing page
+export function useDeleteDrawingPage() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ 
+      pageId,
+      projectId 
+    }: { 
+      pageId: string;
+      projectId: string;
+    }) => {
+      const { error } = await supabase
+        .from('drawing_pages')
+        .delete()
+        .eq('id', pageId);
+      
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: drawingKeys.list(variables.projectId) });
+      toast.success('Page deleted');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to delete page: ${error.message}`);
+    },
+  });
+}

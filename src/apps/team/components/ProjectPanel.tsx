@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef, forwardRef } from "react";
 import { Search, FolderClosed, BookOpen, MoreVertical } from "lucide-react";
 import { useProjectFolders, useProjectFiles } from '@/lib/api/hooks/useProjectFiles';
-import { useDrawingVersions, useUpdateDrawingScale, useCreateDrawingPage } from '@/lib/api/hooks/useDrawings';
+import { useDrawingVersions, useUpdateDrawingScale, useCreateDrawingPage, useDeleteDrawingVersion, useDeleteDrawingPage } from '@/lib/api/hooks/useDrawings';
 import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
 
 /**
@@ -351,6 +351,8 @@ export default function ProjectPanel({
   const { data: drawingVersions, isLoading: wbLoading, error: wbError } = useDrawingVersions(projectId);
   const updateDrawingScale = useUpdateDrawingScale();
   const createDrawingPage = useCreateDrawingPage();
+  const deleteDrawingVersion = useDeleteDrawingVersion();
+  const deleteDrawingPage = useDeleteDrawingPage();
   
   // Transform to UI format
   const wbSections = useMemo(() => 
@@ -908,7 +910,34 @@ export default function ProjectPanel({
                 <button
                   className="block w-full px-3 py-1.5 text-left text-[11px] text-red-600 hover:bg-red-50 border-t border-slate-100"
                   onClick={() => {
-                    // TODO: Implement delete with API mutation
+                    if (!wbMenu.target) return;
+                    
+                    if (wbMenu.target.type === "item") {
+                      // Delete drawing page
+                      deleteDrawingPage.mutate({
+                        pageId: wbMenu.target.id,
+                        projectId
+                      });
+                      
+                      // Clear selection if deleting currently selected page
+                      if (wbSelectedId === wbMenu.target.id) {
+                        setWbSelectedId(null);
+                        setSelectedWB(null);
+                      }
+                    } else if (wbMenu.target.type === "section") {
+                      // Delete drawing version
+                      deleteDrawingVersion.mutate({
+                        drawingId: wbMenu.target.list,
+                        projectId
+                      });
+                      
+                      // Clear selection if deleting version containing selected page
+                      if (selectedWB?.versionId === wbMenu.target.list) {
+                        setWbSelectedId(null);
+                        setSelectedWB(null);
+                      }
+                    }
+                    
                     setWbMenu((m: any) => ({ ...m, show: false }));
                   }}
                 >
