@@ -9,6 +9,7 @@ import { NewAppLayout } from "./components/layout/NewAppLayout";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { UpdateChecker } from "./components/UpdateChecker";
 import { useWorkspaceRole } from "./hooks/useWorkspaceRole";
+import { LoadingSpinner } from "./components/LoadingSpinner";
 import TeamApp from "./apps/team/TeamApp";
 import HomePage from "./pages/HomePage";
 import ProjectsPage from "./pages/Index";
@@ -36,11 +37,17 @@ function AppRouter() {
   
   const { role, loading: roleLoading } = useWorkspaceRole(workspaceId);
   
+  // Show loading state until BOTH user and role are loaded
   if (loading || roleLoading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return <LoadingSpinner message="Loading your workspace..." />;
   }
   
-  // Admins always use the standard admin dashboard
+  // Priority: role-based routing over admin status to prevent flash
+  if (role === 'team') {
+    return <TeamApp />;
+  }
+  
+  // Admins use the standard admin dashboard
   if (user?.is_admin) {
     return (
       <Routes>
@@ -219,11 +226,6 @@ function AppRouter() {
             <Route path="*" element={<NotFound />} />
       </Routes>
     );
-  }
-  
-  // Team users get the new team dashboard
-  if (role === 'team') {
-    return <TeamApp />;
   }
   
   // Default routes for consultants, clients, and others

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "@/contexts/UserContext";
+import { LoadingSpinner } from "./LoadingSpinner";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useUser();
@@ -13,11 +14,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }, [session, loading, navigate]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   if (!session) {
