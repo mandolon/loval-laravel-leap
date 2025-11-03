@@ -6,6 +6,7 @@ import React, {
   useMemo,
   memo,
 } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Home,
   FolderKanban,
@@ -201,6 +202,7 @@ export default function RehomeDoubleSidebar() {
   const mdUp = useMediaQuery("(min-width: 768px)");
   const { currentWorkspaceId } = useWorkspaces();
   const { user } = useUser();
+  const navigate = useNavigate();
 
   const handleChatActivate = useCallback(() => {
     setActive("chat");
@@ -345,7 +347,10 @@ export default function RehomeDoubleSidebar() {
             setOpenTab={setOpenTab}
             selected={selected}
             setSelected={setSelected}
-            onActivate={() => setActive("settings")}
+            onActivate={() => {
+              setActive("settings");
+              navigate(`/workspace/${currentWorkspaceId}/settings`);
+            }}
             menuEnabled={false}
           />
         </div>
