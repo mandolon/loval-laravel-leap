@@ -373,13 +373,15 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
         }}
       >
         <div className="h-full overflow-hidden flex flex-col">
-          <PageHeader 
-            tabKey={active} 
-            title={TITLES[active as keyof typeof TITLES] || active}
-            selected={selected}
-            projectPanelCollapsed={projectPanelCollapsed}
-            onToggleProjectPanel={() => setProjectPanelCollapsed(!projectPanelCollapsed)}
-          />
+          {active !== "settings" && (
+            <PageHeader 
+              tabKey={active} 
+              title={TITLES[active as keyof typeof TITLES] || active}
+              selected={selected}
+              projectPanelCollapsed={projectPanelCollapsed}
+              onToggleProjectPanel={() => setProjectPanelCollapsed(!projectPanelCollapsed)}
+            />
+          )}
 
           <div
             className={
