@@ -252,11 +252,19 @@ export default function ExcalidrawCanvas({
   // Ensure collaborators is always a Map - memoized to prevent infinite re-renders
   const mergedAppState = useMemo(() => {
     const savedAppState = excalidrawData?.appState || {};
-    return {
+    const sanitizedAppState = {
       ...defaultAppState,
       ...savedAppState,
       collaborators: new Map(), // Always use a fresh Map
     };
+    
+    // Sanitize searchMatches: ensure it's either null or has a valid matches array
+    if (sanitizedAppState.searchMatches && 
+        (!sanitizedAppState.searchMatches.matches || !Array.isArray(sanitizedAppState.searchMatches.matches))) {
+      sanitizedAppState.searchMatches = null;
+    }
+    
+    return sanitizedAppState;
   }, [excalidrawData, defaultAppState]);
   
   // Memoize initialData to prevent new object references on every render

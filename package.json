@@ -9,8 +9,7 @@
     "build:dev": "vite build --mode development",
     "build:desktop": "vite build --mode production",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "postinstall": "patch-package"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.3",
