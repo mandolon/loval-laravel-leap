@@ -6,7 +6,7 @@ import React, {
   useMemo,
   memo,
 } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Outlet } from "react-router-dom";
 import {
   Home,
   FolderKanban,
@@ -429,6 +429,8 @@ export default function RehomeDoubleSidebar() {
               <ChatView resetTrigger={chatResetTrigger} />
             ) : active === "home" ? (
               <HomeView />
+            ) : active === "settings" ? (
+              <Outlet />
             ) : null}
           </div>
         </div>
