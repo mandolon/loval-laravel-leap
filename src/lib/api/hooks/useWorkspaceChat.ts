@@ -235,18 +235,13 @@ export function useDeleteWorkspaceMessage() {
 
   return useMutation({
     mutationFn: async (data: { id: string; workspace_id: string }) => {
-      const { data: result, error } = await supabase
+      const { error } = await supabase
         .from('workspace_chat_messages')
-        .update({
-          deleted_at: new Date().toISOString(),
-          deleted_by: (await supabase.auth.getUser()).data.user?.id,
-        })
-        .eq('id', data.id)
-        .select()
-        .single();
+        .delete()
+        .eq('id', data.id);
 
       if (error) throw error;
-      return result;
+      return data.workspace_id;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ 

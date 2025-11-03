@@ -172,10 +172,7 @@ export const useDeleteMessage = () => {
     mutationFn: async ({ id, projectId }: { id: string; projectId: string }) => {
       const { error } = await supabase
         .from('project_chat_messages')
-        .update({
-          deleted_at: new Date().toISOString(),
-          deleted_by: user?.id,
-        })
+        .delete()
         .eq('id', id)
       
       if (error) throw error
