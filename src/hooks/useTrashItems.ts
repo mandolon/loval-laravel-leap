@@ -61,17 +61,20 @@ export const useTrashItems = (workspaceId: string | undefined) => {
 
       const items: TrashItem[] = [];
 
-      // Fetch deleted projects
-      const { data: projects } = await supabase
+      // Fetch ALL projects in workspace (both deleted and active) for filtering
+      const { data: allProjects } = await supabase
         .from('projects')
         .select('id, short_id, name, status, deleted_at, deleted_by, users!projects_deleted_by_fkey(name)')
         .eq('workspace_id', workspaceId)
-        .not('deleted_at', 'is', null)
         .order('deleted_at', { ascending: false });
 
-      if (projects) {
+      // Separate deleted projects for display vs all project IDs for filtering
+      const deletedProjects = allProjects?.filter(p => p.deleted_at !== null) || [];
+      const workspaceProjectIds = allProjects?.map(p => p.id) || [];
+
+      if (deletedProjects.length > 0) {
         items.push(
-          ...projects.map((p) => ({
+          ...deletedProjects.map((p) => ({
             id: p.id,
             short_id: p.short_id,
             name: p.name,
@@ -116,7 +119,6 @@ export const useTrashItems = (workspaceId: string | undefined) => {
         .order('deleted_at', { ascending: false });
 
       if (tasks) {
-        const workspaceProjectIds = projects?.map(p => p.id) || [];
         const filteredTasks = tasks.filter(t => workspaceProjectIds.includes(t.project_id));
         
         items.push(
@@ -142,7 +144,6 @@ export const useTrashItems = (workspaceId: string | undefined) => {
         .order('deleted_at', { ascending: false });
 
       if (files) {
-        const workspaceProjectIds = projects?.map(p => p.id) || [];
         const filteredFiles = files.filter(f => workspaceProjectIds.includes(f.project_id));
         
         items.push(
@@ -168,7 +169,6 @@ export const useTrashItems = (workspaceId: string | undefined) => {
         .order('deleted_at', { ascending: false });
 
       if (folders) {
-        const workspaceProjectIds = projects?.map(p => p.id) || [];
         const filteredFolders = folders.filter(f => workspaceProjectIds.includes(f.project_id));
         
         items.push(
@@ -194,7 +194,6 @@ export const useTrashItems = (workspaceId: string | undefined) => {
         .order('deleted_at', { ascending: false });
 
       if (links) {
-        const workspaceProjectIds = projects?.map(p => p.id) || [];
         const filteredLinks = links.filter(l => workspaceProjectIds.includes(l.project_id));
         
         items.push(
@@ -220,7 +219,6 @@ export const useTrashItems = (workspaceId: string | undefined) => {
         .order('deleted_at', { ascending: false });
 
       if (drawings) {
-        const workspaceProjectIds = projects?.map(p => p.id) || [];
         const filteredDrawings = drawings.filter(d => workspaceProjectIds.includes(d.project_id));
         
         items.push(
@@ -246,7 +244,6 @@ export const useTrashItems = (workspaceId: string | undefined) => {
         .order('deleted_at', { ascending: false });
 
       if (drawingPages) {
-        const workspaceProjectIds = projects?.map(p => p.id) || [];
         const filteredPages = drawingPages.filter(dp => {
           const projectId = (dp.drawings as any)?.project_id;
           return projectId && workspaceProjectIds.includes(projectId);
