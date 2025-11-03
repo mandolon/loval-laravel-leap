@@ -41,7 +41,12 @@ function AppRouter() {
     return <LoadingSpinner message="Loading your workspace..." />;
   }
   
-  // Admins always use the standard admin dashboard
+  // Team users get the new team dashboard (check this FIRST to prevent admin flash)
+  if (role === 'team') {
+    return <TeamApp />;
+  }
+  
+  // Admins use the standard admin dashboard
   if (user?.is_admin) {
     return (
       <Routes>
@@ -220,11 +225,6 @@ function AppRouter() {
             <Route path="*" element={<NotFound />} />
       </Routes>
     );
-  }
-  
-  // Team users get the new team dashboard
-  if (role === 'team') {
-    return <TeamApp />;
   }
   
   // Default routes for consultants, clients, and others
