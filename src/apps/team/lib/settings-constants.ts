@@ -14,3 +14,16 @@ export const SETTINGS_CONSTANTS = {
     '--primary': '#4C75D1'
   } as React.CSSProperties
 } as const;
+
+export const AVATAR_COLORS = [
+  'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)',
+  'linear-gradient(135deg, hsl(220, 70%, 60%) 0%, hsl(260, 80%, 65%) 100%)',
+  'linear-gradient(135deg, hsl(10, 70%, 60%) 0%, hsl(350, 80%, 65%) 100%)',
+  'linear-gradient(135deg, hsl(340, 70%, 60%) 0%, hsl(20, 80%, 65%) 100%)',
+  'linear-gradient(135deg, hsl(35, 70%, 60%) 0%, hsl(45, 80%, 65%) 100%)',
+  'linear-gradient(135deg, hsl(190, 70%, 60%) 0%, hsl(200, 80%, 65%) 100%)',
+  'linear-gradient(135deg, hsl(160, 70%, 40%) 0%, hsl(170, 80%, 50%) 100%)',
+  'linear-gradient(135deg, hsl(25, 40%, 50%) 0%, hsl(35, 50%, 60%) 100%)',
+  'linear-gradient(135deg, hsl(150, 70%, 50%) 0%, hsl(160, 80%, 55%) 100%)',
+  'linear-gradient(135deg, hsl(175, 70%, 50%) 0%, hsl(185, 80%, 55%) 100%)',
+];

@@ -1,6 +1,8 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { User, AtSign, Lock } from 'lucide-react';
-import { SETTINGS_CONSTANTS } from '../../lib/settings-constants';
+import { SETTINGS_CONSTANTS, AVATAR_COLORS } from '../../lib/settings-constants';
+import { useUser } from '@/contexts/UserContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface InputRowProps {
   id: string;
@@ -33,28 +35,68 @@ const InputRow = ({ id, label, icon: Icon, type = 'text', value, onChange }: Inp
 );
 
 export function ProfileContent() {
+  const { user, updateUser } = useUser();
+  const { toast } = useToast();
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [dirty, setDirty] = useState(false);
   const [profile, setProfile] = useState({
-    first: 'Armando',
-    last: 'Lopez',
-    email: 'armando@rehome.build',
-    role: 'admin' as 'admin' | 'user'
+    first: '',
+    last: '',
+    email: '',
+    role: 'user' as 'admin' | 'user'
   });
-  const [avatarColor, setAvatarColor] = useState('#98A2FF');
+  const [avatarColor, setAvatarColor] = useState('linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)');
+
+  // Load user data
+  useEffect(() => {
+    if (user) {
+      const nameParts = user.name.split(' ');
+      const first = nameParts[0] || '';
+      const last = nameParts.slice(1).join(' ') || '';
+      
+      setProfile({
+        first,
+        last,
+        email: user.email,
+        role: user.is_admin ? 'admin' : 'user'
+      });
+      setAvatarColor(user.avatar_url || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)');
+    }
+  }, [user]);
 
   const markDirty = useCallback(() => setDirty(true), []);
 
-  const onSave = useCallback(() => {
-    if (!dirty || saveState === 'saving') return;
+  const onSave = useCallback(async () => {
+    if (!dirty || saveState === 'saving' || !user) return;
     
     setSaveState('saving');
-    setTimeout(() => {
+    try {
+      const fullName = `${profile.first} ${profile.last}`.trim();
+      
+      await updateUser({
+        name: fullName,
+        email: profile.email,
+        avatar_url: avatarColor
+      });
+
       setSaveState('saved');
       setDirty(false);
+      
+      toast({
+        title: "Profile updated",
+        description: "Your changes have been saved successfully.",
+      });
+      
       setTimeout(() => setSaveState('idle'), 900);
-    }, 700);
-  }, [dirty, saveState]);
+    } catch (error) {
+      setSaveState('idle');
+      toast({
+        title: "Error",
+        description: "Failed to save profile changes. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [dirty, saveState, user, profile, avatarColor, updateUser, toast]);
 
   const APPEARANCE_OPTS = useMemo(() => ([
     { k: 'Light', checked: true },
@@ -85,7 +127,7 @@ export function ProfileContent() {
               className="h-20 w-20 rounded-full text-white grid place-items-center text-2xl font-semibold"
               style={{ background: avatarColor }}
             >
-              AL
+              {profile.first[0]?.toUpperCase()}{profile.last[0]?.toUpperCase()}
             </div>
           </div>
 
@@ -172,8 +214,8 @@ export function ProfileContent() {
         </div>
 
         <div className="flex flex-wrap gap-3 items-center" role="radiogroup" aria-label="Avatar color">
-          {SETTINGS_CONSTANTS.AVATAR_PALETTE.map(color => (
-            <label key={color} className="cursor-pointer">
+          {AVATAR_COLORS.map((color, index) => (
+            <label key={index} className="cursor-pointer">
               <input
                 type="radio"
                 name="avatarColor"
@@ -184,12 +226,12 @@ export function ProfileContent() {
                   markDirty();
                 }}
                 className="peer sr-only"
-                aria-label={`Avatar color ${color}`}
+                aria-label={`Avatar color ${index + 1}`}
               />
               <span
                 data-testid="color-swatch"
                 className="block h-9 w-9 rounded-md border border-slate-200 peer-checked:ring-2 peer-checked:ring-blue-500 peer-checked:border-blue-500"
-                style={{ backgroundColor: color }}
+                style={{ background: color }}
               />
             </label>
           ))}
