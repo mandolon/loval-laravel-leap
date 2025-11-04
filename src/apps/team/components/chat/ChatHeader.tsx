@@ -1,4 +1,4 @@
-import { ChevronDown, Grid3x3, List } from "lucide-react";
+import { ChevronDown, Grid3x3, List, PanelLeft, PanelLeftClose } from "lucide-react";
 
 // Theme Configuration
 const THEME = {
@@ -29,6 +29,10 @@ interface ChatHeaderProps {
   onSelectModeChange?: (mode: boolean) => void;
   selectedFilesCount?: number;
   onShareToChat?: () => void;
+  // Side panel controls
+  onToggleSidePanel?: () => void;
+  showSidePanelToggle?: boolean;
+  isSidePanelCollapsed?: boolean;
 }
 
 export function ChatHeader({
@@ -47,11 +51,37 @@ export function ChatHeader({
   onSelectModeChange,
   selectedFilesCount = 0,
   onShareToChat,
+  onToggleSidePanel,
+  showSidePanelToggle = false,
+  isSidePanelCollapsed = false,
 }: ChatHeaderProps) {
   const headerTitle = selectedProject?.name || "Workspace";
 
   return (
-    <header
+    <>
+      {/* Side Panel Toggle - Consistent position across all views */}
+      {showSidePanelToggle && onToggleSidePanel && (
+        <button
+          onClick={onToggleSidePanel}
+          className="absolute top-4 left-4 z-30 p-2 rounded-lg transition-colors border"
+          style={{
+            color: THEME.textSecondary,
+            borderColor: THEME.border,
+            background: THEME.card,
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = THEME.hover)}
+          onMouseLeave={(e) => (e.currentTarget.style.background = THEME.card)}
+          title={isSidePanelCollapsed ? "Expand panel" : "Collapse panel"}
+        >
+          {isSidePanelCollapsed ? (
+            <PanelLeft className="h-4 w-4" />
+          ) : (
+            <PanelLeftClose className="h-4 w-4" />
+          )}
+        </button>
+      )}
+
+      <header
       className="sticky top-0 z-20 w-full backdrop-blur-md"
       style={{ background: THEME.backdrop }}
     >
@@ -244,5 +274,6 @@ export function ChatHeader({
         </div>
       </div>
     </header>
+    </>
   );
 }
