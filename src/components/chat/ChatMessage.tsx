@@ -4,6 +4,7 @@ import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } 
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import { UTILITY_CLASSES } from '@/lib/design-tokens'
+import { supabase } from "@/integrations/supabase/client"
 
 export interface ChatMessageData {
   id: string
@@ -25,6 +26,13 @@ export interface ChatMessageData {
   }
   replies?: ChatMessageData[]
   replyCount?: number
+  fileDetails?: Array<{
+    id: string
+    filename: string
+    mimetype: string | null
+    filesize: number | null
+    storage_path: string
+  }>
 }
 
 interface ChatMessageProps {
@@ -129,12 +137,27 @@ export const ChatMessage = ({ message, onDelete, onReply, onEdit, currentUserId,
                     </div>
                   )}
                   
-                  {message.referencedFiles.length > 0 && (
+                  {message.fileDetails && message.fileDetails.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {message.referencedFiles.map(fileId => (
-                        <Badge key={fileId} variant="outline" className="text-xs">
-                          File: {fileId.slice(0, 8)}
-                        </Badge>
+                      {message.fileDetails.map(file => (
+                        <div
+                          key={file.id}
+                          className="flex items-center gap-1 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700"
+                          onClick={() => {
+                            const { data } = supabase.storage
+                              .from('project-files')
+                              .getPublicUrl(file.storage_path)
+                            window.open(data.publicUrl, '_blank')
+                          }}
+                        >
+                          <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                          </svg>
+                          <span className="max-w-[150px] truncate">{file.filename}</span>
+                          <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                        </div>
                       ))}
                     </div>
                   )}

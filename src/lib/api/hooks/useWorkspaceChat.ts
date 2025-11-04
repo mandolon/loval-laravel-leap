@@ -93,7 +93,28 @@ export function useWorkspaceMessages(workspaceId: string) {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      return (data || []).map(transformDbToMessage);
+      
+      const messages = (data || []).map(transformDbToMessage);
+      
+      // Fetch file details for messages with referenced files
+      const messagesWithFiles = await Promise.all(
+        messages.map(async (msg) => {
+          if (msg.referencedFiles && msg.referencedFiles.length > 0) {
+            const { data: fileData, error: fileError } = await supabase
+              .from('workspace_files')
+              .select('id, filename, mimetype, filesize, storage_path')
+              .in('id', msg.referencedFiles)
+              .is('deleted_at', null);
+            
+            if (!fileError && fileData) {
+              return { ...msg, fileDetails: fileData };
+            }
+          }
+          return msg;
+        })
+      );
+      
+      return messagesWithFiles;
     },
     enabled: !!workspaceId,
   });
