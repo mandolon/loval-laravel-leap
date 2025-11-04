@@ -77,6 +77,7 @@ export function TrashContent() {
         >
           <div>NAME</div>
           <div>TYPE</div>
+          <div>PROJECT</div>
           <div>LOCATION</div>
           <div>DELETED ON</div>
           <div>DELETED BY</div>
@@ -98,6 +99,7 @@ export function TrashContent() {
             >
               <div className="truncate">{row.name}</div>
               <div className="truncate">{row.typeLabel}</div>
+              <div className="truncate">{row.projectName}</div>
               <div className="truncate">{row.location}</div>
               <div>{formatDate(row.deleted_at)}</div>
               <div>{row.deleted_by_name}</div>

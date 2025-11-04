@@ -11,6 +11,7 @@ export type TrashItem = {
   type: TrashItemType;
   typeLabel: string;
   location: string;
+  projectName: string;
   deleted_at: string;
   deleted_by_name: string;
   status?: string;
@@ -32,13 +33,10 @@ const getTableName = (type: TrashItemType): string => {
   return tableMap[type];
 };
 
-const getTypeLabel = (type: TrashItemType, status?: string): string => {
-  if (type === 'project' && status) {
-    return `Project (${status})`;
-  }
+const getTypeLabel = (type: TrashItemType): string => {
   const labelMap: Record<TrashItemType, string> = {
     project: 'Project',
-    ai_chat_thread: 'AI Chat',
+    ai_chat_thread: 'Chat',
     task: 'Task',
     file: 'File',
     folder: 'Folder',
@@ -48,6 +46,21 @@ const getTypeLabel = (type: TrashItemType, status?: string): string => {
     drawing_page: 'Drawing Page',
   };
   return labelMap[type];
+};
+
+const getLocation = (type: TrashItemType): string => {
+  const locationMap: Record<TrashItemType, string> = {
+    project: 'Projects',
+    ai_chat_thread: 'AI',
+    task: 'Tasks',
+    file: 'Projects',
+    folder: 'Projects',
+    note: 'Projects',
+    link: 'Projects',
+    drawing: 'Projects',
+    drawing_page: 'Projects',
+  };
+  return locationMap[type];
 };
 
 export const useTrashItems = (workspaceId: string | undefined) => {
@@ -79,8 +92,9 @@ export const useTrashItems = (workspaceId: string | undefined) => {
             short_id: p.short_id,
             name: p.name,
             type: 'project' as const,
-            typeLabel: getTypeLabel('project', p.status),
-            location: '—',
+            typeLabel: getTypeLabel('project'),
+            location: getLocation('project'),
+            projectName: '—',
             deleted_at: p.deleted_at!,
             deleted_by_name: (p.users as any)?.name || 'Unknown',
             status: p.status,
@@ -104,7 +118,8 @@ export const useTrashItems = (workspaceId: string | undefined) => {
             name: t.title,
             type: 'ai_chat_thread' as const,
             typeLabel: getTypeLabel('ai_chat_thread'),
-            location: '—',
+            location: getLocation('ai_chat_thread'),
+            projectName: '—',
             deleted_at: t.deleted_at!,
             deleted_by_name: (t.users as any)?.name || 'Unknown',
           }))
@@ -128,7 +143,8 @@ export const useTrashItems = (workspaceId: string | undefined) => {
             name: t.title,
             type: 'task' as const,
             typeLabel: getTypeLabel('task'),
-            location: (t.projects as any)?.name || '—',
+            location: getLocation('task'),
+            projectName: (t.projects as any)?.name || '—',
             deleted_at: t.deleted_at!,
             deleted_by_name: (t.users as any)?.name || 'Unknown',
             project_id: t.project_id,
@@ -153,7 +169,8 @@ export const useTrashItems = (workspaceId: string | undefined) => {
             name: f.filename,
             type: 'file' as const,
             typeLabel: getTypeLabel('file'),
-            location: (f.projects as any)?.name || '—',
+            location: getLocation('file'),
+            projectName: (f.projects as any)?.name || '—',
             deleted_at: f.deleted_at!,
             deleted_by_name: (f.users as any)?.name || 'Unknown',
             project_id: f.project_id,
@@ -178,7 +195,8 @@ export const useTrashItems = (workspaceId: string | undefined) => {
             name: f.name,
             type: 'folder' as const,
             typeLabel: getTypeLabel('folder'),
-            location: (f.projects as any)?.name || '—',
+            location: getLocation('folder'),
+            projectName: (f.projects as any)?.name || '—',
             deleted_at: f.deleted_at!,
             deleted_by_name: (f.users as any)?.name || 'Unknown',
             project_id: f.project_id,
@@ -203,7 +221,8 @@ export const useTrashItems = (workspaceId: string | undefined) => {
             name: l.title,
             type: 'link' as const,
             typeLabel: getTypeLabel('link'),
-            location: (l.projects as any)?.name || '—',
+            location: getLocation('link'),
+            projectName: (l.projects as any)?.name || '—',
             deleted_at: l.deleted_at!,
             deleted_by_name: (l.users as any)?.name || 'Unknown',
             project_id: l.project_id,
@@ -228,7 +247,8 @@ export const useTrashItems = (workspaceId: string | undefined) => {
             name: d.name,
             type: 'drawing' as const,
             typeLabel: getTypeLabel('drawing'),
-            location: (d.projects as any)?.name || '—',
+            location: getLocation('drawing'),
+            projectName: (d.projects as any)?.name || '—',
             deleted_at: d.deleted_at!,
             deleted_by_name: (d.users as any)?.name || 'Unknown',
             project_id: d.project_id,
@@ -256,7 +276,8 @@ export const useTrashItems = (workspaceId: string | undefined) => {
             name: `${dp.name} (${(dp.drawings as any)?.name || 'Unknown Drawing'})`,
             type: 'drawing_page' as const,
             typeLabel: getTypeLabel('drawing_page'),
-            location: (dp.drawings as any)?.projects?.name || '—',
+            location: getLocation('drawing_page'),
+            projectName: (dp.drawings as any)?.projects?.name || '—',
             deleted_at: dp.deleted_at!,
             deleted_by_name: (dp.users as any)?.name || 'Unknown',
             project_id: (dp.drawings as any)?.project_id,
