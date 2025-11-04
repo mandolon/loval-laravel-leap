@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useRef, useLayoutEffect, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useReactTable, getCoreRowModel, flexRender } from '@tanstack/react-table';
+import { useReactTable, getCoreRowModel, flexRender, type Table, type Column } from '@tanstack/react-table';
 import { ChevronDown, ChevronRight, Plus, UserPlus, Check } from 'lucide-react';
 import { StatusDot } from '@/components/taskboard/StatusDot';
 import type { Task, Project, User } from '@/lib/api/types';
@@ -290,6 +290,26 @@ const QuickAddTaskRow: React.FC<QuickAddProps> = ({ onSave, onCancel, defaultSta
 
 const formatDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
 
+// Column sizing handler - measures actual rendered width and syncs with state
+const columnSizingHandler = (
+  thElem: HTMLTableCellElement | null,
+  table: Table<any>,
+  column: Column<any>
+) => {
+  if (!thElem) return;
+
+  const currentWidth = table.getState().columnSizing[column.id];
+  const actualWidth = thElem.getBoundingClientRect().width;
+
+  // Update when real width is different from stored width or not stored
+  if (currentWidth === undefined || currentWidth !== actualWidth) {
+    table.setColumnSizing((prevSizes) => ({
+      ...prevSizes,
+      [column.id]: actualWidth,
+    }));
+  }
+};
+
 interface TasksSectionProps {
   status: TaskStatus;
   tasks: Task[];
@@ -561,6 +581,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({
                     return (
                       <th
                         key={header.id}
+                        ref={(thElem) => columnSizingHandler(thElem, table, header.column)}
                         className={`px-2 py-1.5 text-xs font-semibold text-slate-700 relative ${isCentered ? 'text-center' : 'text-left'}`}
                       >
                         {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
