@@ -214,11 +214,22 @@ export const useDeleteProjectFile = (projectId: string) => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
+      // Get the users table ID from auth_id
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', user.id)
+        .single()
+
+      if (userError || !userData) {
+        throw new Error('User not found in database')
+      }
+
       const { error } = await supabase
         .from('files')
         .update({
           deleted_at: new Date().toISOString(),
-          deleted_by: user.id,
+          deleted_by: userData.id,
         })
         .eq('id', input.fileId)
 
@@ -255,11 +266,22 @@ export const useDeleteFolder = (projectId: string) => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
+      // Get the users table ID from auth_id
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', user.id)
+        .single()
+
+      if (userError || !userData) {
+        throw new Error('User not found in database')
+      }
+
       const { error } = await supabase
         .from('folders')
         .update({
           deleted_at: new Date().toISOString(),
-          deleted_by: user.id,
+          deleted_by: userData.id,
         })
         .eq('id', input.folderId)
 
