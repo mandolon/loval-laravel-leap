@@ -13,23 +13,23 @@ const workspaceChatKeys = {
 // Extended message interface with user information
 export interface WorkspaceChatMessageWithUser {
   id: string;
-  workspace_id: string;
-  user_id: string;
+  workspaceId: string;
+  userId: string;
   content: string;
-  reply_to_message_id?: string | null;
-  referenced_files?: string[];
-  referenced_tasks?: string[];
-  created_at: string;
-  updated_at: string;
-  deleted_at?: string | null;
-  deleted_by?: string | null;
+  replyToMessageId?: string | null;
+  referencedFiles?: string[];
+  referencedTasks?: string[];
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string | null;
+  deletedBy?: string | null;
   user: {
     id: string;
     name: string;
     email?: string;
-    avatar_url?: string | null;
+    avatarUrl?: string | null;
   } | null;
-  reply_to?: {
+  replyTo?: {
     id: string;
     content: string;
     user: {
@@ -43,23 +43,23 @@ export interface WorkspaceChatMessageWithUser {
 function transformDbToMessage(row: any): WorkspaceChatMessageWithUser {
   return {
     id: row.id,
-    workspace_id: row.workspace_id,
-    user_id: row.user_id,
+    workspaceId: row.workspace_id,
+    userId: row.user_id,
     content: row.content,
-    reply_to_message_id: row.reply_to_message_id,
-    referenced_files: row.referenced_files || [],
-    referenced_tasks: row.referenced_tasks || [],
-    created_at: row.created_at,
-    updated_at: row.updated_at,
-    deleted_at: row.deleted_at,
-    deleted_by: row.deleted_by,
+    replyToMessageId: row.reply_to_message_id,
+    referencedFiles: row.referenced_files || [],
+    referencedTasks: row.referenced_tasks || [],
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    deletedAt: row.deleted_at,
+    deletedBy: row.deleted_by,
     user: row.users ? {
       id: row.users.id,
       name: row.users.name,
       email: row.users.email,
-      avatar_url: row.users.avatar_url
+      avatarUrl: row.users.avatar_url
     } : null,
-    reply_to: row.reply_to_message ? {
+    replyTo: row.reply_to_message ? {
       id: row.reply_to_message.id,
       content: row.reply_to_message.content,
       user: row.reply_to_message.users ? {
