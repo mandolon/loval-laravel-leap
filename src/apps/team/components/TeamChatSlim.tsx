@@ -10,8 +10,11 @@ import {
 import {
   useWorkspaceMessages,
   useCreateWorkspaceMessage,
-  useDeleteWorkspaceMessage
+  useDeleteWorkspaceMessage,
+  useUpdateWorkspaceMessage
 } from "@/lib/api/hooks/useWorkspaceChat";
+import { WorkspaceChatMessage } from "./WorkspaceChatMessage";
+import { useToast } from "@/hooks/use-toast";
 import { useProjectFiles } from "@/lib/api/hooks/useProjectFiles";
 import { useWorkspaceFiles, useUploadWorkspaceFiles } from "@/lib/api/hooks/useWorkspaceFiles";
 import type { Project } from "@/lib/api/types";
@@ -99,6 +102,8 @@ export default function TeamChatSlim({
   const createWorkspaceChatMessage = useCreateWorkspaceMessage();
   const deleteProjectMessage = useDeleteMessage();
   const deleteWorkspaceChatMessage = useDeleteWorkspaceMessage();
+  const updateWorkspaceMessage = useUpdateWorkspaceMessage();
+  const { toast } = useToast();
 
   // Use appropriate messages based on mode
   const rawMessages = isWorkspaceChat ? rawWorkspaceMessages : rawProjectMessages;
@@ -254,6 +259,11 @@ export default function TeamChatSlim({
   };
 
   const handleDeleteMessage = (messageId: string) => {
+    // Show confirmation for permanent delete
+    if (!confirm("Are you sure you want to permanently delete this message? This action cannot be undone.")) {
+      return;
+    }
+
     if (isWorkspaceChat) {
       if (!workspaceId) return;
       deleteWorkspaceChatMessage.mutate({ id: messageId, workspace_id: workspaceId });
@@ -262,6 +272,37 @@ export default function TeamChatSlim({
       deleteProjectMessage.mutate({ id: messageId, projectId: selectedProject.id });
     }
     setShowMobilePopover(false);
+  };
+
+  const handleEditMessage = (messageId: string, content: string) => {
+    if (isWorkspaceChat && workspaceId) {
+      updateWorkspaceMessage.mutate({
+        id: messageId,
+        workspace_id: workspaceId,
+        content: content,
+      });
+    }
+  };
+
+  const handleCopyMessage = (content: string) => {
+    navigator.clipboard.writeText(content).then(() => {
+      toast({
+        title: "Copied",
+        description: "Message copied to clipboard",
+      });
+    }).catch(() => {
+      // Fallback for older browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = content;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      toast({
+        title: "Copied",
+        description: "Message copied to clipboard",
+      });
+    });
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -681,15 +722,50 @@ export default function TeamChatSlim({
               </div>
             </div>
           ) : (
-            messages.map((msg: any) => (
-              <MessageBlock
-                key={msg.id}
-                msg={msg}
-                currentUserId={user?.id}
-                onReply={handleReply}
-                onScrollToMessage={handleScrollToMessage}
-              />
-            ))
+            messages.map((msg: any) => {
+              if (isWorkspaceChat) {
+                return (
+                  <WorkspaceChatMessage
+                    key={msg.id}
+                    message={{
+                      id: msg.id,
+                      workspaceId: workspaceId || '',
+                      userId: msg.userId,
+                      content: msg.content,
+                      replyToMessageId: msg.replyTo?.messageId,
+                      referencedFiles: msg.attachedFiles?.map((f: any) => f.id) || [],
+                      referencedTasks: [],
+                      createdAt: msg.createdAt,
+                      updatedAt: msg.createdAt,
+                      user: msg.user,
+                      replyTo: msg.replyTo ? {
+                        id: msg.replyTo.messageId,
+                        content: '',
+                        user: {
+                          id: '',
+                          name: msg.replyTo.userName
+                        }
+                      } : null
+                    }}
+                    onDelete={handleDeleteMessage}
+                    onReply={handleReply}
+                    onEdit={handleEditMessage}
+                    onCopy={handleCopyMessage}
+                    currentUserId={user?.id}
+                  />
+                );
+              } else {
+                return (
+                  <MessageBlock
+                    key={msg.id}
+                    msg={msg}
+                    currentUserId={user?.id}
+                    onReply={handleReply}
+                    onScrollToMessage={handleScrollToMessage}
+                  />
+                );
+              }
+            })
           )}
         </div>
       </ScrollArea>
@@ -1032,6 +1108,8 @@ function MessageFileButton({ file }: { file: any }) {
 }
 
 function MobileActionPopover({ isMe, messageInfo, position, onClose, onReply, onDelete }: any) {
+  const { toast } = useToast();
+  
   const handleClose = () => {
     window.dispatchEvent(new CustomEvent("closeMobilePopover"));
     onClose();
@@ -1049,6 +1127,29 @@ function MobileActionPopover({ isMe, messageInfo, position, onClose, onReply, on
       onDelete(messageInfo.id);
       handleClose();
     }
+  };
+
+  const handleCopyClick = () => {
+    if (messageInfo?.content) {
+      navigator.clipboard.writeText(messageInfo.content).then(() => {
+        toast({
+          title: "Copied",
+          description: "Message copied to clipboard",
+        });
+      }).catch(() => {
+        const textArea = document.createElement("textarea");
+        textArea.value = messageInfo.content;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        toast({
+          title: "Copied",
+          description: "Message copied to clipboard",
+        });
+      });
+    }
+    handleClose();
   };
 
   return (
@@ -1069,7 +1170,7 @@ function MobileActionPopover({ isMe, messageInfo, position, onClose, onReply, on
           <div className="flex flex-col gap-0.5">
             <button
               className="flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors text-left whitespace-nowrap"
-              onClick={handleClose}
+              onClick={handleCopyClick}
               onMouseEnter={(e) => (e.currentTarget.style.background = THEME.hover)}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
@@ -1114,7 +1215,7 @@ function MobileActionPopover({ isMe, messageInfo, position, onClose, onReply, on
           <div className="flex flex-col gap-0.5">
             <button
               className="flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors text-left whitespace-nowrap"
-              onClick={handleClose}
+              onClick={handleCopyClick}
               onMouseEnter={(e) => (e.currentTarget.style.background = THEME.hover)}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
