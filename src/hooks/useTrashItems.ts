@@ -273,7 +273,7 @@ export const useTrashItems = (workspaceId: string | undefined) => {
           ...filteredPages.map((dp) => ({
             id: dp.id,
             short_id: dp.short_id,
-            name: `${dp.name} (${(dp.drawings as any)?.name || 'Unknown Drawing'})`,
+            name: dp.name,
             type: 'drawing_page' as const,
             typeLabel: getTypeLabel('drawing_page'),
             location: getLocation('drawing_page'),
