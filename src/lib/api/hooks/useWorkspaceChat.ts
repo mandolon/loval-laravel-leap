@@ -53,20 +53,13 @@ function transformDbToMessage(row: any): WorkspaceChatMessageWithUser {
     updatedAt: row.updated_at,
     deletedAt: row.deleted_at,
     deletedBy: row.deleted_by,
-    user: row.users ? {
-      id: row.users.id,
-      name: row.users.name,
-      email: row.users.email,
-      avatarUrl: row.users.avatar_url
+    user: row.user ? {
+      id: row.user.id,
+      name: row.user.name,
+      email: row.user.email,
+      avatarUrl: row.user.avatar_url
     } : null,
-    replyTo: row.reply_to_message ? {
-      id: row.reply_to_message.id,
-      content: row.reply_to_message.content,
-      user: row.reply_to_message.users ? {
-        id: row.reply_to_message.users.id,
-        name: row.reply_to_message.users.name
-      } : null
-    } : null
+    replyTo: null
   };
 }
 
@@ -81,19 +74,11 @@ export function useWorkspaceMessages(workspaceId: string) {
         .from('workspace_chat_messages')
         .select(`
           *,
-          users!workspace_chat_messages_user_id_fkey (
+          user:users!user_id (
             id,
             name,
             email,
             avatar_url
-          ),
-          reply_to_message:workspace_chat_messages!workspace_chat_messages_reply_to_message_id_fkey (
-            id,
-            content,
-            users!workspace_chat_messages_user_id_fkey (
-              id,
-              name
-            )
           )
         `)
         .eq('workspace_id', workspaceId)
