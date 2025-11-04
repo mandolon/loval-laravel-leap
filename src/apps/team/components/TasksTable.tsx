@@ -568,14 +568,6 @@ export function TasksTable({ tasks, projects, users, onTaskClick, onProjectClick
   return (
     <div className="h-full w-full text-[12px] overflow-hidden pb-6 pr-1">
       <div className="min-h-0 min-w-0 h-full flex flex-col" data-testid="task-root">
-        <div className="p-4 border-b border-transparent" data-testid="groupby-container">
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-medium">Group by:</span>
-            <button className="h-7 px-2 rounded border border-slate-300 text-xs bg-white hover:bg-slate-50 inline-flex items-center gap-1">Status</button>
-            <button className="h-7 px-2 rounded border border-transparent text-xs text-slate-600 hover:bg-slate-100">Date Created</button>
-            <button className="h-7 px-2 rounded border border-transparent text-xs text-slate-600 hover:bg-slate-100">Created by</button>
-          </div>
-        </div>
         <div className="flex-1 overflow-auto" style={{ scrollbarGutter: 'stable' }} data-testid="task-scroll">
           <div className="p-4 space-y-4" data-testid="task-container">
             <TasksSection
