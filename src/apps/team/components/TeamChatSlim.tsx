@@ -430,7 +430,7 @@ export default function TeamChatSlim({
         }}
       >
         {/* Collapse/Expand Button - Top Left */}
-        {showSidePanel && !selectedProject && !isWorkspaceChat && (
+        {showSidePanel && (
           <button
             onClick={() => setIsSidePanelCollapsed(!isSidePanelCollapsed)}
             className="absolute top-4 left-4 z-20 p-2 rounded-lg transition-colors border"
