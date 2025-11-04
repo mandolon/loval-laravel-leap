@@ -483,39 +483,6 @@ const TasksSection: React.FC<TasksSectionProps> = ({
       {!collapsed && (
         <div className="overflow-x-auto pl-8 pr-8" style={{ scrollbarGutter: 'stable' }} data-testid="table-scroll-x">
           <table className="border-collapse text-xs table-fixed w-full">
-            <thead>
-              {table.getHeaderGroups().map((hg: any) => (
-                <tr key={hg.id} className="border-b border-[#cecece]">
-                  {hg.headers.map((header: any) => {
-                    const isCentered = CENTER_COLS.has(header.column.id as string);
-                    return (
-                      <th
-                        key={header.id}
-                        style={{ width: header.getSize(), position: 'relative', textAlign: isCentered ? 'center' : 'left' }}
-                        className={`px-2 py-1.5 text-xs font-semibold text-slate-700 ${isCentered ? 'text-center' : 'text-left'}`}
-                      >
-                        {isCentered ? (
-                          <div className="text-center w-full">{flexRender(header.column.columnDef.header, header.getContext())}</div>
-                        ) : (
-                          flexRender(header.column.columnDef.header, header.getContext())
-                        )}
-                        {header.column.id !== 'status' && (
-                          <div
-                            role="separator"
-                            aria-orientation="vertical"
-                            data-col={header.column.id}
-                            onMouseDown={header.getResizeHandler()}
-                            onTouchStart={header.getResizeHandler()}
-                            className="absolute top-0 right-0 h-full w-6 cursor-col-resize select-none z-20 hover:bg-blue-500/10 active:bg-blue-500/20 transition-colors"
-                            style={{ userSelect: 'none', touchAction: 'none' }}
-                          />
-                        )}
-                      </th>
-                    );
-                  })}
-                </tr>
-              ))}
-            </thead>
             <tbody>
               {table.getRowModel().rows.map((row: any) => (
                 <tr key={row.id} className="hover:bg-slate-50 cursor-pointer border-b border-[#cecece]">
