@@ -203,3 +203,85 @@ export const useUploadProjectFiles = (projectId: string) => {
     },
   })
 }
+
+// Delete a file (soft delete)
+export const useDeleteProjectFile = (projectId: string) => {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: async (input: { fileId: string; projectId: string }) => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+
+      const { error } = await supabase
+        .from('files')
+        .update({
+          deleted_at: new Date().toISOString(),
+          deleted_by: user.id,
+        })
+        .eq('id', input.fileId)
+
+      if (error) {
+        console.error('Delete file error:', error)
+        throw error
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectFilesKeys.files(projectId) })
+      toast({
+        title: 'Success',
+        description: 'File moved to trash',
+      })
+    },
+    onError: (error: Error) => {
+      console.error('Delete file mutation error:', error)
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      })
+    },
+  })
+}
+
+// Delete a folder (soft delete)
+export const useDeleteFolder = (projectId: string) => {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: async (input: { folderId: string; projectId: string }) => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+
+      const { error } = await supabase
+        .from('folders')
+        .update({
+          deleted_at: new Date().toISOString(),
+          deleted_by: user.id,
+        })
+        .eq('id', input.folderId)
+
+      if (error) {
+        console.error('Delete folder error:', error)
+        throw error
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectFilesKeys.folders(projectId) })
+      toast({
+        title: 'Success',
+        description: 'Folder moved to trash',
+      })
+    },
+    onError: (error: Error) => {
+      console.error('Delete folder mutation error:', error)
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      })
+    },
+  })
+}

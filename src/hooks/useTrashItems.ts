@@ -139,7 +139,7 @@ export const useTrashItems = (workspaceId: string | undefined) => {
       // Fetch deleted files
       const { data: files } = await supabase
         .from('files')
-        .select('id, short_id, filename, project_id, deleted_at, deleted_by, users!files_deleted_by_fkey(name), projects(name)')
+        .select('id, short_id, filename, project_id, deleted_at, deleted_by, users!files_new_deleted_by_fkey(name), projects(name)')
         .not('deleted_at', 'is', null)
         .order('deleted_at', { ascending: false });
 
@@ -164,7 +164,7 @@ export const useTrashItems = (workspaceId: string | undefined) => {
       // Fetch deleted folders
       const { data: folders } = await supabase
         .from('folders')
-        .select('id, short_id, name, project_id, deleted_at, deleted_by, users!folders_deleted_by_fkey(name), projects(name)')
+        .select('id, short_id, name, project_id, deleted_at, deleted_by, users!folders_new_deleted_by_fkey(name), projects(name)')
         .not('deleted_at', 'is', null)
         .order('deleted_at', { ascending: false });
 

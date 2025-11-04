@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef, forwardRef } from "react";
 import { Search, FolderClosed, BookOpen, MoreVertical } from "lucide-react";
-import { useProjectFolders, useProjectFiles } from '@/lib/api/hooks/useProjectFiles';
+import { useProjectFolders, useProjectFiles, useDeleteProjectFile, useDeleteFolder } from '@/lib/api/hooks/useProjectFiles';
 import { useDrawingVersions, useUpdateDrawingScale, useCreateDrawingPage, useDeleteDrawingVersion, useDeleteDrawingPage } from '@/lib/api/hooks/useDrawings';
 import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
 
@@ -275,6 +275,8 @@ export default function ProjectPanel({
   // Database queries for Files tab
   const { data: rawFolders = [], isLoading: foldersLoading } = useProjectFolders(projectId);
   const { data: rawFiles = [], isLoading: filesLoading } = useProjectFiles(projectId);
+  const deleteFile = useDeleteProjectFile(projectId);
+  const deleteFolder = useDeleteFolder(projectId);
 
   // Transform database data to component format
   const sections = useMemo(() => {
@@ -773,16 +775,21 @@ export default function ProjectPanel({
                       onClick={() => {
                         if (!menu.target) return;
                         if (menu.target.type === "item") {
-                          const { list, id } = menu.target;
-                          setLocalLists((prev) => ({ ...prev, [list]: prev[list].filter((i) => i.id !== id) }));
-                          if (selectedId === id) setSelectedId(null);
+                          // Delete file with database mutation
+                          deleteFile.mutate({
+                            fileId: menu.target.id,
+                            projectId
+                          });
+                          
+                          // Clear selection if deleting currently selected file
+                          if (selectedId === menu.target.id) {
+                            setSelectedId(null);
+                          }
                         } else {
-                          const { list } = menu.target;
-                          setLocalSections((prev) => prev.filter((s) => s.id !== list));
-                          setLocalLists((prev) => {
-                            const next = { ...prev };
-                            delete next[list];
-                            return next;
+                          // Delete folder with database mutation
+                          deleteFolder.mutate({
+                            folderId: menu.target.list,
+                            projectId
                           });
                         }
                         setMenu((m: any) => ({ ...m, show: false }));
