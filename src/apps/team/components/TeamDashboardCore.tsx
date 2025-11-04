@@ -927,7 +927,7 @@ const PageHeader = memo(function PageHeader({
           <div className="h-6 w-6 rounded-md border border-slate-200 bg-white grid place-items-center shadow-sm">
             <Icon className="h-4 w-4 text-slate-600" />
           </div>
-          <span className="truncate text-slate-900 text-[15px] font-medium">
+          <span className="truncate text-[#202020] text-[15px] font-medium">
             {title}
           </span>
         </div>
@@ -967,8 +967,8 @@ function TabsRow({ tabs, active, onChange }: TabsRowProps) {
               onClick={() => onChange(key)}
               className={`inline-flex items-center gap-1 whitespace-nowrap text-[13px] font-medium leading-none px-1 pt-0 pb-2 -mb-px rounded-none bg-transparent hover:bg-slate-100/60 ${
                 isActive
-                  ? "text-slate-900 border-b-2 border-slate-900"
-                  : "text-slate-700 hover:text-slate-900 border-b-2 border-transparent"
+                  ? "text-[#202020] border-b-2 border-slate-900"
+                  : "text-[#202020] hover:text-[#202020] border-b-2 border-transparent"
               }`}
             >
               <span className="shrink-0" aria-hidden>
@@ -1337,14 +1337,14 @@ const TasksView = memo(function TasksView() {
         <div className="mt-1 mb-3 shrink-0 relative z-10">
           <TabsRow tabs={tabs} active={viewTab} onChange={setViewTab} />
           <div className="-mx-6 px-6 mt-3 mb-0 flex items-center justify-between gap-2 text-[12px] h-6">
-            <div className="flex items-center gap-2.5 text-slate-600 font-medium">
-              <button className="inline-flex items-center gap-1 h-6 px-2 rounded border border-slate-200 bg-white">
+            <div className="flex items-center gap-2.5 text-[#202020] font-medium">
+              <button className="inline-flex items-center gap-1 h-6 px-2 rounded border border-slate-200 bg-white text-[#202020]">
                 Group: Status
               </button>
-              <button className="inline-flex items-center gap-1 h-6 px-2 rounded border border-slate-200 bg-white">
+              <button className="inline-flex items-center gap-1 h-6 px-2 rounded border border-slate-200 bg-white text-[#202020]">
                 Subtasks
               </button>
-              <button className="inline-flex items-center gap-1 h-6 px-2 rounded border border-slate-200 bg-white">
+              <button className="inline-flex items-center gap-1 h-6 px-2 rounded border border-slate-200 bg-white text-[#202020]">
                 Columns
               </button>
             </div>

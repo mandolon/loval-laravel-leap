@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Search as SearchIcon, Filter, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { SETTINGS_CONSTANTS } from '../../lib/settings-constants';
@@ -16,11 +16,116 @@ import {
 } from '@/components/ui/alert-dialog';
 import type { TrashItem } from '@/hooks/useTrashItems';
 
+const STORAGE_KEY = 'trash-table-column-widths';
+const DEFAULT_COLUMN_WIDTHS = [200, 80, 140, 110, 120, 140, 160]; // NAME, TYPE, PROJECT, LOCATION, DELETED ON, DELETED BY, ACTIONS
+const MIN_COLUMN_WIDTH = 60;
+const MAX_COLUMN_WIDTH = 500;
+
 export function TrashContent() {
   const { currentWorkspace } = useWorkspaces();
   const { items, isLoading, restore, deleteForever, isRestoring, isDeleting } = useTrashItems(currentWorkspace?.id);
   const [searchQuery, setSearchQuery] = useState('');
   const [itemToDelete, setItemToDelete] = useState<TrashItem | null>(null);
+  
+  // Initialize column widths from localStorage or defaults
+  const [columnWidths, setColumnWidths] = useState<number[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length === DEFAULT_COLUMN_WIDTHS.length) {
+          return parsed;
+        }
+      }
+    } catch {
+      // Ignore errors, use defaults
+    }
+    return DEFAULT_COLUMN_WIDTHS;
+  });
+
+  // Resize state
+  const [resizingColumnIndex, setResizingColumnIndex] = useState<number | null>(null);
+  const resizeStartX = useRef<number>(0);
+  const resizeStartWidths = useRef<number[]>([]);
+
+  // Save column widths to localStorage
+  const saveColumnWidths = useCallback((widths: number[]) => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(widths));
+    } catch {
+      // Ignore errors
+    }
+  }, []);
+
+  // Update column widths when they change
+  useEffect(() => {
+    saveColumnWidths(columnWidths);
+  }, [columnWidths, saveColumnWidths]);
+
+  // Handle resize start
+  const handleResizeStart = useCallback((columnIndex: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    setResizingColumnIndex(columnIndex);
+    resizeStartX.current = e.clientX;
+    resizeStartWidths.current = [...columnWidths];
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [columnWidths]);
+
+  // Handle resize move
+  useEffect(() => {
+    if (resizingColumnIndex === null) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - resizeStartX.current;
+      const newWidths = [...resizeStartWidths.current];
+      
+      // Resize the column on the left of the handle
+      const leftColumnIndex = resizingColumnIndex;
+      const rightColumnIndex = resizingColumnIndex + 1;
+      
+      if (leftColumnIndex >= 0 && rightColumnIndex < newWidths.length) {
+        const maxLeftWidth = leftColumnIndex === 0 ? MAX_COLUMN_WIDTH : resizeStartWidths.current[leftColumnIndex] * 1.5;
+        const newLeftWidth = Math.max(
+          MIN_COLUMN_WIDTH,
+          Math.min(
+            maxLeftWidth,
+            resizeStartWidths.current[leftColumnIndex] + deltaX
+          )
+        );
+        const newRightWidth = Math.max(
+          MIN_COLUMN_WIDTH,
+          resizeStartWidths.current[rightColumnIndex] - deltaX
+        );
+        
+        // Only update if both columns are within constraints
+        if (newLeftWidth >= MIN_COLUMN_WIDTH && newRightWidth >= MIN_COLUMN_WIDTH) {
+          newWidths[leftColumnIndex] = newLeftWidth;
+          newWidths[rightColumnIndex] = newRightWidth;
+          setColumnWidths(newWidths);
+        }
+      }
+    };
+
+    const handleMouseUp = () => {
+      setResizingColumnIndex(null);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [resizingColumnIndex]);
+
+  // Generate grid template columns string
+  const gridTemplateColumns = useMemo(() => {
+    return columnWidths.map(width => `${width}px`).join(' ');
+  }, [columnWidths]);
 
   const filteredRows = useMemo(() => {
     if (!searchQuery) return items;
@@ -72,15 +177,81 @@ export function TrashContent() {
         {/* Table Header */}
         <div
           data-testid="trash-header"
-          className="items-center gap-2 px-3 h-10 text-[12px] text-[var(--muted)] bg-slate-50 border-b border-slate-200 grid"
-          style={{ gridTemplateColumns: SETTINGS_CONSTANTS.TRASH_COLS }}
+          className="items-center gap-2 px-3 h-10 text-[12px] text-[var(--muted)] bg-slate-50 border-b border-slate-200 grid relative"
+          style={{ gridTemplateColumns: gridTemplateColumns }}
         >
-          <div>NAME</div>
-          <div>TYPE</div>
-          <div>PROJECT</div>
-          <div>LOCATION</div>
-          <div>DELETED ON</div>
-          <div>DELETED BY</div>
+          <div className="relative group">
+            NAME
+            {columnWidths.length > 1 && (
+              <div
+                className={`absolute right-0 top-0 bottom-0 cursor-col-resize bg-slate-300 hover:bg-slate-400 active:bg-slate-500 transition-all z-10 ${
+                  resizingColumnIndex === 0 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                }`}
+                style={{ transform: 'translateX(8px)', width: '4px' }}
+                onMouseDown={(e) => handleResizeStart(0, e)}
+              />
+            )}
+          </div>
+          <div className="relative group">
+            TYPE
+            {columnWidths.length > 2 && (
+              <div
+                className={`absolute right-0 top-0 bottom-0 cursor-col-resize bg-slate-300 hover:bg-slate-400 active:bg-slate-500 transition-all z-10 ${
+                  resizingColumnIndex === 1 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                }`}
+                style={{ transform: 'translateX(8px)', width: '4px' }}
+                onMouseDown={(e) => handleResizeStart(1, e)}
+              />
+            )}
+          </div>
+          <div className="relative group">
+            PROJECT
+            {columnWidths.length > 3 && (
+              <div
+                className={`absolute right-0 top-0 bottom-0 cursor-col-resize bg-slate-300 hover:bg-slate-400 active:bg-slate-500 transition-all z-10 ${
+                  resizingColumnIndex === 2 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                }`}
+                style={{ transform: 'translateX(8px)', width: '4px' }}
+                onMouseDown={(e) => handleResizeStart(2, e)}
+              />
+            )}
+          </div>
+          <div className="relative group">
+            LOCATION
+            {columnWidths.length > 4 && (
+              <div
+                className={`absolute right-0 top-0 bottom-0 cursor-col-resize bg-slate-300 hover:bg-slate-400 active:bg-slate-500 transition-all z-10 ${
+                  resizingColumnIndex === 3 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                }`}
+                style={{ transform: 'translateX(8px)', width: '4px' }}
+                onMouseDown={(e) => handleResizeStart(3, e)}
+              />
+            )}
+          </div>
+          <div className="relative group">
+            DELETED ON
+            {columnWidths.length > 5 && (
+              <div
+                className={`absolute right-0 top-0 bottom-0 cursor-col-resize bg-slate-300 hover:bg-slate-400 active:bg-slate-500 transition-all z-10 ${
+                  resizingColumnIndex === 4 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                }`}
+                style={{ transform: 'translateX(8px)', width: '4px' }}
+                onMouseDown={(e) => handleResizeStart(4, e)}
+              />
+            )}
+          </div>
+          <div className="relative group">
+            DELETED BY
+            {columnWidths.length > 6 && (
+              <div
+                className={`absolute right-0 top-0 bottom-0 cursor-col-resize bg-slate-300 hover:bg-slate-400 active:bg-slate-500 transition-all z-10 ${
+                  resizingColumnIndex === 5 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                }`}
+                style={{ transform: 'translateX(8px)', width: '4px' }}
+                onMouseDown={(e) => handleResizeStart(5, e)}
+              />
+            )}
+          </div>
           <div>ACTIONS</div>
         </div>
 
@@ -95,7 +266,7 @@ export function TrashContent() {
               className={`items-center gap-2 px-3 h-11 text-[13px] text-[var(--text)] grid hover:bg-slate-50 transition-colors ${
                 i ? 'border-t border-slate-200' : ''
               }`}
-              style={{ gridTemplateColumns: SETTINGS_CONSTANTS.TRASH_COLS }}
+              style={{ gridTemplateColumns: gridTemplateColumns }}
             >
               <div className="truncate">{row.name}</div>
               <div className="truncate">{row.typeLabel}</div>

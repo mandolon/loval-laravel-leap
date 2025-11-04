@@ -1,6 +1,5 @@
 import { useState, useMemo, useCallback, useRef, useLayoutEffect, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useReactTable, getCoreRowModel, flexRender, type Table, type Column } from '@tanstack/react-table';
 import { ChevronDown, ChevronRight, Plus, UserPlus, Check } from 'lucide-react';
 import { StatusDot } from '@/components/taskboard/StatusDot';
 import type { Task, Project, User } from '@/lib/api/types';
@@ -21,7 +20,11 @@ const BADGE_BG = {
 const CENTER_COLS = new Set(['files', 'date', 'created', 'assigned']);
 
 type TaskStatus = 'task_redline' | 'progress_update' | 'done_completed';
-type ColumnSizingState = Record<string, number>;
+
+const STORAGE_KEY = 'tasks-table-column-widths';
+const DEFAULT_COLUMN_WIDTHS = [32, 420, 56, 110, 84, 168]; // Status, Name, Files, Date, Created, Assigned
+const MIN_COLUMN_WIDTH = 48;
+const MAX_TABLE_WIDTH = 3000;
 
 const Badge = ({ children, tone }: { children: React.ReactNode; tone: 'red' | 'blue' | 'green' }) => (
   <span className="px-2 py-[2px] rounded text-[11px] font-medium" style={{ background: BADGE_BG[tone], color: '#ffffff' }}>
@@ -116,9 +119,10 @@ interface QuickAddProps {
   defaultStatus: TaskStatus;
   projects: Project[];
   users: User[];
+  columnWidths: number[];
 }
 
-const QuickAddTaskRow: React.FC<QuickAddProps> = ({ onSave, onCancel, defaultStatus, projects, users }) => {
+const QuickAddTaskRow: React.FC<QuickAddProps> = ({ onSave, onCancel, defaultStatus, projects, users, columnWidths }) => {
   const [title, setTitle] = useState('');
   const [projectId, setProjectId] = useState('');
   const [projOpen, setProjOpen] = useState(false);
@@ -132,11 +136,12 @@ const QuickAddTaskRow: React.FC<QuickAddProps> = ({ onSave, onCancel, defaultSta
   }, [canSave, defaultStatus, onSave, projectId, title, assignees]);
 
   const selectedProject = projects.find((p) => p.id === projectId);
+  const gridTemplateColumns = columnWidths.map(width => `${width}px`).join(' ');
 
   return (
-    <tr className="border-b border-[#cecece]">
-      {/* Status (muted) */}
-      <td className="px-2 py-2 text-center">
+    <div className="border-b border-[#cecece] grid items-center" style={{ gridTemplateColumns }}>
+      {/* Status */}
+      <div className="px-2 py-2 text-center">
         <button
           aria-label="Status (muted)"
           className="inline-grid place-items-center h-4 w-4 rounded-full hover:bg-slate-100/60"
@@ -146,10 +151,10 @@ const QuickAddTaskRow: React.FC<QuickAddProps> = ({ onSave, onCancel, defaultSta
             <circle cx="8" cy="8" r="7" fill="none" stroke="#94a3b8" strokeWidth="2" strokeDasharray="1 1" strokeLinecap="round" />
           </svg>
         </button>
-      </td>
+      </div>
 
-      {/* Name + Project selector */}
-      <td className="px-2 py-2">
+      {/* Name */}
+      <div className="px-2 py-2">
         <div className="relative mb-1 flex items-center gap-3">
           <Popover
             open={projOpen}
@@ -195,19 +200,19 @@ const QuickAddTaskRow: React.FC<QuickAddProps> = ({ onSave, onCancel, defaultSta
           placeholder="Task Name"
           className="block w-full px-0 bg-transparent outline-none focus:outline-none focus:ring-0 text-[13px] leading-tight h-[18px]"
         />
-      </td>
+      </div>
 
-      {/* Files column: left blank */}
-      <td className="px-2 py-2 text-center" />
+      {/* Files */}
+      <div className="px-2 py-2 text-center" />
 
-      {/* Date (blank) */}
-      <td className="px-2 py-2" />
+      {/* Date */}
+      <div className="px-2 py-2" />
 
-      {/* Created (blank) */}
-      <td className="px-2 py-2 text-center" />
+      {/* Created */}
+      <div className="px-2 py-2 text-center" />
 
-      {/* Assigned column: attach + assign + cancel + save */}
-      <td className="px-2 py-2">
+      {/* Assigned */}
+      <div className="px-2 py-2">
         <div className="flex items-center justify-end gap-2 whitespace-nowrap" data-testid="qa-actions">
           {/* Attach (placeholder) */}
           <button
@@ -216,7 +221,15 @@ const QuickAddTaskRow: React.FC<QuickAddProps> = ({ onSave, onCancel, defaultSta
             onClick={(e) => {
               e.stopPropagation();
             }}
-            className="inline-flex items-center justify-center h-6 w-6 rounded border border-slate-300 bg-white hover:bg-slate-50"
+            className="inline-flex items-center justify-center h-6 w-6 rounded bg-white hover:bg-slate-50 flex-shrink-0"
+            style={{ 
+              border: '0.5px dashed #cbd5e1',
+              borderWidth: '0.5px',
+              borderStyle: 'dashed',
+              borderColor: '#cbd5e1',
+              minWidth: '24px',
+              minHeight: '24px'
+            }}
           >
             <Plus size={12} className="text-slate-700" />
           </button>
@@ -231,7 +244,7 @@ const QuickAddTaskRow: React.FC<QuickAddProps> = ({ onSave, onCancel, defaultSta
                 data-testid="qa-assign-btn"
                 title="Assign"
                 onClick={() => setAssignOpen((o) => !o)}
-                className="inline-flex items-center justify-center h-6 w-6 rounded-full border border-slate-300 bg-white hover:bg-slate-50"
+                className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-white hover:bg-slate-50 flex-shrink-0"
               >
                 <UserPlus className="h-3.5 w-3.5 text-slate-600" />
               </button>
@@ -283,31 +296,201 @@ const QuickAddTaskRow: React.FC<QuickAddProps> = ({ onSave, onCancel, defaultSta
             Save ↓
           </button>
         </div>
-      </td>
-    </tr>
+      </div>
+
+      {/* Empty column */}
+      <div className="px-2 py-2"></div>
+    </div>
   );
 };
 
 const formatDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
 
-// Column sizing handler - measures actual rendered width and syncs with state
-const columnSizingHandler = (
-  thElem: HTMLTableCellElement | null,
-  table: Table<any>,
-  column: Column<any>
-) => {
-  if (!thElem) return;
+// Task Row Component
+interface TaskRowProps {
+  task: Task;
+  project: Project | undefined;
+  creator: User | undefined;
+  assignedUsers: User[];
+  users: User[];
+  onTaskClick: (task: Task) => void;
+  onProjectClick: (projectId: string) => void;
+  onStatusToggle: (taskId: string) => void;
+  onUpdateTaskAssignees: (taskId: string, assignees: string[]) => void;
+  gridTemplateColumns: string;
+}
 
-  const currentWidth = table.getState().columnSizing[column.id];
-  const actualWidth = thElem.getBoundingClientRect().width;
+const TaskRow: React.FC<TaskRowProps> = ({
+  task,
+  project,
+  creator,
+  assignedUsers,
+  users,
+  onTaskClick,
+  onProjectClick,
+  onStatusToggle,
+  onUpdateTaskAssignees,
+  gridTemplateColumns,
+}) => {
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [localAssignees, setLocalAssignees] = useState<string[]>(task.assignees);
 
-  // Update when real width is different from stored width or not stored
-  if (currentWidth === undefined || currentWidth !== actualWidth) {
-    table.setColumnSizing((prevSizes) => ({
-      ...prevSizes,
-      [column.id]: actualWidth,
-    }));
-  }
+  const toggleAssignee = useCallback((userId: string) => {
+    setLocalAssignees((prev) => {
+      const updated = prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId];
+      onUpdateTaskAssignees(task.id, updated);
+      return updated;
+    });
+  }, [task.id, onUpdateTaskAssignees]);
+
+  return (
+    <div
+      className="hover:bg-slate-50 cursor-pointer border-b border-[#cecece] grid items-center"
+      style={{ gridTemplateColumns }}
+    >
+      {/* Status */}
+      <div className="px-2 py-2 flex items-center justify-center">
+        <StatusDot status={task.status} onClick={() => onStatusToggle(task.id)} />
+      </div>
+
+      {/* Name */}
+      <div className="px-2 py-2">
+        <button
+          type="button"
+          data-testid="name-cell"
+          onClick={() => onTaskClick(task)}
+          className="w-full text-left rounded hover:bg-slate-50 focus:bg-slate-50 outline-none px-1 py-1 cursor-pointer"
+          style={{ lineHeight: 1.1 }}
+        >
+          <span
+            role="link"
+            aria-label="Open project"
+            title="Open project"
+            tabIndex={0}
+            data-testid="project-link"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (project) onProjectClick(project.id);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                if (project) onProjectClick(project.id);
+              }
+            }}
+            className="block text-slate-600 hover:text-slate-900 hover:bg-slate-50 focus:bg-slate-50 rounded px-0.5 cursor-pointer text-[11px] leading-tight mb-1"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
+          >
+            {project?.name || '-'}
+          </span>
+          <div className="text-slate-900 font-medium leading-tight" style={{ fontSize: '13px' }}>
+            {task.title}
+          </div>
+        </button>
+      </div>
+
+      {/* Files */}
+      <div className="px-2 py-2 text-center">
+        <div className="w-full text-center">
+          <button
+            aria-label="Attach files"
+            title="Attach files"
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+            className="inline-flex items-center justify-center h-6 w-6 rounded bg-white hover:bg-slate-50"
+            style={{ 
+              border: '0.5px dashed #cbd5e1',
+              borderWidth: '0.5px',
+              borderStyle: 'dashed',
+              borderColor: '#cbd5e1'
+            }}
+          >
+            <Plus size={12} className="text-slate-700" />
+          </button>
+        </div>
+      </div>
+
+      {/* Date */}
+      <div className="px-2 py-2 text-center">
+        <span className="block mx-auto text-slate-600 whitespace-nowrap" style={{ fontSize: '14px' }}>
+          {formatDate(task.createdAt)}
+        </span>
+      </div>
+
+      {/* Created */}
+      <div className="px-2 py-2 text-center">
+        {creator ? (
+          <div className="flex justify-center">
+            <Avatar user={creator} />
+          </div>
+        ) : (
+          <span className="text-slate-400 text-xs">-</span>
+        )}
+      </div>
+
+      {/* Assigned */}
+      <div className="px-2 py-2 text-center">
+        <div className="flex gap-1 justify-center items-center mx-auto">
+          {assignedUsers.slice(0, 2).map((u) => (
+            <Avatar key={u.id} user={u} />
+          ))}
+          {assignedUsers.length > 2 && (
+            <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-slate-500 text-white text-[9px]">
+              +{assignedUsers.length - 2}
+            </span>
+          )}
+          <Popover
+            open={assignOpen}
+            onClose={() => setAssignOpen(false)}
+            anchorClass="relative inline-block"
+            anchor={
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setAssignOpen((o) => !o);
+                }}
+                className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-white hover:bg-slate-50"
+                title="Assign users"
+              >
+                <UserPlus className="h-3.5 w-3.5 text-slate-600" />
+              </button>
+            }
+            panel={
+              <div className="max-h-64 overflow-auto w-56">
+                <div className="px-2 py-1 text-[11px] text-slate-500 border-b border-[#cecece]">Assign to</div>
+                <ul className="py-[2px]">
+                  {users.length === 0 && <li className="px-2 py-1 text-xs text-slate-500">No users</li>}
+                  {users.map((u) => {
+                    const active = localAssignees.includes(u.id);
+                    return (
+                      <li key={u.id}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleAssignee(u.id);
+                          }}
+                          className="w-full flex items-center gap-2 px-2 py-1 text-[12px] hover:bg-slate-100"
+                        >
+                          <Avatar user={u} size={5} />
+                          <span className="flex-1 text-left">{u.name}</span>
+                          {active && <Check size={14} className="text-slate-700" />}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            }
+          />
+        </div>
+      </div>
+
+      {/* Empty column */}
+      <div className="px-2 py-2"></div>
+    </div>
+  );
 };
 
 interface TasksSectionProps {
@@ -322,8 +505,8 @@ interface TasksSectionProps {
   onStatusToggle: (taskId: string) => void;
   onQuickAdd: (input: { title: string; projectId: string; assignees: string[]; status: TaskStatus }) => void;
   onUpdateTaskAssignees: (taskId: string, assignees: string[]) => void;
-  columnSizing: ColumnSizingState;
-  onColumnSizingChange: (updater: any) => void;
+  columnWidths: number[];
+  onColumnWidthsChange: (widths: number[]) => void;
 }
 
 const TasksSection: React.FC<TasksSectionProps> = ({
@@ -338,209 +521,111 @@ const TasksSection: React.FC<TasksSectionProps> = ({
   onStatusToggle,
   onQuickAdd,
   onUpdateTaskAssignees,
-  columnSizing,
-  onColumnSizingChange,
+  columnWidths,
+  onColumnWidthsChange,
 }) => {
   const meta = STATUS_META[status];
   const [showQuickAdd, setShowQuickAdd] = useState(false);
+  
+  // Resize state
+  const [resizingColumnIndex, setResizingColumnIndex] = useState<number | null>(null);
+  const resizeStartX = useRef<number>(0);
+  const resizeStartWidths = useRef<number[]>([]);
+  const [tableOverflow, setTableOverflow] = useState<number>(0); // Extra width when column hits min
 
-  const columnsBase = useMemo(
-    () => [
-      {
-        id: 'status',
-        header: '',
-        size: 32,
-        minSize: 24,
-        maxSize: 48,
-        enableResizing: false,
-        cell: ({ row }: any) => <StatusDot status={row.original.status} onClick={() => onStatusToggle(row.original.id)} />,
-      },
-      {
-        id: 'name',
-        header: 'Name',
-        size: 420,
-        minSize: 220,
-        maxSize: 1000,
-        cell: ({ row }: any) => {
-          const task = row.original as Task;
-          const project = projects.find((p) => p.id === task.projectId);
-          return (
-            <button
-              type="button"
-              data-testid="name-cell"
-              onClick={() => onTaskClick(task)}
-              className="w-full text-left rounded hover:bg-slate-50 focus:bg-slate-50 outline-none px-1 py-1 cursor-pointer"
-              style={{ lineHeight: 1.1 }}
-            >
-              <span
-                role="link"
-                aria-label="Open project"
-                title="Open project"
-                tabIndex={0}
-                data-testid="project-link"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (project) onProjectClick(project.id);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (project) onProjectClick(project.id);
-                  }
-                }}
-                className="block text-slate-600 hover:text-slate-900 hover:bg-slate-50 focus:bg-slate-50 rounded px-0.5 cursor-pointer text-[11px] leading-tight mb-1"
-                style={{ WebkitTapHighlightColor: 'transparent' }}
-              >
-                {project?.name || '-'}
-              </span>
-              <div className="text-slate-900 font-normal leading-tight" style={{ fontSize: '13px' }}>
-                {task.title}
-              </div>
-            </button>
+  // Generate grid template columns string
+  const gridTemplateColumns = useMemo(() => {
+    // Add flexible empty column at the end, with potential overflow
+    const widths = columnWidths.map(width => `${width}px`).join(' ');
+    // Add overflow to empty column if needed
+    const emptyColumnWidth = tableOverflow > 0 ? `minmax(${tableOverflow}px, 1fr)` : 'minmax(0, 1fr)';
+    return `${widths} ${emptyColumnWidth}`;
+  }, [columnWidths, tableOverflow]);
+
+  // Handle resize start
+  const handleResizeStart = useCallback((columnIndex: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    setResizingColumnIndex(columnIndex);
+    resizeStartX.current = e.clientX;
+    resizeStartWidths.current = [...columnWidths];
+    setTableOverflow(0); // Reset overflow when starting new resize
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [columnWidths]);
+
+  // Handle resize move
+  useEffect(() => {
+    if (resizingColumnIndex === null) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - resizeStartX.current;
+      const newWidths = [...resizeStartWidths.current];
+      
+      // Resize the column on the left of the handle
+      const leftColumnIndex = resizingColumnIndex;
+      const rightColumnIndex = resizingColumnIndex + 1;
+      
+      // Only allow resizing for columns 1-5 (Name, Files, Date, Created, Assigned)
+      // Column 0 (Status) is fixed, last column (Empty) is flexible and doesn't need resizing
+      if (leftColumnIndex >= 1 && leftColumnIndex < newWidths.length) {
+        // If resizing the last resizable column (Assigned), only adjust that column
+        // The empty column will adjust automatically since it's flexible
+        if (leftColumnIndex === newWidths.length - 1) {
+          // Calculate new width
+          const newLeftWidth = resizeStartWidths.current[leftColumnIndex] + deltaX;
+          
+          // If dragging left (making narrower) and at min width, table will grow horizontally
+          // via the flexible empty column, which pushes content to the left
+          if (newLeftWidth >= MIN_COLUMN_WIDTH) {
+            // Column can resize normally
+            newWidths[leftColumnIndex] = newLeftWidth;
+            setTableOverflow(0);
+            onColumnWidthsChange(newWidths);
+          } else {
+            // At min width, but dragging left - grow table horizontally
+            // Keep column at min width, but track overflow to grow table
+            newWidths[leftColumnIndex] = MIN_COLUMN_WIDTH;
+            // Calculate how much we've dragged past min width
+            const overflow = MIN_COLUMN_WIDTH - newLeftWidth;
+            setTableOverflow(Math.max(0, overflow));
+            onColumnWidthsChange(newWidths);
+          }
+        } else {
+          // Normal resize between two fixed-width columns
+          const newLeftWidth = Math.max(
+            MIN_COLUMN_WIDTH,
+            resizeStartWidths.current[leftColumnIndex] + deltaX
           );
-        },
-      },
-      {
-        id: 'files',
-        header: 'Files',
-        size: 56,
-        minSize: 52,
-        maxSize: 200,
-        cell: ({ row }: any) => (
-          <div className="w-full text-center">
-            <button
-              aria-label="Attach files"
-              title="Attach files"
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-              className="inline-flex items-center justify-center h-6 w-6 rounded border border-slate-300 bg-white hover:bg-slate-50"
-            >
-              <Plus size={12} className="text-slate-700" />
-            </button>
-          </div>
-        ),
-      },
-      {
-        id: 'date',
-        header: 'Date',
-        size: 110,
-        minSize: 96,
-        maxSize: 260,
-        cell: ({ row }: any) => (
-          <span className="block mx-auto text-slate-600 whitespace-nowrap" style={{ fontSize: '14px' }}>
-            {formatDate(row.original.createdAt)}
-          </span>
-        ),
-      },
-      {
-        id: 'created',
-        header: 'Created',
-        size: 84,
-        minSize: 72,
-        maxSize: 200,
-        cell: ({ row }: any) => {
-          const task = row.original as Task;
-          const creator = users.find((u) => u.id === task.createdBy);
-          if (!creator) return <span className="text-slate-400 text-xs">-</span>;
-          return (
-            <div className="flex justify-center">
-              <Avatar user={creator} />
-            </div>
+          const newRightWidth = Math.max(
+            MIN_COLUMN_WIDTH,
+            resizeStartWidths.current[rightColumnIndex] - deltaX
           );
-        },
-      },
-      {
-        id: 'assigned',
-        header: 'Assigned',
-        size: 168,
-        minSize: 84,
-        maxSize: 260,
-        cell: ({ row }: any) => {
-          const task = row.original as Task;
-          const assignedUsers = users.filter((u) => task.assignees.includes(u.id));
-          const [assignOpen, setAssignOpen] = useState(false);
-          const [localAssignees, setLocalAssignees] = useState<string[]>(task.assignees);
+          
+          // Only update if both columns are within constraints
+          if (newLeftWidth >= MIN_COLUMN_WIDTH && newRightWidth >= MIN_COLUMN_WIDTH) {
+            newWidths[leftColumnIndex] = newLeftWidth;
+            newWidths[rightColumnIndex] = newRightWidth;
+            onColumnWidthsChange(newWidths);
+          }
+        }
+      }
+    };
 
-          const toggleAssignee = useCallback((userId: string) => {
-            setLocalAssignees((prev) => {
-              const updated = prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId];
-              onUpdateTaskAssignees(task.id, updated);
-              return updated;
-            });
-          }, [task.id]);
+    const handleMouseUp = () => {
+      setResizingColumnIndex(null);
+      setTableOverflow(0); // Reset overflow on mouse up
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
 
-          return (
-            <div className="flex gap-1 justify-center items-center mx-auto">
-              {assignedUsers.slice(0, 2).map((u) => (
-                <Avatar key={u.id} user={u} />
-              ))}
-              {assignedUsers.length > 2 && (
-                <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-slate-500 text-white text-[9px]">
-                  +{assignedUsers.length - 2}
-                </span>
-              )}
-              <Popover
-                open={assignOpen}
-                onClose={() => setAssignOpen(false)}
-                anchorClass="relative inline-block"
-                anchor={
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setAssignOpen((o) => !o);
-                    }}
-                    className="inline-flex items-center justify-center h-6 w-6 rounded-full border border-slate-300 bg-white hover:bg-slate-50"
-                    title="Assign users"
-                  >
-                    <UserPlus className="h-3.5 w-3.5 text-slate-600" />
-                  </button>
-                }
-                panel={
-                  <div className="max-h-64 overflow-auto w-56">
-                    <div className="px-2 py-1 text-[11px] text-slate-500 border-b border-[#cecece]">Assign to</div>
-                    <ul className="py-[2px]">
-                      {users.length === 0 && <li className="px-2 py-1 text-xs text-slate-500">No users</li>}
-                      {users.map((u) => {
-                        const active = localAssignees.includes(u.id);
-                        return (
-                          <li key={u.id}>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleAssignee(u.id);
-                              }}
-                              className="w-full flex items-center gap-2 px-2 py-1 text-[12px] hover:bg-slate-100"
-                            >
-                              <Avatar user={u} size={5} />
-                              <span className="flex-1 text-left">{u.name}</span>
-                              {active && <Check size={14} className="text-slate-700" />}
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                }
-              />
-            </div>
-          );
-        },
-      },
-    ],
-    [onStatusToggle, onTaskClick, onProjectClick, projects, users]
-  );
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
 
-  const table: any = useReactTable({
-    data: tasks,
-    columns: columnsBase,
-    getCoreRowModel: getCoreRowModel(),
-    state: { columnSizing },
-    onColumnSizingChange,
-    defaultColumn: { minSize: 48, maxSize: 800 },
-    columnResizeMode: 'onChange',
-  });
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [resizingColumnIndex, onColumnWidthsChange]);
 
   const handleQuickAddClick = useCallback(() => setShowQuickAdd(true), []);
   const handleQuickAddSave = useCallback(
@@ -551,6 +636,10 @@ const TasksSection: React.FC<TasksSectionProps> = ({
     [onQuickAdd]
   );
   const handleQuickAddCancel = useCallback(() => setShowQuickAdd(false), []);
+
+  // Calculate table width - sum of fixed columns, empty column fills remaining space
+  const totalFixedWidth = columnWidths.reduce((sum, width) => sum + width, 0);
+  const tableWidth = Math.min(totalFixedWidth, MAX_TABLE_WIDTH);
 
   return (
     <div className="mb-6">
@@ -564,80 +653,154 @@ const TasksSection: React.FC<TasksSectionProps> = ({
 
       {!collapsed && (
         <div className="overflow-x-auto pl-8 pr-8" style={{ scrollbarGutter: 'stable' }} data-testid="table-scroll-x">
-          <table className="border-collapse text-xs table-fixed w-full">
-            <colgroup>
-              {table.getAllLeafColumns().map((column: any) => (
-                <col
-                  key={column.id}
-                  style={{ width: `${column.getSize()}px` }}
-                />
-              ))}
-            </colgroup>
-            <thead>
-              {table.getHeaderGroups().map((headerGroup: any) => (
-                <tr key={headerGroup.id} className="border-b border-[#cecece]">
-                  {headerGroup.headers.map((header: any) => {
-                    const isCentered = CENTER_COLS.has(header.column.id);
-                    return (
-                      <th
-                        key={header.id}
-                        ref={(thElem) => columnSizingHandler(thElem, table, header.column)}
-                        className={`px-2 py-1.5 text-xs font-semibold text-slate-700 relative ${isCentered ? 'text-center' : 'text-left'}`}
-                      >
-                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                        {header.column.id !== 'status' && (
-                          <div
-                            data-col={header.column.id}
-                            onMouseDown={header.getResizeHandler()}
-                            onTouchStart={header.getResizeHandler()}
-                            className="absolute top-0 right-0 h-full w-6 cursor-col-resize hover:bg-blue-500/10 active:bg-blue-500/20 select-none touch-none"
-                            style={{ userSelect: 'none' }}
-                          />
-                        )}
-                      </th>
-                    );
-                  })}
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {table.getRowModel().rows.map((row: any) => (
-                <tr key={row.id} className="hover:bg-slate-50 cursor-pointer border-b border-[#cecece]">
-                  {row.getVisibleCells().map((cell: any) => {
-                    const isCentered = CENTER_COLS.has(cell.column.id as string);
-                    return (
-                      <td key={cell.id} className={`px-2 py-2 ${isCentered ? 'text-center cell-hoverable' : ''}`}>
-                        <div className={`row-wrap ${isCentered ? 'center' : ''}`}>
-                          <div className="cell-hover-border">{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
+          <div 
+            className="border-collapse text-xs"
+            style={{
+              width: '100%',
+              minWidth: `${tableWidth}px`
+            }}
+          >
+            {/* Table Header */}
+            <div
+              className="border-b border-[#cecece] grid items-center relative"
+              style={{ gridTemplateColumns }}
+            >
+              {/* Status */}
+              <div className="px-2 py-1.5 text-xs font-semibold text-slate-700 text-center relative flex items-center justify-center">
+                <div className="pr-3"></div>
+              </div>
+
+              {/* Name */}
+              <div className="px-2 py-1.5 text-xs font-semibold text-slate-700 text-left relative group">
+                <div className="pr-3">Name</div>
+                {columnWidths.length > 2 && (
+                  <div
+                    className={`absolute right-0 top-0 bottom-0 cursor-col-resize bg-slate-300 hover:bg-slate-400 active:bg-slate-500 transition-all z-10 ${
+                      resizingColumnIndex === 1 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                    }`}
+                    style={{ transform: 'translateX(8px)', width: '4px' }}
+                    onMouseDown={(e) => handleResizeStart(1, e)}
+                  />
+                )}
+              </div>
+
+              {/* Files */}
+              <div className="px-2 py-1.5 text-xs font-semibold text-slate-700 text-center relative group">
+                <div className="pr-3">Files</div>
+                {columnWidths.length > 3 && (
+                  <div
+                    className={`absolute right-0 top-0 bottom-0 cursor-col-resize bg-slate-300 hover:bg-slate-400 active:bg-slate-500 transition-all z-10 ${
+                      resizingColumnIndex === 2 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                    }`}
+                    style={{ transform: 'translateX(8px)', width: '4px' }}
+                    onMouseDown={(e) => handleResizeStart(2, e)}
+                  />
+                )}
+              </div>
+
+              {/* Date */}
+              <div className="px-2 py-1.5 text-xs font-semibold text-slate-700 text-center relative group">
+                <div className="pr-3">Date</div>
+                {columnWidths.length > 4 && (
+                  <div
+                    className={`absolute right-0 top-0 bottom-0 cursor-col-resize bg-slate-300 hover:bg-slate-400 active:bg-slate-500 transition-all z-10 ${
+                      resizingColumnIndex === 3 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                    }`}
+                    style={{ transform: 'translateX(8px)', width: '4px' }}
+                    onMouseDown={(e) => handleResizeStart(3, e)}
+                  />
+                )}
+              </div>
+
+              {/* Created */}
+              <div className="px-2 py-1.5 text-xs font-semibold text-slate-700 text-center relative group">
+                <div className="pr-3">Created by</div>
+                {columnWidths.length > 5 && (
+                  <div
+                    className={`absolute right-0 top-0 bottom-0 cursor-col-resize bg-slate-300 hover:bg-slate-400 active:bg-slate-500 transition-all z-10 ${
+                      resizingColumnIndex === 4 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                    }`}
+                    style={{ transform: 'translateX(8px)', width: '4px' }}
+                    onMouseDown={(e) => handleResizeStart(4, e)}
+                  />
+                )}
+              </div>
+
+              {/* Assigned */}
+              <div className="px-2 py-1.5 text-xs font-semibold text-slate-700 text-center relative group">
+                <div className="pr-3">Assigned to</div>
+                {columnWidths.length >= 6 && (
+                  <div
+                    className={`absolute right-0 top-0 bottom-0 cursor-col-resize bg-slate-300 hover:bg-slate-400 active:bg-slate-500 transition-all z-10 ${
+                      resizingColumnIndex === 5 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                    }`}
+                    style={{ transform: 'translateX(8px)', width: '4px' }}
+                    onMouseDown={(e) => handleResizeStart(5, e)}
+                  />
+                )}
+              </div>
+
+              {/* Empty column */}
+              <div className="px-2 py-1.5 text-xs font-semibold text-slate-700 relative">
+                <div className="pr-3"></div>
+              </div>
+            </div>
+
+            {/* Table Body */}
+            <div>
+              {tasks.map((task) => {
+                const project = projects.find((p) => p.id === task.projectId);
+                const creator = users.find((u) => u.id === task.createdBy);
+                const assignedUsers = users.filter((u) => task.assignees.includes(u.id));
+
+                return (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    project={project}
+                    creator={creator}
+                    assignedUsers={assignedUsers}
+                    users={users}
+                    onTaskClick={onTaskClick}
+                    onProjectClick={onProjectClick}
+                    onStatusToggle={onStatusToggle}
+                    onUpdateTaskAssignees={onUpdateTaskAssignees}
+                    gridTemplateColumns={gridTemplateColumns}
+                  />
+                );
+              })}
+              
               {!showQuickAdd && tasks.length > 0 && (
-                <tr className="border-b border-transparent">
-                  <td className="px-2 py-0">
+                <div className="border-b border-transparent grid items-center" style={{ gridTemplateColumns }}>
+                  <div className="px-2 py-0">
                     <div className="h-[42px] flex items-center justify-start">
                       <button onClick={handleQuickAddClick} className="h-5 w-5 grid place-items-center rounded hover:bg-slate-100" aria-label="Add Task">
                         <Plus size={14} className="text-slate-600" />
                       </button>
                     </div>
-                  </td>
-                  <td colSpan={table.getAllLeafColumns().length - 1} className="px-2 py-0">
+                  </div>
+                  <div className="px-2 py-0" style={{ gridColumn: 'span 6' }}>
                     <div className="h-[42px] flex items-center">
                       <button onClick={handleQuickAddClick} className="inline-flex items-center rounded px-1.5 py-1 transition-colors hover:bg-slate-100" style={{ fontSize: '13px' }}>
                         <span className="text-slate-500">Add Task</span>
                       </button>
                     </div>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               )}
+              
               {showQuickAdd && (
-                <QuickAddTaskRow projects={projects} users={users} defaultStatus={status} onSave={handleQuickAddSave} onCancel={handleQuickAddCancel} />
+                <QuickAddTaskRow 
+                  columnWidths={columnWidths}
+                  projects={projects} 
+                  users={users} 
+                  defaultStatus={status} 
+                  onSave={handleQuickAddSave} 
+                  onCancel={handleQuickAddCancel} 
+                />
               )}
-            </tbody>
-          </table>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -661,14 +824,31 @@ export function TasksTable({ tasks, projects, users, onTaskClick, onProjectClick
     progress_update: false,
     done_completed: false,
   });
-  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({
-    status: 32,
-    name: 420,
-    files: 56,
-    date: 110,
-    created: 84,
-    assigned: 168,
+  
+  // Initialize column widths from localStorage or defaults
+  const [columnWidths, setColumnWidths] = useState<number[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length === DEFAULT_COLUMN_WIDTHS.length) {
+          return parsed;
+        }
+      }
+    } catch {
+      // Ignore errors, use defaults
+    }
+    return DEFAULT_COLUMN_WIDTHS;
   });
+
+  // Save column widths to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(columnWidths));
+    } catch {
+      // Ignore errors
+    }
+  }, [columnWidths]);
 
   const filtered = useMemo(
     () => ({
@@ -700,8 +880,8 @@ export function TasksTable({ tasks, projects, users, onTaskClick, onProjectClick
               onStatusToggle={onStatusToggle}
               onQuickAdd={onQuickAdd}
               onUpdateTaskAssignees={onUpdateTaskAssignees}
-              columnSizing={columnSizing}
-              onColumnSizingChange={setColumnSizing}
+              columnWidths={columnWidths}
+              onColumnWidthsChange={setColumnWidths}
             />
             <TasksSection
               status="progress_update"
@@ -715,8 +895,8 @@ export function TasksTable({ tasks, projects, users, onTaskClick, onProjectClick
               onStatusToggle={onStatusToggle}
               onQuickAdd={onQuickAdd}
               onUpdateTaskAssignees={onUpdateTaskAssignees}
-              columnSizing={columnSizing}
-              onColumnSizingChange={setColumnSizing}
+              columnWidths={columnWidths}
+              onColumnWidthsChange={setColumnWidths}
             />
             <TasksSection
               status="done_completed"
@@ -730,8 +910,8 @@ export function TasksTable({ tasks, projects, users, onTaskClick, onProjectClick
               onStatusToggle={onStatusToggle}
               onQuickAdd={onQuickAdd}
               onUpdateTaskAssignees={onUpdateTaskAssignees}
-              columnSizing={columnSizing}
-              onColumnSizingChange={setColumnSizing}
+              columnWidths={columnWidths}
+              onColumnWidthsChange={setColumnWidths}
             />
           </div>
         </div>
