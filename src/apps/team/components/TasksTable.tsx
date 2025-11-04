@@ -38,21 +38,14 @@ const Avatar = ({ user, size = 6 }: { user: User; size?: number }) => {
     .toUpperCase()
     .slice(0, 2);
   
-  if (user.avatarUrl) {
-    return (
-      <img
-        src={user.avatarUrl}
-        alt={user.name}
-        className="rounded-full object-cover"
-        style={{ width: `${size * 4}px`, height: `${size * 4}px` }}
-      />
-    );
-  }
-  
   return (
     <span
-      className="inline-flex items-center justify-center rounded-full bg-slate-400 text-white text-[10px]"
-      style={{ width: `${size * 4}px`, height: `${size * 4}px` }}
+      className="inline-flex items-center justify-center rounded-full text-white text-[10px]"
+      style={{ 
+        width: `${size * 4}px`, 
+        height: `${size * 4}px`,
+        background: user.avatarUrl || '#94a3b8'
+      }}
     >
       {initials}
     </span>
