@@ -13,6 +13,7 @@ import {
   useDeleteWorkspaceMessage,
   useUpdateWorkspaceMessage
 } from "@/lib/api/hooks/useWorkspaceChat";
+import { useProjects } from "@/lib/api/hooks/useProjects";
 import { WorkspaceChatMessage } from "./WorkspaceChatMessage";
 import { useToast } from "@/hooks/use-toast";
 import { useProjectFiles } from "@/lib/api/hooks/useProjectFiles";
@@ -104,6 +105,9 @@ export default function TeamChatSlim({
   const deleteWorkspaceChatMessage = useDeleteWorkspaceMessage();
   const updateWorkspaceMessage = useUpdateWorkspaceMessage();
   const { toast } = useToast();
+  
+  // Fetch workspace projects for header dropdown when in workspace mode
+  const { data: workspaceProjects = [] } = useProjects(workspaceId || "", {});
 
   // Use appropriate messages based on mode
   const rawMessages = isWorkspaceChat ? rawWorkspaceMessages : rawProjectMessages;
@@ -411,11 +415,14 @@ export default function TeamChatSlim({
 
           <ChatHeader
             selectedProject={isWorkspaceChat ? { id: '', name: 'Workspace chat' } : selectedProject}
-            projects={projects}
+            projects={isWorkspaceChat ? workspaceProjects : projects}
             showChatSelector={showChatSelector}
             onToggleSidebar={onToggleSidebar}
             onToggleFiles={onToggleFiles}
-            onProjectSelect={onProjectSelect}
+            onProjectSelect={(project) => {
+              onProjectSelect(project as any);
+              setIsWorkspaceChat(false);
+            }}
             onToggleChatSelector={() => setShowChatSelector(!showChatSelector)}
             onCloseChatSelector={() => setShowChatSelector(false)}
             showFilesControls={true}
@@ -641,11 +648,14 @@ export default function TeamChatSlim({
       {(selectedProject || isWorkspaceChat) && (
         <ChatHeader
           selectedProject={isWorkspaceChat ? { id: '', name: 'Workspace chat' } : selectedProject}
-          projects={projects}
+          projects={isWorkspaceChat ? workspaceProjects : projects}
           showChatSelector={showChatSelector}
           onToggleSidebar={onToggleSidebar}
           onToggleFiles={onToggleFiles}
-          onProjectSelect={onProjectSelect}
+          onProjectSelect={(project) => {
+            onProjectSelect(project as any);
+            setIsWorkspaceChat(false);
+          }}
           onToggleChatSelector={() => setShowChatSelector(!showChatSelector)}
           onCloseChatSelector={() => setShowChatSelector(false)}
           showSidePanelToggle={showSidePanel}
