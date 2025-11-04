@@ -92,7 +92,7 @@ export function TrashContent() {
             <div
               key={`${row.type}:${row.id}`}
               data-testid={i === 0 ? 'trash-row' : undefined}
-              className={`items-center gap-2 px-3 h-11 text-[13px] text-[var(--text)] grid ${
+              className={`items-center gap-2 px-3 h-11 text-[13px] text-[var(--text)] grid hover:bg-slate-50 transition-colors ${
                 i ? 'border-t border-slate-200' : ''
               }`}
               style={{ gridTemplateColumns: SETTINGS_CONSTANTS.TRASH_COLS }}
