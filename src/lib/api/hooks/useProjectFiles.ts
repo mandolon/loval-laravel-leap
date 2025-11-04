@@ -138,6 +138,17 @@ export const useUploadProjectFiles = (projectId: string) => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
+      // Get the public.users.id from auth.users.id
+      const { data: publicUser, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', user.id)
+        .single()
+
+      if (userError || !publicUser) {
+        throw new Error('User not found in public.users table')
+      }
+
       const uploadedFiles: ProjectFile[] = []
 
       for (const file of input.files) {
@@ -167,7 +178,7 @@ export const useUploadProjectFiles = (projectId: string) => {
             storage_path: storagePath,
             filesize: file.size,
             mimetype: file.type,
-            uploaded_by: user.id,
+            uploaded_by: publicUser.id,
             version_number: 1,
             download_count: 0,
             is_shareable: false,
@@ -348,6 +359,17 @@ export const useUploadChatFiles = (projectId: string) => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
+      // Get the public.users.id from auth.users.id
+      const { data: publicUser, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', user.id)
+        .single()
+
+      if (userError || !publicUser) {
+        throw new Error('User not found in public.users table')
+      }
+
       const uploadedFiles: ProjectFile[] = []
 
       for (const file of files) {
@@ -375,7 +397,7 @@ export const useUploadChatFiles = (projectId: string) => {
             storage_path: storagePath,
             filesize: file.size,
             mimetype: file.type,
-            uploaded_by: user.id,
+            uploaded_by: publicUser.id,
             version_number: 1,
             download_count: 0,
             is_shareable: false,

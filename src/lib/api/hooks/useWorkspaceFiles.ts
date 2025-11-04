@@ -85,6 +85,17 @@ export function useUploadWorkspaceFiles(workspaceId: string) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      // Get the public.users.id from auth.users.id
+      const { data: publicUser, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', user.id)
+        .single()
+
+      if (userError || !publicUser) {
+        throw new Error('User not found in public.users table')
+      }
+
       const uploadedFiles: WorkspaceFile[] = [];
 
       for (const file of data.files) {
@@ -112,7 +123,7 @@ export function useUploadWorkspaceFiles(workspaceId: string) {
             mimetype: file.type,
             filesize: file.size,
             storage_path: storagePath,
-            uploaded_by: user.id,
+            uploaded_by: publicUser.id,
           }])
           .select()
           .single();
