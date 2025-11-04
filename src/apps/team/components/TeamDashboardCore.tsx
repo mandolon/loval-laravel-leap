@@ -1290,6 +1290,13 @@ const TasksView = memo(function TasksView() {
     }
   }, [tasks, updateTaskMutation]);
 
+  const handleUpdateTaskAssignees = useCallback((taskId: string, assignees: string[]) => {
+    updateTaskMutation.mutate({
+      id: taskId,
+      input: { assignees },
+    });
+  }, [updateTaskMutation]);
+
   const handleQuickAdd = useCallback(
     (input: { title: string; projectId: string; assignees: string[]; status: Task['status'] }) => {
       createTaskMutation.mutate({
@@ -1364,6 +1371,7 @@ const TasksView = memo(function TasksView() {
           onProjectClick={handleProjectClick}
           onStatusToggle={handleStatusToggle}
           onQuickAdd={handleQuickAdd}
+          onUpdateTaskAssignees={handleUpdateTaskAssignees}
         />
       </div>
 

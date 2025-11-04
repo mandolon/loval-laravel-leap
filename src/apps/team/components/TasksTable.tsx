@@ -29,6 +29,36 @@ const Badge = ({ children, tone }: { children: React.ReactNode; tone: 'red' | 'b
   </span>
 );
 
+// Avatar component
+const Avatar = ({ user, size = 6 }: { user: User; size?: number }) => {
+  const initials = user.name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+  
+  if (user.avatarUrl) {
+    return (
+      <img
+        src={user.avatarUrl}
+        alt={user.name}
+        className="rounded-full object-cover"
+        style={{ width: `${size * 4}px`, height: `${size * 4}px` }}
+      />
+    );
+  }
+  
+  return (
+    <span
+      className="inline-flex items-center justify-center rounded-full bg-slate-400 text-white text-[10px]"
+      style={{ width: `${size * 4}px`, height: `${size * 4}px` }}
+    >
+      {initials}
+    </span>
+  );
+};
+
 // Generic Popover component
 function useOutsideDismiss<T extends HTMLElement>(open: boolean, onClose: () => void) {
   const ref = useRef<T | null>(null);
@@ -278,6 +308,7 @@ interface TasksSectionProps {
   onProjectClick: (projectId: string) => void;
   onStatusToggle: (taskId: string) => void;
   onQuickAdd: (input: { title: string; projectId: string; assignees: string[]; status: TaskStatus }) => void;
+  onUpdateTaskAssignees: (taskId: string, assignees: string[]) => void;
   columnSizing: ColumnSizingState;
   onColumnSizingChange: (updater: any) => void;
 }
@@ -293,6 +324,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({
   onProjectClick,
   onStatusToggle,
   onQuickAdd,
+  onUpdateTaskAssignees,
   columnSizing,
   onColumnSizingChange,
 }) => {
@@ -398,18 +430,11 @@ const TasksSection: React.FC<TasksSectionProps> = ({
         cell: ({ row }: any) => {
           const task = row.original as Task;
           const creator = users.find((u) => u.id === task.createdBy);
-          const initials = creator
-            ? creator.name
-                .split(' ')
-                .map((n) => n[0])
-                .join('')
-                .toUpperCase()
-                .slice(0, 2)
-            : '?';
+          if (!creator) return <span className="text-slate-400 text-xs">-</span>;
           return (
-            <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-slate-400 text-white text-[10px] mx-auto">
-              {initials}
-            </span>
+            <div className="flex justify-center">
+              <Avatar user={creator} />
+            </div>
           );
         },
       },
@@ -422,26 +447,70 @@ const TasksSection: React.FC<TasksSectionProps> = ({
         cell: ({ row }: any) => {
           const task = row.original as Task;
           const assignedUsers = users.filter((u) => task.assignees.includes(u.id));
+          const [assignOpen, setAssignOpen] = useState(false);
+          const [localAssignees, setLocalAssignees] = useState<string[]>(task.assignees);
+
+          const toggleAssignee = useCallback((userId: string) => {
+            setLocalAssignees((prev) => {
+              const updated = prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId];
+              onUpdateTaskAssignees(task.id, updated);
+              return updated;
+            });
+          }, [task.id]);
+
           return (
-            <div className="flex gap-1 justify-center mx-auto">
-              {assignedUsers.slice(0, 2).map((u) => {
-                const initials = u.name
-                  .split(' ')
-                  .map((n) => n[0])
-                  .join('')
-                  .toUpperCase()
-                  .slice(0, 2);
-                return (
-                  <span key={u.id} className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-slate-300 text-slate-800 text-[10px]">
-                    {initials}
-                  </span>
-                );
-              })}
+            <div className="flex gap-1 justify-center items-center mx-auto">
+              {assignedUsers.slice(0, 2).map((u) => (
+                <Avatar key={u.id} user={u} />
+              ))}
               {assignedUsers.length > 2 && (
                 <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-slate-500 text-white text-[9px]">
                   +{assignedUsers.length - 2}
                 </span>
               )}
+              <Popover
+                open={assignOpen}
+                onClose={() => setAssignOpen(false)}
+                anchorClass="relative inline-block"
+                anchor={
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setAssignOpen((o) => !o);
+                    }}
+                    className="inline-flex items-center justify-center h-6 w-6 rounded-full border border-slate-300 bg-white hover:bg-slate-50"
+                    title="Assign users"
+                  >
+                    <UserPlus className="h-3.5 w-3.5 text-slate-600" />
+                  </button>
+                }
+                panel={
+                  <div className="max-h-64 overflow-auto w-56">
+                    <div className="px-2 py-1 text-[11px] text-slate-500 border-b border-[#cecece]">Assign to</div>
+                    <ul className="py-[2px]">
+                      {users.length === 0 && <li className="px-2 py-1 text-xs text-slate-500">No users</li>}
+                      {users.map((u) => {
+                        const active = localAssignees.includes(u.id);
+                        return (
+                          <li key={u.id}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleAssignee(u.id);
+                              }}
+                              className="w-full flex items-center gap-2 px-2 py-1 text-[12px] hover:bg-slate-100"
+                            >
+                              <Avatar user={u} size={5} />
+                              <span className="flex-1 text-left">{u.name}</span>
+                              {active && <Check size={14} className="text-slate-700" />}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                }
+              />
             </div>
           );
         },
@@ -569,9 +638,10 @@ interface TasksTableProps {
   onProjectClick: (projectId: string) => void;
   onStatusToggle: (taskId: string) => void;
   onQuickAdd: (input: { title: string; projectId: string; assignees: string[]; status: TaskStatus }) => void;
+  onUpdateTaskAssignees: (taskId: string, assignees: string[]) => void;
 }
 
-export function TasksTable({ tasks, projects, users, onTaskClick, onProjectClick, onStatusToggle, onQuickAdd }: TasksTableProps) {
+export function TasksTable({ tasks, projects, users, onTaskClick, onProjectClick, onStatusToggle, onQuickAdd, onUpdateTaskAssignees }: TasksTableProps) {
   const [collapsed, setCollapsed] = useState<Record<TaskStatus, boolean>>({
     task_redline: false,
     progress_update: false,
@@ -615,6 +685,7 @@ export function TasksTable({ tasks, projects, users, onTaskClick, onProjectClick
               onProjectClick={onProjectClick}
               onStatusToggle={onStatusToggle}
               onQuickAdd={onQuickAdd}
+              onUpdateTaskAssignees={onUpdateTaskAssignees}
               columnSizing={columnSizing}
               onColumnSizingChange={setColumnSizing}
             />
@@ -629,6 +700,7 @@ export function TasksTable({ tasks, projects, users, onTaskClick, onProjectClick
               onProjectClick={onProjectClick}
               onStatusToggle={onStatusToggle}
               onQuickAdd={onQuickAdd}
+              onUpdateTaskAssignees={onUpdateTaskAssignees}
               columnSizing={columnSizing}
               onColumnSizingChange={setColumnSizing}
             />
@@ -643,6 +715,7 @@ export function TasksTable({ tasks, projects, users, onTaskClick, onProjectClick
               onProjectClick={onProjectClick}
               onStatusToggle={onStatusToggle}
               onQuickAdd={onQuickAdd}
+              onUpdateTaskAssignees={onUpdateTaskAssignees}
               columnSizing={columnSizing}
               onColumnSizingChange={setColumnSizing}
             />
