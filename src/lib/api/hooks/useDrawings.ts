@@ -411,3 +411,74 @@ export function useDeleteDrawingPage() {
     },
   });
 }
+
+// 10. Update drawing version name/version_number
+export function useUpdateDrawingVersion() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ 
+      drawingId,
+      projectId,
+      name,
+      versionNumber
+    }: { 
+      drawingId: string;
+      projectId: string;
+      name?: string;
+      versionNumber?: string;
+    }) => {
+      const updates: any = { updated_at: new Date().toISOString() };
+      if (name !== undefined) updates.name = name;
+      if (versionNumber !== undefined) updates.version_number = versionNumber;
+      
+      const { error } = await supabase
+        .from('drawings')
+        .update(updates)
+        .eq('id', drawingId);
+      
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: drawingKeys.list(variables.projectId) });
+      toast.success('Version renamed');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to rename version: ${error.message}`);
+    },
+  });
+}
+
+// 11. Update drawing page name
+export function useUpdateDrawingPageName() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ 
+      pageId,
+      projectId,
+      name
+    }: { 
+      pageId: string;
+      projectId: string;
+      name: string;
+    }) => {
+      const { error } = await supabase
+        .from('drawing_pages')
+        .update({ 
+          name,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', pageId);
+      
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: drawingKeys.list(variables.projectId) });
+      toast.success('Page renamed');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to rename page: ${error.message}`);
+    },
+  });
+}

@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef, forwardRef } from "react";
 import { Search, FolderClosed, BookOpen, MoreVertical } from "lucide-react";
 import { useProjectFolders, useProjectFiles, useDeleteProjectFile, useDeleteFolder } from '@/lib/api/hooks/useProjectFiles';
-import { useDrawingVersions, useUpdateDrawingScale, useCreateDrawingPage, useDeleteDrawingVersion, useDeleteDrawingPage } from '@/lib/api/hooks/useDrawings';
+import { useDrawingVersions, useUpdateDrawingScale, useCreateDrawingPage, useDeleteDrawingVersion, useDeleteDrawingPage, useUpdateDrawingVersion, useUpdateDrawingPageName } from '@/lib/api/hooks/useDrawings';
 import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
 
 /**
@@ -355,6 +355,8 @@ export default function ProjectPanel({
   const createDrawingPage = useCreateDrawingPage();
   const deleteDrawingVersion = useDeleteDrawingVersion();
   const deleteDrawingPage = useDeleteDrawingPage();
+  const updateDrawingVersion = useUpdateDrawingVersion();
+  const updateDrawingPageName = useUpdateDrawingPageName();
   
   // Transform to UI format
   const wbSections = useMemo(() => 
@@ -645,7 +647,14 @@ export default function ProjectPanel({
             }}
             editing={isEditing}
             onCommitEdit={(name: string) => {
-              // TODO: Implement rename with API mutation
+              const trimmedName = name.trim();
+              if (trimmedName && trimmedName !== title) {
+                updateDrawingVersion.mutate({
+                  drawingId: id,
+                  projectId,
+                  versionNumber: trimmedName
+                });
+              }
               setWbEditing(null);
             }}
             draggable={false}
@@ -678,7 +687,14 @@ export default function ProjectPanel({
                     }}
                     editing={isItemEditing}
                     onCommitEdit={(name: string) => {
-                      // TODO: Implement rename with API mutation
+                      const trimmedName = name.trim();
+                      if (trimmedName && trimmedName !== item.name) {
+                        updateDrawingPageName.mutate({
+                          pageId: item.id,
+                          projectId,
+                          name: trimmedName
+                        });
+                      }
                       setWbEditing(null);
                     }}
                     draggable={false}
