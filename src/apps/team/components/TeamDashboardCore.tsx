@@ -34,6 +34,11 @@ import TeamFileViewer from "./viewers/TeamFileViewer";
 import ExcalidrawCanvas from '@/components/drawings/ExcalidrawCanvas';
 import { DrawingErrorBoundary } from '@/components/drawings/DrawingErrorBoundary';
 import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
+import type { Task, User } from '@/lib/api/types';
+import { useWorkspaceTasks, useCreateTask, useUpdateTask } from '@/lib/api/hooks/useTasks';
+import { useProjects } from '@/lib/api/hooks/useProjects';
+import { TasksTable } from './TasksTable';
+import { TaskDetailDialog } from '@/components/TaskDetailDialog';
 
 // ----------------------------------
 // Theme & constants
@@ -1057,7 +1062,6 @@ const DetailLibraryView = memo(function DetailLibraryView() {
 // Chat View - Integrated with database
 // ----------------------------------
 import TeamChatSlim from './TeamChatSlim';
-import { useProjects } from '@/lib/api/hooks/useProjects';
 
 interface ChatViewProps {
   resetTrigger?: number;
@@ -1156,163 +1160,145 @@ const HomeView = memo(function HomeView() {
 // Tasks View — TanStack Table
 // ----------------------------------
 const TasksView = memo(function TasksView() {
-  const VIEW_TABS = ["List", "Board", "Calendar", "View"];
-  const [viewTab, setViewTab] = useState("List");
+  const { currentWorkspaceId } = useWorkspaces();
+  const { user } = useUser();
+  const navigate = useNavigate();
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [taskAssignees, setTaskAssignees] = useState<User[]>([]);
+  const [taskCreator, setTaskCreator] = useState<User | null>(null);
 
-  // mock tasks
-  const data = useMemo(
-    () => [
-      { id: 1, name: "Task 1", status: "IN PROGRESS", assignee: "", due: "", priority: "P3" },
-      { id: 2, name: "Task 2", status: "TASK/REDLINE", assignee: "", due: "", priority: "P3" },
-      { id: 3, name: "Task 3", status: "TASK/REDLINE", assignee: "", due: "", priority: "P3" },
-    ],
-    []
+  // Fetch data
+  const { data: tasks = [], isLoading: tasksLoading } = useWorkspaceTasks(currentWorkspaceId || '');
+  const { data: projects = [] } = useProjects(currentWorkspaceId || '');
+  
+  // Fetch all workspace members for assignee selection
+  const { data: workspaceMembers = [] } = useQuery({
+    queryKey: ['workspace-members', currentWorkspaceId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('workspace_members')
+        .select(`
+          user_id,
+          users!inner(*)
+        `)
+        .eq('workspace_id', currentWorkspaceId)
+        .is('deleted_at', null);
+      
+      if (error) throw error;
+      return data.map((wm: any) => ({
+        id: wm.users.id,
+        shortId: wm.users.short_id,
+        authId: wm.users.auth_id,
+        name: wm.users.name,
+        email: wm.users.email,
+        phone: wm.users.phone,
+        avatarUrl: wm.users.avatar_url,
+        lastActiveAt: wm.users.last_active_at,
+        createdAt: wm.users.created_at,
+        updatedAt: wm.users.updated_at,
+        deletedAt: wm.users.deleted_at,
+        deletedBy: wm.users.deleted_by,
+      }));
+    },
+    enabled: !!currentWorkspaceId,
+  });
+
+  // Mutations
+  const createTaskMutation = useCreateTask();
+  const updateTaskMutation = useUpdateTask();
+
+  // Cycle status helper
+  const cycleStatus = (status: Task['status']): Task['status'] => {
+    if (status === 'task_redline') return 'progress_update';
+    if (status === 'progress_update') return 'done_completed';
+    return 'task_redline';
+  };
+
+  // Handlers
+  const handleTaskClick = useCallback((task: Task) => {
+    setSelectedTask(task);
+    
+    // Fetch task creator and assignees
+    const creator = workspaceMembers.find((u) => u.id === task.createdBy) || null;
+    const assignees = workspaceMembers.filter((u) => task.assignees.includes(u.id));
+    
+    setTaskCreator(creator);
+    setTaskAssignees(assignees);
+  }, [workspaceMembers]);
+
+  const handleProjectClick = useCallback((projectId: string) => {
+    navigate(`/workspace/${currentWorkspaceId}/project/${projectId}`);
+  }, [navigate, currentWorkspaceId]);
+
+  const handleStatusToggle = useCallback((taskId: string) => {
+    const task = tasks.find((t) => t.id === taskId);
+    if (task) {
+      updateTaskMutation.mutate({
+        id: taskId,
+        input: { status: cycleStatus(task.status) },
+      });
+    }
+  }, [tasks, updateTaskMutation]);
+
+  const handleQuickAdd = useCallback(
+    (input: { title: string; projectId: string; assignees: string[]; status: Task['status'] }) => {
+      createTaskMutation.mutate({
+        title: input.title,
+        projectId: input.projectId,
+        assignees: input.assignees,
+        status: input.status,
+        description: '',
+        priority: 'medium',
+      });
+    },
+    [createTaskMutation]
   );
 
-  const columnHelper = createColumnHelper<any>();
-  const columns = useMemo(
-    () => [
-      columnHelper.accessor("name", { header: () => "Name", cell: (ctx) => ctx.getValue() }),
-      columnHelper.accessor("assignee", { header: () => "Assignee", cell: (ctx) => ctx.getValue() || "" }),
-      columnHelper.accessor("due", { header: () => "Due date", cell: (ctx) => ctx.getValue() || "" }),
-      columnHelper.accessor("priority", { header: () => "Priority", cell: (ctx) => ctx.getValue() }),
-    ],
-    [columnHelper]
+  const handleTaskUpdate = useCallback(
+    (updates: Partial<Task>) => {
+      if (selectedTask) {
+        updateTaskMutation.mutate({
+          id: selectedTask.id,
+          input: updates,
+        });
+      }
+    },
+    [selectedTask, updateTaskMutation]
   );
 
-  const table = useReactTable({ data, columns, getCoreRowModel: getCoreRowModel() });
-
-  const groups = useMemo(
-    () => [
-      { key: "IN PROGRESS", color: "#1e88e5" },
-      { key: "TASK/REDLINE", color: "#e53935" },
-    ],
-    []
-  );
-
-  const icon = (t: string) =>
-    t === "List" ? (
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M8 6h13" />
-        <path d="M8 12h13" />
-        <path d="M8 18h13" />
-        <path d="M3 6h.01" />
-        <path d="M3 12h.01" />
-        <path d="M3 18h.01" />
-      </svg>
-    ) : t === "Board" ? (
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="3" y="4" width="5" height="16" rx="1" />
-        <rect x="10" y="4" width="5" height="16" rx="1" />
-        <rect x="17" y="4" width="4" height="16" rx="1" />
-      </svg>
-    ) : t === "Calendar" ? (
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="3" y="4" width="18" height="18" rx="2" />
-        <path d="M16 2v4M8 2v4M3 10h18" />
-      </svg>
-    ) : (
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Z" />
-        <circle cx="12" cy="12" r="3" />
-      </svg>
+  if (tasksLoading) {
+    return (
+      <div className="px-6 pt-1 pb-12 h-full flex items-center justify-center">
+        <div className="text-sm text-slate-600">Loading tasks...</div>
+      </div>
     );
-
-  const tabs = VIEW_TABS.map((t) => ({ key: t, label: t, icon: icon(t) }));
+  }
 
   return (
-    <div className="px-6 pt-1 pb-12 h-full flex flex-col overflow-hidden">
-      {/* Sub-header */}
-      <div className="mt-1 mb-3 shrink-0 relative z-10">
-        <TabsRow tabs={tabs} active={viewTab} onChange={setViewTab} />
-
-        <div className="-mx-6 px-6 mt-3 mb-0 flex items-center justify-between gap-2 text-[12px] h-6">
-          <div className="flex items-center gap-2.5 text-slate-600 font-medium">
-            <button className="inline-flex items-center gap-1 h-6 px-2 rounded border border-slate-200 bg-white">
-              Group: Status
-            </button>
-            <button className="inline-flex items-center gap-1 h-6 px-2 rounded border border-slate-200 bg-white">
-              Subtasks
-            </button>
-            <button className="inline-flex items-center gap-1 h-6 px-2 rounded border border-slate-200 bg-white">
-              Columns
-            </button>
-          </div>
-          <div className="flex items-center gap-2.5 font-medium">
-            <button className="h-6 px-2 rounded border border-slate-200 bg-white inline-flex items-center gap-1">
-              Save view
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-            </button>
-            <button className="h-6 px-2 rounded text-slate-600 hover:bg-slate-100">Filter</button>
-            <button className="h-6 px-2 rounded text-slate-600 hover:bg-slate-100">Closed</button>
-            <button className="h-6 px-2 rounded text-slate-600 hover:bg-slate-100">Assignee</button>
-            <button className="h-6 w-6 rounded-full bg-slate-900 text-white grid place-items-center">A</button>
-          </div>
-        </div>
+    <>
+      <div className="px-6 pt-1 pb-12 h-full flex flex-col overflow-hidden">
+        <TasksTable
+          tasks={tasks}
+          projects={projects}
+          users={workspaceMembers}
+          onTaskClick={handleTaskClick}
+          onProjectClick={handleProjectClick}
+          onStatusToggle={handleStatusToggle}
+          onQuickAdd={handleQuickAdd}
+        />
       </div>
 
-      {/* Only the board/table area scrolls */}
-      <div className="flex-1 min-h-0 overflow-auto pt-3">
-        {viewTab === "List" ? (
-          <div className="text-[13px]">
-            {groups.map((g) => {
-              const rows = table
-                .getRowModel()
-                .rows.filter((r: any) => r.original.status === g.key);
-
-              return (
-                <section key={g.key} className="mb-6">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={{ boxShadow: "0 0 0 2px white", backgroundColor: g.color }}
-                    />
-                    <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 text-slate-800 px-2.5 py-1 font-medium text-[12px] tracking-wide">
-                      {g.key}
-                      <span className="text-slate-500">{rows.length}</span>
-                    </span>
-                  </div>
-
-                  {/* header row */}
-                  <div className="grid grid-cols-[minmax(280px,1fr)_160px_160px_120px] px-2 py-2 text-[12px] text-slate-500">
-                    {table.getFlatHeaders().map((h) => (
-                      <div key={h.id}>{flexRender(h.column.columnDef.header, h.getContext())}</div>
-                    ))}
-                  </div>
-
-                  <div className="divide-y divide-slate-200">
-                    {rows.map((r) => (
-                      <div
-                        key={r.id}
-                        className="grid grid-cols-[minmax(280px,1fr)_160px_160px_120px] px-2 py-3 hover:bg-slate-50"
-                      >
-                        {r.getVisibleCells().map((cell) => (
-                          <div key={cell.id} className="truncate text-slate-800">
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </div>
-                        ))}
-                      </div>
-                    ))}
-
-                    <button className="grid grid-cols-[minmax(280px,1fr)_160px_160px_120px] px-2 py-3 text-left text-slate-600 hover:bg-slate-50">
-                      Add Task
-                    </button>
-                  </div>
-                </section>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="mt-8 text-sm text-slate-600">
-            {viewTab === "Board" && <div>Board view (placeholder)</div>}
-            {viewTab === "Calendar" && <div>Calendar view (placeholder)</div>}
-            {viewTab === "View" && <div>Custom view (placeholder)</div>}
-          </div>
-        )}
-      </div>
-    </div>
+      {selectedTask && (
+        <TaskDetailDialog
+          task={selectedTask}
+          open={!!selectedTask}
+          onOpenChange={(open) => !open && setSelectedTask(null)}
+          onUpdate={handleTaskUpdate}
+          assignees={taskAssignees}
+          createdBy={taskCreator}
+        />
+      )}
+    </>
   );
 });
 
