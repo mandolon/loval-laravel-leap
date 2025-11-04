@@ -307,3 +307,106 @@ export const useDeleteFolder = (projectId: string) => {
     },
   })
 }
+
+// Get Attachments folder for project
+export const useAttachmentsFolder = (projectId: string) => {
+  return useQuery({
+    queryKey: [...projectFilesKeys.folders(projectId), 'attachments'],
+    enabled: !!projectId,
+    queryFn: async (): Promise<string | null> => {
+      const { data, error } = await supabase
+        .from('folders')
+        .select('id')
+        .eq('project_id', projectId)
+        .eq('name', 'Attachments')
+        .eq('is_system_folder', true)
+        .is('deleted_at', null)
+        .maybeSingle()
+
+      if (error) {
+        console.error('Error fetching Attachments folder:', error)
+        return null
+      }
+      
+      return data?.id || null
+    },
+  })
+}
+
+// Upload files to Attachments folder (for chat)
+export const useUploadChatFiles = (projectId: string) => {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const { data: attachmentsFolderId } = useAttachmentsFolder(projectId)
+
+  return useMutation({
+    mutationFn: async (files: File[]) => {
+      if (!attachmentsFolderId) {
+        throw new Error('Attachments folder not found')
+      }
+      
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+
+      const uploadedFiles: ProjectFile[] = []
+
+      for (const file of files) {
+        const timestamp = Date.now()
+        const storagePath = `${projectId}/Attachments/${timestamp}-${file.name}`
+        
+        const { error: uploadError } = await supabase.storage
+          .from('project-files')
+          .upload(storagePath, file, {
+            cacheControl: '3600',
+            upsert: false,
+          })
+
+        if (uploadError) {
+          console.error('Storage upload error:', uploadError)
+          throw uploadError
+        }
+
+        const { data: fileRecord, error: dbError } = await supabase
+          .from('files')
+          .insert({
+            project_id: projectId,
+            folder_id: attachmentsFolderId,
+            filename: file.name,
+            storage_path: storagePath,
+            filesize: file.size,
+            mimetype: file.type,
+            uploaded_by: user.id,
+            version_number: 1,
+            download_count: 0,
+            is_shareable: false,
+          })
+          .select()
+          .single()
+
+        if (dbError) {
+          console.error('Database insert error:', dbError)
+          throw dbError
+        }
+        
+        uploadedFiles.push(fileRecord)
+      }
+
+      return uploadedFiles
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectFilesKeys.files(projectId) })
+      toast({
+        title: 'Success',
+        description: 'Files uploaded successfully',
+      })
+    },
+    onError: (error: Error) => {
+      console.error('Upload chat files error:', error)
+      toast({
+        title: 'Error uploading files',
+        description: error.message,
+        variant: 'destructive',
+      })
+    },
+  })
+}

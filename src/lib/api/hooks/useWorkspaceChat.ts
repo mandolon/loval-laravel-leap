@@ -37,6 +37,13 @@ export interface WorkspaceChatMessageWithUser {
       name: string;
     } | null;
   } | null;
+  fileDetails?: Array<{
+    id: string;
+    filename: string;
+    mimetype: string | null;
+    filesize: number | null;
+    storage_path: string;
+  }>;
 }
 
 // Transform database row to message with user info

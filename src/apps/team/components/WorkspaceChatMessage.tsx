@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Trash2, Reply, Pencil, Check, X, Copy } from 'lucide-react'
 import type { WorkspaceChatMessageWithUser } from '@/lib/api/hooks/useWorkspaceChat'
+import { supabase } from "@/integrations/supabase/client"
 
 // Theme Configuration - Exact from TeamChatSlim MessageBlock
 const THEME = {
@@ -288,6 +289,31 @@ export const WorkspaceChatMessage = ({
               style={{ fontFamily: THEME.fontFamily, color: THEME.text }}
             >
               {message.content}
+            </div>
+          )}
+          
+          {message.fileDetails && message.fileDetails.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {message.fileDetails.map(file => (
+                <div
+                  key={file.id}
+                  className="flex items-center gap-1 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700"
+                  onClick={() => {
+                    const { data } = supabase.storage
+                      .from('workspace-files')
+                      .getPublicUrl(file.storage_path)
+                    window.open(data.publicUrl, '_blank')
+                  }}
+                >
+                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  </svg>
+                  <span className="max-w-[150px] truncate">{file.filename}</span>
+                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                </div>
+              ))}
             </div>
           )}
         </div>

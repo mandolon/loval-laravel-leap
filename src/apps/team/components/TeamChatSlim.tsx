@@ -16,13 +16,14 @@ import {
 import { useProjects } from "@/lib/api/hooks/useProjects";
 import { WorkspaceChatMessage } from "./WorkspaceChatMessage";
 import { useToast } from "@/hooks/use-toast";
-import { useProjectFiles } from "@/lib/api/hooks/useProjectFiles";
+import { useProjectFiles, useUploadChatFiles } from "@/lib/api/hooks/useProjectFiles";
 import { useWorkspaceFiles, useUploadWorkspaceFiles } from "@/lib/api/hooks/useWorkspaceFiles";
 import type { Project } from "@/lib/api/types";
 import TeamFilesView from "./TeamFilesView";
 import WorkspaceFilesView from "./WorkspaceFilesView";
 import { ChatHeader } from "./chat/ChatHeader";
 import { ChatSidePanel } from "./chat/ChatSidePanel";
+import { supabase } from "@/integrations/supabase/client";
 
 // Theme Configuration - Exact from reference
 const THEME = {
@@ -99,6 +100,7 @@ export default function TeamChatSlim({
     isWorkspaceChat ? (workspaceId || "") : ""
   );
   const uploadWorkspaceFiles = useUploadWorkspaceFiles(workspaceId || "");
+  const uploadProjectChatFiles = useUploadChatFiles(selectedProject?.id || "");
   const createProjectMessage = useCreateMessage();
   const createWorkspaceChatMessage = useCreateWorkspaceMessage();
   const deleteProjectMessage = useDeleteMessage();
@@ -202,13 +204,13 @@ export default function TeamChatSlim({
     const fileArray = Array.from(files);
 
     if (isWorkspaceChat && workspaceId) {
-      // Upload to workspace files
       try {
+        console.log('Uploading workspace files:', fileArray.length);
         const uploadedFiles = await uploadWorkspaceFiles.mutateAsync({
           files: fileArray,
         });
         
-        // Add uploaded files to attached files state
+        console.log('Workspace files uploaded:', uploadedFiles.length);
         const newAttachedFiles = uploadedFiles.map(f => ({
           id: f.id,
           name: f.filename
@@ -216,6 +218,20 @@ export default function TeamChatSlim({
         setAttachedFiles(prev => [...prev, ...newAttachedFiles]);
       } catch (error) {
         console.error('Error uploading workspace files:', error);
+      }
+    } else if (selectedProject) {
+      try {
+        console.log('Uploading project chat files:', fileArray.length);
+        const uploadedFiles = await uploadProjectChatFiles.mutateAsync(fileArray);
+        
+        console.log('Project chat files uploaded:', uploadedFiles.length);
+        const newAttachedFiles = uploadedFiles.map(f => ({
+          id: f.id,
+          name: f.filename
+        }));
+        setAttachedFiles(prev => [...prev, ...newAttachedFiles]);
+      } catch (error) {
+        console.error('Error uploading project chat files:', error);
       }
     } else {
       // For project chat, keep existing demo behavior for now
@@ -1497,6 +1513,30 @@ function MessageBlock({ msg, currentUserId, onReply, onScrollToMessage }: any) {
               {msg.content}
             </div>
           )}
+          
+          {msg.fileDetails && msg.fileDetails.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {msg.fileDetails.map(file => (
+                <div
+                  key={file.id}
+                  className="flex items-center gap-1 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700"
+                  onClick={() => {
+                    const { data } = supabase.storage.from('project-files').getPublicUrl(file.storage_path)
+                    window.open(data.publicUrl, '_blank')
+                  }}
+                >
+                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  </svg>
+                  <span className="max-w-[150px] truncate">{file.filename}</span>
+                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                </div>
+              ))}
+            </div>
+          )}
+          
           {msg.attachedFiles && msg.attachedFiles.length > 0 && (
             <div className={`flex flex-wrap gap-2 ${msg.content ? "mt-2" : ""}`}>
               {msg.attachedFiles.map((file: any) => (

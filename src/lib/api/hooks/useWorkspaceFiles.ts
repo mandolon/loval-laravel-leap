@@ -88,17 +88,21 @@ export function useUploadWorkspaceFiles(workspaceId: string) {
       const uploadedFiles: WorkspaceFile[] = [];
 
       for (const file of data.files) {
-        // Upload to storage
-        const fileName = `${Date.now()}-${file.name}`;
-        const storagePath = `${workspaceId}/${fileName}`;
+        const timestamp = Date.now();
+        const folderPath = data.folderId ? `folder-${data.folderId}` : 'Attachments';
+        const storagePath = `${workspaceId}/${folderPath}/${timestamp}-${file.name}`;
         
+        console.log('Uploading workspace file to storage:', storagePath);
         const { error: uploadError } = await supabase.storage
           .from('workspace-files')
           .upload(storagePath, file);
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error('Storage upload error:', uploadError);
+          throw uploadError;
+        }
 
-        // Insert file record
+        console.log('Creating workspace file record for:', file.name);
         const { data: fileRecord, error: insertError } = await supabase
           .from('workspace_files')
           .insert([{
@@ -113,7 +117,12 @@ export function useUploadWorkspaceFiles(workspaceId: string) {
           .select()
           .single();
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error('Database insert error:', insertError);
+          throw insertError;
+        }
+        
+        console.log('Workspace file record created:', fileRecord.id);
         uploadedFiles.push(fileRecord);
       }
 

@@ -21,6 +21,13 @@ export interface ProjectChatMessageWithUser extends ProjectChatMessage {
   };
   replies?: ProjectChatMessageWithUser[];
   replyCount?: number;
+  fileDetails?: Array<{
+    id: string;
+    filename: string;
+    mimetype: string | null;
+    filesize: number | null;
+    storage_path: string;
+  }>;
 }
 
 // Transform database row to message with user data
@@ -59,7 +66,29 @@ export const useProjectMessages = (projectId: string) => {
         .order('created_at', { ascending: true })
       
       if (error) throw error
-      return (data || []).map(transformDbToMessage)
+      
+      // Fetch file details for messages with referenced files
+      const messagesWithFiles = await Promise.all(
+        (data || []).map(async (msg) => {
+          const transformedMsg = transformDbToMessage(msg)
+          
+          if (msg.referenced_files && msg.referenced_files.length > 0) {
+            const { data: filesData } = await supabase
+              .from('files')
+              .select('id, filename, mimetype, filesize, storage_path')
+              .in('id', msg.referenced_files)
+              .is('deleted_at', null)
+            
+            if (filesData) {
+              transformedMsg.fileDetails = filesData
+            }
+          }
+          
+          return transformedMsg
+        })
+      )
+      
+      return messagesWithFiles
     },
     enabled: !!projectId,
   })
