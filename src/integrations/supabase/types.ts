@@ -697,6 +697,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "files_new_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "files_parent_file_id_fkey"
             columns: ["parent_file_id"]
             isOneToOne: false
@@ -779,6 +786,13 @@ export type Database = {
           },
           {
             foreignKeyName: "folders_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "folders_new_deleted_by_fkey"
             columns: ["deleted_by"]
             isOneToOne: false
             referencedRelation: "users"
