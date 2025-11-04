@@ -1776,6 +1776,151 @@ export type Database = {
         }
         Relationships: []
       }
+      workspace_files: {
+        Row: {
+          created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          download_count: number | null
+          filename: string
+          filesize: number | null
+          folder_id: string | null
+          id: string
+          is_shareable: boolean | null
+          mimetype: string | null
+          parent_file_id: string | null
+          share_token: string | null
+          short_id: string
+          storage_path: string
+          updated_at: string | null
+          uploaded_by: string
+          version_number: number | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          download_count?: number | null
+          filename: string
+          filesize?: number | null
+          folder_id?: string | null
+          id?: string
+          is_shareable?: boolean | null
+          mimetype?: string | null
+          parent_file_id?: string | null
+          share_token?: string | null
+          short_id?: string
+          storage_path: string
+          updated_at?: string | null
+          uploaded_by: string
+          version_number?: number | null
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          download_count?: number | null
+          filename?: string
+          filesize?: number | null
+          folder_id?: string | null
+          id?: string
+          is_shareable?: boolean | null
+          mimetype?: string | null
+          parent_file_id?: string | null
+          share_token?: string | null
+          short_id?: string
+          storage_path?: string
+          updated_at?: string | null
+          uploaded_by?: string
+          version_number?: number | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_files_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_files_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_folders: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          is_system_folder: boolean | null
+          name: string
+          parent_folder_id: string | null
+          path: string | null
+          short_id: string
+          updated_at: string | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_system_folder?: boolean | null
+          name: string
+          parent_folder_id?: string | null
+          path?: string | null
+          short_id?: string
+          updated_at?: string | null
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_system_folder?: boolean | null
+          name?: string
+          parent_folder_id?: string | null
+          path?: string | null
+          short_id?: string
+          updated_at?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_folders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_folders_parent_folder_id_fkey"
+            columns: ["parent_folder_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_folders_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspace_members: {
         Row: {
           created_at: string

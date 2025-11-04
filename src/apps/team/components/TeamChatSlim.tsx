@@ -13,8 +13,10 @@ import {
   useDeleteWorkspaceMessage
 } from "@/lib/api/hooks/useWorkspaceChat";
 import { useProjectFiles } from "@/lib/api/hooks/useProjectFiles";
+import { useWorkspaceFiles, useUploadWorkspaceFiles } from "@/lib/api/hooks/useWorkspaceFiles";
 import type { Project } from "@/lib/api/types";
 import TeamFilesView from "./TeamFilesView";
+import WorkspaceFilesView from "./WorkspaceFilesView";
 import { ChatHeader } from "./chat/ChatHeader";
 import { ChatSidePanel } from "./chat/ChatSidePanel";
 
@@ -89,6 +91,10 @@ export default function TeamChatSlim({
     isWorkspaceChat ? (workspaceId || "") : ""
   );
   const { data: projectFiles = [] } = useProjectFiles(selectedProject?.id || "");
+  const { data: workspaceFiles = [] } = useWorkspaceFiles(
+    isWorkspaceChat ? (workspaceId || "") : ""
+  );
+  const uploadWorkspaceFiles = useUploadWorkspaceFiles(workspaceId || "");
   const createProjectMessage = useCreateMessage();
   const createWorkspaceChatMessage = useCreateWorkspaceMessage();
   const deleteProjectMessage = useDeleteMessage();
@@ -102,9 +108,12 @@ export default function TeamChatSlim({
   // Transform messages to include file data
   const messages = useMemo(() => {
     return rawMessages.map((msg) => {
+      // Use workspace files for workspace chat, project files for project chat
+      const filesArray = isWorkspaceChat ? workspaceFiles : projectFiles;
+      
       const attachedFiles = msg.referencedFiles
         ?.map((fileId) => {
-          const file = projectFiles.find((f) => f.id === fileId);
+          const file = filesArray.find((f) => f.id === fileId);
           return file ? { id: file.id, name: file.filename } : null;
         })
         .filter(Boolean) as Array<{ id: string; name: string }>;
@@ -129,7 +138,7 @@ export default function TeamChatSlim({
           : undefined,
       };
     });
-  }, [rawMessages, projectFiles]);
+  }, [rawMessages, projectFiles, workspaceFiles, isWorkspaceChat]);
 
   const handleSend = () => {
     const body = text.trim();
@@ -171,9 +180,47 @@ export default function TeamChatSlim({
     });
   };
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleAddFile = () => {
-    const demoFile = { id: uid(), name: "demo-file.pdf" };
-    setAttachedFiles((files) => [...files, demoFile]);
+    fileInputRef.current?.click();
+  };
+
+  const handleFileInputChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileArray = Array.from(files);
+
+    if (isWorkspaceChat && workspaceId) {
+      // Upload to workspace files
+      try {
+        const uploadedFiles = await uploadWorkspaceFiles.mutateAsync({
+          files: fileArray,
+        });
+        
+        // Add uploaded files to attached files state
+        const newAttachedFiles = uploadedFiles.map(f => ({
+          id: f.id,
+          name: f.filename
+        }));
+        setAttachedFiles(prev => [...prev, ...newAttachedFiles]);
+      } catch (error) {
+        console.error('Error uploading workspace files:', error);
+      }
+    } else {
+      // For project chat, keep existing demo behavior for now
+      const demoFiles = fileArray.map(file => ({
+        id: uid(),
+        name: file.name
+      }));
+      setAttachedFiles(prev => [...prev, ...demoFiles]);
+    }
+
+    // Reset the input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleRemoveFile = (fileId: string) => {
@@ -276,7 +323,7 @@ export default function TeamChatSlim({
   }, [page, selectedProject]);
 
   // If showing files view, render that instead
-  if (page === 'files' && selectedProject) {
+  if (page === 'files' && (selectedProject || isWorkspaceChat)) {
     return (
       <div className="flex h-full w-full">
         {/* Side Panel */}
@@ -322,7 +369,7 @@ export default function TeamChatSlim({
           )}
 
           <ChatHeader
-            selectedProject={selectedProject}
+            selectedProject={isWorkspaceChat ? { id: '', name: 'Workspace chat' } : selectedProject}
             projects={projects}
             showChatSelector={showChatSelector}
             onToggleSidebar={onToggleSidebar}
@@ -338,37 +385,79 @@ export default function TeamChatSlim({
             selectedFilesCount={selectedFiles.size}
             onShareToChat={() => {
               // Share selected files to chat
-              selectedFiles.forEach((fileId) => {
-                if (onFileSelect) onFileSelect(fileId);
-              });
+              const filesToShare = isWorkspaceChat 
+                ? workspaceFiles.filter(f => selectedFiles.has(f.id))
+                : projectFiles.filter(f => selectedFiles.has(f.id));
+              
+              const attachments = filesToShare.map(f => ({
+                id: f.id,
+                name: f.filename
+              }));
+              
+              setAttachedFiles(prev => [...prev, ...attachments]);
               setSelectedFiles(new Set());
               setFileSelectMode(false);
-              if (onPageChange) onPageChange('chat');
+              
+              if (onPageChange) {
+                onPageChange('chat');
+              }
             }}
+            showSidePanelToggle={showSidePanel}
+            isSidePanelCollapsed={isSidePanelCollapsed}
+            onToggleSidePanel={() => setIsSidePanelCollapsed(!isSidePanelCollapsed)}
           />
 
-          <TeamFilesView
-            projectId={selectedProject.id}
-            onFileSelect={(fileId) => {
-              if (onFileSelect) onFileSelect(fileId);
-              if (onPageChange) onPageChange('chat');
-            }}
-            viewMode={fileViewMode}
-            onViewModeChange={setFileViewMode}
-            selectMode={fileSelectMode}
-            onSelectModeChange={setFileSelectMode}
-            selectedFiles={selectedFiles}
-            onSelectedFilesChange={setSelectedFiles}
-            onShareToChat={() => {
-              // Share selected files to chat
-              selectedFiles.forEach((fileId) => {
+          {isWorkspaceChat ? (
+            <WorkspaceFilesView
+              workspaceId={workspaceId || ''}
+              viewMode={fileViewMode}
+              onViewModeChange={setFileViewMode}
+              selectMode={fileSelectMode}
+              onSelectModeChange={setFileSelectMode}
+              selectedFiles={selectedFiles}
+              onSelectedFilesChange={setSelectedFiles}
+              onShareToChat={() => {
+                const filesToShare = workspaceFiles.filter(f => selectedFiles.has(f.id));
+                const attachments = filesToShare.map(f => ({
+                  id: f.id,
+                  name: f.filename
+                }));
+                setAttachedFiles(prev => [...prev, ...attachments]);
+                setSelectedFiles(new Set());
+                setFileSelectMode(false);
+                if (onPageChange) {
+                  onPageChange('chat');
+                }
+              }}
+            />
+          ) : (
+            <TeamFilesView
+              projectId={selectedProject?.id || ''}
+              onFileSelect={(fileId) => {
                 if (onFileSelect) onFileSelect(fileId);
-              });
-              setSelectedFiles(new Set());
-              setFileSelectMode(false);
-              if (onPageChange) onPageChange('chat');
-            }}
-          />
+                if (onPageChange) onPageChange('chat');
+              }}
+              viewMode={fileViewMode}
+              onViewModeChange={setFileViewMode}
+              selectMode={fileSelectMode}
+              onSelectModeChange={setFileSelectMode}
+              selectedFiles={selectedFiles}
+              onSelectedFilesChange={setSelectedFiles}
+              onShareToChat={() => {
+                const filesToShare = projectFiles.filter(f => selectedFiles.has(f.id));
+                const attachments = filesToShare.map(f => ({
+                  id: f.id,
+                  name: f.filename
+                }));
+                setAttachedFiles(prev => [...prev, ...attachments]);
+                setSelectedFiles(new Set());
+                setFileSelectMode(false);
+                if (onPageChange) {
+                  onPageChange('chat');
+                }
+              }}
+            />
+          )}
         </div>
       </div>
     );
@@ -658,6 +747,15 @@ export default function TeamChatSlim({
                 </button>
               </div>
             )}
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={handleFileInputChange}
+              accept="*/*"
+            />
             {attachedFiles.length > 0 && (
               <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
                 {attachedFiles.map((file) => (
