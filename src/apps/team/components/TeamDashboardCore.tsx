@@ -39,6 +39,7 @@ import { useWorkspaceTasks, useCreateTask, useUpdateTask } from '@/lib/api/hooks
 import { useProjects } from '@/lib/api/hooks/useProjects';
 import { TasksTable } from './TasksTable';
 import { TaskDetailDialog } from '@/components/TaskDetailDialog';
+import { List, LayoutGrid, Calendar, Eye, ChevronDown, Filter, User as UserIcon } from 'lucide-react';
 
 // ----------------------------------
 // Theme & constants
@@ -1277,6 +1278,62 @@ const TasksView = memo(function TasksView() {
   return (
     <>
       <div className="px-6 pt-1 pb-12 h-full flex flex-col overflow-hidden">
+        {/* First Header: View Tabs */}
+        <div className="flex items-center gap-1 px-1 py-2 bg-background border-b border-border">
+          <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-primary hover:bg-accent rounded">
+            <List className="w-4 h-4" />
+            List
+          </button>
+          <button className="flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent rounded">
+            <LayoutGrid className="w-4 h-4" />
+            Board
+          </button>
+          <button className="flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent rounded">
+            <Calendar className="w-4 h-4" />
+            Calendar
+          </button>
+          <button className="flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent rounded">
+            <Eye className="w-4 h-4" />
+            View
+          </button>
+        </div>
+
+        {/* Second Header: Controls Bar */}
+        <div className="flex items-center justify-between px-3 py-2 bg-background border-b border-border">
+          <div className="flex items-center gap-2">
+            <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-foreground hover:bg-accent rounded border border-border">
+              Group: Status
+              <ChevronDown className="w-3.5 h-3.5" />
+            </button>
+            <button className="px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent rounded border border-border">
+              Subtasks
+            </button>
+            <button className="px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent rounded border border-border">
+              Columns
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-foreground hover:bg-accent rounded border border-border">
+              Save view
+              <ChevronDown className="w-3.5 h-3.5" />
+            </button>
+            <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent rounded border border-border">
+              <Filter className="w-3.5 h-3.5" />
+              Filter
+            </button>
+            <button className="px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent rounded border border-border">
+              Closed
+            </button>
+            <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent rounded border border-border">
+              <UserIcon className="w-3.5 h-3.5" />
+              Assignee
+            </button>
+            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+              <UserIcon className="w-4 h-4 text-primary" />
+            </div>
+          </div>
+        </div>
+
         <TasksTable
           tasks={tasks}
           projects={projects}
