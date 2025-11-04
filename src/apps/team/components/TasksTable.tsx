@@ -113,7 +113,7 @@ const QuickAddTaskRow: React.FC<QuickAddProps> = ({ onSave, onCancel, defaultSta
   return (
     <tr className="border-b border-[#cecece]">
       {/* Status (muted) */}
-      <td style={{ width: 32 }} className="px-2 py-2 text-center">
+      <td className="px-2 py-2 text-center">
         <button
           aria-label="Status (muted)"
           className="inline-grid place-items-center h-4 w-4 rounded-full hover:bg-slate-100/60"
@@ -483,13 +483,47 @@ const TasksSection: React.FC<TasksSectionProps> = ({
       {!collapsed && (
         <div className="overflow-x-auto pl-8 pr-8" style={{ scrollbarGutter: 'stable' }} data-testid="table-scroll-x">
           <table className="border-collapse text-xs table-fixed w-full">
+            <colgroup>
+              {table.getAllLeafColumns().map((column: any) => (
+                <col
+                  key={column.id}
+                  style={{ width: `${column.getSize()}px` }}
+                />
+              ))}
+            </colgroup>
+            <thead>
+              {table.getHeaderGroups().map((headerGroup: any) => (
+                <tr key={headerGroup.id} className="border-b border-[#cecece]">
+                  {headerGroup.headers.map((header: any) => {
+                    const isCentered = CENTER_COLS.has(header.column.id);
+                    return (
+                      <th
+                        key={header.id}
+                        className={`px-2 py-1.5 text-xs font-semibold text-slate-700 relative ${isCentered ? 'text-center' : 'text-left'}`}
+                      >
+                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.column.id !== 'status' && (
+                          <div
+                            data-col={header.column.id}
+                            onMouseDown={header.getResizeHandler()}
+                            onTouchStart={header.getResizeHandler()}
+                            className="absolute top-0 right-0 h-full w-6 cursor-col-resize hover:bg-blue-500/10 active:bg-blue-500/20 select-none touch-none"
+                            style={{ userSelect: 'none' }}
+                          />
+                        )}
+                      </th>
+                    );
+                  })}
+                </tr>
+              ))}
+            </thead>
             <tbody>
               {table.getRowModel().rows.map((row: any) => (
                 <tr key={row.id} className="hover:bg-slate-50 cursor-pointer border-b border-[#cecece]">
                   {row.getVisibleCells().map((cell: any) => {
                     const isCentered = CENTER_COLS.has(cell.column.id as string);
                     return (
-                      <td key={cell.id} style={{ width: cell.column.getSize() }} className={`px-2 py-2 ${isCentered ? 'text-center cell-hoverable' : ''}`}>
+                      <td key={cell.id} className={`px-2 py-2 ${isCentered ? 'text-center cell-hoverable' : ''}`}>
                         <div className={`row-wrap ${isCentered ? 'center' : ''}`}>
                           <div className="cell-hover-border">{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>
                         </div>
@@ -500,7 +534,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({
               ))}
               {!showQuickAdd && tasks.length > 0 && (
                 <tr className="border-b border-transparent">
-                  <td style={{ width: 32 }} className="px-2 py-0">
+                  <td className="px-2 py-0">
                     <div className="h-[42px] flex items-center justify-start">
                       <button onClick={handleQuickAddClick} className="h-5 w-5 grid place-items-center rounded hover:bg-slate-100" aria-label="Add Task">
                         <Plus size={14} className="text-slate-600" />
