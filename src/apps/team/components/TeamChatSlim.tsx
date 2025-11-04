@@ -119,16 +119,6 @@ export default function TeamChatSlim({
   // Transform messages to include file data
   const messages = useMemo(() => {
     return rawMessages.map((msg) => {
-      // Use workspace files for workspace chat, project files for project chat
-      const filesArray = isWorkspaceChat ? workspaceFiles : projectFiles;
-      
-      const attachedFiles = msg.referencedFiles
-        ?.map((fileId) => {
-          const file = filesArray.find((f) => f.id === fileId);
-          return file ? { id: file.id, name: file.filename } : null;
-        })
-        .filter(Boolean) as Array<{ id: string; name: string }>;
-
       const replyToMsg = msg.replyToMessageId
         ? rawMessages.find((m) => m.id === msg.replyToMessageId)
         : null;
@@ -139,7 +129,7 @@ export default function TeamChatSlim({
         user: msg.user,
         content: msg.content,
         createdAt: msg.createdAt,
-        attachedFiles: attachedFiles.length > 0 ? attachedFiles : undefined,
+        fileDetails: msg.fileDetails,
         tag: undefined,
         replyTo: replyToMsg
           ? {
@@ -149,7 +139,7 @@ export default function TeamChatSlim({
           : undefined,
       };
     });
-  }, [rawMessages, projectFiles, workspaceFiles, isWorkspaceChat]);
+  }, [rawMessages]);
 
   const handleSend = () => {
     const body = text.trim();
@@ -759,11 +749,12 @@ export default function TeamChatSlim({
                       userId: msg.userId,
                       content: msg.content,
                       replyToMessageId: msg.replyTo?.messageId,
-                      referencedFiles: msg.attachedFiles?.map((f: any) => f.id) || [],
+                      referencedFiles: msg.fileDetails?.map((f: any) => f.id) || [],
                       referencedTasks: [],
                       createdAt: msg.createdAt,
                       updatedAt: msg.createdAt,
                       user: msg.user,
+                      fileDetails: msg.fileDetails,
                       replyTo: msg.replyTo ? {
                         id: msg.replyTo.messageId,
                         content: '',
@@ -1109,8 +1100,18 @@ function MessageFileButton({ file }: { file: any }) {
     return `${truncated}...${ext}`;
   };
 
+  const handleDownload = () => {
+    if (file.storage_path) {
+      const { data } = supabase.storage.from('project-files').getPublicUrl(file.storage_path);
+      if (data?.publicUrl) {
+        window.open(data.publicUrl, '_blank');
+      }
+    }
+  };
+
   return (
     <button
+      onClick={handleDownload}
       className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors"
       style={{
         borderColor: THEME.border,
@@ -1118,7 +1119,7 @@ function MessageFileButton({ file }: { file: any }) {
       }}
       onMouseEnter={(e) => (e.currentTarget.style.background = THEME.hover)}
       onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-      title={file.name}
+      title={file.filename || file.name}
     >
       <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
@@ -1128,7 +1129,7 @@ function MessageFileButton({ file }: { file: any }) {
           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
         />
       </svg>
-      <span className="truncate">{truncateFilename(file.name)}</span>
+      <span className="truncate">{truncateFilename(file.filename || file.name)}</span>
     </button>
   );
 }
@@ -1441,9 +1442,9 @@ function MessageBlock({ msg, currentUserId, onReply, onScrollToMessage }: any) {
                 {msg.content}
               </div>
             )}
-            {msg.attachedFiles && msg.attachedFiles.length > 0 && (
+            {msg.fileDetails && msg.fileDetails.length > 0 && (
               <div className={`flex flex-wrap gap-2 ${msg.content ? "mt-2" : ""}`}>
-                {msg.attachedFiles.map((file: any) => (
+                {msg.fileDetails.map((file: any) => (
                   <MessageFileButton key={file.id} file={file} />
                 ))}
               </div>
@@ -1515,31 +1516,8 @@ function MessageBlock({ msg, currentUserId, onReply, onScrollToMessage }: any) {
           )}
           
           {msg.fileDetails && msg.fileDetails.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {msg.fileDetails.map(file => (
-                <div
-                  key={file.id}
-                  className="flex items-center gap-1 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700"
-                  onClick={() => {
-                    const { data } = supabase.storage.from('project-files').getPublicUrl(file.storage_path)
-                    window.open(data.publicUrl, '_blank')
-                  }}
-                >
-                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                  </svg>
-                  <span className="max-w-[150px] truncate">{file.filename}</span>
-                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                </div>
-              ))}
-            </div>
-          )}
-          
-          {msg.attachedFiles && msg.attachedFiles.length > 0 && (
             <div className={`flex flex-wrap gap-2 ${msg.content ? "mt-2" : ""}`}>
-              {msg.attachedFiles.map((file: any) => (
+              {msg.fileDetails.map((file: any) => (
                 <MessageFileButton key={file.id} file={file} />
               ))}
             </div>
