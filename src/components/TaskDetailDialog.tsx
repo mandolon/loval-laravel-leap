@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Calendar, Upload, FileText, Download, Trash2 } from "lucide-react";
+import { TeamAvatar } from "@/components/TeamAvatar";
 import type { Task, User } from "@/lib/api/types";
 import { useUser } from "@/contexts/UserContext";
 import { useTaskFiles, useUploadTaskFile, useDeleteTaskFile, downloadTaskFile } from "@/lib/api/hooks/useFiles";
@@ -202,14 +202,7 @@ export function TaskDetailDialog({
               <Label className="text-xs text-muted-foreground">Created by</Label>
               {createdBy ? (
                 <div className="flex items-center gap-2">
-                  <Avatar className="h-6 w-6">
-                    <AvatarFallback 
-                      className="text-white text-xs"
-                      style={{ background: createdBy.avatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
-                    >
-                      {createdBy.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
+                  <TeamAvatar user={{ ...createdBy, avatar_url: createdBy.avatarUrl }} size="sm" />
                   <span className="text-sm">{createdBy.name}</span>
                 </div>
               ) : (
@@ -228,14 +221,7 @@ export function TaskDetailDialog({
               <Label className="text-xs text-muted-foreground">Assigned to</Label>
               <div className="flex items-center gap-1">
                 {assignees.map((assignee) => (
-                  <Avatar key={assignee.id} className="h-6 w-6">
-                    <AvatarFallback 
-                      className="text-white text-xs"
-                      style={{ background: assignee.avatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
-                    >
-                      {assignee.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
+                  <TeamAvatar key={assignee.id} user={{ ...assignee, avatar_url: assignee.avatarUrl }} size="sm" />
                 ))}
                 {assignees.length === 0 && (
                   <span className="text-sm text-muted-foreground">Unassigned</span>
@@ -353,14 +339,7 @@ export function TaskDetailDialog({
                           <td className="py-3 px-4">
                             {author ? (
                               <div className="flex items-center gap-2">
-                                <Avatar className="h-6 w-6">
-                                  <AvatarFallback 
-                                    className="text-white text-xs"
-                                    style={{ background: author.avatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
-                                  >
-                                    {author.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                                  </AvatarFallback>
-                                </Avatar>
+                                <TeamAvatar user={{ ...author, avatar_url: author.avatarUrl }} size="sm" />
                                 <span className="text-sm">{author.name}</span>
                               </div>
                             ) : (

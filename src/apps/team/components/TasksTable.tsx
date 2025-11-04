@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useRef, useLayoutEffect, useEffect } fr
 import { createPortal } from 'react-dom';
 import { ChevronDown, ChevronRight, Plus, UserPlus, Check } from 'lucide-react';
 import { StatusDot } from '@/components/taskboard/StatusDot';
+import { TeamAvatar } from '@/components/TeamAvatar';
 import type { Task, Project, User } from '@/lib/api/types';
 
 // Status configuration
@@ -31,29 +32,6 @@ const Badge = ({ children, tone }: { children: React.ReactNode; tone: 'red' | 'b
     {children}
   </span>
 );
-
-// Avatar component
-const Avatar = ({ user, size = 6 }: { user: User; size?: number }) => {
-  const initials = user.name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-  
-  return (
-    <span
-      className="inline-flex items-center justify-center rounded-full text-white text-[10px]"
-      style={{ 
-        width: `${size * 4}px`, 
-        height: `${size * 4}px`,
-        background: user.avatarUrl || '#94a3b8'
-      }}
-    >
-      {initials}
-    </span>
-  );
-};
 
 // Generic Popover component
 function useOutsideDismiss<T extends HTMLElement>(open: boolean, onClose: () => void) {
@@ -285,13 +263,13 @@ const QuickAddTaskRow: React.FC<QuickAddProps> = ({ onSave, onCancel, defaultSta
           />
 
           {/* Actions */}
-          <button onClick={onCancel} className="h-7 px-2 rounded border border-slate-300 text-xs text-slate-700 bg-white hover:bg-slate-50">
+          <button onClick={onCancel} className="h-6 px-2 rounded border border-slate-300 text-xs text-slate-700 bg-white hover:bg-slate-50">
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={!canSave}
-            className={`h-7 px-2 rounded text-xs text-white ${canSave ? 'bg-[#4C75D1] hover:opacity-90' : 'bg-slate-300 cursor-not-allowed'}`}
+            className={`h-6 px-2 rounded text-xs text-white ${canSave ? 'bg-[#4C75D1] hover:opacity-90' : 'bg-slate-300 cursor-not-allowed'}`}
           >
             Save ↓
           </button>
@@ -423,7 +401,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
       <div className="px-2 py-2 text-center">
         {creator ? (
           <div className="flex justify-center">
-            <Avatar user={creator} />
+            <TeamAvatar user={{ ...creator, avatar_url: creator.avatarUrl }} size="sm" />
           </div>
         ) : (
           <span className="text-slate-400 text-xs">-</span>
@@ -434,7 +412,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
       <div className="px-2 py-2 text-center">
         <div className="flex gap-1 justify-center items-center mx-auto">
           {assignedUsers.slice(0, 2).map((u) => (
-            <Avatar key={u.id} user={u} />
+            <TeamAvatar key={u.id} user={{ ...u, avatar_url: u.avatarUrl }} size="sm" />
           ))}
           {assignedUsers.length > 2 && (
             <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-slate-500 text-white text-[9px]">
@@ -473,7 +451,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
                           }}
                           className="w-full flex items-center gap-2 px-2 py-1 text-[12px] hover:bg-slate-100"
                         >
-                          <Avatar user={u} size={5} />
+                          <TeamAvatar user={{ ...u, avatar_url: u.avatarUrl }} size="xs" />
                           <span className="flex-1 text-left">{u.name}</span>
                           {active && <Check size={14} className="text-slate-700" />}
                         </button>

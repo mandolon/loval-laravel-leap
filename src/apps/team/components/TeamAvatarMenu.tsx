@@ -8,20 +8,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { getAvatarColor, getAvatarInitials } from '@/utils/avatarUtils';
 
 export function TeamAvatarMenu() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const { user } = useUser();
-
-  const getInitials = () => {
-    if (!user?.name) return 'A';
-    const parts = user.name.trim().split(' ');
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return user.name.substring(0, 2).toUpperCase();
-  };
 
   const handleLogout = async () => {
     try {
@@ -41,10 +33,11 @@ export function TeamAvatarMenu() {
           className="group cursor-pointer inline-flex items-center gap-1 rounded-md px-1.5 py-[2px] transition ring-1 ring-transparent hover:bg-slate-100 hover:ring-slate-200"
         >
           <div
-            className="h-6 w-6 rounded-full bg-slate-900 text-white grid place-items-center text-[11px] font-semibold shadow-sm"
+            className="h-6 w-6 rounded-full text-white grid place-items-center text-[11px] font-semibold shadow-sm"
+            style={{ background: user ? getAvatarColor(user) : undefined }}
             title="Account"
           >
-            {getInitials()}
+            {user ? getAvatarInitials(user.name) : 'A'}
           </div>
           <svg
             viewBox="0 0 24 24"

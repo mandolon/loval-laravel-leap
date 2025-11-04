@@ -15,6 +15,7 @@ import {
 } from "@/lib/api/hooks/useWorkspaceChat";
 import { useProjects } from "@/lib/api/hooks/useProjects";
 import { WorkspaceChatMessage } from "./WorkspaceChatMessage";
+import { TeamAvatar } from "@/components/TeamAvatar";
 import { useToast } from "@/hooks/use-toast";
 import { useProjectFiles, useUploadChatFiles } from "@/lib/api/hooks/useProjectFiles";
 import { useWorkspaceFiles, useUploadWorkspaceFiles } from "@/lib/api/hooks/useWorkspaceFiles";
@@ -1468,7 +1469,7 @@ function MessageBlock({ msg, currentUserId, onReply, onScrollToMessage }: any) {
           background: isHighlighted ? THEME.highlight : "transparent",
         }}
       >
-        <AvatarCircle name={name} />
+        <AvatarCircle name={name} user={msg.user} />
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2 mb-1 flex-wrap">
             <span className="font-semibold text-[15px]" style={{ color: THEME.text }}>
@@ -1528,20 +1529,31 @@ function MessageBlock({ msg, currentUserId, onReply, onScrollToMessage }: any) {
   );
 }
 
-function AvatarCircle({ name }: { name: string }) {
-  const initials = getInitials(name);
+function AvatarCircle({ name, user }: { name: string; user?: { id: string; name: string; avatarUrl?: string | null } | null }) {
+  if (!user) {
+    // Fallback for when user data is not available
+    const initials = getInitials(name);
+    return (
+      <div
+        title={name}
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-full border text-[12px] font-semibold opacity-80"
+        style={{
+          borderColor: THEME.avatarBorder,
+          background: THEME.avatarBackground,
+          color: THEME.avatarText,
+        }}
+      >
+        {initials}
+      </div>
+    );
+  }
+  
   return (
-    <div
-      title={name}
-      className="grid h-8 w-8 shrink-0 place-items-center rounded-full border text-[12px] font-semibold opacity-80"
-      style={{
-        borderColor: THEME.avatarBorder,
-        background: THEME.avatarBackground,
-        color: THEME.avatarText,
-      }}
-    >
-      {initials}
-    </div>
+    <TeamAvatar 
+      user={{ ...user, avatar_url: user.avatarUrl, name }} 
+      size="md" 
+      className="opacity-80"
+    />
   );
 }
 

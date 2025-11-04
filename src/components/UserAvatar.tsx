@@ -1,5 +1,6 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { getAvatarColor, getAvatarInitials } from "@/utils/avatarUtils";
 
 interface UserAvatarUser {
   first_name?: string;
@@ -8,6 +9,7 @@ interface UserAvatarUser {
   initials?: string;
   avatar?: string | null;
   avatar_url?: string | null;
+  avatarUrl?: string | null;
   role?: string;
 }
 
@@ -29,13 +31,9 @@ export const UserAvatar = ({ user, size = "md" }: UserAvatarProps) => {
     ? `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}` 
     : user.name || 'User';
   
-  // Generate initials if not provided
-  const initials = user.initials || 
-    fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 
-    'U';
-  
-  // Use avatar_url or avatar
-  const avatarBg = user.avatar_url || user.avatar || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)';
+  // Use avatar utilities for consistent behavior
+  const avatarColor = getAvatarColor(user);
+  const initials = user.initials || getAvatarInitials(fullName);
   
   return (
     <Tooltip>
@@ -43,7 +41,7 @@ export const UserAvatar = ({ user, size = "md" }: UserAvatarProps) => {
         <Avatar className={sizeClasses[size]}>
           <AvatarFallback 
             className="text-white"
-            style={{ background: avatarBg }}
+            style={{ background: avatarColor }}
           >
             {initials}
           </AvatarFallback>

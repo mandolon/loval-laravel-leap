@@ -1235,7 +1235,7 @@ const TasksView = memo(function TasksView() {
         .is('deleted_at', null);
       
       if (error) throw error;
-      return data.map((wm: any) => ({
+      const members = data.map((wm: any) => ({
         id: wm.users.id,
         shortId: wm.users.short_id,
         authId: wm.users.auth_id,
@@ -1249,9 +1249,73 @@ const TasksView = memo(function TasksView() {
         deletedAt: wm.users.deleted_at,
         deletedBy: wm.users.deleted_by,
       }));
+      
+      // Ensure current user is always included if they exist
+      if (user && !members.find((m: User) => m.id === user.id)) {
+        members.push({
+          id: user.id,
+          shortId: user.short_id,
+          authId: user.auth_id || '',
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          avatarUrl: user.avatar_url,
+          lastActiveAt: user.last_active_at,
+          createdAt: user.createdAt || new Date().toISOString(),
+          updatedAt: user.updatedAt || new Date().toISOString(),
+          deletedAt: user.deletedAt,
+          deletedBy: user.deletedBy,
+        });
+      }
+      
+      return members;
     },
     enabled: !!currentWorkspaceId,
   });
+  
+  // Fetch unique creator IDs from tasks that aren't in workspaceMembers
+  const creatorIds = useMemo(() => {
+    const memberIds = new Set(workspaceMembers.map((m: User) => m.id));
+    const taskCreatorIds = tasks
+      .map((t) => t.createdBy)
+      .filter((id) => !memberIds.has(id));
+    return [...new Set(taskCreatorIds)];
+  }, [tasks, workspaceMembers]);
+  
+  // Fetch missing creators
+  const { data: missingCreators = [] } = useQuery({
+    queryKey: ['missing-creators', creatorIds],
+    queryFn: async () => {
+      if (creatorIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .in('id', creatorIds)
+        .is('deleted_at', null);
+      
+      if (error) throw error;
+      return data.map((u: any) => ({
+        id: u.id,
+        shortId: u.short_id,
+        authId: u.auth_id,
+        name: u.name,
+        email: u.email,
+        phone: u.phone,
+        avatarUrl: u.avatar_url,
+        lastActiveAt: u.last_active_at,
+        createdAt: u.created_at,
+        updatedAt: u.updated_at,
+        deletedAt: u.deleted_at,
+        deletedBy: u.deleted_by,
+      }));
+    },
+    enabled: creatorIds.length > 0,
+  });
+  
+  // Combine workspaceMembers with missing creators
+  const allUsers = useMemo(() => {
+    return [...workspaceMembers, ...missingCreators];
+  }, [workspaceMembers, missingCreators]);
 
   // Mutations
   const createTaskMutation = useCreateTask();
@@ -1268,13 +1332,13 @@ const TasksView = memo(function TasksView() {
   const handleTaskClick = useCallback((task: Task) => {
     setSelectedTask(task);
     
-    // Fetch task creator and assignees
-    const creator = workspaceMembers.find((u) => u.id === task.createdBy) || null;
-    const assignees = workspaceMembers.filter((u) => task.assignees.includes(u.id));
+    // Fetch task creator and assignees from allUsers (includes workspaceMembers + missing creators)
+    const creator = allUsers.find((u) => u.id === task.createdBy) || null;
+    const assignees = allUsers.filter((u) => task.assignees.includes(u.id));
     
     setTaskCreator(creator);
     setTaskAssignees(assignees);
-  }, [workspaceMembers]);
+  }, [allUsers]);
 
   const handleProjectClick = useCallback((projectId: string) => {
     navigate(`/workspace/${currentWorkspaceId}/project/${projectId}`);
@@ -1366,7 +1430,7 @@ const TasksView = memo(function TasksView() {
         <TasksTable
           tasks={tasks}
           projects={projects}
-          users={workspaceMembers}
+          users={allUsers}
           onTaskClick={handleTaskClick}
           onProjectClick={handleProjectClick}
           onStatusToggle={handleStatusToggle}

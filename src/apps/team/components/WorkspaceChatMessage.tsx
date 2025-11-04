@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Trash2, Reply, Pencil, Check, X, Copy } from 'lucide-react'
 import type { WorkspaceChatMessageWithUser } from '@/lib/api/hooks/useWorkspaceChat'
+import { TeamAvatar } from '@/components/TeamAvatar'
 import { supabase } from "@/integrations/supabase/client"
 
 // Theme Configuration - Exact from TeamChatSlim MessageBlock
@@ -288,7 +289,7 @@ export const WorkspaceChatMessage = ({
           background: isHighlighted ? THEME.highlight : "transparent",
         }}
       >
-        <AvatarCircle name={name} />
+        <AvatarCircle name={name} user={message.user} />
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2 mb-1 flex-wrap">
             <span className="font-semibold text-[15px]" style={{ color: THEME.text }}>
@@ -347,32 +348,14 @@ export const WorkspaceChatMessage = ({
   )
 }
 
-function AvatarCircle({ name }: { name: string }) {
-  const getInitials = (name: string) => {
-    const clean = (name || "").trim().replace(/\s+/g, " ")
-    if (!clean) return "YY"
-    const parts = clean.split(" ")
-    const f = parts[0] || ""
-    const l = parts.length > 1 ? parts[parts.length - 1] : ""
-    const pick = (s: string) => (s.match(/[A-Za-z\p{L}]/u)?.[0] || "").toUpperCase()
-    const a = pick(f)
-    const b = l ? pick(l) : f.length > 1 ? f[1].toUpperCase() : ""
-    const res = (a + b).slice(0, 2) || "YY"
-    return res
-  }
-
-  const initials = getInitials(name)
+function AvatarCircle({ name, user }: { name: string; user: { id: string; name: string; avatarUrl?: string | null } | null }) {
+  if (!user) return null;
+  
   return (
-    <div
-      title={name}
-      className="grid h-8 w-8 shrink-0 place-items-center rounded-full border text-[12px] font-semibold opacity-80"
-      style={{
-        borderColor: THEME.avatarBorder,
-        background: THEME.avatarBackground,
-        color: THEME.avatarText,
-      }}
-    >
-      {initials}
-    </div>
-  )
+    <TeamAvatar 
+      user={{ ...user, avatar_url: user.avatarUrl, name }} 
+      size="md" 
+      className="opacity-80"
+    />
+  );
 }
