@@ -691,15 +691,16 @@ const ProjectDetails = () => {
                   // Group messages into threads
                   const threadedMessages = messages.reduce((acc, message) => {
                     if (!message.replyToMessageId) {
-                      // This is a parent message
+                      // This is a parent message - explicitly preserve all properties
                       acc.push({
                         ...message,
+                        fileDetails: message.fileDetails, // Explicitly preserve fileDetails
                         replies: messages.filter(m => m.replyToMessageId === message.id),
                         replyCount: messages.filter(m => m.replyToMessageId === message.id).length
                       })
                     }
                     return acc
-                  }, [] as typeof messages)
+                  }, [] as ProjectChatMessageWithUser[])
 
                   return threadedMessages.map((message) => (
                     <ChatMessage
