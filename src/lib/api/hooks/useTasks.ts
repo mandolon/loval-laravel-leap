@@ -4,6 +4,7 @@ import type { ListQuery } from '../transport'
 import { useToast } from '@/hooks/use-toast'
 import { handleApiError } from '../errors'
 import { supabase } from '@/integrations/supabase/client'
+import { useEffect } from 'react'
 
 // Query key factory for tasks with workspace support
 export const taskKeys = {
@@ -17,27 +18,38 @@ export const taskKeys = {
 }
 
 // Transform database row to Task type
-const transformTask = (row: any): Task => ({
-  id: row.id,
-  shortId: row.short_id,
-  projectId: row.project_id,
-  title: row.title,
-  description: row.description,
-  status: row.status,
-  priority: row.priority,
-  assignees: row.assignees || [],
-  attachedFiles: row.attached_files || [],
-  dueDate: row.due_date,
-  estimatedTime: row.estimated_time,
-  actualTime: row.actual_time,
-  sortOrder: row.sort_order,
-  createdBy: row.created_by,
-  createdAt: row.created_at,
-  updatedAt: row.updated_at,
-  updatedBy: row.updated_by,
-  deletedAt: row.deleted_at,
-  deletedBy: row.deleted_by,
-});
+const transformTask = (row: any): Task => {
+  // Handle assignees - ensure it's always an array
+  let assignees: string[] = [];
+  if (Array.isArray(row.assignees)) {
+    assignees = row.assignees.filter((id: any) => id != null);
+  } else if (row.assignees) {
+    // If it's a string or other type, try to parse it
+    assignees = [];
+  }
+
+  return {
+    id: row.id,
+    shortId: row.short_id,
+    projectId: row.project_id,
+    title: row.title,
+    description: row.description,
+    status: row.status,
+    priority: row.priority,
+    assignees,
+    attachedFiles: Array.isArray(row.attached_files) ? row.attached_files.filter((id: any) => id != null) : [],
+    dueDate: row.due_date,
+    estimatedTime: row.estimated_time,
+    actualTime: row.actual_time,
+    sortOrder: row.sort_order,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    updatedBy: row.updated_by,
+    deletedAt: row.deleted_at,
+    deletedBy: row.deleted_by,
+  };
+};
 
 // Fetch tasks list (optionally filtered by project)
 export const useTasks = (projectId?: string, query?: ListQuery) => {
@@ -64,7 +76,9 @@ export const useTasks = (projectId?: string, query?: ListQuery) => {
 
 // Fetch all tasks for a workspace (across all projects)
 export const useWorkspaceTasks = (workspaceId: string) => {
-  return useQuery({
+  const queryClient = useQueryClient();
+  
+  const query = useQuery({
     queryKey: taskKeys.workspace(workspaceId),
     queryFn: async () => {
       const { data, error } = await supabase
@@ -81,12 +95,48 @@ export const useWorkspaceTasks = (workspaceId: string) => {
       return data.map(transformTask);
     },
     enabled: !!workspaceId,
-  })
+  });
+
+  // Set up realtime subscription for instant updates
+  useEffect(() => {
+    if (!workspaceId) return;
+
+    const channel = supabase
+      .channel(`workspace-tasks-${workspaceId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks',
+        },
+        (payload) => {
+          // Invalidate workspace queries - React Query will only refetch if needed
+          queryClient.invalidateQueries({ queryKey: taskKeys.workspace(workspaceId) });
+          queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
+          
+          // Also invalidate the specific task detail if it exists
+          const taskId = payload.new?.id || payload.old?.id;
+          if (taskId) {
+            queryClient.invalidateQueries({ queryKey: taskKeys.detail(taskId as string) });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [workspaceId, queryClient]);
+
+  return query;
 }
 
 // Fetch single task
 export const useTask = (id: string) => {
-  return useQuery({
+  const queryClient = useQueryClient();
+  
+  const query = useQuery({
     queryKey: taskKeys.detail(id),
     queryFn: async () => {
       const { data, error } = await supabase
@@ -100,7 +150,36 @@ export const useTask = (id: string) => {
       return transformTask(data);
     },
     enabled: !!id,
-  })
+  });
+
+  // Set up realtime subscription for instant updates
+  useEffect(() => {
+    if (!id) return;
+
+    const channel = supabase
+      .channel(`task-${id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks',
+          filter: `id=eq.${id}`,
+        },
+        () => {
+          // Invalidate this task's detail query and all list queries
+          queryClient.invalidateQueries({ queryKey: taskKeys.detail(id) });
+          queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id, queryClient]);
+
+  return query;
 }
 
 // Create task mutation

@@ -1202,6 +1202,26 @@ const TasksView = memo(function TasksView() {
   // Fetch data
   const { data: tasks = [], isLoading: tasksLoading } = useWorkspaceTasks(currentWorkspaceId || '');
   const { data: projects = [] } = useProjects(currentWorkspaceId || '');
+
+  // Sync selectedTask with updated task from tasks array
+  useEffect(() => {
+    if (selectedTask) {
+      const updatedTask = tasks.find((t) => t.id === selectedTask.id);
+      if (updatedTask) {
+        // Only update if the task actually changed (deep comparison for assignees)
+        const assigneesChanged = JSON.stringify(selectedTask.assignees?.sort() || []) !== 
+                                 JSON.stringify(updatedTask.assignees?.sort() || []);
+        const taskChanged = selectedTask.title !== updatedTask.title ||
+                           selectedTask.description !== updatedTask.description ||
+                           selectedTask.status !== updatedTask.status ||
+                           assigneesChanged;
+        
+        if (taskChanged) {
+          setSelectedTask(updatedTask);
+        }
+      }
+    }
+  }, [tasks, selectedTask?.id]);
   
   // Fetch all workspace members for assignee selection
   const { data: workspaceMembers = [] } = useQuery({
@@ -1526,6 +1546,7 @@ const TasksView = memo(function TasksView() {
           createdBy={taskCreator}
           onClose={() => setSelectedTask(null)}
           onUpdate={handleTaskUpdate}
+          onStatusToggle={handleStatusToggle}
           onDeleteTask={async (taskId) => {
             await deleteTaskMutation.mutateAsync(taskId);
             setSelectedTask(null);

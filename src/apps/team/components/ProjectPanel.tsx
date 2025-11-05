@@ -1,9 +1,9 @@
 import React, { useMemo, useState, useEffect, useRef, forwardRef, useCallback } from "react";
-import { Search, FolderClosed, BookOpen, MoreVertical, Settings2 } from "lucide-react";
+import { Search, FolderClosed, BookOpen, MoreVertical, Settings2, Info } from "lucide-react";
 import { useProjectFolders, useProjectFiles, useDeleteProjectFile, useDeleteFolder } from '@/lib/api/hooks/useProjectFiles';
 import { useDrawingVersions, useUpdateDrawingScale, useCreateDrawingPage, useCreateDrawingVersion, useDeleteDrawingVersion, useDeleteDrawingPage, useUpdateDrawingVersion, useUpdateDrawingPageName } from '@/lib/api/hooks/useDrawings';
 import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
-import { useHardDeleteProject } from '@/lib/api/hooks/useProjects';
+import { useHardDeleteProject, useProject } from '@/lib/api/hooks/useProjects';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { useNavigate } from 'react-router-dom';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -272,7 +272,7 @@ export default function ProjectPanel({
   onCalibrate?: () => void;
   inchesPerSceneUnit?: number;
 }) {
-  const [tab, setTab] = useState<'files' | 'whiteboards' | 'settings'>('files');
+  const [tab, setTab] = useState<'files' | 'whiteboards' | 'settings' | 'info'>('files');
   const [query, setQuery] = useState("");
   const [wbQuery, setWbQuery] = useState("");
   const [selectedWB, setSelectedWB] = useState<any>(null);
@@ -281,6 +281,7 @@ export default function ProjectPanel({
   const { currentWorkspaceId } = useWorkspaces();
   const navigate = useNavigate();
   const hardDeleteProjectMutation = useHardDeleteProject(currentWorkspaceId || "");
+  const { data: project } = useProject(projectId);
 
   // Database queries for Files tab
   const { data: rawFolders = [], isLoading: foldersLoading } = useProjectFolders(projectId);
@@ -940,6 +941,13 @@ export default function ProjectPanel({
             <BookOpen className="h-4 w-4 text-slate-700" />
           </button>
           <button
+            className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "info" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"}`}
+            aria-label="Project Info"
+            onClick={() => setTab("info")}
+          >
+            <Info className="h-4 w-4 text-slate-700" />
+          </button>
+          <button
             className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "settings" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"} ml-auto`}
             aria-label="Settings"
             onClick={() => setTab("settings")}
@@ -1368,6 +1376,136 @@ export default function ProjectPanel({
               </div>
             )}
           </>
+        )}
+
+        {/* Info tab */}
+        {tab === "info" && (
+          <div className="px-2.5 pt-1.5 pb-2 overflow-auto">
+            {project ? (
+              <div className="space-y-3 text-[11px]">
+                <div>
+                  <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Project Name</div>
+                  <div className="text-slate-900">{project.name}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Project ID</div>
+                  <div className="text-slate-900">{project.shortId}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Status</div>
+                  <div className="text-slate-900 capitalize">{project.status}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Phase</div>
+                  <div className="text-slate-900">{project.phase}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Progress</div>
+                  <div className="text-slate-900">{project.progress ?? 0}%</div>
+                </div>
+                {project.address && (
+                  <div>
+                    <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Address</div>
+                    <div className="text-slate-900">
+                      {[project.address.street, project.address.city, project.address.state, project.address.zip].filter(Boolean).join(', ') || '—'}
+                    </div>
+                  </div>
+                )}
+                {project.primaryClient && (
+                  <>
+                    <div className="pt-2 border-t border-slate-200">
+                      <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-2">Primary Client</div>
+                      <div className="space-y-2">
+                        <div>
+                          <div className="text-[10px] text-slate-500 mb-0.5">Name</div>
+                          <div className="text-slate-900">
+                            {[project.primaryClient.firstName, project.primaryClient.lastName].filter(Boolean).join(' ') || '—'}
+                          </div>
+                        </div>
+                        {project.primaryClient.email && (
+                          <div>
+                            <div className="text-[10px] text-slate-500 mb-0.5">Email</div>
+                            <div className="text-slate-900">{project.primaryClient.email}</div>
+                          </div>
+                        )}
+                        {project.primaryClient.phone && (
+                          <div>
+                            <div className="text-[10px] text-slate-500 mb-0.5">Phone</div>
+                            <div className="text-slate-900">{project.primaryClient.phone}</div>
+                          </div>
+                        )}
+                        {project.primaryClient.address && (
+                          <div>
+                            <div className="text-[10px] text-slate-500 mb-0.5">Address</div>
+                            <div className="text-slate-900">
+                              {[project.primaryClient.address.street, project.primaryClient.address.city, project.primaryClient.address.state, project.primaryClient.address.zip].filter(Boolean).join(', ') || '—'}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+                {project.secondaryClient && (
+                  <div className="pt-2 border-t border-slate-200">
+                    <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-2">Secondary Client</div>
+                    <div className="space-y-2">
+                      <div>
+                        <div className="text-[10px] text-slate-500 mb-0.5">Name</div>
+                        <div className="text-slate-900">
+                          {[project.secondaryClient.firstName, project.secondaryClient.lastName].filter(Boolean).join(' ') || '—'}
+                        </div>
+                      </div>
+                      {project.secondaryClient.email && (
+                        <div>
+                          <div className="text-[10px] text-slate-500 mb-0.5">Email</div>
+                          <div className="text-slate-900">{project.secondaryClient.email}</div>
+                        </div>
+                      )}
+                      {project.secondaryClient.phone && (
+                        <div>
+                          <div className="text-[10px] text-slate-500 mb-0.5">Phone</div>
+                          <div className="text-slate-900">{project.secondaryClient.phone}</div>
+                        </div>
+                      )}
+                      {project.secondaryClient.address && (
+                        <div>
+                          <div className="text-[10px] text-slate-500 mb-0.5">Address</div>
+                          <div className="text-slate-900">
+                            {[project.secondaryClient.address.street, project.secondaryClient.address.city, project.secondaryClient.address.state, project.secondaryClient.address.zip].filter(Boolean).join(', ') || '—'}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {project.estimatedAmount && (
+                  <div className="pt-2 border-t border-slate-200">
+                    <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Estimated Amount</div>
+                    <div className="text-slate-900">
+                      {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(project.estimatedAmount)}
+                    </div>
+                  </div>
+                )}
+                {project.dueDate && (
+                  <div>
+                    <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Due Date</div>
+                    <div className="text-slate-900">
+                      {new Date(project.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </div>
+                  </div>
+                )}
+                {project.description && (
+                  <div>
+                    <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Description</div>
+                    <div className="text-slate-900 whitespace-pre-wrap text-[10px]">{project.description}</div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-[10px] text-slate-500">Loading project information...</div>
+            )}
+          </div>
         )}
 
         {/* Settings tab */}

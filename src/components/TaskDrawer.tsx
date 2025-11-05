@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback, useLayoutEffect } from 'react';
 import { Upload, X, FileText, Image as ImageIcon, Trash2, Calendar } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import type { Task, User } from '@/lib/api/types';
 import { TeamAvatar } from '@/components/TeamAvatar';
 import { AssigneeGroup } from '@/apps/team/components/AssigneeGroup';
@@ -14,17 +15,11 @@ type TaskDrawerProps = {
   projectName?: string;
   onClose: () => void;
   onUpdate?: (updates: Partial<Task>) => void;
+  onStatusToggle?: (taskId: string) => void;
   assignees?: User[];
   users?: User[];
   createdBy?: User | null;
   onDeleteTask?: (taskId: string) => Promise<void> | void;
-};
-
-const BADGE_BG = { red: '#d14c4c', blue: '#4c75d1', green: '#4cd159' } as const;
-const STATUS_CONFIG: Record<Task['status'], { label: string; tone: keyof typeof BADGE_BG }> = {
-  task_redline: { label: 'TASK/REDLINE', tone: 'red' },
-  progress_update: { label: 'PROGRESS/UPDATE', tone: 'blue' },
-  done_completed: { label: 'COMPLETE', tone: 'green' },
 };
 
 function getFileIcon(type?: string | null) {
@@ -49,11 +44,82 @@ function formatFileSize(bytes?: number | null) {
   return (bytes / 1048576).toFixed(1) + ' MB';
 }
 
-export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthChange, projectName, onClose, onUpdate, assignees = [], users = [], createdBy, onDeleteTask }: TaskDrawerProps) {
+// Generic Popover component
+function useOutsideDismiss<T extends HTMLElement>(open: boolean, onClose: () => void) {
+  const ref = useRef<T | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const onClick = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onClick);
+    return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('mousedown', onClick); };
+  }, [open, onClose]);
+  return ref;
+}
+
+const Popover: React.FC<{
+  open: boolean;
+  onClose: () => void;
+  anchor: React.ReactNode;
+  panel: React.ReactNode;
+  anchorClass?: string;
+  panelClass?: string;
+}> = ({ open, onClose, anchor, panel, anchorClass, panelClass }) => {
+  const anchorRef = useRef<HTMLDivElement | null>(null);
+  const panelRef = useOutsideDismiss<HTMLDivElement>(open, onClose);
+  const [coords, setCoords] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const update = () => {
+      if (!anchorRef.current) return;
+      const rect = anchorRef.current.getBoundingClientRect();
+      setCoords({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    };
+    update();
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => { window.removeEventListener('scroll', update, true); window.removeEventListener('resize', update); };
+  }, [open]);
+
+  return (
+    <div ref={anchorRef} className={anchorClass || 'relative inline-block'}>
+      {anchor}
+      {open && createPortal(
+        <div
+          ref={panelRef}
+          data-portal="popover"
+          className={panelClass || 'w-56 rounded-md border border-[#cecece] bg-white shadow-sm'}
+          style={{ position: 'fixed', top: coords.top, left: coords.left, zIndex: 1000 }}
+        >
+          {panel}
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+};
+
+const STATUS_OPTIONS: Array<{ value: Task['status']; label: string; color: string }> = [
+  { value: 'task_redline', label: 'TASK/REDLINE', color: '#d14c4c' },
+  { value: 'progress_update', label: 'PROGRESS/UPDATE', color: '#4c75d1' },
+  { value: 'done_completed', label: 'COMPLETE', color: '#4cd159' },
+];
+
+export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthChange, projectName, onClose, onUpdate, onStatusToggle, assignees = [], users = [], createdBy, onDeleteTask }: TaskDrawerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const dragState = useRef<{ startX: number; startWidth: number } | null>(null);
+  const [statusPopoverOpen, setStatusPopoverOpen] = useState(false);
+  const [localAssignees, setLocalAssignees] = useState<string[]>(() => {
+    // Initialize with task assignees if available, ensuring it's always an array
+    if (task) {
+      return Array.isArray(task.assignees) ? task.assignees.filter(id => id != null) : [];
+    }
+    return [];
+  });
   const usersById = useMemo(() => {
     const rec: Record<string, User> = {};
     users.forEach((u) => { rec[u.id] = u; });
@@ -63,6 +129,31 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
   const { data: files = [] } = useTaskFiles(task?.id || '');
   const uploadFileMutation = useUploadTaskFile();
   const deleteFileMutation = useDeleteTaskFile();
+
+  // Sync local assignees with task prop
+  useEffect(() => {
+    if (task) {
+      // Ensure we always have an array
+      const currentAssignees = Array.isArray(task.assignees) 
+        ? task.assignees.filter(id => id != null) 
+        : [];
+      
+      setLocalAssignees(prev => {
+        // Only update if the arrays are different (deep comparison)
+        const prevSorted = [...prev].sort().join(',');
+        const currentSorted = [...currentAssignees].sort().join(',');
+        if (prevSorted !== currentSorted) {
+          return currentAssignees;
+        }
+        return prev;
+      });
+    }
+  }, [task?.id, task?.assignees]);
+
+  // Close status popover when task changes
+  useEffect(() => {
+    setStatusPopoverOpen(false);
+  }, [task?.id]);
 
   const handleTitleEdit = useCallback((value: string) => {
     if (!task || !onUpdate) return;
@@ -87,8 +178,24 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
     deleteFileMutation.mutate({ fileId, taskId: task.id });
   }, [task, deleteFileMutation]);
 
-  const handleDownload = useCallback(async (storagePath: string, filename: string) => {
-    await downloadTaskFile(storagePath, filename);
+  const handleStatusSelect = useCallback((status: Task['status']) => {
+    if (task && onUpdate) {
+      onUpdate({ status });
+    }
+    setStatusPopoverOpen(false);
+  }, [task, onUpdate]);
+
+  const getStatusColor = useCallback((status: Task['status']) => {
+    switch (status) {
+      case 'task_redline':
+        return '#d14c4c';
+      case 'progress_update':
+        return '#4c75d1';
+      case 'done_completed':
+        return '#4cd159';
+      default:
+        return '#94a3b8';
+    }
   }, []);
 
   // Page-level drag & drop
@@ -116,7 +223,7 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
   if (!task) {
     return (
       <div
-        className="absolute right-0 bg-white border-l"
+        className="absolute right-0 bg-white border-l border-[#cecece]"
         style={{ width, top: topOffset, bottom: -48, transform: 'translateX(100%)' }}
         aria-hidden
       />
@@ -125,8 +232,8 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
 
   return (
     <div
-      className="absolute right-0 bg-white border-l"
-      style={{ width, top: topOffset, bottom: -48 }}
+      className="absolute right-0 bg-white border-l border-[#cecece] flex flex-col"
+      style={{ width, top: topOffset, bottom: 0 }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="task-drawer-title"
@@ -156,15 +263,15 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
 
       <div
         ref={containerRef}
-        className={`h-full transition-transform duration-200 ease-out ${open ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`flex-1 flex flex-col transition-transform duration-200 ease-out ${open ? 'translate-x-0' : 'translate-x-full'}`}
       >
         <div className="flex flex-col h-full bg-white" data-testid="task-drawer-root">
           {/* Header */}
-          <div className="border-b border-[#cecece] bg-white shadow-[inset_0_-1px_0_0_#f1f1f1]">
-            <div className="py-2 px-3">
-              <div className="flex items-center justify-between px-5">
-                <div className="text-[14px] text-[#202020] font-medium leading-tight">{projectName || 'Project'}</div>
-                <div className="flex items-center gap-1">
+          <div className="border-b border-[#cecece] bg-white shadow-[inset_0_-1px_0_0_#f1f1f1] shrink-0">
+            <div className="py-1 px-5">
+              <div className="max-w-[840px] mx-auto flex items-center justify-between">
+                <div className="text-[12px] text-[#202020] font-medium leading-tight">{projectName || 'Project'}</div>
+                <div className="flex items-center gap-1 -mr-2">
                   <button
                     className="w-7 h-7 inline-flex items-center justify-center rounded hover:bg-gray-100"
                     onClick={onClose}
@@ -179,23 +286,56 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
           </div>
 
           {/* Main */}
-          <div className="flex-1 overflow-auto p-5">
-            <div className="max-w-[840px] mx-auto">
+          <div className="flex-1 overflow-auto px-10 pt-5">
+            <div className="max-w-[840px] mx-auto pb-5">
               {/* Status + ID */}
-              <div className="flex items-center justify-between mt-4 mb-2">
+              <div className="flex items-center justify-between mt-2 mb-2">
                 <div className="flex items-center gap-2 relative">
-                  <span className="px-2 py-[2px] rounded text-[12px] font-medium tracking-[0.02em]" style={{ background: BADGE_BG[STATUS_CONFIG[task.status].tone], color: '#fff' }}>{STATUS_CONFIG[task.status].label}</span>
-                  <div className="flex items-center gap-2 text-[12px] text-[#646464] pl-2">
-                    <span className="text-[#202020]">{task.shortId}</span>
-                    <span className="w-px h-4 bg-gray-300" />
-                    <span className="inline-block w-[9px] h-[9px] rounded-full" style={{ backgroundColor: STATUS_CONFIG[task.status].tone === 'green' ? '#4cd159' : STATUS_CONFIG[task.status].tone === 'red' ? '#d14c4c' : '#4c75d1' }} />
-                  </div>
+                  <Popover
+                    open={statusPopoverOpen}
+                    onClose={() => setStatusPopoverOpen(false)}
+                    anchor={
+                      <button
+                        type="button"
+                        onClick={() => setStatusPopoverOpen(true)}
+                        className="inline-flex items-center justify-center"
+                        aria-label="Change status"
+                      >
+                        <span 
+                          className="inline-block w-[9px] h-[9px] rounded-full" 
+                          style={{ backgroundColor: task ? getStatusColor(task.status) : '#94a3b8' }}
+                        />
+                      </button>
+                    }
+                    panel={
+                      <div className="py-1">
+                        {STATUS_OPTIONS.map((option) => (
+                          <button
+                            key={option.value}
+                            onClick={() => handleStatusSelect(option.value)}
+                            className={`w-full text-left px-3 py-1.5 text-[12px] hover:bg-slate-50 transition-colors flex items-center gap-2 ${
+                              task?.status === option.value ? 'bg-slate-50' : ''
+                            }`}
+                          >
+                            <span 
+                              className="inline-block w-[9px] h-[9px] rounded-full flex-shrink-0" 
+                              style={{ backgroundColor: option.color }}
+                            />
+                            <span>{option.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    }
+                  />
+                  <span className="w-px h-4 bg-gray-300" />
+                  <span className="text-[#202020] text-[12px]">{task.shortId}</span>
                 </div>
               </div>
 
               {/* Title */}
-              <div className="my-3">
+              <div className="my-2">
                 <input
+                  key={task.id}
                   id="task-drawer-title"
                   type="text"
                   defaultValue={task.title}
@@ -230,9 +370,13 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
                   <label className="text-[12px] text-[#646464] block mb-1.5">Assigned to</label>
                   <div className="flex items-center">
                     <AssigneeGroup
-                      value={task.assignees || []}
+                      key={task.id}
+                      value={localAssignees}
                       usersById={usersById}
-                      onChange={(next) => onUpdate?.({ assignees: next })}
+                      onChange={(next) => {
+                        setLocalAssignees(next);
+                        onUpdate?.({ assignees: next });
+                      }}
                     />
                   </div>
                 </div>
@@ -248,7 +392,7 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
                   <label className="text-[12px] text-[#646464] block mb-1.5">Due Date</label>
                   <div className="relative">
                     {task.dueDate ? (
-                      <input type="date" defaultValue={task.dueDate as any} onBlur={(e) => onUpdate?.({ dueDate: e.target.value })} className="h-8 text-sm border border-[#e5e7eb] rounded px-2" />
+                      <input type="date" defaultValue={task.dueDate as any} onBlur={(e) => onUpdate?.({ dueDate: e.target.value })} className="h-8 text-sm border border-[#cecece] rounded px-2" />
                     ) : (
                       <button className="h-8 px-2 text-muted-foreground inline-flex items-center gap-1" onClick={() => onUpdate?.({ dueDate: new Date().toISOString().split('T')[0] as any })}>
                         <Calendar className="h-4 w-4" />
@@ -261,8 +405,9 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
 
               {/* Description */}
               <div className="mt-2 mb-6">
-                <div className="rounded-md border border-[#e5e7eb] bg-white/80 focus-within:bg-white focus-within:border-[#4C75D1] focus-within:shadow-sm transition-colors">
+                <div className="rounded-md border border-[#cecece] bg-white/80 focus-within:bg-white focus-within:border-[#4C75D1] focus-within:shadow-sm transition-colors">
                   <textarea
+                    key={`desc-${task.id}`}
                     placeholder="Describe the task details, requirements, or any relevant information..."
                     className="min-h-[200px] w-full p-3 text-[14px] border-0 outline-none resize-none placeholder:text-gray-400"
                     defaultValue={task.description || ''}
@@ -277,7 +422,7 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
                 <input ref={fileInputRef} type="file" multiple onChange={(e) => handleFileUpload(e.target.files)} className="hidden" />
 
                 <div
-                  className={`border-2 border-dashed rounded-lg p-5 text-center cursor-pointer transition-colors ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-[#e5e7eb] bg-gray-50 hover:bg-gray-100'}`}
+                  className={`border-2 border-dashed rounded-lg p-5 text-center cursor-pointer transition-colors ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-[#cecece] bg-gray-50 hover:bg-gray-100'}`}
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <div className="flex items-center justify-center gap-2 text-[12px] text-[#646464]">
@@ -289,7 +434,7 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
 
                 {files.length > 0 ? (
                   <div className="mt-3 max-h-[340px] overflow-auto rounded-md">
-                    <div className="border-b border-[#e5e7eb]">
+                    <div className="border-b border-[#cecece]">
                       <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_40px] gap-4 px-4 py-2 text-[12px] font-semibold text-[#646464] sticky top-0 bg-white z-10">
                         <div>Name</div>
                         <div>Size</div>
@@ -300,7 +445,7 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
                       </div>
                     </div>
                     {files.map((f) => (
-                      <div key={f.id} className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_40px] gap-4 px-4 py-2 text-[12px] border-b border-[#e5e7eb] hover:bg-gray-50 transition-colors group odd:bg-white even:bg-gray-50 min-w-0">
+                      <div key={f.id} className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_40px] gap-4 px-4 py-2 text-[12px] border-b border-[#cecece] hover:bg-gray-50 transition-colors group odd:bg-white even:bg-gray-50 min-w-0">
                         <div className="flex items-center gap-2 min-w-0">
                           {getFileIcon(f.mimetype || null)}
                           <span className="text-[#202020] truncate" title={f.filename}>{f.filename}</span>
@@ -322,7 +467,7 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
                   </div>
                 ) : (
                   <div className="mt-3">
-                    <div className="border-b border-[#e5e7eb]">
+                    <div className="border-b border-[#cecece]">
                       <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-4 px-4 py-2 text-[12px] font-semibold text-[#646464] sticky top-0 bg-white z-10">
                         <div>Name</div>
                         <div>Size</div>
@@ -340,8 +485,8 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
               </div>
 
               {/* Footer */}
-              <div className="border-t border-[#e5e7eb] bg-white">
-                <div className="px-5 py-2 flex justify-end">
+              <div className="border-t border-[#cecece] bg-white mt-auto">
+                <div className="max-w-[840px] mx-auto px-5 py-1 flex justify-end">
                   <button
                     className="inline-flex items-center gap-1 text-[12px] text-[#646464] hover:text-red-600 hover:bg-red-50/40 rounded px-2 py-1 transition-colors"
                     onClick={async () => { if (task && onDeleteTask) { const ok = window.confirm('Delete this task? This cannot be undone.'); if (ok) await onDeleteTask(task.id); } }}

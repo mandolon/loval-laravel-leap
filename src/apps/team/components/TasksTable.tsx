@@ -300,7 +300,10 @@ const TaskRow: React.FC<TaskRowProps> = ({
   onUpdateTaskAssignees,
   gridTemplateColumns,
 }) => {
-  const [localAssignees, setLocalAssignees] = useState<string[]>(task.assignees);
+  const [localAssignees, setLocalAssignees] = useState<string[]>(() => {
+    // Ensure we always initialize with an array, even if task.assignees is undefined/null
+    return Array.isArray(task.assignees) ? task.assignees.filter(id => id != null) : [];
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadTaskFileMutation = useUploadTaskFile();
 
@@ -318,10 +321,23 @@ const TaskRow: React.FC<TaskRowProps> = ({
     onUpdateTaskAssignees(task.id, next);
   }, [task.id, onUpdateTaskAssignees]);
 
-  // Sync local assignees when task.assignees changes externally
+  // Sync local assignees when task.assignees changes externally (from drawer or other updates)
   useEffect(() => {
-    setLocalAssignees(task.assignees);
-  }, [task.assignees]);
+    // Ensure we always have an array
+    const currentAssignees = Array.isArray(task.assignees) 
+      ? task.assignees.filter(id => id != null) 
+      : [];
+    
+    setLocalAssignees(prev => {
+      // Only update if the arrays are different (deep comparison)
+      const prevSorted = [...prev].sort().join(',');
+      const currentSorted = [...currentAssignees].sort().join(',');
+      if (prevSorted !== currentSorted) {
+        return currentAssignees;
+      }
+      return prev;
+    });
+  }, [task.id, task.assignees]); // Include task.id to reset when task changes
 
   const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
@@ -449,6 +465,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
       <div className="px-2 py-1.5 text-center">
         <div className="flex justify-center items-center mx-auto">
           <AssigneeGroup
+            key={`assignee-${task.id}`}
             value={localAssignees}
             usersById={usersById}
             onChange={handleAssigneeChange}
@@ -753,7 +770,10 @@ const TasksSection: React.FC<TasksSectionProps> = ({
               {tasks.map((task) => {
                 const project = projects.find((p) => p.id === task.projectId);
                 const creator = users.find((u) => u.id === task.createdBy);
-                const assignedUsers = users.filter((u) => task.assignees.includes(u.id));
+                const assignedUsers = users.filter((u) => {
+                  const assignees = Array.isArray(task.assignees) ? task.assignees : [];
+                  return assignees.includes(u.id);
+                });
 
                 return (
                   <TaskRow
