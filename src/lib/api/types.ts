@@ -40,6 +40,7 @@ export interface DetailLibraryFile {
   colorTag: DetailColorTag;
   description?: string;
   authorName?: string;
+  scale?: string;
   uploadedBy: string;
   createdAt: string;
   updatedAt: string;

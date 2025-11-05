@@ -45,7 +45,7 @@ export function ProfileContent() {
     email: '',
     role: 'user' as 'admin' | 'user'
   });
-  const [avatarColor, setAvatarColor] = useState('linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)');
+  const [avatarColor, setAvatarColor] = useState('#202020');
 
   // Load user data
   useEffect(() => {
@@ -60,7 +60,7 @@ export function ProfileContent() {
         email: user.email,
         role: user.is_admin ? 'admin' : 'user'
       });
-      setAvatarColor(user.avatar_url || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)');
+      setAvatarColor(user.avatar_url || '#202020');
     }
   }, [user]);
 

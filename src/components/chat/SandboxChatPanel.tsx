@@ -152,7 +152,7 @@ export function SandboxChatPanel({ onClose, className = '' }: SandboxChatPanelPr
                 <AvatarFallback
                   className="text-white text-[10px] font-semibold"
                   style={{
-                    background: msg.user.avatarUrl || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)',
+                    background: msg.user.avatarUrl || '#202020',
                   }}
                 >
                   {msg.user.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)}

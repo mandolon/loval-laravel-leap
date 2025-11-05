@@ -1,21 +1,21 @@
 /**
  * Avatar utilities for consistent avatar color and initials handling across the app.
  * 
- * Note: Despite the field name `avatar_url`, it stores CSS gradient color strings
- * (e.g., 'linear-gradient(...)'), not image URLs. This is a legacy naming inconsistency.
+ * Note: Despite the field name `avatar_url`, it stores CSS color values (hex colors),
+ * not image URLs. This is a legacy naming inconsistency.
  */
 
 /**
- * Default avatar color gradient (fallback when user hasn't set a color)
+ * Default avatar color (fallback when user hasn't set a color)
  */
-export const DEFAULT_AVATAR_COLOR = 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)';
+export const DEFAULT_AVATAR_COLOR = '#202020';
 
 /**
  * Gets the avatar color from a user object.
  * Handles both snake_case (avatar_url) and camelCase (avatarUrl) for compatibility.
  * 
  * @param user - User object with optional avatar_url or avatarUrl property
- * @returns CSS gradient string or color value
+ * @returns CSS color value (hex color)
  */
 export function getAvatarColor(user: { avatar_url?: string | null; avatarUrl?: string | null } | null | undefined): string {
   if (!user) return DEFAULT_AVATAR_COLOR;

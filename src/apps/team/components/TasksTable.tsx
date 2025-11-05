@@ -327,17 +327,17 @@ const TaskRow: React.FC<TaskRowProps> = ({
       style={{ gridTemplateColumns }}
     >
       {/* Status */}
-      <div className="px-2 py-2 flex items-center justify-center">
+      <div className="px-2 py-1.5 flex items-center justify-center">
         <StatusDot status={task.status} onClick={() => onStatusToggle(task.id)} />
       </div>
 
       {/* Name */}
-      <div className="px-2 py-2">
+      <div className="px-2 py-1.5">
         <button
           type="button"
           data-testid="name-cell"
           onClick={() => onTaskClick(task)}
-          className="w-full text-left rounded hover:bg-slate-50 focus:bg-slate-50 outline-none px-1 py-1 cursor-pointer"
+          className="w-full text-left rounded hover:bg-slate-50 focus:bg-slate-50 outline-none px-1 py-0.5 cursor-pointer"
           style={{ lineHeight: 1.1 }}
         >
           <span
@@ -357,7 +357,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
                 if (project) onProjectClick(project.id);
               }
             }}
-            className="block text-slate-600 hover:text-slate-900 hover:bg-slate-50 focus:bg-slate-50 rounded px-0.5 cursor-pointer text-[11px] leading-tight mb-1"
+            className="block text-slate-600 hover:text-slate-900 hover:bg-slate-50 focus:bg-slate-50 rounded px-0.5 cursor-pointer text-[11px] leading-tight mb-0.5"
             style={{ WebkitTapHighlightColor: 'transparent' }}
           >
             {project?.name || '-'}
@@ -369,7 +369,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
       </div>
 
       {/* Files */}
-      <div className="px-2 py-2 text-center">
+      <div className="px-2 py-1.5 text-center">
         <div className="w-full text-center">
           <button
             aria-label="Attach files"
@@ -391,14 +391,14 @@ const TaskRow: React.FC<TaskRowProps> = ({
       </div>
 
       {/* Date */}
-      <div className="px-2 py-2 text-center">
+      <div className="px-2 py-1.5 text-center">
         <span className="block mx-auto text-slate-600 whitespace-nowrap" style={{ fontSize: '14px' }}>
           {formatDate(task.createdAt)}
         </span>
       </div>
 
       {/* Created */}
-      <div className="px-2 py-2 text-center">
+      <div className="px-2 py-1.5 text-center">
         {creator ? (
           <div className="flex justify-center">
             <TeamAvatar user={{ ...creator, avatar_url: creator.avatarUrl }} size="sm" />
@@ -409,7 +409,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
       </div>
 
       {/* Assigned */}
-      <div className="px-2 py-2 text-center">
+      <div className="px-2 py-1.5 text-center">
         <div className="flex gap-1 justify-center items-center mx-auto">
           {assignedUsers.slice(0, 2).map((u) => (
             <TeamAvatar key={u.id} user={{ ...u, avatar_url: u.avatarUrl }} size="sm" />
@@ -466,7 +466,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
       </div>
 
       {/* Empty column */}
-      <div className="px-2 py-2"></div>
+      <div className="px-2 py-1.5"></div>
     </div>
   );
 };

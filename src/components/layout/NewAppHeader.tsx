@@ -51,7 +51,7 @@ export function NewAppHeader() {
               <Avatar className="h-8 w-8">
                 <AvatarFallback 
                   className="text-white text-xs font-semibold"
-                  style={{ background: user.avatar_url || 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)' }}
+                  style={{ background: user.avatar_url || '#202020' }}
                 >
                   {user.initials}
                 </AvatarFallback>

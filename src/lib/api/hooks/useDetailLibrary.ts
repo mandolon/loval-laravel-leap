@@ -109,6 +109,7 @@ export function useDetailLibraryFiles(categoryId?: string, subfolderId?: string)
         colorTag: file.color_tag as DetailColorTag,
         description: file.description,
         authorName: file.author_name,
+        scale: file.scale,
         uploadedBy: file.uploaded_by,
         createdAt: file.created_at,
         updatedAt: file.updated_at,
@@ -489,6 +490,48 @@ export function useDeleteDetailItem() {
     onSuccess: (parentFileId) => {
       queryClient.invalidateQueries({ queryKey: detailLibraryKeys.items(parentFileId) });
       toast.success('Detail deleted successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Delete failed: ${error.message}`);
+    },
+  });
+}
+
+// Hard delete file (permanently delete from storage and database)
+export function useHardDeleteDetailFile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ fileId }: { fileId: string }) => {
+      // First get the file to know its storage path
+      const { data: file, error: fetchError } = await supabase
+        .from('detail_library_files')
+        .select('storage_path')
+        .eq('id', fileId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Delete from storage if file exists
+      if (file.storage_path && file.storage_path.trim() !== '') {
+        const { error: storageError } = await supabase.storage
+          .from('detail-library')
+          .remove([file.storage_path]);
+
+        if (storageError) throw storageError;
+      }
+
+      // Hard delete from database
+      const { error: deleteError } = await supabase
+        .from('detail_library_files')
+        .delete()
+        .eq('id', fileId);
+
+      if (deleteError) throw deleteError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: detailLibraryKeys.all });
+      toast.success('File permanently deleted');
     },
     onError: (error: Error) => {
       toast.error(`Delete failed: ${error.message}`);

@@ -39,6 +39,7 @@ import { useWorkspaceTasks, useCreateTask, useUpdateTask } from '@/lib/api/hooks
 import { useProjects } from '@/lib/api/hooks/useProjects';
 import { TasksTable } from './TasksTable';
 import { TaskDetailDialog } from '@/components/TaskDetailDialog';
+import { TeamDetailLibraryView } from './TeamDetailLibraryView';
 
 // ----------------------------------
 // Theme & constants
@@ -130,49 +131,6 @@ const TITLES = {
   chat: "Chat",
   details: "Detail Library",
   settings: "Settings",
-};
-
-const DETAIL_CATEGORIES = [
-  { name: "Foundation", items: ["Footings", "Grade Beams", "Slab-on-Grade", "Basement Walls"] },
-  { name: "Wall", items: ["Exterior Walls", "Interior Walls", "Curtain Walls", "Party Walls"] },
-  { name: "Roof", items: ["Pitched Roofs", "Flat Roofs", "Roof-to-Wall Connections", "Skylights"] },
-  { name: "Window & Door", items: ["Window Heads", "Window Sills", "Door Frames", "Door Thresholds"] },
-  { name: "Stair", items: ["Stair Sections", "Handrails", "Landings", "Connections"] },
-  { name: "Connection", items: ["Beam Connections", "Column Connections", "Truss Connections", "Base Plates"] },
-  { name: "Finish", items: ["Flooring", "Ceilings", "Wall Finishes", "Trim & Molding"] },
-];
-
-const DETAIL_TAB_CARDS = {
-  "Foundation": [
-    { name: "Slab-on-Grade", items: ["Thickened Edge", "Control Joint", "Perimeter Insulation", "Vapor Barrier Lap"] },
-    { name: "Crawlspace Foundation", items: ["Pier & Beam", "Vent & Sill Detail", "Moisture Barrier"] },
-    { name: "Basement Foundation", items: ["Wall Waterproofing", "Footing Drain", "Sill Plate Anchor"] },
-    { name: "Footings", items: ["Strip Footing", "Pad Footing", "Rebar Lap Splice"] }
-  ],
-  "Wall": [
-    { name: "2x6 Wood Stud Exterior Wall", items: ["WRB + Flashing", "Fiberglass Batt", "Class II Vapor Retarder", "Sheathing Nailing"] },
-    { name: "Plywood Shear Wall", items: ["Holdowns", "Nailing Schedule", "Boundary Nailing"] },
-    { name: "Interior GWB Partition", items: ["Staggered Stud", "Sound Insulation", "Resilient Channel"] }
-  ],
-  "Floor/Ceiling": [
-    { name: "Wood Joist Floor", items: ["Joist Hanger", "Subfloor Adhesive", "Blocking/Strutting"] },
-    { name: "I-Joist Floor", items: ["Web Openings", "Rim Board", "Bearing Detail"] },
-    { name: "GWB Ceiling", items: ["Furring Channel", "Air/Vapor Layer", "Recessed Can Light"] }
-  ],
-  "Roof": [
-    { name: "Asphalt Shingle Roof", items: ["Drip Edge", "Ice & Water Shield", "Ridge Vent"] },
-    { name: "Truss to Wall Connection", items: ["Hurricane Tie", "Blocking", "Continuous Load Path"] },
-    { name: "Low-Slope Membrane", items: ["Tapered Insulation", "Parapet Cap", "Scupper"] }
-  ],
-  "Stair": [
-    { name: "Residential Wood Stair", items: ["Stringer Cut", "Tread/Riser", "Skirt Board"] },
-    { name: "Handrail & Guard", items: ["Post to Tread", "Bracket Mount", "Top Rail"] }
-  ],
-  "Finish": [
-    { name: "Baseboard & Casing", items: ["Outside Corner", "Inside Corner", "Casing Return"] },
-    { name: "Tile Shower", items: ["Shower Pan Liner", "Cement Board", "Waterproofing Membrane"] },
-    { name: "Hardwood Floor", items: ["Underlayment", "Expansion Gap", "Transition Strip"] }
-  ]
 };
 
 const ITEMS_CONFIG = {
@@ -354,7 +312,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
             setSelected={setSelected}
             onActivate={() => {
               setActive("settings");
-              navigate(`/workspace/${currentWorkspaceId}/settings`);
+              navigate(`/workspace/${currentWorkspaceId}/settings/profile`);
             }}
             menuEnabled={false}
           />
@@ -429,7 +387,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
                 </div>
               </div>
             ) : active === "details" ? (
-              <DetailLibraryView />
+              <TeamDetailLibraryView />
             ) : active === "tasks" ? (
               <TasksView />
             ) : active === "chat" ? (
@@ -984,81 +942,6 @@ function TabsRow({ tabs, active, onChange }: TabsRowProps) {
 }
 
 // ----------------------------------
-// Detail Library View
-// ----------------------------------
-const DetailLibraryView = memo(function DetailLibraryView() {
-  const [category, setCategory] = useState<{ name: string; items: string[] } | null>(null);
-  const VIEW_TABS = ["Foundation", "Wall", "Floor/Ceiling", "Roof", "Stair", "Finish"];
-  const [viewTab, setViewTab] = useState("Foundation");
-  const cards = useMemo(() => (DETAIL_TAB_CARDS[viewTab] || []), [viewTab]);
-  useEffect(() => { setCategory(null); }, [viewTab]);
-
-  const libTabs = VIEW_TABS.map((t) => ({
-    key: t,
-    label: t,
-    icon: (
-      <svg
-        viewBox="0 0 24 24"
-        width="14"
-        height="14"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-      >
-        <path d="M3 7h5l2 2h11v11a2 2 0 0 1-2 2H3z" />
-        <path d="M3 7V5a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v2" />
-      </svg>
-    ),
-  }));
-
-  return (
-    <div className="px-6 pt-1 pb-12">
-      <div className="mt-1 mb-3">
-        <TabsRow tabs={libTabs} active={viewTab} onChange={setViewTab} />
-      </div>
-
-      {!category ? (
-        <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {cards.map((c) => (
-            <button
-              key={c.name}
-              className="rounded-xl border border-slate-200 bg-white/80 backdrop-blur-sm p-4 text-left hover:shadow-sm hover:border-slate-300 transition"
-              onClick={() => setCategory(c)}
-            >
-              <div className="text-slate-800 font-medium">{c.name}</div>
-              <div className="text-[12px] text-slate-500 mt-1">{c.items.length} details</div>
-            </button>
-          ))}
-        </div>
-      ) : (
-        <div className="mt-6">
-          <div className="flex items-center gap-2 text-sm text-slate-500 mb-4">
-            <button
-              onClick={() => setCategory(null)}
-              aria-label="Back"
-              className="inline-flex items-center h-6 px-2 rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 shadow-sm"
-            >
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M15 18l-6-6 6-6" />
-              </svg>
-            </button>
-            <span className="text-slate-700">{category.name}</span>
-          </div>
-          <div className="divide-y divide-slate-200 rounded-xl border border-slate-200 overflow-hidden bg-white/80 backdrop-blur-sm">
-            {category.items.map((it) => (
-              <div key={it} className="flex items-center justify-between px-4 py-3">
-                <div className="text-[14px] text-slate-800">{it}</div>
-                <div className="text-[12px] text-slate-500">PDF • 1.2MB • Sep 2025</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-});
-
-// ----------------------------------
 // Chat View - Integrated with database
 // ----------------------------------
 import TeamChatSlim from './TeamChatSlim';
@@ -1258,13 +1141,13 @@ const TasksView = memo(function TasksView() {
           authId: user.auth_id || '',
           name: user.name,
           email: user.email,
-          phone: user.phone,
+          phone: user.phone || undefined,
           avatarUrl: user.avatar_url,
           lastActiveAt: user.last_active_at,
-          createdAt: user.createdAt || new Date().toISOString(),
-          updatedAt: user.updatedAt || new Date().toISOString(),
-          deletedAt: user.deletedAt,
-          deletedBy: user.deletedBy,
+          createdAt: new Date().toISOString(), // Default value since UserProfile doesn't have this
+          updatedAt: new Date().toISOString(), // Default value since UserProfile doesn't have this
+          deletedAt: undefined,
+          deletedBy: undefined,
         });
       }
       
@@ -1456,7 +1339,6 @@ const TasksView = memo(function TasksView() {
 // Export components for use in page wrappers
 export { 
   RehomeDoubleSidebar as TeamDashboardLayout,
-  DetailLibraryView,
   TasksView,
   HomeView,
   ChatView,

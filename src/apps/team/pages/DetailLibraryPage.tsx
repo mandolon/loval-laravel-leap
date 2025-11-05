@@ -1,5 +1,5 @@
-import { DetailLibraryView } from '../components/TeamDashboardCore';
+import { TeamDetailLibraryView } from '../components/TeamDetailLibraryView';
 
 export default function DetailLibraryPage() {
-  return <DetailLibraryView />;
+  return <TeamDetailLibraryView />;
 }

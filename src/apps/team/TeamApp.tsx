@@ -28,7 +28,7 @@ export default function TeamApp() {
           <Route path="/workspace/:workspaceId/detail-library" element={<DetailLibraryPage />} />
           <Route path="/detail-library" element={<DetailLibraryPage />} />
           
-          {/* Settings Routes */}
+          {/* Settings Routes - using explicit paths for better compatibility */}
           <Route path="/workspace/:workspaceId/settings" element={<SettingsPage />}>
             <Route index element={<Navigate to="profile" replace />} />
             <Route path="profile" element={<ProfileContent />} />
@@ -38,6 +38,7 @@ export default function TeamApp() {
             <Route path="trash" element={<TrashContent />} />
           </Route>
           
+          {/* Catch-all should be last */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </TeamDashboardLayout>

@@ -32,24 +32,23 @@ export default function ProfilePage() {
     );
   }
 
-  const avatarGradients = [
-    "linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)",
-    "linear-gradient(135deg, hsl(200, 80%, 55%) 0%, hsl(250, 75%, 65%) 100%)",
-    "linear-gradient(135deg, hsl(340, 85%, 60%) 0%, hsl(20, 90%, 65%) 100%)",
-    "linear-gradient(135deg, hsl(160, 75%, 50%) 0%, hsl(200, 80%, 60%) 100%)",
-    "linear-gradient(135deg, hsl(30, 90%, 60%) 0%, hsl(60, 85%, 65%) 100%)",
-    "linear-gradient(135deg, hsl(260, 75%, 60%) 0%, hsl(180, 70%, 60%) 100%)",
-    "linear-gradient(135deg, hsl(0, 80%, 60%) 0%, hsl(340, 85%, 65%) 100%)",
-    "linear-gradient(135deg, hsl(120, 70%, 50%) 0%, hsl(160, 75%, 55%) 100%)",
-    "linear-gradient(135deg, hsl(220, 85%, 60%) 0%, hsl(280, 80%, 65%) 100%)",
-    "linear-gradient(135deg, hsl(300, 75%, 60%) 0%, hsl(360, 70%, 65%) 100%)",
-    "linear-gradient(135deg, hsl(180, 70%, 55%) 0%, hsl(220, 75%, 60%) 100%)",
-    "linear-gradient(135deg, hsl(40, 95%, 60%) 0%, hsl(340, 85%, 65%) 100%)",
+  const avatarColors = [
+    '#202020',
+    '#6E56CF',
+    '#98A2FF',
+    '#E54D2E',
+    '#E93D82',
+    '#E2991A',
+    '#1EAEDB',
+    '#3E6C59',
+    '#8E7E73',
+    '#2EB67D',
+    '#2BB0A2',
   ];
 
-  const handleAvatarChange = async (gradient: string) => {
+  const handleAvatarChange = async (color: string) => {
     try {
-      await updateUser({ avatar_url: gradient });
+      await updateUser({ avatar_url: color });
       toast({
         title: "Avatar color updated",
         description: "Your profile avatar color has been changed successfully.",
@@ -125,7 +124,7 @@ export default function ProfilePage() {
               <Avatar className="h-24 w-24">
                 <AvatarFallback 
                   className="text-white text-2xl font-semibold"
-                  style={{ background: user.avatar_url || avatarGradients[0] }}
+                  style={{ background: user.avatar_url || avatarColors[0] }}
                 >
                   {user.initials}
                 </AvatarFallback>
@@ -145,21 +144,21 @@ export default function ProfilePage() {
             <div>
               <Label className="font-medium mb-3 block">Choose Avatar Color</Label>
               <div className="grid grid-cols-6 gap-3">
-                {avatarGradients.map((gradient, index) => (
+                {avatarColors.map((color, index) => (
                   <button
                     key={index}
-                    onClick={() => handleAvatarChange(gradient)}
+                    onClick={() => handleAvatarChange(color)}
                     className={`relative h-16 w-16 rounded-full border-2 transition-all hover:scale-110 ${
-                      user.avatar_url === gradient
+                      user.avatar_url === color
                         ? "border-primary ring-2 ring-primary ring-offset-2"
                         : "border-border hover:border-primary"
                     }`}
-                    style={{ background: gradient }}
+                    style={{ background: color }}
                   >
                     <div className="absolute inset-0 flex items-center justify-center text-white font-semibold text-base">
                       {user.initials}
                     </div>
-                    {user.avatar_url === gradient && (
+                    {user.avatar_url === color && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-full">
                         <Camera className="h-5 w-5 text-white" />
                       </div>

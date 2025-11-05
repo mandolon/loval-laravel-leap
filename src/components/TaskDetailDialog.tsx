@@ -198,12 +198,11 @@ export function TaskDetailDialog({
           {/* Task Info Grid */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
             {/* Created By */}
-            <div className="space-y-1">
+            <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Created by</Label>
               {createdBy ? (
-                <div className="flex items-center gap-2">
+                <div className="flex">
                   <TeamAvatar user={{ ...createdBy, avatar_url: createdBy.avatarUrl }} size="sm" />
-                  <span className="text-sm">{createdBy.name}</span>
                 </div>
               ) : (
                 <span className="text-sm text-muted-foreground">Loading...</span>
