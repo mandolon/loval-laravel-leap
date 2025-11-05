@@ -39,11 +39,11 @@ import ExcalidrawCanvas from '@/components/drawings/ExcalidrawCanvas';
 import { DrawingErrorBoundary } from '@/components/drawings/DrawingErrorBoundary';
 import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
 import type { Task, User } from '@/lib/api/types';
-import { useWorkspaceTasks, useCreateTask, useUpdateTask, taskKeys } from '@/lib/api/hooks/useTasks';
+import { useWorkspaceTasks, useCreateTask, useUpdateTask, useDeleteTask, taskKeys } from '@/lib/api/hooks/useTasks';
 import { useUploadTaskFile } from '@/lib/api/hooks/useFiles';
 import { useProjects } from '@/lib/api/hooks/useProjects';
 import { TasksTable } from './TasksTable';
-import { TaskDetailDialog } from '@/components/TaskDetailDialog';
+import TaskDrawer from '@/components/TaskDrawer';
 import { TeamDetailLibraryView } from './TeamDetailLibraryView';
 
 // ----------------------------------
@@ -1178,6 +1178,20 @@ const TasksView = memo(function TasksView() {
   const [taskAssignees, setTaskAssignees] = useState<User[]>([]);
   const [taskCreator, setTaskCreator] = useState<User | null>(null);
   const [viewTab, setViewTab] = useState("List");
+  const deleteTaskMutation = useDeleteTask();
+  const [drawerWidth, setDrawerWidth] = useState(520);
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const [tabsTop, setTabsTop] = useState(0);
+
+  useEffect(() => {
+    if (tabsRef.current) {
+      const rect = tabsRef.current.getBoundingClientRect();
+      const parentRect = tabsRef.current.parentElement?.getBoundingClientRect();
+      if (parentRect) {
+        setTabsTop(rect.bottom - parentRect.top);
+      }
+    }
+  }, []);
   
   const tabs = VIEW_TABS.map((v) => ({
     icon: viewIcon(v),
@@ -1434,68 +1448,91 @@ const TasksView = memo(function TasksView() {
 
   return (
     <>
-      <div className="px-6 pt-1 pb-12 h-full flex flex-col overflow-hidden">
-        <div className="mt-1 mb-3 shrink-0 relative z-10">
+      <div className="px-6 pt-1 pb-12 h-full flex flex-col overflow-hidden relative">
+        {/* Fixed Tabs - stays at top */}
+        <div ref={tabsRef} className="mt-1 mb-3 shrink-0 relative z-10">
           <TabsRow tabs={tabs} active={viewTab} onChange={setViewTab} />
-          <div className="-mx-6 px-6 mt-3 mb-0 flex items-center justify-between gap-2 text-[12px] h-6">
-            <div className="flex items-center gap-2.5 text-[#202020] font-medium">
-              <button className="inline-flex items-center gap-1 h-6 px-3 rounded-full border border-slate-200 bg-white text-[#202020] hover:bg-slate-50 transition-colors">
-                Group: Status
-              </button>
-              <button className="inline-flex items-center gap-1 h-6 px-3 rounded-full border border-slate-200 bg-white text-[#202020] hover:bg-slate-50 transition-colors">
-                Subtasks
-              </button>
-              <button className="inline-flex items-center gap-1 h-6 px-3 rounded-full border border-slate-200 bg-white text-[#202020] hover:bg-slate-50 transition-colors">
-                Columns
-              </button>
+        </div>
+
+        {/* Content area that shifts left when drawer opens */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div
+            className="flex-1 flex flex-col transition-[margin-right] duration-200 ease-out"
+            style={{ marginRight: selectedTask ? drawerWidth : 0 }}
+          >
+            {/* Filter row - moves left with table */}
+            <div className="-mx-6 px-6 mt-3 mb-0 flex items-center justify-between gap-2 text-[12px] h-6 shrink-0">
+              <div className="flex items-center gap-2.5 text-[#202020] font-medium">
+                <button className="inline-flex items-center gap-1 h-6 px-3 rounded-full border border-slate-200 bg-white text-[#202020] hover:bg-slate-50 transition-colors">
+                  Group: Status
+                </button>
+                <button className="inline-flex items-center gap-1 h-6 px-3 rounded-full border border-slate-200 bg-white text-[#202020] hover:bg-slate-50 transition-colors">
+                  Subtasks
+                </button>
+                <button className="inline-flex items-center gap-1 h-6 px-3 rounded-full border border-slate-200 bg-white text-[#202020] hover:bg-slate-50 transition-colors">
+                  Columns
+                </button>
+              </div>
+              <div className="flex items-center gap-2.5 font-medium">
+                <button className="h-6 px-3 rounded-full border border-slate-200 bg-white inline-flex items-center gap-1 hover:bg-slate-50 transition-colors">
+                  Save view
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </button>
+                <button className="h-6 px-3 rounded-full text-slate-600 hover:bg-slate-100 transition-colors">Filter</button>
+                <button 
+                  onClick={() => setShowClosedOnly(!showClosedOnly)}
+                  className={`h-6 px-3 rounded-full transition-colors inline-flex items-center gap-1 ${
+                    showClosedOnly 
+                      ? 'border border-slate-200 bg-white text-[#202020] hover:bg-slate-50' 
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  Closed
+                </button>
+                <button className="h-6 px-3 rounded-full text-slate-600 hover:bg-slate-100 transition-colors">Assignee</button>
+                <button className="h-6 w-6 rounded-full bg-slate-900 text-white grid place-items-center text-[11px]">A</button>
+              </div>
             </div>
-            <div className="flex items-center gap-2.5 font-medium">
-              <button className="h-6 px-3 rounded-full border border-slate-200 bg-white inline-flex items-center gap-1 hover:bg-slate-50 transition-colors">
-                Save view
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
-              </button>
-              <button className="h-6 px-3 rounded-full text-slate-600 hover:bg-slate-100 transition-colors">Filter</button>
-              <button 
-                onClick={() => setShowClosedOnly(!showClosedOnly)}
-                className={`h-6 px-3 rounded-full transition-colors inline-flex items-center gap-1 ${
-                  showClosedOnly 
-                    ? 'border border-slate-200 bg-white text-[#202020] hover:bg-slate-50' 
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                Closed
-              </button>
-              <button className="h-6 px-3 rounded-full text-slate-600 hover:bg-slate-100 transition-colors">Assignee</button>
-              <button className="h-6 w-6 rounded-full bg-slate-900 text-white grid place-items-center text-[11px]">A</button>
+
+            {/* Tasks table */}
+            <div className="flex-1 overflow-hidden">
+              <TasksTable
+                tasks={tasks}
+                projects={projects}
+                users={allUsers}
+                onTaskClick={handleTaskClick}
+                onProjectClick={handleProjectClick}
+                onStatusToggle={handleStatusToggle}
+                onQuickAdd={handleQuickAdd}
+                onUpdateTaskAssignees={handleUpdateTaskAssignees}
+                showClosedOnly={showClosedOnly}
+              />
             </div>
           </div>
         </div>
 
-        <TasksTable
-          tasks={tasks}
-          projects={projects}
+        {/* Drawer - positioned absolutely from tabs border to bottom of page */}
+        <TaskDrawer
+          open={!!selectedTask}
+          task={selectedTask}
+          width={drawerWidth}
+          topOffset={tabsTop}
+          onWidthChange={setDrawerWidth}
+          projectName={selectedTask ? (projects.find((p: any) => p.id === selectedTask.projectId)?.name || undefined) : undefined}
           users={allUsers}
-          onTaskClick={handleTaskClick}
-          onProjectClick={handleProjectClick}
-          onStatusToggle={handleStatusToggle}
-          onQuickAdd={handleQuickAdd}
-          onUpdateTaskAssignees={handleUpdateTaskAssignees}
-          showClosedOnly={showClosedOnly}
+          assignees={taskAssignees}
+          createdBy={taskCreator}
+          onClose={() => setSelectedTask(null)}
+          onUpdate={handleTaskUpdate}
+          onDeleteTask={async (taskId) => {
+            await deleteTaskMutation.mutateAsync(taskId);
+            setSelectedTask(null);
+          }}
         />
       </div>
 
-      {selectedTask && (
-        <TaskDetailDialog
-          task={selectedTask}
-          open={!!selectedTask}
-          onOpenChange={(open) => !open && setSelectedTask(null)}
-          onUpdate={handleTaskUpdate}
-          assignees={taskAssignees}
-          createdBy={taskCreator}
-        />
-      )}
     </>
   );
 });
