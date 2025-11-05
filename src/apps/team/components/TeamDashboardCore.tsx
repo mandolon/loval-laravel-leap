@@ -135,14 +135,7 @@ const TITLES = {
 
 const ITEMS_CONFIG = {
   home: ["Inbox", "Replies", "My Tasks", "Posts"],
-  projects: [
-    "Project 1",
-    "Project 2",
-    "Project 3",
-    "Project 4",
-    "Project 5",
-    "Project 6",
-  ],
+  projects: [], // Removed hardcoded projects - using real data from database
 };
 
 // ----------------------------------
@@ -177,16 +170,36 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
   }, []);
 
   // Fetch user's projects for the current workspace
+  // Admin users see ALL projects in workspace, non-admin users see only projects they're members of
   const { data: userProjects = [] } = useQuery({
-    queryKey: ['team-user-projects', currentWorkspaceId, user?.id],
+    queryKey: ['team-user-projects', currentWorkspaceId, user?.id, user?.is_admin],
     queryFn: async () => {
       if (!currentWorkspaceId || !user?.id) {
         console.log('Missing workspace or user:', { currentWorkspaceId, userId: user?.id });
         return [];
       }
       
-      console.log('Fetching projects for workspace:', currentWorkspaceId, 'user:', user.id);
+      console.log('Fetching projects for workspace:', currentWorkspaceId, 'user:', user.id, 'is_admin:', user.is_admin);
       
+      // ADMIN: Fetch ALL projects in workspace
+      if (user.is_admin) {
+        const { data, error } = await supabase
+          .from('projects')
+          .select('id, name')
+          .eq('workspace_id', currentWorkspaceId)
+          .is('deleted_at', null)
+          .order('name');
+
+        if (error) {
+          console.error('Error fetching admin projects:', error);
+          return [];
+        }
+
+        console.log('Fetched admin projects:', data);
+        return data || [];
+      }
+
+      // NON-ADMIN: Fetch only projects where user is a member
       const { data, error } = await supabase
         .from('project_members')
         .select(`
@@ -214,7 +227,8 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
     enabled: !!currentWorkspaceId && !!user?.id,
   });
 
-  const projectItems = userProjects.length > 0 ? userProjects.map((p: any) => p.name) : ITEMS_CONFIG.projects;
+  // No fallback to hardcoded data - show empty list if no projects exist
+  const projectItems = userProjects.map((p: any) => p.name);
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
