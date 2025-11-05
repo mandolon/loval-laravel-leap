@@ -133,6 +133,17 @@ export function useCreateDrawingVersion(projectId: string) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
       
+      // Get the public.users record that matches this auth user
+      const { data: publicUser, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', user.id)
+        .single();
+      
+      if (userError || !publicUser) {
+        throw new Error('User profile not found');
+      }
+      
       // Create drawing version
       const { data: drawing, error: drawingError } = await supabase
         .from('drawings')
@@ -141,7 +152,7 @@ export function useCreateDrawingVersion(projectId: string) {
           workspace_id: workspaceId,
           name: `Drawing ${versionNumber}`,
           version_number: versionNumber,
-          created_by: user.id,
+          created_by: publicUser.id,
         })
         .select()
         .single();

@@ -28,6 +28,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/contexts/UserContext";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
+import { useCreateProject } from "@/lib/api/hooks/useProjects";
+import { CreateProjectDialog } from "@/components/CreateProjectDialog";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import { TeamAvatarMenu } from "./TeamAvatarMenu";
 import ProjectPanel from "./ProjectPanel";
 import TeamFileViewer from "./viewers/TeamFileViewer";
@@ -70,6 +74,7 @@ interface RailItemProps {
   setSelected: React.Dispatch<React.SetStateAction<{ tab: string; item: string } | null>>;
   onActivate: () => void;
   menuEnabled?: boolean;
+  onCreateProject?: (input: any) => void;
 }
 
 interface TopHeaderProps {
@@ -159,6 +164,9 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
   const { currentWorkspaceId } = useWorkspaces();
   const { user } = useUser();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const createProjectMutation = useCreateProject(currentWorkspaceId || "");
 
   const handleChatActivate = useCallback(() => {
     setActive("chat");
@@ -168,6 +176,51 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
   const handleCalibration = useCallback(() => {
     window.dispatchEvent(new Event('trigger-calibration'));
   }, []);
+
+  const handleCreateProject = useCallback(async (input: any) => {
+    if (!currentWorkspaceId || !user?.id) {
+      toast({
+        title: "No workspace selected",
+        description: "Please select a workspace first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createProjectMutation.mutate(input, {
+      onSuccess: async (newProject) => {
+        // For non-admin users, add them as a project member so they can see the project
+        if (!user.is_admin) {
+          try {
+            // Generate short_id for project_member
+            const shortId = `PM-${Math.random().toString(36).substring(2, 6)}`;
+            
+            const { error: memberError } = await supabase
+              .from('project_members')
+              .insert({
+                short_id: shortId,
+                project_id: newProject.id,
+                user_id: user.id,
+              });
+
+            if (memberError) {
+              console.error('Error adding user as project member:', memberError);
+              // Don't fail the whole operation, just log the error
+            }
+          } catch (error) {
+            console.error('Error adding user as project member:', error);
+          }
+        }
+
+        // Invalidate projects query to refresh the list
+        queryClient.invalidateQueries({ queryKey: ['team-user-projects', currentWorkspaceId, user.id, user.is_admin] });
+        toast({
+          title: "Project created",
+          description: `${newProject.name} has been created successfully`,
+        });
+      },
+    });
+  }, [currentWorkspaceId, createProjectMutation, queryClient, user, toast]);
 
   // Fetch user's projects for the current workspace
   // Admin users see ALL projects in workspace, non-admin users see only projects they're members of
@@ -279,6 +332,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
             setSelected={setSelected}
             onActivate={tab === "chat" ? handleChatActivate : () => setActive(tab)}
             menuEnabled={tab === "projects"}
+            onCreateProject={tab === "projects" ? handleCreateProject : undefined}
           />
         ))}
 
@@ -472,6 +526,7 @@ const RailItem = memo(function RailItem({
   setSelected,
   onActivate,
   menuEnabled = false,
+  onCreateProject,
 }: RailItemProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const showTimer = useRef<number | null>(null);
@@ -683,14 +738,27 @@ const RailItem = memo(function RailItem({
           {tabKey === "projects" ? (
             <div className="px-2 pt-1 pb-1.5 text-sm font-medium text-slate-800 tracking-[0.04em] flex items-center justify-between">
               <span>{label}</span>
-              <button
-                aria-label="Add project"
-                className="h-6 w-6 grid place-items-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition"
-              >
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-              </button>
+              {onCreateProject ? (
+                <CreateProjectDialog onCreateProject={onCreateProject}>
+                  <button
+                    aria-label="Add project"
+                    className="h-6 w-6 grid place-items-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition"
+                  >
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                  </button>
+                </CreateProjectDialog>
+              ) : (
+                <button
+                  aria-label="Add project"
+                  className="h-6 w-6 grid place-items-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition"
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                </button>
+              )}
             </div>
           ) : (
             <div className="px-2 pt-1 pb-1.5 text-[12px] text-slate-500">{label}</div>

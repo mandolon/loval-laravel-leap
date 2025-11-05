@@ -1,8 +1,13 @@
-import React, { useMemo, useState, useEffect, useRef, forwardRef } from "react";
-import { Search, FolderClosed, BookOpen, MoreVertical } from "lucide-react";
+import React, { useMemo, useState, useEffect, useRef, forwardRef, useCallback } from "react";
+import { Search, FolderClosed, BookOpen, MoreVertical, Settings2 } from "lucide-react";
 import { useProjectFolders, useProjectFiles, useDeleteProjectFile, useDeleteFolder } from '@/lib/api/hooks/useProjectFiles';
-import { useDrawingVersions, useUpdateDrawingScale, useCreateDrawingPage, useDeleteDrawingVersion, useDeleteDrawingPage, useUpdateDrawingVersion, useUpdateDrawingPageName } from '@/lib/api/hooks/useDrawings';
+import { useDrawingVersions, useUpdateDrawingScale, useCreateDrawingPage, useCreateDrawingVersion, useDeleteDrawingVersion, useDeleteDrawingPage, useUpdateDrawingVersion, useUpdateDrawingPageName } from '@/lib/api/hooks/useDrawings';
 import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
+import { useHardDeleteProject } from '@/lib/api/hooks/useProjects';
+import { useWorkspaces } from '@/hooks/useWorkspaces';
+import { useNavigate } from 'react-router-dom';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 
 /**
  * PROJECT PANEL — Files & Whiteboards now share identical interaction rules
@@ -123,7 +128,7 @@ function SectionHeader({
           {icon}
         </span>
       ) : (
-        <SoftSquare filled={open} dashed={!!editing} />
+        <SoftSquare filled={!open} dashed={!!editing} />
       )}
       {editing ? (
         <input
@@ -267,10 +272,15 @@ export default function ProjectPanel({
   onCalibrate?: () => void;
   inchesPerSceneUnit?: number;
 }) {
-  const [tab, setTab] = useState<'files' | 'whiteboards'>('files');
+  const [tab, setTab] = useState<'files' | 'whiteboards' | 'settings'>('files');
   const [query, setQuery] = useState("");
   const [wbQuery, setWbQuery] = useState("");
   const [selectedWB, setSelectedWB] = useState<any>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  const { currentWorkspaceId } = useWorkspaces();
+  const navigate = useNavigate();
+  const hardDeleteProjectMutation = useHardDeleteProject(currentWorkspaceId || "");
 
   // Database queries for Files tab
   const { data: rawFolders = [], isLoading: foldersLoading } = useProjectFolders(projectId);
@@ -302,19 +312,108 @@ export default function ProjectPanel({
   // Local state for drag/drop mutations - initialize from database data
   const [localSections, setLocalSections] = useState<typeof sections>([]);
   const [localLists, setLocalLists] = useState<typeof lists>({});
+  
+  // Folder partitioning state (above/below separator)
+  const [separatorIndex, setSeparatorIndex] = useState<number>(-1); // -1 means no separator, or index where separator appears
+  const STORAGE_KEY = `project-folders-arrangement-${projectId}`;
+
+  // Load saved folder arrangement from localStorage
+  useEffect(() => {
+    if (!projectId) return;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.separatorIndex !== undefined) {
+          setSeparatorIndex(parsed.separatorIndex);
+        }
+        // Order is now handled in the sections effect above
+      }
+    } catch (e) {
+      console.error('Failed to load folder arrangement:', e);
+    }
+  }, [projectId, STORAGE_KEY]);
+
+  // Save folder arrangement to localStorage
+  const saveFolderArrangement = useCallback((sections: typeof localSections, separatorIdx: number) => {
+    if (!projectId) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        order: sections.map(s => s.id),
+        separatorIndex: separatorIdx,
+      }));
+    } catch (e) {
+      console.error('Failed to save folder arrangement:', e);
+    }
+  }, [projectId, STORAGE_KEY]);
+
+  // Initialize separator when folders are first loaded
+  useEffect(() => {
+    if (localSections.length > 0 && separatorIndex < 0) {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) {
+        // Only initialize if no saved arrangement exists
+        const mid = Math.floor(localSections.length / 2);
+        setSeparatorIndex(mid);
+        saveFolderArrangement(localSections, mid);
+      }
+    }
+  }, [localSections.length, separatorIndex, saveFolderArrangement, STORAGE_KEY]);
 
   // Only update local state when data actually changes (deep comparison)
   useEffect(() => {
     if (JSON.stringify(localSections) !== JSON.stringify(sections)) {
-      setLocalSections(sections);
+      // When sections change, check if we have a saved order
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.order && Array.isArray(parsed.order)) {
+            // Reorder sections based on saved order
+            const orderMap = new Map(parsed.order.map((id: string, idx: number) => [id, idx]));
+            const sorted = [...sections].sort((a, b) => {
+              const aIdx = orderMap.get(a.id) ?? Infinity;
+              const bIdx = orderMap.get(b.id) ?? Infinity;
+              return aIdx - bIdx;
+            });
+            // Only use sorted order if all current sections are in the saved order
+            const allInOrder = sections.every(s => orderMap.has(s.id));
+            if (allInOrder && sorted.length === sections.length) {
+              setLocalSections(sorted);
+            } else {
+              // If new folders were added, append them to the end
+              const newFolders = sections.filter(s => !orderMap.has(s.id));
+              setLocalSections([...sorted, ...newFolders]);
+            }
+          } else {
+            setLocalSections(sections);
+          }
+        } catch (e) {
+          console.error('Failed to apply saved order:', e);
+          setLocalSections(sections);
+        }
+      } else {
+        setLocalSections(sections);
+      }
     }
-  }, [sections]);
+  }, [sections, STORAGE_KEY]);
 
   useEffect(() => {
     if (JSON.stringify(localLists) !== JSON.stringify(lists)) {
       setLocalLists(lists);
     }
   }, [lists]);
+
+  // Split sections into above/below separator
+  const sectionsAbove = useMemo(() => {
+    if (separatorIndex < 0) return [];
+    return localSections.slice(0, separatorIndex);
+  }, [localSections, separatorIndex]);
+
+  const sectionsBelow = useMemo(() => {
+    if (separatorIndex < 0) return localSections;
+    return localSections.slice(separatorIndex);
+  }, [localSections, separatorIndex]);
 
   // Expanded/collapsed (files) - initialize from database only once
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -334,6 +433,8 @@ export default function ProjectPanel({
   const [dragOverState, setDragOverState] = useState<any>(null);
   const [sectionDragId, setSectionDragId] = useState<string | null>(null);
   const [sectionDropIndex, setSectionDropIndex] = useState(-1);
+  const [sectionDropSide, setSectionDropSide] = useState<'above' | 'below' | null>(null);
+  const [separatorDragging, setSeparatorDragging] = useState(false);
 
   // Selection / editing (files)
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -353,6 +454,7 @@ export default function ProjectPanel({
   const { data: drawingVersions, isLoading: wbLoading, error: wbError } = useDrawingVersions(projectId);
   const updateDrawingScale = useUpdateDrawingScale();
   const createDrawingPage = useCreateDrawingPage();
+  const createDrawingVersion = useCreateDrawingVersion(projectId);
   const deleteDrawingVersion = useDeleteDrawingVersion();
   const deleteDrawingPage = useDeleteDrawingPage();
   const updateDrawingVersion = useUpdateDrawingVersion();
@@ -464,32 +566,111 @@ export default function ProjectPanel({
     setSectionDragId(sectionId);
     e.dataTransfer.effectAllowed = "move";
   };
-  const handleSectionDragOver = (index: number, e: any) => {
+  
+  const handleSectionDragOver = (index: number, isAboveSeparator: boolean, e: any) => {
     if (!sectionDragId) return;
     e.preventDefault();
     e.stopPropagation();
-    setSectionDropIndex(index);
+    
+    // Simple section drop - no separator detection needed
+    const actualIndex = isAboveSeparator ? index : sectionsAbove.length + index;
+    setSectionDropIndex(actualIndex);
+    setSectionDropSide(null);
   };
+  
   const handleSectionDrop = (e: any) => {
     if (!sectionDragId || sectionDropIndex < 0) return;
     e.preventDefault();
     e.stopPropagation();
+    
     const dragIndex = localSections.findIndex((s) => s.id === sectionDragId);
     if (dragIndex === -1) return;
+    
+    // Initialize separator if needed
+    let newSeparatorIndex = separatorIndex;
+    if (newSeparatorIndex < 0 && localSections.length > 0) {
+      newSeparatorIndex = Math.floor(localSections.length / 2);
+    }
+    
     setLocalSections((prev) => {
       const next = [...prev];
       const [dragged] = next.splice(dragIndex, 1);
-      next.splice(sectionDropIndex, 0, dragged);
+      
+      // Adjust drop index if we dragged from before the drop position
+      const adjustedDropIndex = dragIndex < sectionDropIndex ? sectionDropIndex - 1 : sectionDropIndex;
+      next.splice(adjustedDropIndex, 0, dragged);
+      
+      // Update separator index to maintain relative position
+      // If we moved a folder across the separator, adjust separator position
+      if (newSeparatorIndex >= 0) {
+        if (dragIndex < newSeparatorIndex && adjustedDropIndex >= newSeparatorIndex) {
+          // Moved folder from above to below separator
+          newSeparatorIndex = newSeparatorIndex - 1;
+        } else if (dragIndex >= newSeparatorIndex && adjustedDropIndex < newSeparatorIndex) {
+          // Moved folder from below to above separator
+          newSeparatorIndex = newSeparatorIndex + 1;
+        }
+      }
+      
+      // Save arrangement
+      setSeparatorIndex(newSeparatorIndex);
+      saveFolderArrangement(next, newSeparatorIndex);
+      
       return next;
     });
+    
     setSectionDragId(null);
     setSectionDropIndex(-1);
+    setSectionDropSide(null);
   };
+  
   const handleSectionDragEnd = () => {
     setSectionDragId(null);
     setSectionDropIndex(-1);
+    setSectionDropSide(null);
   };
-
+  
+  // Separator dragging handlers
+  const handleSeparatorMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSeparatorDragging(true);
+    
+    const container = e.currentTarget.closest('.px-2\\.5')?.parentElement;
+    if (!container) return;
+    
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const sections = container.querySelectorAll('[data-section-index]');
+      let newIndex = separatorIndex;
+      
+      sections.forEach((section) => {
+        const rect = section.getBoundingClientRect();
+        const indexAttr = section.getAttribute('data-section-index');
+        if (indexAttr && moveEvent.clientY >= rect.top && moveEvent.clientY <= rect.bottom) {
+          const midY = rect.top + rect.height / 2;
+          const idx = parseInt(indexAttr, 10);
+          newIndex = moveEvent.clientY < midY ? idx : idx + 1;
+        }
+      });
+      
+      // Clamp to valid range
+      newIndex = Math.max(0, Math.min(localSections.length, newIndex));
+      if (newIndex !== separatorIndex) {
+        setSeparatorIndex(newIndex);
+      }
+    };
+    
+    const handleMouseUp = () => {
+      setSeparatorDragging(false);
+      saveFolderArrangement(localSections, separatorIndex);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+  
   // ---- Files: helpers ----
   const getFilteredItems = (listId: string) => {
     const items = localLists[listId] || [];
@@ -499,18 +680,19 @@ export default function ProjectPanel({
   };
 
   // ---- Files: renderers ----
-  const renderSection = (section: any, index: number) => {
+  const renderSection = (section: any, index: number, isAboveSeparator: boolean) => {
     const { id, title } = section;
     const isOpen = query.trim() ? true : !!expanded[id];
     const isEditing = editing?.type === "section" && editing?.list === id;
     const items = getFilteredItems(id);
+    const actualIndex = isAboveSeparator ? index : sectionsAbove.length + index;
 
     return (
-      <div key={id} className="relative">
-        {sectionDragId && sectionDropIndex === index && (
+      <div key={id} className="relative mb-1" data-section-index={actualIndex}>
+        {sectionDragId && sectionDropIndex === actualIndex && !sectionDropSide && (
           <div className="absolute left-2 right-2 -top-1 h-0.5 bg-blue-400 rounded" />
         )}
-        <div onDragOver={(e) => handleSectionDragOver(index, e)} onDrop={handleSectionDrop}>
+        <div onDragOver={(e) => handleSectionDragOver(index, isAboveSeparator, e)} onDrop={handleSectionDrop}>
           <SectionHeader
             title={title}
             open={isOpen}
@@ -581,6 +763,31 @@ export default function ProjectPanel({
       </div>
     );
   };
+  
+  // Separator component - now draggable
+  const SeparatorLine = () => {
+    if (separatorIndex < 0) return null;
+    
+    return (
+      <div
+        className={`relative my-3 mx-2 transition-all cursor-ns-resize select-none ${
+          separatorDragging 
+            ? 'h-1 bg-blue-400' 
+            : 'h-px bg-slate-300 border-t border-slate-200 hover:h-0.5 hover:bg-slate-400'
+        }`}
+        onMouseDown={handleSeparatorMouseDown}
+        title="Drag to move separator"
+      >
+        {separatorDragging && (
+          <div className="absolute inset-0 flex items-center justify-center -mt-1">
+            <div className="px-2 py-0.5 text-[10px] font-medium rounded shadow-sm bg-blue-400 text-white">
+              Separator
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // ---- Whiteboards: helpers ----
   const getWbFilteredPages = (version: string) => {
@@ -631,7 +838,7 @@ export default function ProjectPanel({
     const items = getWbFilteredPages(id);
 
     return (
-      <div key={id} className="relative">
+      <div key={id} className="relative mb-1">
         {wbSectionDragId && wbSectionDropIndex === index && (
           <div className="absolute left-2 right-2 -top-1 h-0.5 bg-blue-400 rounded" />
         )}
@@ -732,6 +939,13 @@ export default function ProjectPanel({
           >
             <BookOpen className="h-4 w-4 text-slate-700" />
           </button>
+          <button
+            className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "settings" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"} ml-auto`}
+            aria-label="Settings"
+            onClick={() => setTab("settings")}
+          >
+            <Settings2 className="h-4 w-4 text-slate-700" />
+          </button>
         </div>
 
         {/* Files: search + tree */}
@@ -764,7 +978,20 @@ export default function ProjectPanel({
                     icon={<FolderClosed className="h-3 w-3 text-slate-700" />}
                   />
                   <div className="mt-1" onDragEnd={handleSectionDragEnd}>
-                    {(query ? filterSections(query, localSections, localLists) : localSections).map((s, idx) => renderSection(s, idx))}
+                    {/* Sections above separator */}
+                    {!query.trim() && separatorIndex >= 0 && sectionsAbove.map((s, idx) => renderSection(s, idx, true))}
+                    
+                    {/* Separator line */}
+                    {!query.trim() && separatorIndex >= 0 && <SeparatorLine />}
+                    
+                    {/* Sections below separator */}
+                    {!query.trim() && separatorIndex >= 0 && sectionsBelow.map((s, idx) => renderSection(s, idx, false))}
+                    
+                    {/* Fallback: if no separator yet, show all sections normally */}
+                    {!query.trim() && separatorIndex < 0 && localSections.map((s, idx) => renderSection(s, idx, true))}
+                    
+                    {/* When searching, show filtered results */}
+                    {query.trim() && (query ? filterSections(query, localSections, localLists) : localSections).map((s, idx) => renderSection(s, idx, true))}
                   </div>
                 </div>
 
@@ -880,12 +1107,28 @@ export default function ProjectPanel({
                 )}
               </div>
             ) : (
-              <div className={selectedWB ? "hidden px-2.5 pt-1.5 pb-2" : "px-2.5 pt-1.5 pb-2"} onDragEnd={handleWbItemDragEnd}>
+              <div 
+                className={selectedWB ? "hidden px-2.5 pt-1.5 pb-2" : "px-2.5 pt-1.5 pb-2"} 
+                onDragEnd={handleWbItemDragEnd}
+                onContextMenu={(e: any) => {
+                  // Only show context menu if clicking on the background (not on a section/item)
+                  if (e.target.closest('[data-section-index]') || e.target.closest('.group')) {
+                    return; // Let section/item handle their own context menu
+                  }
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setWbMenu({ show: true, x: e.clientX, y: e.clientY, target: { type: "background" } });
+                }}
+              >
                 <SectionHeader
                   title="Whiteboards"
                   open={true}
                   onToggle={() => {}}
-                  onContextMenu={(e: any) => e.preventDefault()}
+                  onContextMenu={(e: any) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setWbMenu({ show: true, x: e.clientX, y: e.clientY, target: { type: "background" } });
+                  }}
                   icon={<BookOpen className="h-3 w-3 text-slate-700" />}
                 />
                 <div className="mt-1" onDragEnd={handleWbSectionDragEnd}>
@@ -901,75 +1144,100 @@ export default function ProjectPanel({
                 style={{ left: wbMenu.x, top: wbMenu.y }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <button
-                  className="block w-full px-3 py-1.5 text-left text-[11px] text-slate-800 hover:bg-slate-100"
-                  onClick={() => {
-                    if (!wbMenu.target) return;
-                    if (wbMenu.target.type === "item") {
-                      setWbEditing({ type: "item", list: wbMenu.target.list, id: wbMenu.target.id });
-                    } else {
-                      setWbEditing({ type: "section", list: wbMenu.target.list });
-                    }
-                    setWbMenu((m: any) => ({ ...m, show: false }));
-                  }}
-                >
-                  Rename
-                </button>
-                {wbMenu.target?.type === "section" && (
-                  <button
-                    className="block w-full px-3 py-1.5 text-left text-[11px] text-slate-800 hover:bg-slate-100 border-t border-slate-100"
-                    onClick={() => {
-                      if (!wbMenu.target?.list) return;
-                      createDrawingPage.mutate({ 
-                        drawingId: wbMenu.target.list,
-                        projectId 
-                      });
-                      setWbMenu((m: any) => ({ ...m, show: false }));
-                    }}
-                  >
-                    New Page…
-                  </button>
+                {/* Show rename/delete only if clicking on a specific item/section */}
+                {wbMenu.target && wbMenu.target.type !== "background" && (
+                  <>
+                    <button
+                      className="block w-full px-3 py-1.5 text-left text-[11px] text-slate-800 hover:bg-slate-100"
+                      onClick={() => {
+                        if (!wbMenu.target) return;
+                        if (wbMenu.target.type === "item") {
+                          setWbEditing({ type: "item", list: wbMenu.target.list, id: wbMenu.target.id });
+                        } else {
+                          setWbEditing({ type: "section", list: wbMenu.target.list });
+                        }
+                        setWbMenu((m: any) => ({ ...m, show: false }));
+                      }}
+                    >
+                      Rename
+                    </button>
+                    {wbMenu.target?.type === "section" && (
+                      <button
+                        className="block w-full px-3 py-1.5 text-left text-[11px] text-slate-800 hover:bg-slate-100 border-t border-slate-100"
+                        onClick={() => {
+                          if (!wbMenu.target?.list) return;
+                          createDrawingPage.mutate({ 
+                            drawingId: wbMenu.target.list,
+                            projectId 
+                          });
+                          setWbMenu((m: any) => ({ ...m, show: false }));
+                        }}
+                      >
+                        New Page…
+                      </button>
+                    )}
+                    <button
+                      className="block w-full px-3 py-1.5 text-left text-[11px] text-red-600 hover:bg-red-50 border-t border-slate-100"
+                      onClick={() => {
+                        if (!wbMenu.target) return;
+                        
+                        if (wbMenu.target.type === "item") {
+                          // Delete drawing page
+                          deleteDrawingPage.mutate({
+                            pageId: wbMenu.target.id,
+                            projectId
+                          });
+                          
+                          // Clear selection if deleting currently selected page
+                          if (wbSelectedId === wbMenu.target.id) {
+                            setWbSelectedId(null);
+                            setSelectedWB(null);
+                          }
+                        } else if (wbMenu.target.type === "section") {
+                          // Delete drawing version
+                          deleteDrawingVersion.mutate({
+                            drawingId: wbMenu.target.list,
+                            projectId
+                          });
+                          
+                          // Clear selection if deleting version containing selected page
+                          if (selectedWB?.versionId === wbMenu.target.list) {
+                            setWbSelectedId(null);
+                            setSelectedWB(null);
+                          }
+                        }
+                        
+                        setWbMenu((m: any) => ({ ...m, show: false }));
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </>
                 )}
+                {/* Show "New Version" for background clicks or always show at bottom */}
                 <button
-                  className="block w-full px-3 py-1.5 text-left text-[11px] text-red-600 hover:bg-red-50 border-t border-slate-100"
+                  className={`block w-full px-3 py-1.5 text-left text-[11px] text-slate-800 hover:bg-slate-100 ${wbMenu.target && wbMenu.target.type !== "background" ? "border-t border-slate-100" : ""}`}
                   onClick={() => {
-                    if (!wbMenu.target) return;
+                    if (!currentWorkspaceId) return;
                     
-                    if (wbMenu.target.type === "item") {
-                      // Delete drawing page
-                      deleteDrawingPage.mutate({
-                        pageId: wbMenu.target.id,
-                        projectId
-                      });
-                      
-                      // Clear selection if deleting currently selected page
-                      if (wbSelectedId === wbMenu.target.id) {
-                        setWbSelectedId(null);
-                        setSelectedWB(null);
-                      }
-                    } else if (wbMenu.target.type === "section") {
-                      // Delete drawing version
-                      deleteDrawingVersion.mutate({
-                        drawingId: wbMenu.target.list,
-                        projectId
-                      });
-                      
-                      // Clear selection if deleting version containing selected page
-                      if (selectedWB?.versionId === wbMenu.target.list) {
-                        setWbSelectedId(null);
-                        setSelectedWB(null);
-                      }
-                    }
+                    // Generate next version number
+                    const existingVersions = drawingVersions || [];
+                    const versionNumbers = existingVersions
+                      .map(v => {
+                        const match = v.version_number.match(/^v?(\d+)$/i);
+                        return match ? parseInt(match[1], 10) : 0;
+                      })
+                      .filter(n => n > 0);
                     
-                    setWbMenu((m: any) => ({ ...m, show: false }));
-                  }}
-                >
-                  Delete
-                </button>
-                <button
-                  className="block w-full px-3 py-1.5 text-left text-[11px] text-slate-800 hover:bg-slate-100"
-                  onClick={() => {
-                    // TODO: Implement create version with API mutation
+                    const nextVersionNumber = versionNumbers.length > 0 
+                      ? `v${Math.max(...versionNumbers) + 1}`
+                      : 'v1';
+                    
+                    createDrawingVersion.mutate({
+                      versionNumber: nextVersionNumber,
+                      workspaceId: currentWorkspaceId
+                    });
+                    
                     setWbMenu((m: any) => ({ ...m, show: false }));
                   }}
                 >
@@ -1101,7 +1369,67 @@ export default function ProjectPanel({
             )}
           </>
         )}
+
+        {/* Settings tab */}
+        {tab === "settings" && (
+          <div className="px-2.5 pt-1.5 pb-2">
+            <div className="space-y-4">
+              <div>
+                <div className="text-[11px] font-medium text-slate-700 mb-2">Project Settings</div>
+                <div className="text-[10px] text-slate-500 mb-4">{projectName}</div>
+              </div>
+              
+              <div className="pt-4 border-t border-slate-200">
+                <Button
+                  variant="destructive"
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  className="w-full h-8 text-[11px]"
+                >
+                  Delete Project Permanently
+                </Button>
+                <div className="mt-2 text-[10px] text-slate-500 text-center">
+                  This action cannot be undone
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Project Permanently?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the project "{projectName}" and all of its data including files, tasks, whiteboards, and all related information.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                hardDeleteProjectMutation.mutate(projectId, {
+                  onSuccess: () => {
+                    setDeleteConfirmOpen(false);
+                    // Navigate to projects list or home, then refresh
+                    if (currentWorkspaceId) {
+                      navigate(`/workspace/${currentWorkspaceId}/projects`);
+                    } else {
+                      navigate('/');
+                    }
+                    // Refresh the page to update the project list
+                    window.location.reload();
+                  },
+                });
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete Permanently
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

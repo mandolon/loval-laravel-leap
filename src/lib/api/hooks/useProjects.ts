@@ -114,36 +114,90 @@ export const useCreateProject = (workspaceId: string) => {
   const queryClient = useQueryClient()
   const { toast } = useToast()
 
+  // Helper function to generate short_id in format P-[a-z0-9]{4}
+  const generateProjectShortId = () => {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    const randomPart = Array.from({ length: 4 }, () => 
+      chars[Math.floor(Math.random() * chars.length)]
+    ).join('');
+    return `P-${randomPart}`;
+  };
+
   return useMutation({
     mutationFn: async (input: CreateProjectInput) => {
-      const { data: user } = await supabase.auth.getUser();
+      const { data: authUser } = await supabase.auth.getUser();
+      if (!authUser.user) throw new Error('Not authenticated');
       
-      const { data, error } = await supabase
-        .from('projects')
-        .insert({
-          workspace_id: workspaceId,
-          name: input.name,
-          description: input.description,
-          status: input.status || 'pending',
-          phase: input.phase || 'Pre-Design',
-          address: input.address,
-          primary_client_first_name: input.primaryClient.firstName,
-          primary_client_last_name: input.primaryClient.lastName,
-          primary_client_email: input.primaryClient.email,
-          primary_client_phone: input.primaryClient.phone,
-          secondary_client_first_name: input.secondaryClient?.firstName,
-          secondary_client_last_name: input.secondaryClient?.lastName,
-          secondary_client_email: input.secondaryClient?.email,
-          secondary_client_phone: input.secondaryClient?.phone,
-          estimated_amount: input.estimatedAmount,
-          due_date: input.dueDate,
-          created_by: user.user?.id || '',
-        })
-        .select()
+      // Get user profile ID from users table
+      const { data: userProfile, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', authUser.user.id)
         .single();
       
-      if (error) throw error;
-      return transformProject(data);
+      if (userError || !userProfile) {
+        throw new Error('User profile not found');
+      }
+
+      // Ensure address is always an object (required by schema)
+      const addressData = input.address || {
+        streetNumber: '',
+        streetName: '',
+        city: '',
+        state: '',
+        zipCode: '',
+      };
+
+      // Retry logic for short_id collisions (unlikely but possible)
+      let attempts = 0;
+      const maxAttempts = 5;
+      let lastError: any = null;
+
+      while (attempts < maxAttempts) {
+        // Generate short_id
+        const shortId = generateProjectShortId();
+        
+        const { data, error } = await supabase
+          .from('projects')
+          .insert({
+            short_id: shortId,
+            workspace_id: workspaceId,
+            name: input.name,
+            description: input.description,
+            status: input.status || 'pending',
+            phase: input.phase || 'Pre-Design',
+            address: addressData,
+            primary_client_first_name: input.primaryClient.firstName,
+            primary_client_last_name: input.primaryClient.lastName,
+            primary_client_email: input.primaryClient.email,
+            primary_client_phone: input.primaryClient.phone,
+            secondary_client_first_name: input.secondaryClient?.firstName,
+            secondary_client_last_name: input.secondaryClient?.lastName,
+            secondary_client_email: input.secondaryClient?.email,
+            secondary_client_phone: input.secondaryClient?.phone,
+            estimated_amount: input.estimatedAmount,
+            due_date: input.dueDate,
+            created_by: userProfile.id,
+          })
+          .select()
+          .single();
+        
+        if (!error) {
+          return transformProject(data);
+        }
+
+        // If it's a unique constraint violation (short_id collision), retry
+        // Otherwise, throw the error immediately
+        if (error.code === '23505' && attempts < maxAttempts - 1) {
+          attempts++;
+          lastError = error;
+          continue;
+        }
+
+        throw error;
+      }
+
+      throw lastError || new Error('Failed to create project after multiple attempts');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: projectKeys.list(workspaceId) })
