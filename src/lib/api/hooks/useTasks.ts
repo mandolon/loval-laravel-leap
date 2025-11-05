@@ -202,7 +202,12 @@ export const useUpdateTask = (projectId?: string) => {
 
   return useMutation({
     mutationFn: async ({ id, input }: { id: string; input: UpdateTaskInput }) => {
-      const { data: user } = await supabase.auth.getUser();
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', userData.user!.id)
+        .single();
       
       const updateData: any = {};
       if (input.title !== undefined) updateData.title = input.title;
@@ -215,7 +220,7 @@ export const useUpdateTask = (projectId?: string) => {
       if (input.estimatedTime !== undefined) updateData.estimated_time = input.estimatedTime;
       if (input.actualTime !== undefined) updateData.actual_time = input.actualTime;
       if (input.sortOrder !== undefined) updateData.sort_order = input.sortOrder;
-      updateData.updated_by = user.user?.id;
+      if (userProfile?.id) updateData.updated_by = userProfile.id;
       
       const { data, error } = await supabase
         .from('tasks')
@@ -227,20 +232,59 @@ export const useUpdateTask = (projectId?: string) => {
       if (error) throw error;
       return transformTask(data);
     },
-    // Optimistic update
+    // Optimistic update - update all relevant query keys
     onMutate: async ({ id, input }) => {
-      await queryClient.cancelQueries({ queryKey: taskKeys.list(projectId) })
+      // Store previous values for all affected queries
+      const previousQueries: Array<{ key: readonly unknown[], data: any }> = []
       
-      const previousTasks = queryClient.getQueryData(taskKeys.list(projectId))
-      
-      queryClient.setQueryData(taskKeys.list(projectId), (old: any) => {
-        if (!old) return old
-        return old.map((task: any) => 
-          task.id === id ? { ...task, ...input } : task
-        )
+      // Update workspace queries immediately (most common case)
+      const queryCache = queryClient.getQueryCache()
+      const workspaceQueries = queryCache.findAll({ 
+        queryKey: taskKeys.lists(),
+        exact: false 
       })
+      
+      workspaceQueries.forEach((query) => {
+        const queryKey = query.queryKey
+        // Check if this is a workspace query
+        if (queryKey.includes('workspace')) {
+          const previousData = queryClient.getQueryData(queryKey)
+          previousQueries.push({ key: queryKey, data: previousData })
+          queryClient.setQueryData(queryKey, (old: any) => {
+            if (!old) return old
+            return old.map((task: any) => 
+              task.id === id ? { ...task, ...input } : task
+            )
+          })
+        }
+      })
+      
+      // Update project-specific query if projectId is provided
+      if (projectId) {
+        const queryKey = taskKeys.list(projectId)
+        const previousData = queryClient.getQueryData(queryKey)
+        previousQueries.push({ key: queryKey, data: previousData })
+        queryClient.setQueryData(queryKey, (old: any) => {
+          if (!old) return old
+          return old.map((task: any) => 
+            task.id === id ? { ...task, ...input } : task
+          )
+        })
+      }
+      
+      // Update detail query if it exists
+      const detailQueryKey = taskKeys.detail(id)
+      const previousDetailData = queryClient.getQueryData(detailQueryKey)
+      previousQueries.push({ key: detailQueryKey, data: previousDetailData })
+      queryClient.setQueryData(detailQueryKey, (old: any) => {
+        if (!old) return old
+        return { ...old, ...input }
+      })
+      
+      // Cancel queries after updating to prevent race conditions (fire and forget)
+      queryClient.cancelQueries({ queryKey: taskKeys.all }).catch(() => {})
 
-      return { previousTasks }
+      return { previousQueries }
     },
     onSuccess: async (task, variables) => {
       // Get workspace_id and user for history logging
@@ -296,9 +340,13 @@ export const useUpdateTask = (projectId?: string) => {
       }
     },
     onError: (error, _, context: any) => {
-      // Rollback on error
-      if (context?.previousTasks) {
-        queryClient.setQueryData(taskKeys.list(projectId), context.previousTasks)
+      // Rollback all queries on error
+      if (context?.previousQueries) {
+        context.previousQueries.forEach(({ key, data }: { key: readonly unknown[], data: any }) => {
+          if (data !== undefined) {
+            queryClient.setQueryData(key, data)
+          }
+        })
       }
       toast({
         title: 'Failed to update task',

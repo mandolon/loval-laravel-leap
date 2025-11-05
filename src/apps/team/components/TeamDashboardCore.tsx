@@ -39,7 +39,8 @@ import ExcalidrawCanvas from '@/components/drawings/ExcalidrawCanvas';
 import { DrawingErrorBoundary } from '@/components/drawings/DrawingErrorBoundary';
 import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
 import type { Task, User } from '@/lib/api/types';
-import { useWorkspaceTasks, useCreateTask, useUpdateTask } from '@/lib/api/hooks/useTasks';
+import { useWorkspaceTasks, useCreateTask, useUpdateTask, taskKeys } from '@/lib/api/hooks/useTasks';
+import { useUploadTaskFile } from '@/lib/api/hooks/useFiles';
 import { useProjects } from '@/lib/api/hooks/useProjects';
 import { TasksTable } from './TasksTable';
 import { TaskDetailDialog } from '@/components/TaskDetailDialog';
@@ -1171,7 +1172,9 @@ const TasksView = memo(function TasksView() {
   const { currentWorkspaceId } = useWorkspaces();
   const { user } = useUser();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [showClosedOnly, setShowClosedOnly] = useState(false);
   const [taskAssignees, setTaskAssignees] = useState<User[]>([]);
   const [taskCreator, setTaskCreator] = useState<User | null>(null);
   const [viewTab, setViewTab] = useState("List");
@@ -1285,12 +1288,15 @@ const TasksView = memo(function TasksView() {
   // Mutations
   const createTaskMutation = useCreateTask();
   const updateTaskMutation = useUpdateTask();
+  const statusToggleInProgress = useRef<Set<string>>(new Set());
+  const originalStatusBeforeComplete = useRef<Map<string, Task['status']>>(new Map());
 
-  // Cycle status helper
-  const cycleStatus = (status: Task['status']): Task['status'] => {
-    if (status === 'task_redline') return 'progress_update';
+  // Cycle status helper - task_redline and progress_update both go to completed, completed goes back to its original status
+  const cycleStatus = (status: Task['status'], originalStatus?: Task['status']): Task['status'] => {
+    if (status === 'task_redline') return 'done_completed';
     if (status === 'progress_update') return 'done_completed';
-    return 'task_redline';
+    // done_completed goes back to its original status, or defaults to task_redline
+    return originalStatus || 'task_redline';
   };
 
   // Handlers
@@ -1310,14 +1316,57 @@ const TasksView = memo(function TasksView() {
   }, [navigate, currentWorkspaceId]);
 
   const handleStatusToggle = useCallback((taskId: string) => {
-    const task = tasks.find((t) => t.id === taskId);
-    if (task) {
-      updateTaskMutation.mutate({
-        id: taskId,
-        input: { status: cycleStatus(task.status) },
-      });
+    // Prevent multiple rapid clicks on the same task
+    if (statusToggleInProgress.current.has(taskId)) {
+      return;
     }
-  }, [tasks, updateTaskMutation]);
+    
+    // Prevent if mutation is already pending
+    if (updateTaskMutation.isPending) {
+      return;
+    }
+    
+    // Get the latest task status from the query cache to avoid stale data
+    const queryKey = taskKeys.workspace(currentWorkspaceId || '');
+    const cachedTasks: Task[] | undefined = queryClient.getQueryData(queryKey);
+    const task = cachedTasks?.find((t) => t.id === taskId) || tasks.find((t) => t.id === taskId);
+    
+    if (!task) {
+      return;
+    }
+    
+    // Mark this task as being toggled immediately
+    statusToggleInProgress.current.add(taskId);
+    
+    const currentStatus = task.status;
+    let nextStatus: Task['status'];
+    
+    if (currentStatus === 'done_completed') {
+      // Restore to original status if available, otherwise default to task_redline
+      const originalStatus = originalStatusBeforeComplete.current.get(taskId);
+      nextStatus = originalStatus || 'task_redline';
+      // Remove from map after restoring
+      originalStatusBeforeComplete.current.delete(taskId);
+    } else {
+      // Store the current status as the original before marking as completed
+      originalStatusBeforeComplete.current.set(taskId, currentStatus);
+      nextStatus = 'done_completed';
+    }
+    
+    // Trigger mutation immediately - optimistic update will handle UI update
+    updateTaskMutation.mutate(
+      {
+        id: taskId,
+        input: { status: nextStatus },
+      },
+      {
+        onSettled: () => {
+          // Remove from set after mutation completes
+          statusToggleInProgress.current.delete(taskId);
+        },
+      }
+    );
+  }, [tasks, updateTaskMutation, queryClient, currentWorkspaceId]);
 
   const handleUpdateTaskAssignees = useCallback((taskId: string, assignees: string[]) => {
     updateTaskMutation.mutate({
@@ -1326,18 +1375,41 @@ const TasksView = memo(function TasksView() {
     });
   }, [updateTaskMutation]);
 
+  const uploadTaskFileMutation = useUploadTaskFile();
+
   const handleQuickAdd = useCallback(
-    (input: { title: string; projectId: string; assignees: string[]; status: Task['status'] }) => {
-      createTaskMutation.mutate({
-        title: input.title,
-        projectId: input.projectId,
-        assignees: input.assignees,
-        status: input.status,
-        description: '',
-        priority: 'medium',
-      });
+    async (input: { title: string; projectId: string; assignees: string[]; status: Task['status']; files: File[] }) => {
+      // Create the task first
+      createTaskMutation.mutate(
+        {
+          title: input.title,
+          projectId: input.projectId,
+          assignees: input.assignees,
+          status: input.status,
+          description: '',
+          priority: 'medium',
+        },
+        {
+          onSuccess: async (task) => {
+            // Upload files after task is created
+            if (input.files.length > 0) {
+              for (const file of input.files) {
+                try {
+                  await uploadTaskFileMutation.mutateAsync({
+                    file,
+                    taskId: task.id,
+                    projectId: input.projectId,
+                  });
+                } catch (error) {
+                  console.error('Error uploading file:', error);
+                }
+              }
+            }
+          },
+        }
+      );
     },
-    [createTaskMutation]
+    [createTaskMutation, uploadTaskFileMutation]
   );
 
   const handleTaskUpdate = useCallback(
@@ -1367,26 +1439,35 @@ const TasksView = memo(function TasksView() {
           <TabsRow tabs={tabs} active={viewTab} onChange={setViewTab} />
           <div className="-mx-6 px-6 mt-3 mb-0 flex items-center justify-between gap-2 text-[12px] h-6">
             <div className="flex items-center gap-2.5 text-[#202020] font-medium">
-              <button className="inline-flex items-center gap-1 h-6 px-2 rounded border border-slate-200 bg-white text-[#202020]">
+              <button className="inline-flex items-center gap-1 h-6 px-3 rounded-full border border-slate-200 bg-white text-[#202020] hover:bg-slate-50 transition-colors">
                 Group: Status
               </button>
-              <button className="inline-flex items-center gap-1 h-6 px-2 rounded border border-slate-200 bg-white text-[#202020]">
+              <button className="inline-flex items-center gap-1 h-6 px-3 rounded-full border border-slate-200 bg-white text-[#202020] hover:bg-slate-50 transition-colors">
                 Subtasks
               </button>
-              <button className="inline-flex items-center gap-1 h-6 px-2 rounded border border-slate-200 bg-white text-[#202020]">
+              <button className="inline-flex items-center gap-1 h-6 px-3 rounded-full border border-slate-200 bg-white text-[#202020] hover:bg-slate-50 transition-colors">
                 Columns
               </button>
             </div>
             <div className="flex items-center gap-2.5 font-medium">
-              <button className="h-6 px-2 rounded border border-slate-200 bg-white inline-flex items-center gap-1">
+              <button className="h-6 px-3 rounded-full border border-slate-200 bg-white inline-flex items-center gap-1 hover:bg-slate-50 transition-colors">
                 Save view
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="m6 9 6 6 6-6" />
                 </svg>
               </button>
-              <button className="h-6 px-2 rounded text-slate-600 hover:bg-slate-100">Filter</button>
-              <button className="h-6 px-2 rounded text-slate-600 hover:bg-slate-100">Closed</button>
-              <button className="h-6 px-2 rounded text-slate-600 hover:bg-slate-100">Assignee</button>
+              <button className="h-6 px-3 rounded-full text-slate-600 hover:bg-slate-100 transition-colors">Filter</button>
+              <button 
+                onClick={() => setShowClosedOnly(!showClosedOnly)}
+                className={`h-6 px-3 rounded-full transition-colors inline-flex items-center gap-1 ${
+                  showClosedOnly 
+                    ? 'border border-slate-200 bg-white text-[#202020] hover:bg-slate-50' 
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                Closed
+              </button>
+              <button className="h-6 px-3 rounded-full text-slate-600 hover:bg-slate-100 transition-colors">Assignee</button>
               <button className="h-6 w-6 rounded-full bg-slate-900 text-white grid place-items-center text-[11px]">A</button>
             </div>
           </div>
@@ -1401,6 +1482,7 @@ const TasksView = memo(function TasksView() {
           onStatusToggle={handleStatusToggle}
           onQuickAdd={handleQuickAdd}
           onUpdateTaskAssignees={handleUpdateTaskAssignees}
+          showClosedOnly={showClosedOnly}
         />
       </div>
 

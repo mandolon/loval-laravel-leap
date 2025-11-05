@@ -1,8 +1,10 @@
 import { useState, useMemo, useCallback, useRef, useLayoutEffect, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronDown, ChevronRight, Plus, UserPlus, Check } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Check, UserPlus } from 'lucide-react';
 import { StatusDot } from '@/components/taskboard/StatusDot';
-import { TeamAvatar } from '@/components/TeamAvatar';
+import { AssigneeGroup } from './AssigneeGroup';
+import { getAvatarColor, getAvatarInitials } from '@/utils/avatarUtils';
+import { useUploadTaskFile } from '@/lib/api/hooks/useFiles';
 import type { Task, Project, User } from '@/lib/api/types';
 
 // Status configuration
@@ -13,9 +15,9 @@ const STATUS_META = {
 } as const;
 
 const BADGE_BG = {
-  red: '#b91c1c',
-  blue: '#1d4ed8',
-  green: '#065f46',
+  red: '#d14c4c',
+  blue: '#4c75d1',
+  green: '#4cd159',
 } as const;
 
 const CENTER_COLS = new Set(['files', 'date', 'created', 'assigned']);
@@ -92,38 +94,56 @@ const Popover: React.FC<{
 
 // Quick Add Task Row
 interface QuickAddProps {
-  onSave: (t: { title: string; projectId: string; assignees: string[]; status: TaskStatus }) => void;
+  onSave: (t: { title: string; projectId: string; assignees: string[]; status: TaskStatus; files: File[] }) => void;
   onCancel: () => void;
   defaultStatus: TaskStatus;
   projects: Project[];
   users: User[];
   columnWidths: number[];
+  gridTemplateColumns: string;
 }
 
-const QuickAddTaskRow: React.FC<QuickAddProps> = ({ onSave, onCancel, defaultStatus, projects, users, columnWidths }) => {
+const QuickAddTaskRow: React.FC<QuickAddProps> = ({ onSave, onCancel, defaultStatus, projects, users, columnWidths, gridTemplateColumns }) => {
   const [title, setTitle] = useState('');
   const [projectId, setProjectId] = useState('');
   const [projOpen, setProjOpen] = useState(false);
-  const [assignOpen, setAssignOpen] = useState(false);
   const [assignees, setAssignees] = useState<string[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Create usersById record for AssigneeGroup
+  const usersById = useMemo(() => {
+    const record: Record<string, User> = {};
+    users.forEach(user => {
+      record[user.id] = user;
+    });
+    return record;
+  }, [users]);
 
   const canSave = title.trim().length > 0 && projectId.trim().length > 0;
-  const toggleAssignee = useCallback((id: string) => setAssignees((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])), []);
   const handleSave = useCallback(() => {
-    if (canSave) onSave({ title, projectId, assignees, status: defaultStatus });
-  }, [canSave, defaultStatus, onSave, projectId, title, assignees]);
+    if (canSave) onSave({ title, projectId, assignees, status: defaultStatus, files });
+  }, [canSave, defaultStatus, onSave, projectId, title, assignees, files]);
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    setFiles(prev => [...prev, ...selectedFiles]);
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, []);
 
   const selectedProject = projects.find((p) => p.id === projectId);
-  const gridTemplateColumns = columnWidths.map(width => `${width}px`).join(' ');
 
   return (
-    <div className="border-b border-[#cecece] grid items-center" style={{ gridTemplateColumns }}>
+    <div className="border-b border-[#cecece] grid items-start" style={{ gridTemplateColumns, maxHeight: '50px', overflow: 'hidden' }}>
       {/* Status */}
-      <div className="px-2 py-2 text-center">
+      <div className="px-2 py-1 text-center flex items-center justify-center self-center">
         <button
           aria-label="Status (muted)"
           className="inline-grid place-items-center h-4 w-4 rounded-full hover:bg-slate-100/60"
-          style={{ background: 'transparent' }}
+          style={{ background: 'transparent', marginLeft: '11px' }}
         >
           <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
             <circle cx="8" cy="8" r="7" fill="none" stroke="#94a3b8" strokeWidth="2" strokeDasharray="1 1" strokeLinecap="round" />
@@ -132,8 +152,8 @@ const QuickAddTaskRow: React.FC<QuickAddProps> = ({ onSave, onCancel, defaultSta
       </div>
 
       {/* Name */}
-      <div className="px-2 py-2">
-        <div className="relative mb-1 flex items-center gap-3">
+      <div className="px-2 py-1">
+        <div className="relative mb-0.5 flex items-center gap-3" style={{ lineHeight: 1, height: '18px', paddingLeft: '4px' }}>
           <Popover
             open={projOpen}
             onClose={() => setProjOpen(false)}
@@ -142,9 +162,10 @@ const QuickAddTaskRow: React.FC<QuickAddProps> = ({ onSave, onCancel, defaultSta
               <button
                 type="button"
                 onClick={() => setProjOpen((o) => !o)}
-                className="inline-flex items-center gap-1 h-[18px] text-[11px] leading-tight px-0 rounded hover:bg-slate-50 focus:bg-slate-50"
+                className="inline-flex items-center gap-1 h-[18px] text-[11px] leading-tight px-0.5 rounded hover:bg-slate-50 focus:bg-slate-50"
+                style={{ lineHeight: '18px' }}
               >
-                <span className={projectId ? 'text-slate-900' : 'text-slate-400'}>
+                <span className={projectId ? 'text-slate-600' : 'text-slate-400'}>
                   {selectedProject?.name || 'Select Project...'}
                 </span>
                 <ChevronDown size={12} className="text-slate-500" />
@@ -176,108 +197,77 @@ const QuickAddTaskRow: React.FC<QuickAddProps> = ({ onSave, onCancel, defaultSta
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Task Name"
-          className="block w-full px-0 bg-transparent outline-none focus:outline-none focus:ring-0 text-[13px] leading-tight h-[18px]"
+          className="block w-full px-1 bg-transparent outline-none focus:outline-none focus:ring-0 text-[13px] leading-tight h-[18px]"
+          style={{ lineHeight: '18px' }}
         />
       </div>
 
       {/* Files */}
-      <div className="px-2 py-2 text-center" />
+      <div className="px-2 py-1 text-center flex items-center justify-center self-center" />
 
       {/* Date */}
-      <div className="px-2 py-2" />
+      <div className="px-2 py-1 flex items-center self-center" />
 
       {/* Created */}
-      <div className="px-2 py-2 text-center" />
+      <div className="px-2 py-1 text-center flex items-center justify-center self-center" />
 
       {/* Assigned */}
-      <div className="px-2 py-2">
-        <div className="flex items-center justify-end gap-2 whitespace-nowrap" data-testid="qa-actions">
-          {/* Attach (placeholder) */}
-          <button
-            aria-label="Attach files"
-            title="Attach files"
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-            className="inline-flex items-center justify-center h-6 w-6 rounded bg-white hover:bg-slate-50 flex-shrink-0"
-            style={{ 
-              border: '0.5px dashed #cbd5e1',
-              borderWidth: '0.5px',
-              borderStyle: 'dashed',
-              borderColor: '#cbd5e1',
-              minWidth: '24px',
-              minHeight: '24px'
-            }}
-          >
-            <Plus size={12} className="text-slate-700" />
-          </button>
-
-          {/* Assign */}
-          <Popover
-            open={assignOpen}
-            onClose={() => setAssignOpen(false)}
-            anchorClass="relative inline-block"
-            anchor={
-              <button
-                data-testid="qa-assign-btn"
-                title="Assign"
-                onClick={() => setAssignOpen((o) => !o)}
-                className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-white hover:bg-slate-50 flex-shrink-0"
-              >
-                <UserPlus className="h-3.5 w-3.5 text-slate-600" />
-              </button>
-            }
-            panel={
-              <div className="max-h-64 overflow-auto w-56">
-                <div className="px-2 py-1 text-[11px] text-slate-500 border-b border-[#cecece]">Assign to</div>
-                <ul className="py-[2px]">
-                  {users.length === 0 && <li className="px-2 py-1 text-xs text-slate-500">No users</li>}
-                  {users.map((u) => {
-                    const active = assignees.includes(u.id);
-                    const initials = u.name
-                      .split(' ')
-                      .map((n) => n[0])
-                      .join('')
-                      .toUpperCase()
-                      .slice(0, 2);
-                    return (
-                      <li key={u.id}>
-                        <button
-                          onClick={() => toggleAssignee(u.id)}
-                          className="w-full flex items-center gap-2 px-2 py-1 text-[12px] hover:bg-slate-100"
-                        >
-                          <span
-                            className={`inline-flex items-center justify-center h-5 w-5 rounded-full ${active ? 'bg-slate-800 text-white' : 'bg-slate-200 text-slate-700'}`}
-                          >
-                            {initials}
-                          </span>
-                          <span className="flex-1 text-left">{u.name}</span>
-                          {active && <Check size={14} className="text-slate-700" />}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            }
-          />
-
-          {/* Actions */}
-          <button onClick={onCancel} className="h-6 px-2 rounded border border-slate-300 text-xs text-slate-700 bg-white hover:bg-slate-50">
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={!canSave}
-            className={`h-6 px-2 rounded text-xs text-white ${canSave ? 'bg-[#4C75D1] hover:opacity-90' : 'bg-slate-300 cursor-not-allowed'}`}
-          >
-            Save ↓
-          </button>
+      <div className="px-2 py-1 text-center flex items-center justify-center self-center">
+        <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-0.5">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+            <button
+              aria-label="Attach files"
+              title="Attach files"
+              onClick={(e) => {
+                e.stopPropagation();
+                fileInputRef.current?.click();
+              }}
+              className="inline-flex items-center justify-center h-6 w-6 rounded bg-white hover:bg-slate-50 flex-shrink-0"
+              style={{ 
+                border: '0.5px dashed #cbd5e1',
+                borderWidth: '0.5px',
+                borderStyle: 'dashed',
+                borderColor: '#cbd5e1',
+                minWidth: '24px',
+                minHeight: '24px'
+              }}
+            >
+              <Plus size={12} className="text-slate-700" />
+            </button>
+            <AssigneeGroup
+              value={assignees}
+              usersById={usersById}
+              onChange={setAssignees}
+            />
+          </div>
+          <div className="w-px h-4 bg-slate-300 mx-1"></div>
+          <div className="flex items-center gap-1.5">
+            <button onClick={onCancel} className="h-6 px-2 rounded border border-slate-300 text-xs text-slate-700 bg-white hover:bg-slate-50">
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={!canSave}
+              className={`h-6 px-3 rounded text-xs text-white transition-opacity ${canSave ? 'bg-[#4c75d1] hover:opacity-90' : 'bg-[#4c75d1] opacity-50 cursor-not-allowed'}`}
+            >
+              Save
+            </button>
+          </div>
         </div>
       </div>
 
+      {/* Actions */}
+      <div className="px-2 py-1 flex items-center self-center" />
+
       {/* Empty column */}
-      <div className="px-2 py-2"></div>
+      <div className="px-2 py-1"></div>
     </div>
   );
 };
@@ -310,16 +300,51 @@ const TaskRow: React.FC<TaskRowProps> = ({
   onUpdateTaskAssignees,
   gridTemplateColumns,
 }) => {
-  const [assignOpen, setAssignOpen] = useState(false);
   const [localAssignees, setLocalAssignees] = useState<string[]>(task.assignees);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadTaskFileMutation = useUploadTaskFile();
 
-  const toggleAssignee = useCallback((userId: string) => {
-    setLocalAssignees((prev) => {
-      const updated = prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId];
-      onUpdateTaskAssignees(task.id, updated);
-      return updated;
+  // Create usersById record for AssigneeGroup
+  const usersById = useMemo(() => {
+    const record: Record<string, User> = {};
+    users.forEach(user => {
+      record[user.id] = user;
     });
+    return record;
+  }, [users]);
+
+  const handleAssigneeChange = useCallback((next: string[]) => {
+    setLocalAssignees(next);
+    onUpdateTaskAssignees(task.id, next);
   }, [task.id, onUpdateTaskAssignees]);
+
+  // Sync local assignees when task.assignees changes externally
+  useEffect(() => {
+    setLocalAssignees(task.assignees);
+  }, [task.assignees]);
+
+  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    if (selectedFiles.length === 0 || !project) return;
+
+    // Upload each file
+    for (const file of selectedFiles) {
+      try {
+        await uploadTaskFileMutation.mutateAsync({
+          file,
+          taskId: task.id,
+          projectId: project.id,
+        });
+      } catch (error) {
+        console.error('Error uploading file:', error);
+      }
+    }
+
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, [task.id, project, uploadTaskFileMutation]);
 
   return (
     <div
@@ -328,7 +353,9 @@ const TaskRow: React.FC<TaskRowProps> = ({
     >
       {/* Status */}
       <div className="px-2 py-1.5 flex items-center justify-center">
-        <StatusDot status={task.status} onClick={() => onStatusToggle(task.id)} />
+        <div style={{ marginLeft: '11px' }}>
+          <StatusDot status={task.status} onClick={() => onStatusToggle(task.id)} />
+        </div>
       </div>
 
       {/* Name */}
@@ -371,11 +398,19 @@ const TaskRow: React.FC<TaskRowProps> = ({
       {/* Files */}
       <div className="px-2 py-1.5 text-center">
         <div className="w-full text-center">
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={handleFileSelect}
+          />
           <button
             aria-label="Attach files"
             title="Attach files"
             onClick={(e) => {
               e.stopPropagation();
+              fileInputRef.current?.click();
             }}
             className="inline-flex items-center justify-center h-6 w-6 rounded bg-white hover:bg-slate-50"
             style={{ 
@@ -392,7 +427,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
 
       {/* Date */}
       <div className="px-2 py-1.5 text-center">
-        <span className="block mx-auto text-slate-600 whitespace-nowrap" style={{ fontSize: '14px' }}>
+        <span className="block mx-auto text-slate-900 whitespace-nowrap" style={{ fontSize: '13px' }}>
           {formatDate(task.createdAt)}
         </span>
       </div>
@@ -401,7 +436,9 @@ const TaskRow: React.FC<TaskRowProps> = ({
       <div className="px-2 py-1.5 text-center">
         {creator ? (
           <div className="flex justify-center">
-            <TeamAvatar user={{ ...creator, avatar_url: creator.avatarUrl }} size="sm" />
+            <div className="w-7 h-7 rounded-full border-2 border-card dark:border-muted flex-shrink-0 flex items-center justify-center text-[11px] font-medium text-white" style={{ background: getAvatarColor(creator) }}>
+              {getAvatarInitials(creator.name)}
+            </div>
           </div>
         ) : (
           <span className="text-slate-400 text-xs">-</span>
@@ -410,57 +447,11 @@ const TaskRow: React.FC<TaskRowProps> = ({
 
       {/* Assigned */}
       <div className="px-2 py-1.5 text-center">
-        <div className="flex gap-1 justify-center items-center mx-auto">
-          {assignedUsers.slice(0, 2).map((u) => (
-            <TeamAvatar key={u.id} user={{ ...u, avatar_url: u.avatarUrl }} size="sm" />
-          ))}
-          {assignedUsers.length > 2 && (
-            <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-slate-500 text-white text-[9px]">
-              +{assignedUsers.length - 2}
-            </span>
-          )}
-          <Popover
-            open={assignOpen}
-            onClose={() => setAssignOpen(false)}
-            anchorClass="relative inline-block"
-            anchor={
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setAssignOpen((o) => !o);
-                }}
-                className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-white hover:bg-slate-50"
-                title="Assign users"
-              >
-                <UserPlus className="h-3.5 w-3.5 text-slate-600" />
-              </button>
-            }
-            panel={
-              <div className="max-h-64 overflow-auto w-56">
-                <div className="px-2 py-1 text-[11px] text-slate-500 border-b border-[#cecece]">Assign to</div>
-                <ul className="py-[2px]">
-                  {users.length === 0 && <li className="px-2 py-1 text-xs text-slate-500">No users</li>}
-                  {users.map((u) => {
-                    const active = localAssignees.includes(u.id);
-                    return (
-                      <li key={u.id}>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleAssignee(u.id);
-                          }}
-                          className="w-full flex items-center gap-2 px-2 py-1 text-[12px] hover:bg-slate-100"
-                        >
-                          <TeamAvatar user={{ ...u, avatar_url: u.avatarUrl }} size="xs" />
-                          <span className="flex-1 text-left">{u.name}</span>
-                          {active && <Check size={14} className="text-slate-700" />}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            }
+        <div className="flex justify-center items-center mx-auto">
+          <AssigneeGroup
+            value={localAssignees}
+            usersById={usersById}
+            onChange={handleAssigneeChange}
           />
         </div>
       </div>
@@ -481,7 +472,7 @@ interface TasksSectionProps {
   onTaskClick: (task: Task) => void;
   onProjectClick: (projectId: string) => void;
   onStatusToggle: (taskId: string) => void;
-  onQuickAdd: (input: { title: string; projectId: string; assignees: string[]; status: TaskStatus }) => void;
+  onQuickAdd: (input: { title: string; projectId: string; assignees: string[]; status: TaskStatus; files: File[] }) => void;
   onUpdateTaskAssignees: (taskId: string, assignees: string[]) => void;
   columnWidths: number[];
   onColumnWidthsChange: (widths: number[]) => void;
@@ -504,6 +495,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({
 }) => {
   const meta = STATUS_META[status];
   const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const quickAddRowRef = useRef<HTMLDivElement | null>(null);
   
   // Resize state
   const [resizingColumnIndex, setResizingColumnIndex] = useState<number | null>(null);
@@ -605,15 +597,47 @@ const TasksSection: React.FC<TasksSectionProps> = ({
     };
   }, [resizingColumnIndex, onColumnWidthsChange]);
 
-  const handleQuickAddClick = useCallback(() => setShowQuickAdd(true), []);
+  const handleQuickAddClick = useCallback(() => {
+    try {
+      setShowQuickAdd(true);
+    } catch (error) {
+      console.error('Error opening quick add:', error);
+    }
+  }, []);
   const handleQuickAddSave = useCallback(
-    (input: { title: string; projectId: string; assignees: string[]; status: TaskStatus }) => {
+    (input: { title: string; projectId: string; assignees: string[]; status: TaskStatus; files: File[] }) => {
       onQuickAdd(input);
       setShowQuickAdd(false);
     },
     [onQuickAdd]
   );
   const handleQuickAddCancel = useCallback(() => setShowQuickAdd(false), []);
+
+  // Handle click outside quick add row
+  useEffect(() => {
+    if (!showQuickAdd) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (quickAddRowRef.current && !quickAddRowRef.current.contains(e.target as Node)) {
+        const target = e.target as HTMLElement;
+        // Check if click is on a popover (which is rendered via portal) or AssigneeGroup popover
+        if (target.closest('[data-portal="popover"]') || target.closest('[data-assignee-popover="true"]')) {
+          return; // Don't close if clicking on popover
+        }
+        handleQuickAddCancel();
+      }
+    };
+
+    // Use a small delay to avoid immediate closing when opening
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showQuickAdd, handleQuickAddCancel]);
 
   // Calculate table width - sum of fixed columns, empty column fills remaining space
   const totalFixedWidth = columnWidths.reduce((sum, width) => sum + width, 0);
@@ -678,7 +702,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({
 
               {/* Date */}
               <div className="px-2 py-1.5 text-xs font-semibold text-slate-700 text-center relative group">
-                <div className="pr-3">Date</div>
+                <div className="pr-3">Date Created</div>
                 {columnWidths.length > 4 && (
                   <div
                     className={`absolute right-0 top-0 bottom-0 cursor-col-resize bg-slate-300 hover:bg-slate-400 active:bg-slate-500 transition-all z-10 ${
@@ -748,18 +772,32 @@ const TasksSection: React.FC<TasksSectionProps> = ({
                 );
               })}
               
-              {!showQuickAdd && tasks.length > 0 && (
+              {!showQuickAdd && status !== 'done_completed' && (
                 <div className="border-b border-transparent grid items-center" style={{ gridTemplateColumns }}>
-                  <div className="px-2 py-0">
-                    <div className="h-[42px] flex items-center justify-start">
-                      <button onClick={handleQuickAddClick} className="h-5 w-5 grid place-items-center rounded hover:bg-slate-100" aria-label="Add Task">
+                  <div className="px-2 py-1.5 flex items-center justify-center">
+                    <div style={{ marginLeft: '11px' }}>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleQuickAddClick();
+                        }} 
+                        className="h-4 w-4 grid place-items-center rounded" 
+                        aria-label="Add Task"
+                      >
                         <Plus size={14} className="text-slate-600" />
                       </button>
                     </div>
                   </div>
                   <div className="px-2 py-0" style={{ gridColumn: 'span 6' }}>
                     <div className="h-[42px] flex items-center">
-                      <button onClick={handleQuickAddClick} className="inline-flex items-center rounded px-1.5 py-1 transition-colors hover:bg-slate-100" style={{ fontSize: '13px' }}>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleQuickAddClick();
+                        }} 
+                        className="inline-flex items-center rounded px-3 py-1 transition-colors border border-transparent hover:border-slate-300" 
+                        style={{ fontSize: '13px' }}
+                      >
                         <span className="text-slate-500">Add Task</span>
                       </button>
                     </div>
@@ -767,15 +805,18 @@ const TasksSection: React.FC<TasksSectionProps> = ({
                 </div>
               )}
               
-              {showQuickAdd && (
-                <QuickAddTaskRow 
-                  columnWidths={columnWidths}
-                  projects={projects} 
-                  users={users} 
-                  defaultStatus={status} 
-                  onSave={handleQuickAddSave} 
-                  onCancel={handleQuickAddCancel} 
-                />
+              {showQuickAdd && status !== 'done_completed' && (
+                <div ref={quickAddRowRef} className="contents">
+                  <QuickAddTaskRow 
+                    columnWidths={columnWidths}
+                    gridTemplateColumns={gridTemplateColumns}
+                    projects={projects} 
+                    users={users} 
+                    defaultStatus={status} 
+                    onSave={handleQuickAddSave} 
+                    onCancel={handleQuickAddCancel} 
+                  />
+                </div>
               )}
             </div>
           </div>
@@ -792,11 +833,12 @@ interface TasksTableProps {
   onTaskClick: (task: Task) => void;
   onProjectClick: (projectId: string) => void;
   onStatusToggle: (taskId: string) => void;
-  onQuickAdd: (input: { title: string; projectId: string; assignees: string[]; status: TaskStatus }) => void;
+  onQuickAdd: (input: { title: string; projectId: string; assignees: string[]; status: TaskStatus; files: File[] }) => void;
   onUpdateTaskAssignees: (taskId: string, assignees: string[]) => void;
+  showClosedOnly?: boolean;
 }
 
-export function TasksTable({ tasks, projects, users, onTaskClick, onProjectClick, onStatusToggle, onQuickAdd, onUpdateTaskAssignees }: TasksTableProps) {
+export function TasksTable({ tasks, projects, users, onTaskClick, onProjectClick, onStatusToggle, onQuickAdd, onUpdateTaskAssignees, showClosedOnly = false }: TasksTableProps) {
   const [collapsed, setCollapsed] = useState<Record<TaskStatus, boolean>>({
     task_redline: false,
     progress_update: false,
@@ -846,51 +888,57 @@ export function TasksTable({ tasks, projects, users, onTaskClick, onProjectClick
       <div className="min-h-0 min-w-0 h-full flex flex-col" data-testid="task-root">
         <div className="flex-1 overflow-auto" style={{ scrollbarGutter: 'stable' }} data-testid="task-scroll">
           <div className="p-4 space-y-4" data-testid="task-container">
-            <TasksSection
-              status="task_redline"
-              tasks={filtered.task_redline}
-              projects={projects}
-              users={users}
-              collapsed={collapsed.task_redline}
-              onToggleCollapse={() => toggleCollapse('task_redline')}
-              onTaskClick={onTaskClick}
-              onProjectClick={onProjectClick}
-              onStatusToggle={onStatusToggle}
-              onQuickAdd={onQuickAdd}
-              onUpdateTaskAssignees={onUpdateTaskAssignees}
-              columnWidths={columnWidths}
-              onColumnWidthsChange={setColumnWidths}
-            />
-            <TasksSection
-              status="progress_update"
-              tasks={filtered.progress_update}
-              projects={projects}
-              users={users}
-              collapsed={collapsed.progress_update}
-              onToggleCollapse={() => toggleCollapse('progress_update')}
-              onTaskClick={onTaskClick}
-              onProjectClick={onProjectClick}
-              onStatusToggle={onStatusToggle}
-              onQuickAdd={onQuickAdd}
-              onUpdateTaskAssignees={onUpdateTaskAssignees}
-              columnWidths={columnWidths}
-              onColumnWidthsChange={setColumnWidths}
-            />
-            <TasksSection
-              status="done_completed"
-              tasks={filtered.done_completed}
-              projects={projects}
-              users={users}
-              collapsed={collapsed.done_completed}
-              onToggleCollapse={() => toggleCollapse('done_completed')}
-              onTaskClick={onTaskClick}
-              onProjectClick={onProjectClick}
-              onStatusToggle={onStatusToggle}
-              onQuickAdd={onQuickAdd}
-              onUpdateTaskAssignees={onUpdateTaskAssignees}
-              columnWidths={columnWidths}
-              onColumnWidthsChange={setColumnWidths}
-            />
+            {!showClosedOnly && (
+              <>
+                <TasksSection
+                  status="task_redline"
+                  tasks={filtered.task_redline}
+                  projects={projects}
+                  users={users}
+                  collapsed={collapsed.task_redline}
+                  onToggleCollapse={() => toggleCollapse('task_redline')}
+                  onTaskClick={onTaskClick}
+                  onProjectClick={onProjectClick}
+                  onStatusToggle={onStatusToggle}
+                  onQuickAdd={onQuickAdd}
+                  onUpdateTaskAssignees={onUpdateTaskAssignees}
+                  columnWidths={columnWidths}
+                  onColumnWidthsChange={setColumnWidths}
+                />
+                <TasksSection
+                  status="progress_update"
+                  tasks={filtered.progress_update}
+                  projects={projects}
+                  users={users}
+                  collapsed={collapsed.progress_update}
+                  onToggleCollapse={() => toggleCollapse('progress_update')}
+                  onTaskClick={onTaskClick}
+                  onProjectClick={onProjectClick}
+                  onStatusToggle={onStatusToggle}
+                  onQuickAdd={onQuickAdd}
+                  onUpdateTaskAssignees={onUpdateTaskAssignees}
+                  columnWidths={columnWidths}
+                  onColumnWidthsChange={setColumnWidths}
+                />
+              </>
+            )}
+            {showClosedOnly && (
+              <TasksSection
+                status="done_completed"
+                tasks={filtered.done_completed}
+                projects={projects}
+                users={users}
+                collapsed={collapsed.done_completed}
+                onToggleCollapse={() => toggleCollapse('done_completed')}
+                onTaskClick={onTaskClick}
+                onProjectClick={onProjectClick}
+                onStatusToggle={onStatusToggle}
+                onQuickAdd={onQuickAdd}
+                onUpdateTaskAssignees={onUpdateTaskAssignees}
+                columnWidths={columnWidths}
+                onColumnWidthsChange={setColumnWidths}
+              />
+            )}
           </div>
         </div>
       </div>

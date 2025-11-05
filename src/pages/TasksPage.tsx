@@ -241,10 +241,12 @@ const TasksPage = () => {
       >
         {/* Column 1: Status Dot */}
         <td className="px-3 py-2 text-center">
-          <StatusDot 
-            status={task.status} 
-            onClick={handleStatusClick}
-          />
+          <div style={{ marginLeft: '11px', display: 'inline-block' }}>
+            <StatusDot 
+              status={task.status} 
+              onClick={handleStatusClick}
+            />
+          </div>
         </td>
 
         {/* Column 2: Name (Address above title) */}

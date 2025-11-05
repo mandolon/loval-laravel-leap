@@ -80,10 +80,9 @@ export const useUploadTaskFile = () => {
 
       if (!userProfile) throw new Error('User not found')
 
-      // Create unique file path
-      const fileExt = file.name.split('.').pop()
+      // Create unique file path in Attachments folder
       const timestamp = Date.now()
-      const storagePath = `${taskId}/${timestamp}-${file.name}`
+      const storagePath = `${projectId}/Attachments/${timestamp}-${file.name}`
 
       // Upload to storage
       const { error: uploadError } = await supabase.storage
@@ -95,14 +94,19 @@ export const useUploadTaskFile = () => {
 
       if (uploadError) throw uploadError
 
-      // Get folder ID for project (assume root folder for now, you can enhance this)
-      const { data: folders } = await supabase
+      // Get Attachments folder ID for project
+      const { data: attachmentsFolder } = await supabase
         .from('folders')
         .select('id')
         .eq('project_id', projectId)
+        .eq('name', 'Attachments')
         .eq('is_system_folder', true)
-        .limit(1)
-        .single()
+        .is('deleted_at', null)
+        .maybeSingle()
+
+      if (!attachmentsFolder) {
+        throw new Error('Attachments folder not found for this project')
+      }
 
       // Create file record in database
       const { data: fileRecord, error: dbError } = await supabase
@@ -110,7 +114,7 @@ export const useUploadTaskFile = () => {
         .insert({
           project_id: projectId,
           task_id: taskId,
-          folder_id: folders?.id || null,
+          folder_id: attachmentsFolder.id,
           filename: file.name,
           storage_path: storagePath,
           mimetype: file.type,

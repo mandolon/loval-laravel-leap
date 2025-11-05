@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -165,6 +165,12 @@ export function TaskDetailDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="sr-only">Task Details</DialogTitle>
+          <DialogDescription className="sr-only">
+            View and edit task details, attachments, and information
+          </DialogDescription>
+        </DialogHeader>
         <div className="space-y-6">
           {/* Header */}
           <div className="flex items-center gap-3">
