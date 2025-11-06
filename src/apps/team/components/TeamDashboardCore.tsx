@@ -226,7 +226,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
     } else if (path.includes('/detail-library')) {
       setActive('details');
     } else if (path.endsWith(`/workspace/${currentWorkspaceId}`)) {
-      setActive('home');
+      setActive('tasks');
     }
   }, [location.pathname, currentWorkspaceId]);
 
