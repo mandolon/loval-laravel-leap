@@ -2,88 +2,121 @@ export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto px-4 py-16">
-        <h1 className="text-4xl font-bold mb-8">Privacy Policy</h1>
-        <p className="text-muted-foreground mb-8">Last updated: {new Date().toLocaleDateString()}</p>
+        <h1 className="text-4xl font-bold mb-2">Privacy Policy</h1>
+        <p className="text-sm text-muted-foreground mb-4">
+          <strong>Effective date:</strong> November 6, 2025
+        </p>
+        <p className="text-sm text-muted-foreground mb-8">
+          <strong>Website/App:</strong> Rehome (https://rehome.build and https://app.rehome.build)<br />
+          <strong>Contact:</strong> <a href="mailto:armando@rehome.build" className="text-primary hover:underline">armando@rehome.build</a>
+        </p>
         
+        <p className="mb-8 text-foreground">
+          Rehome helps architecture teams collaborate during preconstruction. This Privacy Policy explains what we collect, how we use it, and the choices you have.
+        </p>
+
         <div className="space-y-6 text-foreground">
           <section>
-            <h2 className="text-2xl font-semibold mb-4">1. Information We Collect</h2>
-            <p className="mb-4">
-              We collect information that you provide directly to us, including when you create an account, 
-              use our services, or communicate with us. This may include your name, email address, and any 
-              other information you choose to provide.
+            <h2 className="text-2xl font-semibold mb-4">1) What we collect</h2>
+            <ul className="list-disc pl-6 space-y-2">
+              <li><strong>Account & OAuth data:</strong> name, email, and basic profile information provided by Google Sign-In (scopes: <code>openid</code>, <code>email</code>, <code>profile</code>).</li>
+              <li><strong>Workspace & project content:</strong> files, notes, messages, and other content you add or upload.</li>
+              <li><strong>Technical data:</strong> device/browser type, IP address, pages/actions, and cookies or similar technologies used for session management and security.</li>
+              <li><strong>Support communications:</strong> messages and attachments you send to support.</li>
+            </ul>
+            <p className="mt-4">
+              We do <strong>not</strong> request or access your Gmail contents, contacts, calendar, or other sensitive Google data.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">2. How We Use Your Information</h2>
-            <p className="mb-4">
-              We use the information we collect to:
-            </p>
+            <h2 className="text-2xl font-semibold mb-4">2) How we use data</h2>
             <ul className="list-disc pl-6 space-y-2">
-              <li>Provide, maintain, and improve our services</li>
-              <li>Process transactions and send related information</li>
-              <li>Send technical notices and support messages</li>
-              <li>Respond to your comments and questions</li>
-              <li>Protect against fraudulent or illegal activity</li>
+              <li>Authenticate you and create/manage your account and workspaces.</li>
+              <li>Provide, maintain, and improve features (projects, files, collaboration).</li>
+              <li>Secure the service, prevent abuse, and troubleshoot.</li>
+              <li>Communicate about updates, security notices, and support.</li>
+              <li>Meet legal, safety, and compliance obligations.</li>
             </ul>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">3. Information Sharing</h2>
-            <p className="mb-4">
-              We do not share your personal information with third parties except as described in this policy. 
-              We may share information with service providers who perform services on our behalf, such as hosting 
-              and analytics providers.
+            <h2 className="text-2xl font-semibold mb-4">3) Legal bases (EEA/UK users)</h2>
+            <ul className="list-disc pl-6 space-y-2">
+              <li>Contract (to provide the service),</li>
+              <li>Legitimate interests (security, improvement),</li>
+              <li>Consent where required,</li>
+              <li>Legal obligation.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold mb-4">4) Sharing</h2>
+            <p className="mb-4">We share data only with:</p>
+            <ul className="list-disc pl-6 space-y-2">
+              <li><strong>Service providers</strong> that help us operate the app (e.g., authentication, databases, hosting, analytics, email). This includes <strong>Google</strong> (OAuth) and <strong>Supabase</strong> (authentication/database).</li>
+              <li><strong>Legal and safety</strong> recipients if required by law or to protect rights.</li>
+              <li><strong>Business transfers</strong> (e.g., merger or acquisition) with appropriate protections.</li>
+            </ul>
+            <p className="mt-4">
+              We do <strong>not</strong> sell personal data.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">4. Data Security</h2>
+            <h2 className="text-2xl font-semibold mb-4">5) International transfers</h2>
             <p className="mb-4">
-              We take reasonable measures to protect your information from unauthorized access, use, or disclosure. 
-              However, no internet transmission is ever fully secure, and we cannot guarantee absolute security.
+              We may process data in countries outside your own. When we do, we use appropriate safeguards (e.g., Standard Contractual Clauses where applicable).
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">5. Your Rights</h2>
+            <h2 className="text-2xl font-semibold mb-4">6) Retention</h2>
             <p className="mb-4">
-              You have the right to access, update, or delete your personal information at any time. You may also 
-              have the right to object to or restrict certain processing of your information.
+              We keep data while you have an account and as needed for legitimate business or legal purposes. When no longer required, we delete or anonymize it.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">6. Cookies and Tracking</h2>
-            <p className="mb-4">
-              We use cookies and similar tracking technologies to collect information about your browsing activities 
-              and to remember your preferences. You can control cookies through your browser settings.
+            <h2 className="text-2xl font-semibold mb-4">7) Your choices & rights</h2>
+            <ul className="list-disc pl-6 space-y-2">
+              <li><strong>Access/Update/Delete:</strong> You can request access, correction, portability, or deletion of your data.</li>
+              <li><strong>Opt-out of non-essential emails:</strong> Use unsubscribe links or contact us.</li>
+              <li><strong>Cookies:</strong> You can control cookies through your browser settings (disabling some cookies may affect sign-in/session).</li>
+              <li><strong>EEA/UK/California rights:</strong> You may have additional rights under GDPR/UK GDPR/CPRA. Contact us to exercise them.</li>
+            </ul>
+            <p className="mt-4">
+              To delete your account or request a copy of your data, email <strong>armando@rehome.build</strong>.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">7. Children's Privacy</h2>
+            <h2 className="text-2xl font-semibold mb-4">8) Security</h2>
             <p className="mb-4">
-              Our services are not intended for children under the age of 13, and we do not knowingly collect 
-              personal information from children under 13.
+              We use administrative, technical, and physical safeguards appropriate to the risk (encryption in transit, access controls, logging). No method is 100% secure.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">8. Changes to This Policy</h2>
+            <h2 className="text-2xl font-semibold mb-4">9) Children</h2>
             <p className="mb-4">
-              We may update this privacy policy from time to time. We will notify you of any changes by posting 
-              the new policy on this page and updating the "Last updated" date.
+              Rehome is not intended for children under 16 and we do not knowingly collect their data.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">9. Contact Us</h2>
+            <h2 className="text-2xl font-semibold mb-4">10) Changes</h2>
             <p className="mb-4">
-              If you have any questions about this privacy policy, please contact us at{" "}
-              <a href="mailto:support@rehome.build" className="text-primary hover:underline">
-                support@rehome.build
+              We may update this Policy. We'll post the new date above and, if changes are material, notify you in-app or by email.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold mb-4">11) Contact</h2>
+            <p className="mb-4">
+              Questions or requests:{" "}
+              <a href="mailto:armando@rehome.build" className="text-primary hover:underline">
+                armando@rehome.build
               </a>
             </p>
           </section>

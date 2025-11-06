@@ -2,107 +2,131 @@ export default function TermsPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto px-4 py-16">
-        <h1 className="text-4xl font-bold mb-8">Terms of Service</h1>
-        <p className="text-muted-foreground mb-8">Last updated: {new Date().toLocaleDateString()}</p>
-        
+        <h1 className="text-4xl font-bold mb-2">Terms of Service</h1>
+        <p className="text-sm text-muted-foreground mb-4">
+          <strong>Effective date:</strong> November 6, 2025
+        </p>
+        <p className="text-sm text-muted-foreground mb-8">
+          <strong>Website/App:</strong> Rehome (https://rehome.build and https://app.rehome.build)<br />
+          <strong>Contact:</strong> <a href="mailto:armando@rehome.build" className="text-primary hover:underline">armando@rehome.build</a>
+        </p>
+
+        <p className="mb-8 text-foreground">
+          These Terms govern your use of Rehome. By accessing or using the Service, you agree to these Terms.
+        </p>
+
         <div className="space-y-6 text-foreground">
           <section>
-            <h2 className="text-2xl font-semibold mb-4">1. Acceptance of Terms</h2>
+            <h2 className="text-2xl font-semibold mb-4">1) The Service</h2>
             <p className="mb-4">
-              By accessing and using Rehome's services, you accept and agree to be bound by the terms and 
-              provisions of this agreement. If you do not agree to these terms, please do not use our services.
+              Rehome is a collaboration platform for architecture teams to manage preconstruction work.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">2. Use License</h2>
+            <h2 className="text-2xl font-semibold mb-4">2) Accounts</h2>
             <p className="mb-4">
-              We grant you a limited, non-exclusive, non-transferable license to access and use our services 
-              for your personal or business purposes, subject to these terms.
+              You must be capable of forming a contract and provide accurate information. You're responsible for your credentials and all activity under your account.
             </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold mb-4">3) Acceptable Use</h2>
             <p className="mb-4">You agree not to:</p>
             <ul className="list-disc pl-6 space-y-2">
-              <li>Use our services for any unlawful purpose</li>
-              <li>Attempt to gain unauthorized access to our systems</li>
-              <li>Interfere with or disrupt our services</li>
-              <li>Reproduce, duplicate, or copy any part of our services without permission</li>
-              <li>Use our services to transmit malicious code or spam</li>
+              <li>Break the law or infringe others' rights.</li>
+              <li>Upload malicious code or attempt to disrupt the Service.</li>
+              <li>Misuse, reverse engineer, or try to bypass security or rate limits.</li>
+              <li>Upload content you don't have the right to share.</li>
             </ul>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">3. User Accounts</h2>
-            <p className="mb-4">
-              You are responsible for maintaining the confidentiality of your account credentials and for all 
-              activities that occur under your account. You agree to notify us immediately of any unauthorized 
-              use of your account.
+            <p className="mt-4">
+              We may suspend or terminate accounts that violate these Terms.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">4. User Content</h2>
+            <h2 className="text-2xl font-semibold mb-4">4) Your Content</h2>
             <p className="mb-4">
-              You retain all rights to any content you submit, post, or display through our services. By 
-              submitting content, you grant us a worldwide, non-exclusive license to use, reproduce, and 
-              display your content as necessary to provide our services.
+              You retain ownership of content you upload. You grant Rehome a worldwide, non-exclusive license to host, process, display, and create backups of your content solely to provide the Service and support you.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">5. Intellectual Property</h2>
+            <h2 className="text-2xl font-semibold mb-4">5) Privacy</h2>
             <p className="mb-4">
-              All content, features, and functionality of our services are owned by Rehome and are protected 
-              by international copyright, trademark, and other intellectual property laws.
+              Our <strong>Privacy Policy</strong> (https://rehome.build/privacy) explains how we handle personal data and is part of these Terms.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">6. Termination</h2>
+            <h2 className="text-2xl font-semibold mb-4">6) Third-Party Services</h2>
             <p className="mb-4">
-              We may terminate or suspend your access to our services immediately, without prior notice, for 
-              any reason, including if you breach these terms. Upon termination, your right to use our services 
-              will immediately cease.
+              The Service may rely on third-party providers (e.g., Google Sign-In, Supabase). Your use of those services may be subject to their terms.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">7. Disclaimer of Warranties</h2>
+            <h2 className="text-2xl font-semibold mb-4">7) Intellectual Property</h2>
             <p className="mb-4">
-              Our services are provided "as is" and "as available" without warranties of any kind, either express 
-              or implied. We do not warrant that our services will be uninterrupted, secure, or error-free.
+              The Service, software, and branding are owned by Rehome or its licensors. These Terms don't grant you any rights to our trademarks or code except as needed to use the Service.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">8. Limitation of Liability</h2>
+            <h2 className="text-2xl font-semibold mb-4">8) Beta / Changes</h2>
             <p className="mb-4">
-              To the maximum extent permitted by law, Rehome shall not be liable for any indirect, incidental, 
-              special, consequential, or punitive damages resulting from your use of or inability to use our services.
+              We may add, change, or remove features at any time. Some features may be labeled beta or preview and may be less stable.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">9. Changes to Terms</h2>
+            <h2 className="text-2xl font-semibold mb-4">9) Disclaimers</h2>
             <p className="mb-4">
-              We reserve the right to modify these terms at any time. We will notify users of any material changes 
-              by posting the new terms on this page and updating the "Last updated" date.
+              The Service is provided <strong>"as is" and "as available."</strong> We disclaim all warranties to the fullest extent permitted by law, including fitness for a particular purpose and non-infringement.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">10. Governing Law</h2>
+            <h2 className="text-2xl font-semibold mb-4">10) Limitation of Liability</h2>
             <p className="mb-4">
-              These terms shall be governed by and construed in accordance with applicable laws, without regard 
-              to conflict of law provisions.
+              To the fullest extent permitted by law, Rehome and its affiliates will not be liable for indirect, incidental, special, consequential, or exemplary damages. Our total liability for any claim related to the Service will not exceed the greater of <strong>$100</strong> or the amount you paid to us in the 12 months before the claim.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">11. Contact Information</h2>
+            <h2 className="text-2xl font-semibold mb-4">11) Indemnification</h2>
             <p className="mb-4">
-              For questions about these terms, please contact us at{" "}
-              <a href="mailto:support@rehome.build" className="text-primary hover:underline">
-                support@rehome.build
+              You will defend and indemnify Rehome against claims arising from your content or your violation of these Terms or applicable law.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold mb-4">12) Termination</h2>
+            <p className="mb-4">
+              You may stop using the Service at any time. We may suspend or terminate access for violations or risks to the Service. Upon termination, your right to use the Service ends, but Sections 4–13 survive.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold mb-4">13) Governing Law & Disputes</h2>
+            <p className="mb-4">
+              These Terms are governed by the laws of <strong>California, USA</strong>, excluding conflict-of-law rules. Disputes will be resolved in the state or federal courts located in <strong>Sacramento County, California</strong>, unless otherwise required by law. Each party consents to that jurisdiction and venue. You and Rehome may still seek equitable relief or use small-claims court.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold mb-4">14) Changes to Terms</h2>
+            <p className="mb-4">
+              We may update these Terms. If changes are material, we'll notify you in-app or by email. Continued use after the effective date means you accept the changes.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold mb-4">15) Contact</h2>
+            <p className="mb-4">
+              Questions about these Terms:{" "}
+              <a href="mailto:armando@rehome.build" className="text-primary hover:underline">
+                armando@rehome.build
               </a>
             </p>
           </section>
