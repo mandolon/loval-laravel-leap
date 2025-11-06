@@ -17,6 +17,8 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  Check,
+  Plus,
 } from "lucide-react";
 import {
   useReactTable,
@@ -36,6 +38,13 @@ import { TeamAvatarMenu } from "./TeamAvatarMenu";
 import ProjectPanel from "./ProjectPanel";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import TeamFileViewer from "./viewers/TeamFileViewer";
 import ExcalidrawCanvas from '@/components/drawings/ExcalidrawCanvas';
 import { DrawingErrorBoundary } from '@/components/drawings/DrawingErrorBoundary';
@@ -823,8 +832,15 @@ const SettingsRailItem = memo(function SettingsRailItem({
   currentWorkspaceId,
   navigate,
 }: SettingsRailItemProps) {
-  const [workspaceSwitcherOpen, setWorkspaceSwitcherOpen] = useState(false);
-  const { currentWorkspace } = useWorkspaces();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const { currentWorkspace, workspaces, switchWorkspace } = useWorkspaces();
+  const navigateRouter = useNavigate();
+
+  const handleWorkspaceChange = (newWorkspaceId: string) => {
+    switchWorkspace(newWorkspaceId);
+    navigateRouter(`/workspace/${newWorkspaceId}/projects`);
+    setDropdownOpen(false);
+  };
 
   return (
     <div className="relative z-40 flex flex-col items-center gap-1.5 mb-3 group/nav">
@@ -841,25 +857,72 @@ const SettingsRailItem = memo(function SettingsRailItem({
         <Settings className="h-4 w-4" />
       </button>
 
-      {/* Workspace name button - replaces "Settings" label */}
-      <Popover open={workspaceSwitcherOpen} onOpenChange={setWorkspaceSwitcherOpen}>
-        <PopoverTrigger asChild>
+      {/* Workspace name dropdown - opens full menu directly */}
+      <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+        <DropdownMenuTrigger asChild>
           <button
             className="w-12 px-1 text-center text-[10px] leading-tight text-white/70 hover:text-white/100 transition-colors cursor-pointer truncate"
             title={currentWorkspace?.name || "Switch workspace"}
           >
             {currentWorkspace?.name || "Workspace"}
           </button>
-        </PopoverTrigger>
-        <PopoverContent 
-          side="bottom" 
+        </DropdownMenuTrigger>
+        
+        <DropdownMenuContent 
           align="center" 
-          className="w-auto p-0 bg-popover border-border z-50"
+          side="bottom"
+          className="w-56 bg-popover z-50"
           sideOffset={4}
         >
-          <WorkspaceSwitcher onWorkspaceChange={() => setWorkspaceSwitcherOpen(false)} />
-        </PopoverContent>
-      </Popover>
+          {/* Header */}
+          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+            Workspaces
+          </div>
+          <DropdownMenuSeparator />
+          
+          {/* Workspace list */}
+          {workspaces.map((workspace) => (
+            <DropdownMenuItem
+              key={workspace.id}
+              onClick={() => handleWorkspaceChange(workspace.id)}
+              className="cursor-pointer"
+            >
+              <div className="flex items-center justify-between w-full">
+                <span className="text-xs">{workspace.name}</span>
+                {currentWorkspaceId === workspace.id && (
+                  <Check className="h-4 w-4 text-primary" />
+                )}
+              </div>
+            </DropdownMenuItem>
+          ))}
+          
+          <DropdownMenuSeparator />
+          
+          {/* Settings */}
+          <DropdownMenuItem
+            onClick={() => {
+              navigate(`/workspace/${currentWorkspaceId}/settings/profile`);
+              setDropdownOpen(false);
+            }}
+            className="cursor-pointer"
+          >
+            <Settings className="mr-2 h-4 w-4" />
+            <span className="text-xs">Workspace settings</span>
+          </DropdownMenuItem>
+          
+          {/* Create workspace */}
+          <DropdownMenuItem
+            onClick={() => {
+              navigate(`/workspace/${currentWorkspaceId}/settings/profile`);
+              setDropdownOpen(false);
+            }}
+            className="cursor-pointer"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            <span className="text-xs">Create workspace</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 });
