@@ -1023,7 +1023,7 @@ const SettingsRailItem = memo(function SettingsRailItem({
       <button
         onClick={() => {
           setActive('settings');
-          navigateToWorkspace("/settings/profile");
+          navigateToWorkspace("/settings");
         }}
         className={`relative h-7 w-7 rounded-lg grid place-items-center transition-all duration-200 ${
           active
