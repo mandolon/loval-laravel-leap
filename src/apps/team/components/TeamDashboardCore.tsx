@@ -97,6 +97,7 @@ interface SettingsRailItemProps {
   active: boolean;
   currentWorkspaceId: string;
   navigate: (path: string) => void;
+  navigateToWorkspace: (path: string) => void;
 }
 
 interface RailItemProps {
@@ -411,6 +412,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
             active={active === "settings"}
             currentWorkspaceId={currentWorkspaceId || ""}
             navigate={navigate}
+            navigateToWorkspace={navigateToWorkspace}
           />
         </div>
       </aside>
@@ -852,6 +854,7 @@ const SettingsRailItem = memo(function SettingsRailItem({
   active,
   currentWorkspaceId,
   navigate,
+  navigateToWorkspace,
 }: SettingsRailItemProps) {
   const { toast } = useToast();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -1611,6 +1614,7 @@ const TasksView = memo(function TasksView() {
   const { currentWorkspaceId } = useWorkspaces();
   const { user } = useUser();
   const navigate = useNavigate();
+  const { navigateToWorkspace } = useRoleAwareNavigation();
   const queryClient = useQueryClient();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showClosedOnly, setShowClosedOnly] = useState(false);
