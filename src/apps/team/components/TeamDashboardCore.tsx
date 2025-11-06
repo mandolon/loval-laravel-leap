@@ -17,6 +17,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import {
   useReactTable,
@@ -34,6 +35,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { TeamAvatarMenu } from "./TeamAvatarMenu";
 import ProjectPanel from "./ProjectPanel";
+import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import TeamFileViewer from "./viewers/TeamFileViewer";
 import ExcalidrawCanvas from '@/components/drawings/ExcalidrawCanvas';
 import { DrawingErrorBoundary } from '@/components/drawings/DrawingErrorBoundary';
@@ -63,6 +66,12 @@ const LONG_PRESS_MS = 600;
 // ----------------------------------
 // TypeScript Interfaces
 // ----------------------------------
+interface SettingsRailItemProps {
+  active: boolean;
+  currentWorkspaceId: string;
+  navigate: (path: string) => void;
+}
+
 interface RailItemProps {
   tabKey: string;
   label: string;
@@ -369,21 +378,10 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
 
         <div className="mt-auto w-full flex flex-col items-center">
           <div className="mb-2 h-px w-8 bg-white/10" />
-          <RailItem
-            tabKey="settings"
-            label={TITLES.settings}
-            icon={ICON_MAP.settings}
+          <SettingsRailItem
             active={active === "settings"}
-            items={[]}
-            openTab={openTab}
-            setOpenTab={setOpenTab}
-            selected={selected}
-            setSelected={setSelected}
-            onActivate={() => {
-              setActive("settings");
-              navigate(`/workspace/${currentWorkspaceId}/settings/profile`);
-            }}
-            menuEnabled={false}
+            currentWorkspaceId={currentWorkspaceId || ""}
+            navigate={navigate}
           />
         </div>
       </aside>
@@ -814,6 +812,62 @@ const RailItem = memo(function RailItem({
           </div>
         </div>
       )}
+    </div>
+  );
+});
+
+// ----------------------------------
+// Settings Rail Item with Workspace Switcher
+// ----------------------------------
+const SettingsRailItem = memo(function SettingsRailItem({
+  active,
+  currentWorkspaceId,
+  navigate,
+}: SettingsRailItemProps) {
+  const [workspaceSwitcherOpen, setWorkspaceSwitcherOpen] = useState(false);
+
+  return (
+    <div className="relative z-40 flex flex-col items-center gap-1.5 mb-3 group/nav">
+      {/* Buttons container */}
+      <div className="flex items-center gap-0.5">
+        {/* Settings icon button */}
+        <button
+          onClick={() => navigate(`/workspace/${currentWorkspaceId}/settings/profile`)}
+          className={`relative h-7 w-7 rounded-lg grid place-items-center transition-all duration-200 ${
+            active
+              ? "bg-white/20 text-white shadow-[0_0_16px_rgba(255,255,255,0.15)]"
+              : "text-white/80 hover:text-white hover:bg-white/10 hover:shadow-[0_0_12px_rgba(255,255,255,0.1)]"
+          }`}
+          title="Settings"
+        >
+          <Settings className="h-4 w-4" />
+        </button>
+
+        {/* Workspace switcher popover trigger */}
+        <Popover open={workspaceSwitcherOpen} onOpenChange={setWorkspaceSwitcherOpen}>
+          <PopoverTrigger asChild>
+            <button
+              className="relative h-5 w-5 rounded-md grid place-items-center transition-all duration-200 text-white/80 hover:text-white hover:bg-white/10"
+              title="Switch workspace"
+            >
+              <ChevronDown className="h-3 w-3" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent 
+            side="right" 
+            align="start" 
+            className="w-auto p-0 bg-popover border-border"
+            sideOffset={12}
+          >
+            <WorkspaceSwitcher onWorkspaceChange={() => setWorkspaceSwitcherOpen(false)} />
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      {/* Label */}
+      <div className="w-12 px-1 text-center text-[10px] leading-tight text-white/70 group-hover/nav:text-white/90 transition-colors">
+        Settings
+      </div>
     </div>
   );
 });
