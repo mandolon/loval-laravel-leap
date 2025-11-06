@@ -6,7 +6,7 @@ import React, {
   useMemo,
   memo,
 } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useRoleAwareNavigation } from "@/hooks/useRoleAwareNavigation";
 import {
   Home,
@@ -98,6 +98,7 @@ interface SettingsRailItemProps {
   currentWorkspaceId: string;
   navigate: (path: string) => void;
   navigateToWorkspace: (path: string) => void;
+  setActive: (tab: string) => void;
 }
 
 interface RailItemProps {
@@ -202,10 +203,32 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
   const { currentWorkspaceId } = useWorkspaces();
   const { user } = useUser();
   const navigate = useNavigate();
+  const location = useLocation();
   const { navigateToWorkspace, role } = useRoleAwareNavigation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const createProjectMutation = useCreateProject(currentWorkspaceId || "");
+
+  // Sync active state with URL
+  useEffect(() => {
+    const path = location.pathname;
+    
+    if (path.includes('/settings')) {
+      setActive('settings');
+    } else if (path.includes('/chat')) {
+      setActive('chat');
+    } else if (path.includes('/projects')) {
+      setActive('projects');
+    } else if (path.includes('/tasks')) {
+      setActive('tasks');
+    } else if (path.includes('/ai')) {
+      setActive('ai');
+    } else if (path.includes('/detail-library')) {
+      setActive('details');
+    } else if (path.endsWith(`/workspace/${currentWorkspaceId}`)) {
+      setActive('home');
+    }
+  }, [location.pathname, currentWorkspaceId]);
 
   const handleChatActivate = useCallback(() => {
     setActive("chat");
@@ -413,6 +436,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
             currentWorkspaceId={currentWorkspaceId || ""}
             navigate={navigate}
             navigateToWorkspace={navigateToWorkspace}
+            setActive={setActive}
           />
         </div>
       </aside>
@@ -855,6 +879,7 @@ const SettingsRailItem = memo(function SettingsRailItem({
   currentWorkspaceId,
   navigate,
   navigateToWorkspace,
+  setActive,
 }: SettingsRailItemProps) {
   const { toast } = useToast();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -996,7 +1021,10 @@ const SettingsRailItem = memo(function SettingsRailItem({
     <div className="relative z-40 flex flex-col items-center gap-1.5 mb-3 group/nav">
       {/* Settings icon button - centered */}
       <button
-        onClick={() => navigateToWorkspace("/settings/profile")}
+        onClick={() => {
+          setActive('settings');
+          navigateToWorkspace("/settings/profile");
+        }}
         className={`relative h-7 w-7 rounded-lg grid place-items-center transition-all duration-200 ${
           active
             ? "bg-white/20 text-white shadow-[0_0_16px_rgba(255,255,255,0.15)]"
@@ -1011,7 +1039,7 @@ const SettingsRailItem = memo(function SettingsRailItem({
       <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
         <DropdownMenuTrigger asChild>
           <button
-            className="w-12 px-1 text-center text-[10px] leading-tight text-white/70 hover:text-white/100 transition-colors cursor-pointer truncate"
+            className="w-12 px-1 py-1 text-center text-[10px] leading-tight text-white/90 hover:text-white/100 transition-all cursor-pointer truncate rounded-lg bg-white/10 hover:bg-white/15 border border-white/10"
             title={currentWorkspace?.name || "Switch workspace"}
           >
             {currentWorkspace?.name || "Workspace"}
