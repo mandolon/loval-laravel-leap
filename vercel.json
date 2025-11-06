@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "cd 'excalidraw-fork 2' && yarn install --frozen-lockfile && yarn build:packages && cd .. && npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
   "env": {
