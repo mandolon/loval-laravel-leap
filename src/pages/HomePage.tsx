@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
+import { useRoleAwareNavigation } from "@/hooks/useRoleAwareNavigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FolderKanban, CheckSquare, Users, TrendingUp, ArrowRight } from "lucide-react";
@@ -12,6 +13,7 @@ import { DESIGN_TOKENS as T } from "@/lib/design-tokens";
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const { navigateToWorkspace, role } = useRoleAwareNavigation();
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const { workspaces, currentWorkspace, currentWorkspaceId, loading } = useWorkspaces();
   const [stats, setStats] = useState({
@@ -24,10 +26,10 @@ const HomePage = () => {
 
   // Redirect to current workspace if no workspace in URL
   useEffect(() => {
-    if (!loading && !workspaceId && currentWorkspaceId) {
-      navigate(`/workspace/${currentWorkspaceId}`, { replace: true });
+    if (!loading && !workspaceId && currentWorkspaceId && role) {
+      navigate(`/${role}/workspace/${currentWorkspaceId}`, { replace: true });
     }
-  }, [workspaceId, currentWorkspaceId, loading, navigate]);
+  }, [workspaceId, currentWorkspaceId, loading, navigate, role]);
 
   useEffect(() => {
     if (workspaceId) {
@@ -156,19 +158,19 @@ const HomePage = () => {
       title: "View All Projects",
       description: "Browse and manage your projects",
       icon: FolderKanban,
-      action: () => navigate(`/workspace/${currentWorkspaceId}/projects`),
+      action: () => navigateToWorkspace("/projects"),
     },
     {
       title: "Task Board",
       description: "Track and update task progress",
       icon: CheckSquare,
-      action: () => navigate(`/workspace/${currentWorkspaceId}/tasks`),
+      action: () => navigateToWorkspace("/tasks"),
     },
     {
       title: "Team Management",
       description: "View and manage team members",
       icon: Users,
-      action: () => navigate(`/workspace/${currentWorkspaceId}/team`),
+      action: () => navigateToWorkspace("/team"),
     },
   ];
 
@@ -245,10 +247,10 @@ const HomePage = () => {
                     View projects, track tasks, and collaborate with your team all in one place.
                   </p>
                   <div className="flex gap-3">
-                    <Button onClick={() => navigate(`/workspace/${currentWorkspaceId}/projects`)}>
+                    <Button onClick={() => navigateToWorkspace("/projects")}>
                       View Projects
                     </Button>
-                    <Button variant="outline" onClick={() => navigate(`/workspace/${currentWorkspaceId}/tasks`)}>
+                    <Button variant="outline" onClick={() => navigateToWorkspace("/tasks")}>
                       View Tasks
                     </Button>
                   </div>

@@ -993,7 +993,7 @@ const SettingsRailItem = memo(function SettingsRailItem({
     <div className="relative z-40 flex flex-col items-center gap-1.5 mb-3 group/nav">
       {/* Settings icon button - centered */}
       <button
-        onClick={() => navigate(`/workspace/${currentWorkspaceId}/settings/profile`)}
+        onClick={() => navigateToWorkspace("/settings/profile")}
         className={`relative h-7 w-7 rounded-lg grid place-items-center transition-all duration-200 ${
           active
             ? "bg-white/20 text-white shadow-[0_0_16px_rgba(255,255,255,0.15)]"
@@ -1785,8 +1785,8 @@ const TasksView = memo(function TasksView() {
   }, [allUsers]);
 
   const handleProjectClick = useCallback((projectId: string) => {
-    navigate(`/workspace/${currentWorkspaceId}/project/${projectId}`);
-  }, [navigate, currentWorkspaceId]);
+    navigateToWorkspace(`/project/${projectId}`);
+  }, [navigateToWorkspace]);
 
   const handleStatusToggle = useCallback((taskId: string) => {
     // Prevent multiple rapid clicks on the same task

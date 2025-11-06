@@ -26,9 +26,9 @@ export default function TeamApp() {
           <Route path="/team/workspace/:workspaceId/tasks" element={<TasksPage />} />
           <Route path="/team/workspace/:workspaceId/ai" element={<AIPage />} />
           <Route path="/team/workspace/:workspaceId/detail-library" element={<DetailLibraryPage />} />
-          <Route path="/detail-library" element={<DetailLibraryPage />} />
+          <Route path="/team/workspace/:workspaceId/project/:projectId" element={<ProjectsPage />} />
           
-          {/* Settings Routes - using explicit paths for better compatibility */}
+          {/* Settings Routes */}
           <Route path="/team/workspace/:workspaceId/settings" element={<SettingsPage />}>
             <Route index element={<Navigate to="profile" replace />} />
             <Route path="profile" element={<ProfileContent />} />
@@ -37,9 +37,6 @@ export default function TeamApp() {
             <Route path="imports" element={<ImportsExportsContent />} />
             <Route path="trash" element={<TrashContent />} />
           </Route>
-          
-          {/* Legacy redirect for backwards compatibility */}
-          <Route path="/workspace/:workspaceId/*" element={<Navigate to={window.location.pathname.replace('/workspace/', '/team/workspace/')} replace />} />
           
           {/* Catch-all should be last */}
           <Route path="*" element={<Navigate to="/" replace />} />
