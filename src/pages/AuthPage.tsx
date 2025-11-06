@@ -398,7 +398,7 @@ export default function AuthPage() {
 
           {/* Footer */}
           <p className="mt-16 text-center text-[11px] text-slate-500">
-            By continuing, you agree to our <a className="text-[#3a78bd] hover:text-[#2c5e96] hover:underline" href="#">Terms of Service</a> and <a className="text-[#3a78bd] hover:text-[#2c5e96] hover:underline" href="#">Privacy Policy</a>. Need help?
+            By continuing, you agree to our <a className="text-[#3a78bd] hover:text-[#2c5e96] hover:underline" href="/terms">Terms of Service</a> and <a className="text-[#3a78bd] hover:text-[#2c5e96] hover:underline" href="/privacy">Privacy Policy</a>.
           </p>
         </form>
       </div>
