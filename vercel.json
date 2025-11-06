@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd 'excalidraw-fork 2' && HUSKY=0 yarn install --frozen-lockfile && yarn build:packages && cd .. && npm run build",
+  "buildCommand": "HUSKY=0 npm install && cd 'excalidraw-fork 2' && HUSKY=0 yarn install --frozen-lockfile --ignore-scripts && yarn build:packages && cd .. && npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
   "env": {
