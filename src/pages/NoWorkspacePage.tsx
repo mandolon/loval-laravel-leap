@@ -9,11 +9,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { useRoleAwareNavigation } from "@/hooks/useRoleAwareNavigation";
 
 export default function NoWorkspacePage() {
   const { user } = useUser();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { role } = useRoleAwareNavigation();
   const { createWorkspace } = useWorkspaces();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
@@ -41,7 +43,7 @@ export default function NoWorkspacePage() {
       setCreateDialogOpen(false);
       
       // Navigate to new workspace
-      navigate(`/workspace/${newWorkspace.id}/projects`);
+      navigate(`/${role}/workspace/${newWorkspace.id}/projects`);
     }
   };
 

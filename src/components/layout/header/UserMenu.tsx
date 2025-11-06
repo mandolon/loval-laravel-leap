@@ -17,6 +17,7 @@ import { useUser } from '@/contexts/UserContext'
 import { useNavigate } from 'react-router-dom'
 import { useWorkspaces } from '@/hooks/useWorkspaces'
 import { useTheme } from 'next-themes'
+import { useRoleAwareNavigation } from '@/hooks/useRoleAwareNavigation'
 
 interface UserMenuProps {
   onNavigateProfile?: () => void
@@ -27,6 +28,7 @@ interface UserMenuProps {
 export function UserMenu({ onNavigateProfile, onNavigateTrash, onLogout }: UserMenuProps) {
   const { user, signOut } = useUser()
   const navigate = useNavigate()
+  const { navigateToWorkspace } = useRoleAwareNavigation()
   const { currentWorkspaceId } = useWorkspaces()
   const { theme, setTheme } = useTheme()
 
@@ -44,7 +46,7 @@ export function UserMenu({ onNavigateProfile, onNavigateTrash, onLogout }: UserM
     if (onNavigateTrash) {
       onNavigateTrash()
     } else if (currentWorkspaceId) {
-      navigate(`/workspace/${currentWorkspaceId}/trash`)
+      navigateToWorkspace("/trash")
     }
   }
 

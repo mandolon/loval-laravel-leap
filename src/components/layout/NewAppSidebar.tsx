@@ -1,5 +1,6 @@
 import { Home, FolderKanban, CheckSquare, Bot, Plus, ChevronRight, ChevronLeft, Sun, Moon, Trash2, Library } from "lucide-react";
 import { NavLink, useParams, useNavigate, useLocation } from "react-router-dom";
+import { useRoleAwareNavigation } from "@/hooks/useRoleAwareNavigation";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { Separator } from "@/components/ui/separator";
@@ -30,6 +31,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
   const { workspaceId, id: projectId } = useParams<{ workspaceId: string; id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const { navigateToWorkspace, role } = useRoleAwareNavigation();
   const { toast } = useToast();
   const { user, signOut } = useUser();
   const { theme, setTheme } = useTheme();
@@ -113,14 +115,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
     onWorkspaceChange?.(newWorkspaceId);
     
     // Navigate to the same page but with new workspace
-    const currentPath = location.pathname;
-    if (currentPath.includes('/workspace/')) {
-      const pathParts = currentPath.split('/');
-      pathParts[2] = newWorkspaceId;
-      navigate(pathParts.join('/'));
-    } else {
-      navigate(`/workspace/${newWorkspaceId}/projects`);
-    }
+    navigate(`/${role}/workspace/${newWorkspaceId}/projects`);
   };
 
   const handleCreateProject = async (input: any) => {
@@ -197,9 +192,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
   const handleStatusFilterClick = (filter: typeof statusFilters[0]) => {
     const filterValue = filter.value;
     setStatusFilter(filterValue);
-    if (currentWorkspaceId) {
-      navigate(`/workspace/${currentWorkspaceId}/projects?status=${filterValue}`);
-    }
+    navigateToWorkspace(`/projects?status=${filterValue}`);
   };
 
   const homeLinks = [
@@ -248,7 +241,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
                       <button
                         key={project.id}
                         type="button"
-                        onClick={() => navigate(`/workspace/${currentWorkspaceId}/project/${project.id}`)}
+                        onClick={() => navigateToWorkspace(`/project/${project.id}`)}
                         className={`px-2.5 py-1 ${T.radius} w-full text-left transition-colors ${
                           isActive 
                             ? 'bg-slate-100 dark:bg-[#141C28] text-[#00639b] dark:text-blue-300 font-medium' 
@@ -421,7 +414,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
                     Profile
                   </DropdownMenuItem>
                   <DropdownMenuItem 
-                    onClick={() => currentWorkspaceId && navigate(`/workspace/${currentWorkspaceId}/trash`)}
+                    onClick={() => currentWorkspaceId && navigateToWorkspace("/trash")}
                     className="text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-[#141C28] hover:text-[#00639b] dark:hover:text-blue-300 focus:bg-slate-50 dark:focus:bg-[#141C28] focus:text-[#00639b] dark:focus:text-blue-300"
                   >
                     <Trash2 className="mr-2 h-4 w-4" />

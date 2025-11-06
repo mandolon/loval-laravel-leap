@@ -14,6 +14,7 @@ import {
 import { useUser } from "@/contexts/UserContext";
 import { useDeleteLedgerEntry, type LedgerEntry } from "@/lib/api/hooks/useLedgerEntries";
 import { useNavigate } from "react-router-dom";
+import { useRoleAwareNavigation } from "@/hooks/useRoleAwareNavigation";
 
 interface LedgerDetailProps {
   entry: LedgerEntry;
@@ -23,6 +24,7 @@ interface LedgerDetailProps {
 export default function LedgerDetail({ entry, onClose }: LedgerDetailProps) {
   const { user } = useUser();
   const navigate = useNavigate();
+  const { role } = useRoleAwareNavigation();
   const deleteMutation = useDeleteLedgerEntry();
   const [actionStates, setActionStates] = useState<Record<number, boolean>>({});
 
@@ -40,7 +42,7 @@ export default function LedgerDetail({ entry, onClose }: LedgerDetailProps) {
 
   const handleGoToSource = () => {
     if (entry.source_thread_id) {
-      navigate(`/workspace/${entry.workspace_id}/ai`);
+      navigate(`/${role}/workspace/${entry.workspace_id}/ai`);
     }
   };
 

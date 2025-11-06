@@ -1,6 +1,7 @@
 import { memo, useCallback } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { User, LayoutGrid, Users, Repeat, Trash2, LogOut } from 'lucide-react';
+import { useRoleAwareNavigation } from '@/hooks/useRoleAwareNavigation';
 
 const menuGroups = [
   {
@@ -26,12 +27,11 @@ export const ContentSideMenu = memo(function ContentSideMenu() {
   const navigate = useNavigate();
   const location = useLocation();
   const { workspaceId } = useParams();
+  const { navigateToWorkspace } = useRoleAwareNavigation();
 
   const handleNavigation = useCallback((route: string) => {
-    if (workspaceId) {
-      navigate(`/workspace/${workspaceId}/settings/${route}`);
-    }
-  }, [navigate, workspaceId]);
+    navigateToWorkspace(`/settings/${route}`);
+  }, [navigateToWorkspace]);
 
   const isActive = (route: string) => {
     return location.pathname.includes(`/settings/${route}`);

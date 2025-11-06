@@ -7,6 +7,7 @@ import React, {
   memo,
 } from "react";
 import { useNavigate } from "react-router-dom";
+import { useRoleAwareNavigation } from "@/hooks/useRoleAwareNavigation";
 import {
   Home,
   FolderKanban,
@@ -200,14 +201,16 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
   const { currentWorkspaceId } = useWorkspaces();
   const { user } = useUser();
   const navigate = useNavigate();
+  const { navigateToWorkspace, role } = useRoleAwareNavigation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const createProjectMutation = useCreateProject(currentWorkspaceId || "");
 
   const handleChatActivate = useCallback(() => {
     setActive("chat");
+    navigateToWorkspace("/chat");
     setChatResetTrigger(prev => prev + 1);
-  }, []);
+  }, [navigateToWorkspace, setChatResetTrigger]);
 
   const handleCalibration = useCallback(() => {
     window.dispatchEvent(new Event('trigger-calibration'));
@@ -366,7 +369,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
             setOpenTab={setOpenTab}
             selected={selected}
             setSelected={setSelected}
-            onActivate={tab === "chat" ? handleChatActivate : () => setActive(tab)}
+            onActivate={tab === "chat" ? handleChatActivate : tab === "home" ? () => { setActive("home"); navigateToWorkspace(""); } : tab === "projects" ? () => { setActive("projects"); navigateToWorkspace("/projects"); } : () => setActive(tab)}
             menuEnabled={tab === "projects"}
             onCreateProject={tab === "projects" ? handleCreateProject : undefined}
           />
@@ -383,7 +386,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
             setOpenTab={setOpenTab}
             selected={selected}
             setSelected={setSelected}
-            onActivate={() => setActive(tab)}
+            onActivate={tab === "tasks" ? () => { setActive("tasks"); navigateToWorkspace("/tasks"); } : tab === "ai" ? () => { setActive("ai"); navigateToWorkspace("/ai"); } : () => setActive(tab)}
           />
         ))}
 
@@ -399,7 +402,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
           setOpenTab={setOpenTab}
           selected={selected}
           setSelected={setSelected}
-          onActivate={() => setActive("details")}
+          onActivate={() => { setActive("details"); navigateToWorkspace("/detail-library"); }}
         />
 
         <div className="mt-auto w-full flex flex-col items-center">

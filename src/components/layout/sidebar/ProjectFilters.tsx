@@ -7,9 +7,11 @@ import type { ProjectFiltersProps } from '@/types/layout.types'
 import { DESIGN_TOKENS as T } from '@/lib/design-tokens'
 import { useNavigate } from 'react-router-dom'
 import { useWorkspaces } from '@/hooks/useWorkspaces'
+import { useRoleAwareNavigation } from '@/hooks/useRoleAwareNavigation'
 
 export function ProjectFilters({ activeStatus, onStatusChange }: ProjectFiltersProps) {
   const navigate = useNavigate()
+  const { navigateToWorkspace } = useRoleAwareNavigation()
   const { currentWorkspaceId } = useWorkspaces()
 
   const statusFilters = [
@@ -21,15 +23,13 @@ export function ProjectFilters({ activeStatus, onStatusChange }: ProjectFiltersP
 
   const handleStatusFilterClick = (filter: typeof statusFilters[0]) => {
     onStatusChange(filter.value)
-    if (currentWorkspaceId) {
-      const statusMap = {
-        inProgress: 'active',
-        paused: 'pending',
-        completed: 'completed',
-        archived: 'archived'
-      }
-      navigate(`/workspace/${currentWorkspaceId}/projects?status=${statusMap[filter.value]}`)
+    const statusMap = {
+      inProgress: 'active',
+      paused: 'pending',
+      completed: 'completed',
+      archived: 'archived'
     }
+    navigateToWorkspace(`/projects?status=${statusMap[filter.value]}`)
   }
 
   return (

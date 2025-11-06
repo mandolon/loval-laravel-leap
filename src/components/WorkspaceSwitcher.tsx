@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Building2, Plus, Check, Settings, Trash2, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useRoleAwareNavigation } from "@/hooks/useRoleAwareNavigation";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -37,6 +38,7 @@ interface WorkspaceSwitcherProps {
 export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { role } = useRoleAwareNavigation();
   const {
     workspaces,
     currentWorkspace,
@@ -61,7 +63,7 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
   const handleWorkspaceChange = (newWorkspaceId: string) => {
     switchWorkspace(newWorkspaceId);
     onWorkspaceChange?.(newWorkspaceId);
-    navigate(`/workspace/${newWorkspaceId}/projects`);
+    navigate(`/${role}/workspace/${newWorkspaceId}/projects`);
   };
 
   const handleCreateWorkspace = async (e: React.FormEvent) => {
@@ -86,7 +88,7 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
       setCreateDialogOpen(false);
       onWorkspaceChange?.(newWorkspace.id);
       
-      navigate(`/workspace/${newWorkspace.id}/projects`);
+      navigate(`/${role}/workspace/${newWorkspace.id}/projects`);
     }
   };
 
@@ -155,7 +157,7 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
       
       if (remainingWorkspaces.length > 0) {
         switchWorkspace(remainingWorkspaces[0].id);
-        navigate(`/workspace/${remainingWorkspaces[0].id}/projects`);
+        navigate(`/${role}/workspace/${remainingWorkspaces[0].id}/projects`);
       } else {
         // Navigate to no workspace page
         localStorage.removeItem('current_workspace_id');

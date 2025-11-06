@@ -20,16 +20,16 @@ export default function TeamApp() {
       <TeamDashboardLayout>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/workspace/:workspaceId" element={<HomePage />} />
-          <Route path="/workspace/:workspaceId/chat" element={<ChatPage />} />
-          <Route path="/workspace/:workspaceId/projects" element={<ProjectsPage />} />
-          <Route path="/workspace/:workspaceId/tasks" element={<TasksPage />} />
-          <Route path="/workspace/:workspaceId/ai" element={<AIPage />} />
-          <Route path="/workspace/:workspaceId/detail-library" element={<DetailLibraryPage />} />
+          <Route path="/team/workspace/:workspaceId" element={<HomePage />} />
+          <Route path="/team/workspace/:workspaceId/chat" element={<ChatPage />} />
+          <Route path="/team/workspace/:workspaceId/projects" element={<ProjectsPage />} />
+          <Route path="/team/workspace/:workspaceId/tasks" element={<TasksPage />} />
+          <Route path="/team/workspace/:workspaceId/ai" element={<AIPage />} />
+          <Route path="/team/workspace/:workspaceId/detail-library" element={<DetailLibraryPage />} />
           <Route path="/detail-library" element={<DetailLibraryPage />} />
           
           {/* Settings Routes - using explicit paths for better compatibility */}
-          <Route path="/workspace/:workspaceId/settings" element={<SettingsPage />}>
+          <Route path="/team/workspace/:workspaceId/settings" element={<SettingsPage />}>
             <Route index element={<Navigate to="profile" replace />} />
             <Route path="profile" element={<ProfileContent />} />
             <Route path="workspaces" element={<WorkspacesContent />} />
@@ -37,6 +37,9 @@ export default function TeamApp() {
             <Route path="imports" element={<ImportsExportsContent />} />
             <Route path="trash" element={<TrashContent />} />
           </Route>
+          
+          {/* Legacy redirect for backwards compatibility */}
+          <Route path="/workspace/:workspaceId/*" element={<Navigate to={window.location.pathname.replace('/workspace/', '/team/workspace/')} replace />} />
           
           {/* Catch-all should be last */}
           <Route path="*" element={<Navigate to="/" replace />} />

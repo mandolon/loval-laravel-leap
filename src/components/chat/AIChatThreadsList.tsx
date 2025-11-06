@@ -1,5 +1,6 @@
 import { Plus, MessageSquare, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useRoleAwareNavigation } from "@/hooks/useRoleAwareNavigation";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +14,7 @@ interface AIChatThreadsListProps {
 
 export function AIChatThreadsList({ workspaceId }: AIChatThreadsListProps) {
   const navigate = useNavigate();
+  const { navigateToWorkspace } = useRoleAwareNavigation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -98,7 +100,7 @@ export function AIChatThreadsList({ workspaceId }: AIChatThreadsListProps) {
           variant="ghost" 
           size="icon" 
           className="h-5 w-5"
-          onClick={() => navigate(`/workspace/${workspaceId}/ai`)}
+          onClick={() => navigateToWorkspace("/ai")}
         >
           <Plus className="h-3 w-3" />
         </Button>
@@ -117,7 +119,7 @@ export function AIChatThreadsList({ workspaceId }: AIChatThreadsListProps) {
                 className="group flex items-center gap-2 px-2 py-1.5 rounded text-xs text-muted-foreground hover:bg-accent/30 transition-colors"
               >
                 <button
-                  onClick={() => navigate(`/workspace/${workspaceId}/ai?thread=${thread.id}`)}
+                  onClick={() => navigateToWorkspace(`/ai?thread=${thread.id}`)}
                   className="flex-1 text-left truncate flex items-center gap-2"
                 >
                   <MessageSquare className="h-3 w-3 flex-shrink-0" />

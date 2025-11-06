@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "@/contexts/UserContext";
 import { useTheme } from "next-themes";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
+import { useRoleAwareNavigation } from "@/hooks/useRoleAwareNavigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +16,7 @@ import {
 
 export function NewAppHeader() {
   const navigate = useNavigate();
+  const { navigateToWorkspace } = useRoleAwareNavigation();
   const { user, signOut } = useUser();
   const { theme, setTheme } = useTheme();
   const { currentWorkspaceId } = useWorkspaces();
@@ -62,7 +64,7 @@ export function NewAppHeader() {
             <DropdownMenuItem onClick={() => navigate('/profile')}>
               Profile
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => currentWorkspaceId && navigate(`/workspace/${currentWorkspaceId}/trash`)}>
+            <DropdownMenuItem onClick={() => currentWorkspaceId && navigateToWorkspace("/trash")}>
               <Trash2 className="mr-2 h-4 w-4" />
               Trash
             </DropdownMenuItem>

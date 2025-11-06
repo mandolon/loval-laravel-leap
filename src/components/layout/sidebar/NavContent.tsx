@@ -5,6 +5,7 @@
 
 import { NavLink, useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import { useRoleAwareNavigation } from '@/hooks/useRoleAwareNavigation'
 import { Plus, Folder, CheckSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -30,6 +31,7 @@ export function NavContent({
 }: NavContentProps) {
   const navigate = useNavigate()
   const location = useLocation()
+  const { navigateToWorkspace } = useRoleAwareNavigation()
   const { toast } = useToast()
   const { user } = useUser()
   const { workspaceId, id: projectId } = useParams<{ workspaceId: string; id: string }>()
@@ -223,7 +225,7 @@ export function NavContent({
                     key={project.id}
                     type="button"
                     onClick={() => {
-                      navigate(`/workspace/${currentWorkspaceId}/project/${project.id}`)
+                      navigateToWorkspace(`/project/${project.id}`)
                       onProjectClick?.(project.id)
                     }}
                     className={`group flex items-center gap-2 px-2 py-1.5 rounded text-xs transition-colors w-full text-left ${

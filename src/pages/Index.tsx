@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useRoleAwareNavigation } from "@/hooks/useRoleAwareNavigation";
 import type { Project } from "@/lib/api/types";
 import { ProjectCard } from "@/components/ProjectCard";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +17,7 @@ import { DESIGN_TOKENS as T } from "@/lib/design-tokens";
 
 const ProjectsPage = () => {
   const navigate = useNavigate();
+  const { navigateToWorkspace, role } = useRoleAwareNavigation();
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const { toast } = useToast();
   const { user } = useUser();
@@ -117,10 +119,10 @@ const ProjectsPage = () => {
     if (!workspaceId) {
       const storedWorkspaceId = localStorage.getItem("current_workspace_id");
       if (storedWorkspaceId) {
-        navigate(`/workspace/${storedWorkspaceId}/projects`, { replace: true });
+        navigate(`/${role}/workspace/${storedWorkspaceId}/projects`, { replace: true });
       }
     }
-  }, [workspaceId, navigate]);
+  }, [workspaceId, navigate, role]);
   const filteredProjects = projects.filter(project => {
     const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          (project.description || '').toLowerCase().includes(searchQuery.toLowerCase());
@@ -160,9 +162,7 @@ const ProjectsPage = () => {
             <Select 
               value={statusFilter} 
               onValueChange={(value) => {
-                if (workspaceId) {
-                  navigate(`/workspace/${workspaceId}/projects?status=${value}`);
-                }
+                navigateToWorkspace(`/projects?status=${value}`);
               }}
             >
               <SelectTrigger className="w-[120px] h-8 text-sm border-border">
@@ -206,7 +206,7 @@ const ProjectsPage = () => {
               <ProjectCard
                 key={project.id}
                 project={project}
-                onClick={() => navigate(`/workspace/${workspaceId}/project/${project.id}`)}
+                onClick={() => navigateToWorkspace(`/project/${project.id}`)}
                 onDelete={statusFilter !== 'archived' ? handleDeleteProject : undefined}
                 onHardDelete={statusFilter === 'archived' ? handleHardDeleteProject : undefined}
               />

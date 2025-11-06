@@ -6,6 +6,7 @@ import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCount
 import { useHardDeleteProject, useProject } from '@/lib/api/hooks/useProjects';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { useNavigate } from 'react-router-dom';
+import { useRoleAwareNavigation } from '@/hooks/useRoleAwareNavigation';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 
@@ -280,6 +281,7 @@ export default function ProjectPanel({
 
   const { currentWorkspaceId } = useWorkspaces();
   const navigate = useNavigate();
+  const { navigateToWorkspace } = useRoleAwareNavigation();
   const hardDeleteProjectMutation = useHardDeleteProject(currentWorkspaceId || "");
   const { data: project } = useProject(projectId);
 
@@ -1552,7 +1554,7 @@ export default function ProjectPanel({
                     setDeleteConfirmOpen(false);
                     // Navigate to projects list or home, then refresh
                     if (currentWorkspaceId) {
-                      navigate(`/workspace/${currentWorkspaceId}/projects`);
+                      navigateToWorkspace("/projects");
                     } else {
                       navigate('/');
                     }
