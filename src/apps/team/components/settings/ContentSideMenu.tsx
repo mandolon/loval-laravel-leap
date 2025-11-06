@@ -61,7 +61,7 @@ export const ContentSideMenu = memo(function ContentSideMenu() {
                   <button
                     key={item.id}
                     onClick={() => handleNavigation(item.route)}
-                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[13px] ${
+                    className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg text-[13px] mb-1 ${
                       active 
                         ? 'bg-[#E7F0FF] text-[var(--text)]' 
                         : 'hover:bg-slate-100 text-[var(--text)]'
@@ -83,7 +83,7 @@ export const ContentSideMenu = memo(function ContentSideMenu() {
       {/* Log out button at bottom */}
       <div className="mt-auto p-2 border-t border-slate-200">
         <button 
-          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[13px] hover:bg-slate-100 text-[var(--text)]"
+          className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-[13px] hover:bg-slate-100 text-[var(--text)]"
           data-menu-item="logout"
         >
           <LogOut className="h-4 w-4 text-[var(--muted)]" />
