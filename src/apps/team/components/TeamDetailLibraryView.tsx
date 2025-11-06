@@ -663,7 +663,6 @@ export const TeamDetailLibraryView = memo(function TeamDetailLibraryView() {
         colorTag: data.color_tag as DetailColorTag,
         description: data.description,
         authorName: data.author_name,
-        scale: data.scale,
         uploadedBy: data.uploaded_by,
         createdAt: data.created_at,
         updatedAt: data.updated_at,
@@ -1012,10 +1011,16 @@ export const TeamDetailLibraryView = memo(function TeamDetailLibraryView() {
     try {
       const savedId = localStorage.getItem('team:selectedDetailId');
       if (savedId && files.length > 0) {
-        // Find item in current folders
-        const found = folders.flatMap(f => f.items).find(item => item.id === savedId);
-        if (found) {
-          setSelectedDetail(found);
+        // Find file or item in current folders
+        const foundFile = folders.flatMap(f => f.files).find(file => file.id === savedId);
+        const foundItem = folders.flatMap(f => 
+          f.files.flatMap(file => f.fileItemsMap[file.id] || [])
+        ).find(item => item.id === savedId);
+        
+        if (foundFile) {
+          setSelectedDetail(foundFile);
+        } else if (foundItem) {
+          setSelectedDetail(foundItem);
         }
       }
     } catch {}

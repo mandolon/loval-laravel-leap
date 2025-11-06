@@ -109,7 +109,6 @@ export function useDetailLibraryFiles(categoryId?: string, subfolderId?: string)
         colorTag: file.color_tag as DetailColorTag,
         description: file.description,
         authorName: file.author_name,
-        scale: file.scale,
         uploadedBy: file.uploaded_by,
         createdAt: file.created_at,
         updatedAt: file.updated_at,

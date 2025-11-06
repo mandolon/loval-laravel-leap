@@ -375,7 +375,7 @@ export default function ProjectPanel({
             const sorted = [...sections].sort((a, b) => {
               const aIdx = orderMap.get(a.id) ?? Infinity;
               const bIdx = orderMap.get(b.id) ?? Infinity;
-              return aIdx - bIdx;
+              return (aIdx as number) - (bIdx as number);
             });
             // Only use sorted order if all current sections are in the saved order
             const allInOrder = sections.every(s => orderMap.has(s.id));
@@ -1407,7 +1407,7 @@ export default function ProjectPanel({
                   <div>
                     <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Address</div>
                     <div className="text-slate-900">
-                      {[project.address.street, project.address.city, project.address.state, project.address.zip].filter(Boolean).join(', ') || '—'}
+                      {[project.address.streetNumber, project.address.streetName, project.address.city, project.address.state, project.address.zipCode].filter(Boolean).join(' ') || '—'}
                     </div>
                   </div>
                 )}

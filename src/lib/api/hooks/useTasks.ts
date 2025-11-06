@@ -116,7 +116,9 @@ export const useWorkspaceTasks = (workspaceId: string) => {
           queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
           
           // Also invalidate the specific task detail if it exists
-          const taskId = payload.new?.id || payload.old?.id;
+          const newData = payload.new && typeof payload.new === 'object' && 'id' in payload.new ? payload.new : null;
+          const oldData = payload.old && typeof payload.old === 'object' && 'id' in payload.old ? payload.old : null;
+          const taskId = newData?.id || oldData?.id;
           if (taskId) {
             queryClient.invalidateQueries({ queryKey: taskKeys.detail(taskId as string) });
           }

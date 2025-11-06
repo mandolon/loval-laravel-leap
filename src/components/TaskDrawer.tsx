@@ -207,7 +207,6 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
     const onDrop = (e: DragEvent) => {
       e.preventDefault();
       setIsDragging(false);
-      // @ts-expect-error: DataTransfer types
       handleFileUpload(e.dataTransfer?.files || null);
     };
     el.addEventListener('dragover', onDragOver);
@@ -455,7 +454,7 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
                         <div className="text-[#646464]">{formatShortDate(f.createdAt)}</div>
                         <div className="text-[#646464]">—</div>
                         <div className="flex items-center justify-center">
-                          <button onClick={() => handleDownload(f.storagePath, f.filename)} className="p-1 hover:bg-gray-100 rounded" title="Download">
+                          <button onClick={() => downloadTaskFile(f.storagePath, f.filename)} className="p-1 hover:bg-gray-100 rounded" title="Download">
                             <FileText className="w-3.5 h-3.5" />
                           </button>
                           <button onClick={() => handleFileDelete(f.id)} className="p-1 hover:bg-red-100 rounded ml-1" title="Delete">
