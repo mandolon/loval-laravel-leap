@@ -42,8 +42,8 @@ export default function NoWorkspacePage() {
       setNewWorkspaceDescription("");
       setCreateDialogOpen(false);
       
-      // Navigate to new workspace
-      navigate(`/${role}/workspace/${newWorkspace.id}/projects`);
+      // Force full page reload to properly initialize workspace context
+      window.location.href = `/team/workspace/${newWorkspace.id}/projects`;
     }
   };
 
