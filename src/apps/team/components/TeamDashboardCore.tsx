@@ -19,6 +19,7 @@ import {
   ChevronRight,
   Check,
   Plus,
+  Trash2,
 } from "lucide-react";
 import {
   useReactTable,
@@ -45,6 +46,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from "@/components/ui/alert-dialog";
+import { WorkspaceMembersTable } from "@/components/workspace/WorkspaceMembersTable";
+import { ExcelExportImport } from "@/components/workspace/ExcelExportImport";
 import TeamFileViewer from "./viewers/TeamFileViewer";
 import ExcalidrawCanvas from '@/components/drawings/ExcalidrawCanvas';
 import { DrawingErrorBoundary } from '@/components/drawings/DrawingErrorBoundary';
@@ -832,14 +850,140 @@ const SettingsRailItem = memo(function SettingsRailItem({
   currentWorkspaceId,
   navigate,
 }: SettingsRailItemProps) {
+  const { toast } = useToast();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const { currentWorkspace, workspaces, switchWorkspace } = useWorkspaces();
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [newWorkspaceName, setNewWorkspaceName] = useState("");
+  const [newWorkspaceDescription, setNewWorkspaceDescription] = useState("");
+  const [editWorkspaceName, setEditWorkspaceName] = useState("");
+  const [editWorkspaceDescription, setEditWorkspaceDescription] = useState("");
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  const { currentWorkspace, workspaces, switchWorkspace, createWorkspace, refetch } = useWorkspaces();
   const navigateRouter = useNavigate();
 
   const handleWorkspaceChange = (newWorkspaceId: string) => {
     switchWorkspace(newWorkspaceId);
     navigateRouter(`/workspace/${newWorkspaceId}/projects`);
     setDropdownOpen(false);
+  };
+
+  const handleOpenSettings = () => {
+    if (currentWorkspace) {
+      setEditWorkspaceName(currentWorkspace.name);
+      setEditWorkspaceDescription(currentWorkspace.description || "");
+      setSettingsDialogOpen(true);
+    }
+  };
+
+  const handleCreateWorkspace = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newWorkspaceName.trim()) return;
+
+    const newWorkspace = await createWorkspace({
+      name: newWorkspaceName.trim(),
+      description: newWorkspaceDescription.trim(),
+      icon: '🏢',
+    });
+
+    if (newWorkspace) {
+      toast({
+        title: "Workspace created",
+        description: `${newWorkspace.name} has been created successfully`,
+      });
+
+      setNewWorkspaceName("");
+      setNewWorkspaceDescription("");
+      setCreateDialogOpen(false);
+      
+      navigateRouter(`/workspace/${newWorkspace.id}/projects`);
+    }
+  };
+
+  const handleUpdateWorkspace = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editWorkspaceName.trim() || !currentWorkspaceId) return;
+
+    setIsUpdating(true);
+    
+    try {
+      const { error } = await supabase
+        .from('workspaces')
+        .update({
+          name: editWorkspaceName.trim(),
+          description: editWorkspaceDescription.trim(),
+        })
+        .eq('id', currentWorkspaceId);
+
+      if (error) throw error;
+
+      await refetch();
+      toast({
+        title: "Workspace updated",
+        description: "Changes have been saved",
+      });
+      setSettingsDialogOpen(false);
+    } catch (error) {
+      console.error('Error updating workspace:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update workspace",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDeleteWorkspace = async () => {
+    if (!currentWorkspaceId || deleteConfirmText !== "DELETE") return;
+    
+    setIsDeleting(true);
+    
+    try {
+      const { error } = await supabase
+        .from('workspaces')
+        .delete()
+        .eq('id', currentWorkspaceId);
+
+      if (error) throw error;
+
+      await refetch();
+      
+      const remainingWorkspaces = workspaces.filter(w => w.id !== currentWorkspaceId);
+      
+      if (remainingWorkspaces.length > 0) {
+        switchWorkspace(remainingWorkspaces[0].id);
+        navigateRouter(`/workspace/${remainingWorkspaces[0].id}/projects`);
+      } else {
+        localStorage.removeItem('current_workspace_id');
+        navigateRouter('/');
+      }
+      
+      toast({
+        title: "Workspace deleted",
+        description: "Workspace has been removed",
+      });
+      
+      setDeleteDialogOpen(false);
+      setDeleteConfirmText("");
+      setSettingsDialogOpen(false);
+    } catch (error) {
+      console.error('Error deleting workspace:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete workspace",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -901,7 +1045,7 @@ const SettingsRailItem = memo(function SettingsRailItem({
           {/* Settings */}
           <DropdownMenuItem
             onClick={() => {
-              navigate(`/workspace/${currentWorkspaceId}/settings/profile`);
+              handleOpenSettings();
               setDropdownOpen(false);
             }}
             className="cursor-pointer"
@@ -913,7 +1057,7 @@ const SettingsRailItem = memo(function SettingsRailItem({
           {/* Create workspace */}
           <DropdownMenuItem
             onClick={() => {
-              navigate(`/workspace/${currentWorkspaceId}/settings/profile`);
+              setCreateDialogOpen(true);
               setDropdownOpen(false);
             }}
             className="cursor-pointer"
@@ -923,6 +1067,189 @@ const SettingsRailItem = memo(function SettingsRailItem({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {/* Create Workspace Dialog */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Workspace</DialogTitle>
+            <DialogDescription>
+              Organize your projects by creating a new workspace
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateWorkspace} className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="workspace-name">Workspace Name</Label>
+              <Input
+                id="workspace-name"
+                placeholder="e.g., Commercial Projects"
+                value={newWorkspaceName}
+                onChange={(e) => setNewWorkspaceName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="workspace-description">Description (optional)</Label>
+              <Textarea
+                id="workspace-description"
+                placeholder="Describe this workspace..."
+                value={newWorkspaceDescription}
+                onChange={(e) => setNewWorkspaceDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setCreateDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Create Workspace</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Workspace Settings Dialog */}
+      <Dialog open={settingsDialogOpen} onOpenChange={setSettingsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Workspace Settings</DialogTitle>
+            <DialogDescription>
+              Update your workspace name and description
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdateWorkspace} className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-workspace-name">Workspace Name</Label>
+              <Input
+                id="edit-workspace-name"
+                placeholder="e.g., Commercial Projects"
+                value={editWorkspaceName}
+                onChange={(e) => setEditWorkspaceName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-workspace-description">Description (optional)</Label>
+              <Textarea
+                id="edit-workspace-description"
+                placeholder="Describe this workspace..."
+                value={editWorkspaceDescription}
+                onChange={(e) => setEditWorkspaceDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
+            
+            <div className="space-y-4 pt-4 border-t">
+              {currentWorkspaceId && (
+                <WorkspaceMembersTable workspaceId={currentWorkspaceId} />
+              )}
+            </div>
+            
+            <div className="space-y-4 pt-4 border-t">
+              {currentWorkspaceId && (
+                <ExcelExportImport workspaceId={currentWorkspaceId} />
+              )}
+            </div>
+            
+            <div className="space-y-4 pt-4 border-t border-destructive/20">
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-destructive flex items-center gap-2">
+                  <Trash2 className="h-4 w-4" />
+                  Danger Zone
+                </h3>
+                <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">Delete Workspace</p>
+                      <p className="text-xs text-muted-foreground">
+                        Permanently delete this workspace and all projects within it. This action cannot be undone.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setDeleteDialogOpen(true);
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setSettingsDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isUpdating}>
+                {isUpdating ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Workspace Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Workspace?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <div className="text-destructive font-medium">
+                ⚠️ This will permanently delete:
+              </div>
+              <ul className="list-disc list-inside space-y-1 text-sm">
+                <li>Workspace: "{currentWorkspace?.name}"</li>
+                <li>All projects in this workspace</li>
+                <li>All tasks, files, notes, and invoices</li>
+              </ul>
+              <p className="text-sm font-medium">
+                This action cannot be undone.
+              </p>
+              <div className="space-y-2">
+                <Label htmlFor="delete-confirm">
+                  Type "DELETE" to confirm:
+                </Label>
+                <Input
+                  id="delete-confirm"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="DELETE"
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setDeleteConfirmText("");
+                setDeleteDialogOpen(false);
+              }}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteConfirmText !== "DELETE" || isDeleting}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (deleteConfirmText === "DELETE" && !isDeleting) {
+                  handleDeleteWorkspace();
+                }
+              }}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deleting..." : "Delete Workspace"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 });
