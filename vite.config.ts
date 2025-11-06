@@ -10,7 +10,20 @@ export default defineConfig(({ mode }) => {
   // Check for both entry point and built CSS to ensure fork is fully ready
   const forkEntryPath = path.resolve(__dirname, "./excalidraw-fork 2/packages/excalidraw/index.tsx");
   const forkCSSPath = path.resolve(__dirname, "./excalidraw-fork 2/packages/excalidraw/dist/prod/index.css");
-  const hasFork = fs.existsSync(forkEntryPath) && fs.existsSync(forkCSSPath);
+  
+  // Production-aware fork detection:
+  // - Production: Only check if source exists (CSS built by build:packages before Vite runs)
+  // - Development: Check both source and built CSS exist
+  const hasFork = mode === 'production'
+    ? fs.existsSync(forkEntryPath)
+    : fs.existsSync(forkEntryPath) && fs.existsSync(forkCSSPath);
+  
+  console.log('🔍 Excalidraw fork detection:', {
+    mode,
+    hasFork,
+    forkEntryExists: fs.existsSync(forkEntryPath),
+    forkCSSExists: fs.existsSync(forkCSSPath)
+  });
   
   // Base aliases (always applied)
   const alias: any[] = [
