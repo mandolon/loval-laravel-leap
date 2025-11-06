@@ -1022,6 +1022,7 @@ const SettingsRailItem = memo(function SettingsRailItem({
       {/* Settings icon button - centered */}
       <button
         onClick={() => {
+          console.log('Settings button clicked, active state:', active);
           setActive('settings');
           navigateToWorkspace("/settings");
         }}
