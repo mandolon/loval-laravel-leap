@@ -17,7 +17,6 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
 } from "lucide-react";
 import {
   useReactTable,
@@ -825,49 +824,42 @@ const SettingsRailItem = memo(function SettingsRailItem({
   navigate,
 }: SettingsRailItemProps) {
   const [workspaceSwitcherOpen, setWorkspaceSwitcherOpen] = useState(false);
+  const { currentWorkspace } = useWorkspaces();
 
   return (
     <div className="relative z-40 flex flex-col items-center gap-1.5 mb-3 group/nav">
-      {/* Buttons container */}
-      <div className="flex items-center gap-0.5">
-        {/* Settings icon button */}
-        <button
-          onClick={() => navigate(`/workspace/${currentWorkspaceId}/settings/profile`)}
-          className={`relative h-7 w-7 rounded-lg grid place-items-center transition-all duration-200 ${
-            active
-              ? "bg-white/20 text-white shadow-[0_0_16px_rgba(255,255,255,0.15)]"
-              : "text-white/80 hover:text-white hover:bg-white/10 hover:shadow-[0_0_12px_rgba(255,255,255,0.1)]"
-          }`}
-          title="Settings"
-        >
-          <Settings className="h-4 w-4" />
-        </button>
+      {/* Settings icon button - centered */}
+      <button
+        onClick={() => navigate(`/workspace/${currentWorkspaceId}/settings/profile`)}
+        className={`relative h-7 w-7 rounded-lg grid place-items-center transition-all duration-200 ${
+          active
+            ? "bg-white/20 text-white shadow-[0_0_16px_rgba(255,255,255,0.15)]"
+            : "text-white/80 hover:text-white hover:bg-white/10 hover:shadow-[0_0_12px_rgba(255,255,255,0.1)]"
+        }`}
+        title="Settings"
+      >
+        <Settings className="h-4 w-4" />
+      </button>
 
-        {/* Workspace switcher popover trigger */}
-        <Popover open={workspaceSwitcherOpen} onOpenChange={setWorkspaceSwitcherOpen}>
-          <PopoverTrigger asChild>
-            <button
-              className="relative h-5 w-5 rounded-md grid place-items-center transition-all duration-200 text-white/80 hover:text-white hover:bg-white/10"
-              title="Switch workspace"
-            >
-              <ChevronDown className="h-3 w-3" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent 
-            side="right" 
-            align="start" 
-            className="w-auto p-0 bg-popover border-border"
-            sideOffset={12}
+      {/* Workspace name button - replaces "Settings" label */}
+      <Popover open={workspaceSwitcherOpen} onOpenChange={setWorkspaceSwitcherOpen}>
+        <PopoverTrigger asChild>
+          <button
+            className="w-12 px-1 text-center text-[10px] leading-tight text-white/70 hover:text-white/100 transition-colors cursor-pointer truncate"
+            title={currentWorkspace?.name || "Switch workspace"}
           >
-            <WorkspaceSwitcher onWorkspaceChange={() => setWorkspaceSwitcherOpen(false)} />
-          </PopoverContent>
-        </Popover>
-      </div>
-
-      {/* Label */}
-      <div className="w-12 px-1 text-center text-[10px] leading-tight text-white/70 group-hover/nav:text-white/90 transition-colors">
-        Settings
-      </div>
+            {currentWorkspace?.name || "Workspace"}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent 
+          side="right" 
+          align="start" 
+          className="w-auto p-0 bg-popover border-border"
+          sideOffset={12}
+        >
+          <WorkspaceSwitcher onWorkspaceChange={() => setWorkspaceSwitcherOpen(false)} />
+        </PopoverContent>
+      </Popover>
     </div>
   );
 });
