@@ -16,6 +16,8 @@ import ConsultantRouter from "./routers/ConsultantRouter";
 import ClientRouter from "./routers/ClientRouter";
 import AuthPage from "./pages/AuthPage";
 import NoWorkspacePage from "./pages/NoWorkspacePage";
+import PrivacyPage from "./pages/PrivacyPage";
+import TermsPage from "./pages/TermsPage";
 
 const queryClient = new QueryClient();
 
@@ -107,6 +109,15 @@ function AppRouter() {
       else setRoutingReady(false);
     }
   }, [loading, roleLoading, loggingOut, user, workspaceId, defaultWorkspaceLoading, defaultWorkspaceFetched, location.pathname]);
+
+  // Public routes that don't require authentication
+  if (location.pathname === '/privacy') {
+    return <Routes><Route path="/privacy" element={<PrivacyPage />} /><Route path="*" element={<Navigate to="/privacy" replace />} /></Routes>;
+  }
+  
+  if (location.pathname === '/terms') {
+    return <Routes><Route path="/terms" element={<TermsPage />} /><Route path="*" element={<Navigate to="/terms" replace />} /></Routes>;
+  }
 
   if (location.pathname === '/auth') {
     return <Routes><Route path="/auth" element={<AuthPage />} /><Route path="*" element={<Navigate to="/auth" replace />} /></Routes>;
