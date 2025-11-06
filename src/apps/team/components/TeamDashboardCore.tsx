@@ -852,10 +852,10 @@ const SettingsRailItem = memo(function SettingsRailItem({
           </button>
         </PopoverTrigger>
         <PopoverContent 
-          side="right" 
-          align="start" 
-          className="w-auto p-0 bg-popover border-border"
-          sideOffset={12}
+          side="bottom" 
+          align="center" 
+          className="w-auto p-0 bg-popover border-border z-50"
+          sideOffset={4}
         >
           <WorkspaceSwitcher onWorkspaceChange={() => setWorkspaceSwitcherOpen(false)} />
         </PopoverContent>
