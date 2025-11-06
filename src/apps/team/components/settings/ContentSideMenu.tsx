@@ -61,7 +61,7 @@ export const ContentSideMenu = memo(function ContentSideMenu() {
                   <button
                     key={item.id}
                     onClick={() => handleNavigation(item.route)}
-                    className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg text-[13px] mb-1 ${
+                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[13px] mb-0.5 ${
                       active 
                         ? 'bg-[#E7F0FF] text-[var(--text)]' 
                         : 'hover:bg-slate-100 text-[var(--text)]'
