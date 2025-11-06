@@ -11,7 +11,7 @@ export const useUpdateUserRole = () => {
       role 
     }: { 
       userId: string; 
-      role: 'team' | 'consultant' | 'client' 
+      role: 'admin' | 'team' | 'consultant' | 'client' 
     }) => {
       // Check if user already has a role
       const { data: existing } = await supabase

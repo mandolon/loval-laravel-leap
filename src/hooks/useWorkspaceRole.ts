@@ -4,7 +4,7 @@ import { useUser } from '@/contexts/UserContext';
 
 export const useWorkspaceRole = (workspaceId: string | undefined) => {
   const { user } = useUser();
-  const [role, setRole] = useState<'team' | 'consultant' | 'client' | null>(null);
+  const [role, setRole] = useState<'admin' | 'team' | 'consultant' | 'client' | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -56,7 +56,7 @@ export const useWorkspaceRole = (workspaceId: string | undefined) => {
         if (fetchError) throw fetchError;
         
         // Set role (even if null - user might not have a role entry)
-        setRole((data?.role as 'team' | 'consultant' | 'client') || null);
+        setRole((data?.role as 'admin' | 'team' | 'consultant' | 'client') || null);
         setError(null);
       } catch (err) {
         // Don't set error if fetch was aborted
@@ -87,6 +87,7 @@ export const useWorkspaceRole = (workspaceId: string | undefined) => {
 
   return {
     role,
+    isAdmin: role === 'admin',
     isTeam: role === 'team',
     isConsultant: role === 'consultant',
     isClient: role === 'client',
