@@ -1,6 +1,6 @@
 import { memo, useCallback } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
-import { User, LayoutGrid, Users, Repeat, Trash2, LogOut } from 'lucide-react';
+import { User, LayoutGrid, Users, Repeat, Trash2, LogOut, Settings } from 'lucide-react';
 import { useRoleAwareNavigation } from '@/hooks/useRoleAwareNavigation';
 
 const menuGroups = [
@@ -16,6 +16,7 @@ const menuGroups = [
     id: 'workspace',
     title: 'WORKSPACE',
     items: [
+      { id: 'workspace-settings', icon: Settings, label: 'Settings', route: 'workspace-settings' },
       { id: 'members', icon: Users, label: 'Members', route: 'members' },
       { id: 'imports', icon: Repeat, label: 'Imports / Exports', route: 'imports' },
       { id: 'trash', icon: Trash2, label: 'Trash', route: 'trash' }

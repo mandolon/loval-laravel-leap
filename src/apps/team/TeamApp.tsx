@@ -10,6 +10,7 @@ import SettingsPage from './pages/SettingsPage';
 import { ProfileContent } from './components/settings/ProfileContent';
 import { MembersContent } from './components/settings/MembersContent';
 import { WorkspacesContent } from './components/settings/WorkspacesContent';
+import { WorkspaceSettingsContent } from './components/settings/WorkspaceSettingsContent';
 import { ImportsExportsContent } from './components/settings/ImportsExportsContent';
 import { TrashContent } from './components/settings/TrashContent';
 import './styles/team-dashboard.css';
@@ -33,6 +34,7 @@ export default function TeamApp() {
             <Route index element={<Navigate to="profile" replace />} />
             <Route path="profile" element={<ProfileContent />} />
             <Route path="workspaces" element={<WorkspacesContent />} />
+            <Route path="workspace-settings" element={<WorkspaceSettingsContent />} />
             <Route path="members" element={<MembersContent />} />
             <Route path="imports" element={<ImportsExportsContent />} />
             <Route path="trash" element={<TrashContent />} />
