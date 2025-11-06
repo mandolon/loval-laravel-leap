@@ -21,7 +21,7 @@ export default function TeamApp() {
       <TeamDashboardLayout>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/team/workspace/:workspaceId" element={<HomePage />} />
+          <Route path="/team/workspace/:workspaceId" element={<TasksPage />} />
           <Route path="/team/workspace/:workspaceId/chat" element={<ChatPage />} />
           <Route path="/team/workspace/:workspaceId/projects" element={<ProjectsPage />} />
           <Route path="/team/workspace/:workspaceId/tasks" element={<TasksPage />} />
