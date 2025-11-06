@@ -204,7 +204,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
   const { user } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
-  const { navigateToWorkspace, role } = useRoleAwareNavigation();
+  const { navigateToWorkspace, role } = useRoleAwareNavigation(currentWorkspaceId || undefined);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const createProjectMutation = useCreateProject(currentWorkspaceId || "");
