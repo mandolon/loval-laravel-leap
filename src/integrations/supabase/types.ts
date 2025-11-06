@@ -1942,6 +1942,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           id: string
+          role: Database["public"]["Enums"]["workspace_role"]
           short_id: string | null
           user_id: string
           workspace_id: string
@@ -1951,6 +1952,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           id?: string
+          role?: Database["public"]["Enums"]["workspace_role"]
           short_id?: string | null
           user_id: string
           workspace_id: string
@@ -1960,6 +1962,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           id?: string
+          role?: Database["public"]["Enums"]["workspace_role"]
           short_id?: string | null
           user_id?: string
           workspace_id?: string
@@ -2088,6 +2091,7 @@ export type Database = {
     }
     Enums: {
       app_role: "team" | "consultant" | "client" | "admin"
+      workspace_role: "team" | "consultant" | "client"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2216,6 +2220,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["team", "consultant", "client", "admin"],
+      workspace_role: ["team", "consultant", "client"],
     },
   },
 } as const
