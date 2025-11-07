@@ -6,6 +6,9 @@
     "NODE_ENV": "production"
   },
   "installCommand": "npm install",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
   "headers": [
     {
       "source": "/assets/(.*)",

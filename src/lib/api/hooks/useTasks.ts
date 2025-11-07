@@ -529,13 +529,25 @@ export const useDeleteTask = (projectId?: string) => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data: user } = await supabase.auth.getUser();
+      // Get auth user
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) throw new Error('Not authenticated');
       
+      // Get internal user ID from users table
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', userData.user.id)
+        .single();
+      
+      if (!userProfile) throw new Error('User profile not found');
+      
+      // Use the correct internal user ID
       const { error } = await supabase
         .from('tasks')
         .update({ 
           deleted_at: new Date().toISOString(),
-          deleted_by: user.user?.id 
+          deleted_by: userProfile.id
         })
         .eq('id', id);
       
