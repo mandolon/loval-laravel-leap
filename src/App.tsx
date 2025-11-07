@@ -50,14 +50,14 @@ function AppRouter() {
         // Fetch ANY workspace (first one by creation date)
         const { data: workspace, error: workspaceError } = await supabase
           .from('workspaces')
-          .select('id')
+          .select('id, short_id')
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
 
         if (workspaceError) throw workspaceError;
 
-        if (workspace?.id) {
+        if (workspace?.short_id) {
           const { data: roleData } = await supabase
             .from('user_roles')
             .select('role')
@@ -65,7 +65,7 @@ function AppRouter() {
             .maybeSingle();
           
           const userRole = roleData?.role || 'team';
-          navigate(`/${userRole}/workspace/${workspace.id}`, { replace: true });
+          navigate(`/${userRole}/workspace/${workspace.short_id}`, { replace: true });
         }
       } catch (error) {
         console.error('Error fetching default workspace:', error);

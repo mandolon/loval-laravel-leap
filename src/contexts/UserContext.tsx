@@ -100,7 +100,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         auth_id: authUser.id,
         initials,
         is_admin: profile.is_admin || false,
-        onboarding_completed: profile.onboarding_completed || false,
+        onboarding_completed: profile.onboarding_completed ?? false,
       });
     } catch (error) {
       console.error('Error loading user profile:', error);

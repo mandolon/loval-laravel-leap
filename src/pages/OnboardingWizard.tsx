@@ -72,6 +72,20 @@ export default function OnboardingWizard() {
         onboarding_completed: true,
       });
 
+      // Wait for state to update
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      // Verify onboarding completion
+      const { data: updatedProfile } = await supabase
+        .from("users")
+        .select("id, onboarding_completed")
+        .eq("id", user.id)
+        .single();
+
+      if (!updatedProfile?.onboarding_completed) {
+        throw new Error("Failed to update onboarding status");
+      }
+
       // Navigate to workspace based on role
       if (workspace) {
         const { data: roleData } = await supabase
@@ -81,7 +95,7 @@ export default function OnboardingWizard() {
           .single();
 
         const role = roleData?.role || "team";
-        navigate(`/${role}/workspace/${workspace.id}`);
+        navigate(`/${role}/workspace/${workspace.short_id}`, { replace: true });
       }
     } catch (error) {
       console.error("Error completing onboarding:", error);
