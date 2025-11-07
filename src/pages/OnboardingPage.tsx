@@ -121,8 +121,9 @@ export default function OnboardingPage() {
         {/* Step 1 — Join invite */}
         {step === 1 && (
           <div className="w-full max-w-[440px]">
+            <p className="text-sm text-slate-500 mb-4">Welcome, {user?.name?.split(' ')[0]}</p>
             <h1 className="text-lg font-medium text-slate-800">Join the PinerWorks Workspace</h1>
-            <p className="text-sm text-slate-500 mt-2">Invited by {user?.name}</p>
+            <p className="text-sm text-slate-500 mt-2">Invited by Armando Lopez (armando@rehome.build)</p>
 
             <button
               onClick={handleJoin}
@@ -216,14 +217,6 @@ export default function OnboardingPage() {
             </button>
           </div>
         )}
-
-        {/* Footer */}
-        <p className="mt-16 text-center text-[11px] text-slate-500">
-          By continuing, you agree to our
-          <a href="#" className="text-[#3a78bd] hover:text-[#2c5e96] hover:underline ml-1">Terms of Service</a>
-          {" "}and
-          <a href="#" className="text-[#3a78bd] hover:text-[#2c5e96] hover:underline ml-1">Privacy Policy</a>
-        </p>
       </div>
     </div>
   );
