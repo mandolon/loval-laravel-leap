@@ -54,7 +54,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://github.com/mandolon/rehome/releases/download/latest/latest.json"
+        "https://github.com/mandolon/app.rehome/releases/download/latest/latest.json"
       ],
       "dialog": true,
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDRCNTRFRENFNDU1QUEwNzAKUldSd29GcEZ6dTFVUzJ5YnhZcklhVGpMSEZHQnVNbXVDaitwSk1DVyt3aXJIMG41OTRXTW1jWlVtCg=="

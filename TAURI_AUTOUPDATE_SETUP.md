@@ -20,9 +20,9 @@ The `src-tauri/tauri.conf.json` has been updated with:
 "plugins": {
   "updater": {
     "active": true,
-    "endpoints": [
-      "https://github.com/mandolon/loval-laravel-leap/releases/download/latest/latest.json"
-    ],
+      "endpoints": [
+        "https://github.com/mandolon/app.rehome/releases/download/latest/latest.json"
+      ],
     "dialog": true,
     "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDRCNTRFRENFNDU1QUEwNzAKUldSd29GcEZ6dTFVUzJ5YnhZcklhVGpMSEZHQnVNbXVDaitwSk1DVyt3aXJIMG41OTRXTW1jWlVtCg=="
   }

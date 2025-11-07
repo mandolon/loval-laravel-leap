@@ -11,7 +11,7 @@ The auto-updater is configured for **unsigned updates** (simplified approach for
   "updater": {
     "active": true,
     "endpoints": [
-      "https://github.com/mandolon/loval-laravel-leap/releases/latest/download/latest.json"
+      "https://github.com/mandolon/app.rehome/releases/latest/download/latest.json"
     ],
     "dialog": true,
     "pubkey": ""
@@ -47,7 +47,7 @@ The build creates these files in `src-tauri/target/universal-apple-darwin/releas
 
 ### 1. Create a GitHub Release
 
-1. Go to your GitHub repo: `https://github.com/mandolon/loval-laravel-leap`
+1. Go to your GitHub repo: `https://github.com/mandolon/app.rehome`
 2. Click "Releases" → "Create a new release"
 3. Create a tag (e.g., `v1.0.1`)
 4. Upload your build artifacts:
@@ -65,7 +65,7 @@ Create a file named `latest.json` with this content:
   "pub_date": "2025-01-15T12:00:00Z",
   "platforms": {
     "darwin-universal": {
-      "url": "https://github.com/mandolon/loval-laravel-leap/releases/download/v1.0.1/loval-laravel-leap_universal.app.tar.gz"
+      "url": "https://github.com/mandolon/app.rehome/releases/download/v1.0.1/rehome_universal.app.tar.gz"
     }
   }
 }
@@ -137,7 +137,7 @@ TAURI_SIGNING_PRIVATE_KEY="$(cat ~/.tauri/myapp.key)" npm run tauri:build:mac
 
 ## Current Setup Summary
 
-- **App Name**: loval-laravel-leap
+- **App Name**: rehome
 - **Version**: 1.0.0
 - **Update Type**: Unsigned (development/testing)
 - **Platform**: Universal macOS binary
