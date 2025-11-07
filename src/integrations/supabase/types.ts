@@ -1972,6 +1972,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_workspace_members_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_workspace_members_workspace"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "workspace_members_deleted_by_fkey"
             columns: ["deleted_by"]
             isOneToOne: false

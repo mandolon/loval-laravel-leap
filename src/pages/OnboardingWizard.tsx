@@ -24,29 +24,54 @@ export default function OnboardingWizard() {
   }, []);
 
   const loadWorkspaceData = async () => {
-    // Fetch first workspace
-    const { data: workspaceData } = await supabase
-      .from("workspaces")
-      .select("*")
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .single();
-
-    if (workspaceData) {
-      setWorkspace(workspaceData);
-
-      // Fetch workspace creator (oldest member)
-      const { data: memberData } = await supabase
-        .from("workspace_members")
-        .select("user_id, users(name, email)")
-        .eq("workspace_id", workspaceData.id)
+    try {
+      // Fetch first workspace
+      const { data: workspaceData, error: workspaceError } = await supabase
+        .from("workspaces")
+        .select("*")
         .order("created_at", { ascending: true })
         .limit(1)
         .single();
 
-      if (memberData) {
-        setWorkspaceCreator(memberData.users);
+      if (workspaceError) {
+        console.error("Error loading workspace:", workspaceError);
+        return;
       }
+
+      if (workspaceData) {
+        setWorkspace(workspaceData);
+
+        // Fetch workspace creator separately to avoid FK join issues
+        const { data: memberData, error: memberError } = await supabase
+          .from("workspace_members")
+          .select("user_id")
+          .eq("workspace_id", workspaceData.id)
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .single();
+
+        if (memberError) {
+          console.error("Error loading workspace member:", memberError);
+        }
+
+        if (memberData?.user_id) {
+          const { data: userData, error: userError } = await supabase
+            .from("users")
+            .select("name, email")
+            .eq("id", memberData.user_id)
+            .single();
+
+          if (userError) {
+            console.error("Error loading user data:", userError);
+          }
+
+          if (userData) {
+            setWorkspaceCreator(userData);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Unexpected error in loadWorkspaceData:", error);
     }
   };
 
@@ -104,7 +129,7 @@ export default function OnboardingWizard() {
     }
   };
 
-  if (!user || !workspace) {
+  if (!workspace) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
