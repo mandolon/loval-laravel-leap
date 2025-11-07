@@ -80,29 +80,10 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleComplete = () => {
-    // Get first workspace and navigate to team dashboard
-    const fetchAndNavigate = async () => {
-      try {
-        const { data: workspace } = await supabase
-          .from('workspaces')
-          .select('id')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (workspace?.id) {
-          navigate(`/team/workspace/${workspace.id}`, { replace: true });
-        } else {
-          navigate('/team/workspace', { replace: true });
-        }
-      } catch (error) {
-        console.error('Error navigating:', error);
-        navigate('/team/workspace', { replace: true });
-      }
-    };
-
-    fetchAndNavigate();
+  const handleComplete = async () => {
+    // Reload the page to trigger TeamRouter to re-check onboarding status
+    // This ensures the router sees onboarding_completed = true
+    window.location.href = '/team/workspace';
   };
 
   return (
