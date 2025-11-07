@@ -324,7 +324,7 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto bg-white p-0 rounded-xl shadow-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto overflow-x-visible bg-white p-0 rounded-xl shadow-md">
         <DialogHeader className="px-5 pt-4 pb-3 border-b">
           <DialogTitle className="text-base font-semibold text-[#202020]">Create Project</DialogTitle>
         </DialogHeader>
@@ -420,11 +420,10 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
                 onKeyDown={handleKeyDown}
                 className={`${errors.streetNumber || errors.streetName || errors.city || errors.state || errors.zip ? "border-destructive" : ""}`}
               />
-              <p className="text-xs text-muted-foreground mt-1">Select an address to auto-fill all fields</p>
 
               {/* Autocomplete Predictions */}
               {predictions.length > 0 && (
-                <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 z-[9999] mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                   {predictions.map((prediction, i) => (
                     <div
                       key={prediction.place_id}
@@ -444,6 +443,8 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
                   ))}
                 </div>
               )}
+              
+              <p className="text-xs text-muted-foreground mt-1">Select an address to auto-fill all fields</p>
             </div>
 
             {/* Parcel Number Field */}
