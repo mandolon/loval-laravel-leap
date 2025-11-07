@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { useRoleAwareNavigation } from "@/hooks/useRoleAwareNavigation";
+import { useWorkspaceFromUrl } from "@/hooks/useWorkspaceFromUrl";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FolderKanban, CheckSquare, Users, TrendingUp, ArrowRight } from "lucide-react";
@@ -14,7 +15,7 @@ import { DESIGN_TOKENS as T } from "@/lib/design-tokens";
 const HomePage = () => {
   const navigate = useNavigate();
   const { navigateToWorkspace, role } = useRoleAwareNavigation();
-  const { workspaceId } = useParams<{ workspaceId: string }>();
+  const { workspaceId, loading: workspaceIdLoading } = useWorkspaceFromUrl();
   const { workspaces, currentWorkspace, currentWorkspaceId, loading } = useWorkspaces();
   const [stats, setStats] = useState({
     totalProjects: 0,
@@ -109,7 +110,7 @@ const HomePage = () => {
     }
   };
 
-  if (loading) {
+  if (loading || workspaceIdLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-muted-foreground">Loading...</div>

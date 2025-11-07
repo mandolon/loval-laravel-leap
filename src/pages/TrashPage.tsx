@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useWorkspaceFromUrl } from "@/hooks/useWorkspaceFromUrl";
 import { Trash2, RotateCcw, AlertTriangle, MessageSquare } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,7 @@ interface DeletedThread {
 }
 
 export default function TrashPage() {
-  const { workspaceId } = useParams<{ workspaceId: string }>();
+  const { workspaceId, loading: workspaceIdLoading } = useWorkspaceFromUrl();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [deletedProjects, setDeletedProjects] = useState<Project[]>([]);
@@ -193,7 +194,7 @@ export default function TrashPage() {
     }
   };
 
-  if (loading) {
+  if (loading || workspaceIdLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-muted-foreground">Loading trash...</p>

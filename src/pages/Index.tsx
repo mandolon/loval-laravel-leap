@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useRoleAwareNavigation } from "@/hooks/useRoleAwareNavigation";
+import { useWorkspaceFromUrl } from "@/hooks/useWorkspaceFromUrl";
 import type { Project } from "@/lib/api/types";
 import { ProjectCard } from "@/components/ProjectCard";
 import { useToast } from "@/hooks/use-toast";
@@ -18,7 +19,7 @@ import { DESIGN_TOKENS as T } from "@/lib/design-tokens";
 const ProjectsPage = () => {
   const navigate = useNavigate();
   const { navigateToWorkspace, role } = useRoleAwareNavigation();
-  const { workspaceId } = useParams<{ workspaceId: string }>();
+  const { workspaceId, loading: workspaceIdLoading } = useWorkspaceFromUrl();
   const { toast } = useToast();
   const { user } = useUser();
   const [searchParams] = useSearchParams();
@@ -180,12 +181,16 @@ const ProjectsPage = () => {
         </div>
 
         {/* Projects Grid */}
-        {!workspaceId ? (
+        {!workspaceId || workspaceIdLoading ? (
           <div className="text-center py-20">
-            <p className="text-muted-foreground text-lg mb-2">No workspace selected</p>
-            <p className="text-sm text-muted-foreground">
-              Please select a workspace from the sidebar to view projects
+            <p className="text-muted-foreground text-lg mb-2">
+              {workspaceIdLoading ? "Loading..." : "No workspace selected"}
             </p>
+            {!workspaceIdLoading && (
+              <p className="text-sm text-muted-foreground">
+                Please select a workspace from the sidebar to view projects
+              </p>
+            )}
           </div>
         ) : isLoading ? (
           <div className="text-center py-20">
