@@ -1787,7 +1787,7 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["auth_id"]
+            referencedColumns: ["id"]
           },
         ]
       }
