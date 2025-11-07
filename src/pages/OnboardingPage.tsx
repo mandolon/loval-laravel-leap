@@ -6,22 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-
-// Avatar gradient options
-const AVATAR_OPTIONS = [
-  'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(320, 80%, 65%) 100%)',
-  'linear-gradient(135deg, hsl(200, 70%, 60%) 0%, hsl(240, 80%, 65%) 100%)',
-  'linear-gradient(135deg, hsl(140, 70%, 60%) 0%, hsl(180, 80%, 65%) 100%)',
-  'linear-gradient(135deg, hsl(40, 70%, 60%) 0%, hsl(80, 80%, 65%) 100%)',
-  'linear-gradient(135deg, hsl(0, 70%, 60%) 0%, hsl(40, 80%, 65%) 100%)',
-  'linear-gradient(135deg, hsl(160, 70%, 60%) 0%, hsl(200, 80%, 65%) 100%)',
-  'linear-gradient(135deg, hsl(320, 70%, 60%) 0%, hsl(0, 80%, 65%) 100%)',
-  'linear-gradient(135deg, hsl(260, 70%, 60%) 0%, hsl(300, 80%, 65%) 100%)',
-];
+import { AVATAR_COLORS } from "@/constants/avatarColors";
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(1);
-  const [selectedAvatar, setSelectedAvatar] = useState<string>(AVATAR_OPTIONS[0]);
+  const [selectedAvatar, setSelectedAvatar] = useState<string>(AVATAR_COLORS[0]);
   const [loading, setLoading] = useState(false);
   const { user, updateUser } = useUser();
   const navigate = useNavigate();
@@ -146,19 +135,21 @@ export default function OnboardingPage() {
                 <p className="text-center text-muted-foreground">
                   Select an avatar color that suits your style
                 </p>
-                <div className="grid grid-cols-4 gap-4">
-                  {AVATAR_OPTIONS.map((gradient, index) => (
+                <div className="grid grid-cols-6 gap-3">
+                  {AVATAR_COLORS.map((color, index) => (
                     <button
                       key={index}
-                      onClick={() => setSelectedAvatar(gradient)}
-                      className={`aspect-square rounded-full transition-all ${
-                        selectedAvatar === gradient
+                      onClick={() => setSelectedAvatar(color)}
+                      className={`h-16 w-16 rounded-full transition-all flex items-center justify-center text-white font-semibold text-lg ${
+                        selectedAvatar === color
                           ? 'ring-4 ring-primary ring-offset-4 ring-offset-background scale-110'
                           : 'hover:scale-105 opacity-70 hover:opacity-100'
                       }`}
-                      style={{ background: gradient }}
+                      style={{ background: color }}
                       aria-label={`Avatar option ${index + 1}`}
-                    />
+                    >
+                      {user?.name?.charAt(0).toUpperCase()}
+                    </button>
                   ))}
                 </div>
                 <div className="flex justify-center pt-4">

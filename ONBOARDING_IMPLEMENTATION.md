@@ -35,8 +35,8 @@ A 3-step onboarding flow exclusively for **TEAM role users** that guides them th
 - "Next" button to proceed
 
 #### Step 2: Avatar Selection
-- 8 gradient color options
-- Live preview of selected avatar
+- 11 solid color options (matches Team Profile page)
+- Live preview of selected avatar with user's initial
 - "Back" and "Confirm" buttons
 - Updates user's avatar in database
 

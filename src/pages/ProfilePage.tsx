@@ -11,6 +11,7 @@ import { useUser } from "@/contexts/UserContext";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageSubhead } from "@/components/layout/PageSubhead";
 import { DESIGN_TOKENS as T } from "@/lib/design-tokens";
+import { AVATAR_COLORS } from "@/constants/avatarColors";
 
 export default function ProfilePage() {
   const { toast } = useToast();
@@ -31,20 +32,6 @@ export default function ProfilePage() {
       </div>
     );
   }
-
-  const avatarColors = [
-    '#202020',
-    '#6E56CF',
-    '#98A2FF',
-    '#E54D2E',
-    '#E93D82',
-    '#E2991A',
-    '#1EAEDB',
-    '#3E6C59',
-    '#8E7E73',
-    '#2EB67D',
-    '#2BB0A2',
-  ];
 
   const handleAvatarChange = async (color: string) => {
     try {
@@ -124,7 +111,7 @@ export default function ProfilePage() {
               <Avatar className="h-24 w-24">
                 <AvatarFallback 
                   className="text-white text-2xl font-semibold"
-                  style={{ background: user.avatar_url || avatarColors[0] }}
+                  style={{ background: user.avatar_url || AVATAR_COLORS[0] }}
                 >
                   {user.initials}
                 </AvatarFallback>
@@ -144,7 +131,7 @@ export default function ProfilePage() {
             <div>
               <Label className="font-medium mb-3 block">Choose Avatar Color</Label>
               <div className="grid grid-cols-6 gap-3">
-                {avatarColors.map((color, index) => (
+                {AVATAR_COLORS.map((color, index) => (
                   <button
                     key={index}
                     onClick={() => handleAvatarChange(color)}

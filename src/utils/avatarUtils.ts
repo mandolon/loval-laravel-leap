@@ -5,10 +5,10 @@
  * not image URLs. This is a legacy naming inconsistency.
  */
 
-/**
- * Default avatar color (fallback when user hasn't set a color)
- */
-export const DEFAULT_AVATAR_COLOR = '#202020';
+import { AVATAR_COLORS, DEFAULT_AVATAR_COLOR } from '@/constants/avatarColors';
+
+// Re-export for convenience
+export { AVATAR_COLORS, DEFAULT_AVATAR_COLOR };
 
 /**
  * Gets the avatar color from a user object.
