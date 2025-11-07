@@ -1687,7 +1687,6 @@ export type Database = {
           is_admin: boolean
           last_active_at: string | null
           name: string
-          onboarding_completed: boolean
           phone: string | null
           short_id: string
           title: string | null
@@ -1704,7 +1703,6 @@ export type Database = {
           is_admin?: boolean
           last_active_at?: string | null
           name: string
-          onboarding_completed?: boolean
           phone?: string | null
           short_id?: string
           title?: string | null
@@ -1721,7 +1719,6 @@ export type Database = {
           is_admin?: boolean
           last_active_at?: string | null
           name?: string
-          onboarding_completed?: boolean
           phone?: string | null
           short_id?: string
           title?: string | null
