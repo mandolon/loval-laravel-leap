@@ -77,58 +77,145 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
   const updateDropdownPosition = useCallback(() => {
     if (inputRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom + 4,
+      const position = {
+        top: rect.bottom + 4, // 4px below the input
         left: rect.left,
         width: rect.width,
+      };
+      console.log('[CreateProjectModal] updateDropdownPosition:', {
+        rect: {
+          top: rect.top,
+          bottom: rect.bottom,
+          left: rect.left,
+          right: rect.right,
+          width: rect.width,
+          height: rect.height,
+        },
+        calculatedPosition: position,
+        viewport: {
+          width: window.innerWidth,
+          height: window.innerHeight,
+        },
+        scrollY: window.scrollY,
+        scrollX: window.scrollX,
       });
+      setDropdownPosition(position);
+    } else {
+      console.warn('[CreateProjectModal] updateDropdownPosition: inputRef.current is null');
     }
   }, []);
 
   // Update position when predictions change or window events occur
   useEffect(() => {
-    if (predictions.length > 0) {
-      updateDropdownPosition();
+    console.log('[CreateProjectModal] predictions changed:', {
+      predictionsLength: predictions.length,
+      hasInputRef: !!inputRef.current,
+      inputRefValue: inputRef.current?.value,
+    });
+    
+    if (predictions.length > 0 && inputRef.current) {
+      // Use requestAnimationFrame to ensure DOM is fully updated
+      const rafId = requestAnimationFrame(() => {
+        console.log('[CreateProjectModal] Calling updateDropdownPosition from RAF');
+        updateDropdownPosition();
+      });
+      return () => cancelAnimationFrame(rafId);
     } else {
+      console.log('[CreateProjectModal] Clearing dropdownPosition');
       setDropdownPosition(null);
     }
   }, [predictions.length, updateDropdownPosition]);
 
-  // Add scroll and resize listeners
+  // Add scroll and resize listeners, and click-outside handler
   useEffect(() => {
-    if (predictions.length > 0) {
-      window.addEventListener('scroll', updateDropdownPosition, true);
-      window.addEventListener('resize', updateDropdownPosition);
+    if (predictions.length > 0 && inputRef.current) {
+      console.log('[CreateProjectModal] Setting up scroll/resize/click listeners');
+      const handleScroll = () => {
+        console.log('[CreateProjectModal] Scroll detected, updating position');
+        updateDropdownPosition();
+      };
+      const handleResize = () => {
+        console.log('[CreateProjectModal] Resize detected, updating position');
+        updateDropdownPosition();
+      };
+      const handleClickOutside = (e: MouseEvent) => {
+        // Close dropdown if clicking outside the input and dropdown
+        const target = e.target as Node;
+        if (inputRef.current && !inputRef.current.contains(target)) {
+          const dropdown = document.querySelector('[data-address-dropdown]');
+          if (dropdown && !dropdown.contains(target)) {
+            console.log('[CreateProjectModal] Click outside detected, closing dropdown');
+            setPredictions([]);
+            setDropdownPosition(null);
+          }
+        }
+      };
+      
+      window.addEventListener('scroll', handleScroll, true);
+      window.addEventListener('resize', handleResize);
+      document.addEventListener('mousedown', handleClickOutside);
+      
       return () => {
-        window.removeEventListener('scroll', updateDropdownPosition, true);
-        window.removeEventListener('resize', updateDropdownPosition);
+        console.log('[CreateProjectModal] Cleaning up scroll/resize/click listeners');
+        window.removeEventListener('scroll', handleScroll, true);
+        window.removeEventListener('resize', handleResize);
+        document.removeEventListener('mousedown', handleClickOutside);
       };
     }
   }, [predictions.length, updateDropdownPosition]);
 
+  // Debug: Track dropdownPosition state changes
+  useEffect(() => {
+    console.log('[CreateProjectModal] dropdownPosition state changed:', dropdownPosition);
+    if (dropdownPosition) {
+      // Verify the portal element exists in DOM
+      setTimeout(() => {
+        const portalElement = document.querySelector('[data-address-dropdown]');
+        console.log('[CreateProjectModal] Portal element in DOM:', {
+          exists: !!portalElement,
+          computedStyle: portalElement ? window.getComputedStyle(portalElement as Element) : null,
+          boundingRect: portalElement ? (portalElement as Element).getBoundingClientRect() : null,
+        });
+      }, 100);
+    }
+  }, [dropdownPosition]);
+
   // Initialize Google Places API
   useEffect(() => {
-    if (!open) return;
+    console.log('[CreateProjectModal] Google Places API effect:', { open });
+    if (!open) {
+      console.log('[CreateProjectModal] Dialog closed, skipping API init');
+      return;
+    }
 
     const script = document.createElement("script");
     script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_PLACES_API_KEY}&libraries=places`;
     script.async = true;
     script.onload = () => {
+      console.log('[CreateProjectModal] Google Places API script loaded');
       const googleMaps = (window as any).google;
       if (googleMaps?.maps?.places) {
+        console.log('[CreateProjectModal] Initializing AutocompleteService and PlacesService');
         autocompleteServiceRef.current = new googleMaps.maps.places.AutocompleteService();
         placesServiceRef.current = new googleMaps.maps.places.PlacesService(
           document.createElement("div")
         );
+      } else {
+        console.error('[CreateProjectModal] Google Maps Places API not available');
       }
+    };
+    script.onerror = () => {
+      console.error('[CreateProjectModal] Failed to load Google Places API script');
     };
     document.body.appendChild(script);
 
     return () => {
+      console.log('[CreateProjectModal] Cleaning up Google Places API script');
       try {
         document.body.removeChild(script);
       } catch (e) {
         // Script already removed
+        console.log('[CreateProjectModal] Script already removed');
       }
     };
   }, [open]);
@@ -136,8 +223,15 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
   // Handle address input and get predictions
   const handleAddressInput = useCallback(
     (value: string) => {
+      console.log('[CreateProjectModal] handleAddressInput:', {
+        value,
+        hasAutocompleteService: !!autocompleteServiceRef.current,
+      });
+      
       if (!value || !autocompleteServiceRef.current) {
+        console.log('[CreateProjectModal] Clearing predictions (no value or service)');
         setPredictions([]);
+        setDropdownPosition(null);
         return;
       }
 
@@ -147,13 +241,26 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
           types: ["address"],
           componentRestrictions: { country: "us" },
         },
-        (results: any) => {
+        (results: any, status: any) => {
+          console.log('[CreateProjectModal] getPlacePredictions callback:', {
+            resultsCount: results?.length || 0,
+            status,
+            results: results?.slice(0, 3), // Log first 3 for debugging
+          });
           setPredictions(results || []);
           setActiveIndex(-1);
+          
+          // Update position after predictions are set
+          if (inputRef.current && results && results.length > 0) {
+            setTimeout(() => {
+              console.log('[CreateProjectModal] Updating position after predictions received');
+              updateDropdownPosition();
+            }, 0);
+          }
         }
       );
     },
-    []
+    [updateDropdownPosition]
   );
 
   // Fetch parcel number from coordinates
@@ -181,11 +288,26 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
   // Handle prediction selection
   const handleSelectPrediction = useCallback(
     (prediction: any) => {
-      if (!placesServiceRef.current) return;
+      console.log('[CreateProjectModal] handleSelectPrediction:', {
+        placeId: prediction.place_id,
+        description: prediction.description,
+        hasPlacesService: !!placesServiceRef.current,
+      });
+      
+      if (!placesServiceRef.current) {
+        console.warn('[CreateProjectModal] PlacesService not available');
+        return;
+      }
 
       placesServiceRef.current.getDetails(
         { placeId: prediction.place_id },
-        (place: any) => {
+        (place: any, status: any) => {
+          console.log('[CreateProjectModal] getDetails callback:', {
+            status,
+            hasPlace: !!place,
+            hasAddressComponents: !!place?.address_components,
+          });
+          
           if (place?.address_components) {
             const findComponent = (type: string) =>
               place.address_components.find((c: any) => c.types.includes(type));
@@ -198,22 +320,28 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
               zip: findComponent("postal_code")?.long_name || "",
             };
 
+            console.log('[CreateProjectModal] Parsed address:', newAddress);
             setAddress(newAddress);
 
             if (inputRef.current) {
-              inputRef.current.value = `${newAddress.streetNumber} ${newAddress.streetName}, ${newAddress.city}, ${newAddress.state} ${newAddress.zip}`;
+              const fullAddress = `${newAddress.streetNumber} ${newAddress.streetName}, ${newAddress.city}, ${newAddress.state} ${newAddress.zip}`;
+              inputRef.current.value = fullAddress;
+              console.log('[CreateProjectModal] Set input value:', fullAddress);
             }
 
             // Fetch parcel number if we have coordinates
             if (place.geometry?.location) {
               const lat = place.geometry.location.lat?.() || place.geometry.location.lat;
               const lng = place.geometry.location.lng?.() || place.geometry.location.lng;
+              console.log('[CreateProjectModal] Fetching parcel info:', { lat, lng });
               fetchParcelInfo(lat, lng);
             }
           }
 
+          console.log('[CreateProjectModal] Clearing predictions and dropdown');
           setPredictions([]);
           setActiveIndex(-1);
+          setDropdownPosition(null);
         }
       );
     },
@@ -457,15 +585,27 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
               />
 
               {/* Autocomplete Predictions - rendered via portal to escape dialog overflow */}
-              {predictions.length > 0 && dropdownPosition && createPortal(
-                <div 
-                  className="fixed z-[60] bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
-                  style={{
-                    top: `${dropdownPosition.top}px`,
-                    left: `${dropdownPosition.left}px`,
-                    width: `${dropdownPosition.width}px`,
-                  }}
-                >
+              {(() => {
+                const shouldRender = predictions.length > 0 && dropdownPosition && inputRef.current;
+                console.log('[CreateProjectModal] Portal render check:', {
+                  shouldRender,
+                  predictionsLength: predictions.length,
+                  hasDropdownPosition: !!dropdownPosition,
+                  dropdownPosition,
+                  hasInputRef: !!inputRef.current,
+                });
+                
+                return shouldRender && createPortal(
+                  <div 
+                    data-address-dropdown
+                    className="fixed z-[60] bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                    style={{
+                      top: `${dropdownPosition.top}px`,
+                      left: `${dropdownPosition.left}px`,
+                      width: `${dropdownPosition.width}px`,
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
                   {predictions.map((prediction, i) => (
                     <div
                       key={prediction.place_id}
@@ -483,9 +623,10 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
                       </span>
                     </div>
                   ))}
-                </div>,
-                document.body
-              )}
+                  </div>,
+                  document.body
+                );
+              })()}
             </div>
 
             {/* Parcel Number Field */}
