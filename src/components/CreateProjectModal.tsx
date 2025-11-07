@@ -79,9 +79,10 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
     script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_PLACES_API_KEY}&libraries=places`;
     script.async = true;
     script.onload = () => {
-      if (window.google?.maps?.places) {
-        autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService();
-        placesServiceRef.current = new window.google.maps.places.PlacesService(
+      const googleMaps = (window as any).google;
+      if (googleMaps?.maps?.places) {
+        autocompleteServiceRef.current = new googleMaps.maps.places.AutocompleteService();
+        placesServiceRef.current = new googleMaps.maps.places.PlacesService(
           document.createElement("div")
         );
       }
