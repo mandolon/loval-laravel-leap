@@ -29,6 +29,8 @@ export function useWorkspaces() {
   const loadWorkspaces = async () => {
     if (!user?.id) return;
 
+    console.log('[useWorkspaces] Starting to load workspaces for user:', user.id);
+
     try {
       // Fetch ALL workspaces directly - no membership filtering
       const { data, error } = await supabase
@@ -36,15 +38,22 @@ export function useWorkspaces() {
         .select("*")
         .order('created_at', { ascending: false });
 
+      console.log('[useWorkspaces] Fetch result:', { data, error });
+
       if (error) throw error;
 
+      console.log('[useWorkspaces] Setting workspaces:', data?.length || 0, 'workspaces found');
       setWorkspaces(data || []);
       
       // Set current workspace if not set
       const stored = localStorage.getItem("current_workspace_id");
+      console.log('[useWorkspaces] Stored workspace ID:', stored);
+      
       if (stored && data?.some(w => w.id === stored)) {
+        console.log('[useWorkspaces] Using stored workspace:', stored);
         setCurrentWorkspaceId(stored);
       } else if (data && data.length > 0) {
+        console.log('[useWorkspaces] Using first workspace:', data[0].id);
         setCurrentWorkspaceId(data[0].id);
         localStorage.setItem("current_workspace_id", data[0].id);
       }
