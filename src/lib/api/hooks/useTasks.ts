@@ -101,6 +101,8 @@ export const useWorkspaceTasks = (workspaceId: string) => {
   useEffect(() => {
     if (!workspaceId) return;
 
+    let timeoutId: NodeJS.Timeout | null = null;
+
     const channel = supabase
       .channel(`workspace-tasks-${workspaceId}`)
       .on(
@@ -111,22 +113,25 @@ export const useWorkspaceTasks = (workspaceId: string) => {
           table: 'tasks',
         },
         (payload) => {
-          // Invalidate workspace queries - React Query will only refetch if needed
-          queryClient.invalidateQueries({ queryKey: taskKeys.workspace(workspaceId) });
-          queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
-          
-          // Also invalidate the specific task detail if it exists
-          const newData = payload.new && typeof payload.new === 'object' && 'id' in payload.new ? payload.new : null;
-          const oldData = payload.old && typeof payload.old === 'object' && 'id' in payload.old ? payload.old : null;
-          const taskId = newData?.id || oldData?.id;
-          if (taskId) {
-            queryClient.invalidateQueries({ queryKey: taskKeys.detail(taskId as string) });
-          }
+          // Debounce invalidations by 100ms to batch rapid changes
+          if (timeoutId) clearTimeout(timeoutId);
+          timeoutId = setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: taskKeys.workspace(workspaceId) });
+            queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
+            
+            const newData = payload.new && typeof payload.new === 'object' && 'id' in payload.new ? payload.new : null;
+            const oldData = payload.old && typeof payload.old === 'object' && 'id' in payload.old ? payload.old : null;
+            const taskId = newData?.id || oldData?.id;
+            if (taskId) {
+              queryClient.invalidateQueries({ queryKey: taskKeys.detail(taskId as string) });
+            }
+          }, 100);
         }
       )
       .subscribe();
 
     return () => {
+      if (timeoutId) clearTimeout(timeoutId);
       supabase.removeChannel(channel);
     };
   }, [workspaceId, queryClient]);
@@ -220,7 +225,78 @@ export const useCreateTask = (projectId?: string) => {
       if (error) throw error;
       return transformTask(data);
     },
-    onSuccess: async (task) => {
+    onMutate: async (input) => {
+      // Generate temporary task with all data
+      const tempId = `temp-${Date.now()}`;
+      const tempTask: Task = {
+        id: tempId,
+        shortId: 'T-TEMP',
+        projectId: input.projectId,
+        title: input.title,
+        description: input.description || '',
+        status: input.status || 'task_redline',
+        priority: input.priority || 'medium',
+        assignees: input.assignees || [],
+        attachedFiles: input.attachedFiles || [],
+        dueDate: input.dueDate,
+        estimatedTime: input.estimatedTime,
+        actualTime: 0,
+        sortOrder: input.sortOrder || 0,
+        createdBy: '',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        updatedBy: undefined,
+        deletedAt: undefined,
+        deletedBy: undefined,
+      };
+
+      const previousQueries: Array<{ key: readonly unknown[], data: any }> = [];
+
+      // Get workspace_id from project
+      const { data: project } = await supabase
+        .from('projects')
+        .select('workspace_id')
+        .eq('id', input.projectId)
+        .single();
+
+      // Update workspace query optimistically
+      if (project) {
+        const workspaceKey = taskKeys.workspace(project.workspace_id);
+        const previousData = queryClient.getQueryData(workspaceKey);
+        previousQueries.push({ key: workspaceKey, data: previousData });
+        queryClient.setQueryData(workspaceKey, (old: any) => {
+          return old ? [tempTask, ...old] : [tempTask];
+        });
+      }
+
+      // Update project-specific query if exists
+      if (projectId) {
+        const projectKey = taskKeys.list(projectId);
+        const previousData = queryClient.getQueryData(projectKey);
+        previousQueries.push({ key: projectKey, data: previousData });
+        queryClient.setQueryData(projectKey, (old: any) => {
+          return old ? [tempTask, ...old] : [tempTask];
+        });
+      }
+
+      return { previousQueries, tempId };
+    },
+    onSuccess: async (task, _, context: any) => {
+      // Replace temp task with real task in all caches
+      const tempId = context?.tempId;
+      if (tempId) {
+        const queryCache = queryClient.getQueryCache();
+        queryCache.getAll().forEach((query) => {
+          const data = query.state.data;
+          if (Array.isArray(data)) {
+            const updated = data.map((item: any) => 
+              item.id === tempId ? task : item
+            );
+            queryClient.setQueryData(query.queryKey, updated);
+          }
+        });
+      }
+
       // Get workspace_id and user for history logging
       const { data: project } = await supabase
         .from('projects')
@@ -266,7 +342,15 @@ export const useCreateTask = (projectId?: string) => {
         description: 'New task has been added',
       })
     },
-    onError: (error) => {
+    onError: (error, _, context: any) => {
+      // Rollback optimistic updates
+      if (context?.previousQueries) {
+        context.previousQueries.forEach(({ key, data }: { key: readonly unknown[], data: any }) => {
+          if (data !== undefined) {
+            queryClient.setQueryData(key, data);
+          }
+        });
+      }
       toast({
         title: 'Failed to create task',
         description: handleApiError(error),

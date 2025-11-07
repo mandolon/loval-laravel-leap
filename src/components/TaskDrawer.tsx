@@ -369,7 +369,7 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
                   <label className="text-[12px] text-[#646464] block mb-1.5">Assigned to</label>
                   <div className="flex items-center">
                     <AssigneeGroup
-                      key={task.id}
+                      key={`${task.id}-${task.assignees?.sort().join(',') || ''}`}
                       value={localAssignees}
                       usersById={usersById}
                       onChange={(next) => {

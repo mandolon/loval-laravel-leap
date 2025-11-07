@@ -465,7 +465,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
       <div className="px-2 py-1.5 text-center">
         <div className="flex justify-center items-center mx-auto">
           <AssigneeGroup
-            key={`assignee-${task.id}`}
+            key={`assignee-${task.id}-${task.assignees?.sort().join(',') || ''}`}
             value={localAssignees}
             usersById={usersById}
             onChange={handleAssigneeChange}

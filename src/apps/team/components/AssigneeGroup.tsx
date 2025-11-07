@@ -88,8 +88,22 @@ export const AssigneeGroup: React.FC<AssigneeGroupProps> = ({ value, usersById, 
 
   // Keep priority in sync when `value` changes externally
   useEffect(() => {
-    setPriority((p) => syncPriority(p, value, 2));
-  }, [value, usersById]);
+    setPriority((p) => {
+      // Ensure priority list only contains currently assigned users
+      const validPriority = p.filter(id => value.includes(id));
+      // If we have room and assigned users aren't in priority, add them up to max 2
+      const needed = Math.min(2 - validPriority.length, value.length);
+      const toAdd = value
+        .filter(id => !validPriority.includes(id))
+        .slice(0, needed);
+      const result = [...validPriority, ...toAdd].slice(0, 2);
+      
+      // Only update if actually different
+      const prevSorted = [...p].sort().join(',');
+      const resultSorted = [...result].sort().join(',');
+      return prevSorted !== resultSorted ? result : p;
+    });
+  }, [value]);
 
   // Reserve a stable width so selecting/unselecting doesn't cause layout shift
   const GROUP_WIDTH_PX = 90; // ~3 avatars width incl. overlap space
