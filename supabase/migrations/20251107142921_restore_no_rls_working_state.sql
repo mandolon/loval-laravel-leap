@@ -1,0 +1,36 @@
+-- Restore to working state: Disable RLS on all tables
+-- This matches the working version from 20251031234845
+-- The app uses UI-based access control instead of RLS
+
+ALTER TABLE public.activity_log DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ai_chat_messages DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ai_chat_threads DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.detail_library_categories DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.detail_library_files DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.detail_library_items DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.detail_library_subfolders DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.drawing_pages DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.drawing_scales DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.drawings DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.file_annotations DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.files DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.folders DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.invoice_line_items DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.invoices DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.links DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notes DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notifications DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.project_chat_messages DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.project_members DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.projects DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tasks DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.time_entries DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_preferences DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_roles DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.workspace_chat_messages DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.workspace_members DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.workspace_settings DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.workspaces DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.workspace_files DISABLE ROW LEVEL SECURITY IF EXISTS;
+

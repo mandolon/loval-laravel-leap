@@ -5,7 +5,7 @@
   "identifier": "app.lovable.rehome",
   "build": {
     "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build:desktop",
+    "beforeBuildCommand": "npm run build:tauri",
     "devUrl": "http://localhost:8080",
     "frontendDist": "../dist"
   },

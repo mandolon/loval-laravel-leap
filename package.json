@@ -8,6 +8,7 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "build:desktop": "vite build --mode production",
+    "build:tauri": "cd \"excalidraw-fork 2\" && yarn install --frozen-lockfile && yarn build:packages && cd .. && npm run build:desktop",
     "lint": "eslint .",
     "preview": "vite preview"
   },
