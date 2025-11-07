@@ -81,9 +81,14 @@ export default function OnboardingPage() {
   };
 
   const handleComplete = async () => {
-    // Reload the page to trigger TeamRouter to re-check onboarding status
-    // This ensures the router sees onboarding_completed = true
-    window.location.href = '/team/workspace';
+    console.log('handleComplete called');
+    try {
+      // Force reload to trigger TeamRouter re-check
+      console.log('Reloading to /team/workspace');
+      window.location.replace('/team/workspace');
+    } catch (error) {
+      console.error('Error in handleComplete:', error);
+    }
   };
 
   return (
