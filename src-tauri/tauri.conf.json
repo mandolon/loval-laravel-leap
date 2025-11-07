@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2.0.0",
-  "productName": "loval-laravel-leap",
+  "productName": "rehome",
   "version": "1.0.0",
-  "identifier": "app.lovable.loval-laravel-leap",
+  "identifier": "app.lovable.rehome",
   "build": {
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build:desktop",
@@ -13,7 +13,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "Loval Laravel Leap",
+        "title": "rehome",
         "width": 1280,
         "height": 800,
         "minWidth": 800,
@@ -45,8 +45,8 @@
     "resources": [],
     "copyright": "",
     "category": "Productivity",
-    "shortDescription": "Project and task management for construction professionals",
-    "longDescription": "A comprehensive project and task management application designed for construction professionals to manage workspaces, projects, clients, and tasks efficiently.",
+    "shortDescription": "rehome - project and task management for construction professionals",
+    "longDescription": "rehome - A comprehensive project and task management application designed for construction professionals to manage workspaces, projects, clients, and tasks efficiently.",
     "license": "",
     "licenseFile": ""
   },
@@ -54,7 +54,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://github.com/mandolon/loval-laravel-leap/releases/download/latest/latest.json"
+        "https://github.com/mandolon/rehome/releases/download/latest/latest.json"
       ],
       "dialog": true,
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDRCNTRFRENFNDU1QUEwNzAKUldSd29GcEZ6dTFVUzJ5YnhZcklhVGpMSEZHQnVNbXVDaitwSk1DVyt3aXJIMG41OTRXTW1jWlVtCg=="
