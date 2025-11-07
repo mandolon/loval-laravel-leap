@@ -1,0 +1,12 @@
+Fix workspace loading issue: Workspaces are not loading because Row Level Security (RLS) was enabled on database tables without policies, causing all queries to return empty results.
+
+Create a new database migration in `supabase/migrations/` that disables RLS on all tables to restore the working state. The migration should:
+
+1. Disable RLS on all application tables (workspaces, workspace_members, users, projects, tasks, files, folders, and all other tables in the public schema)
+2. Drop any existing RLS policies that might block queries
+3. Match the working state from migration `20251031234845_cd59acb1-74a1-4ab2-8eef-a2f4dcd153e3.sql`
+
+The app uses UI-based access control, not database-level RLS. After this migration, workspaces should load correctly and users can access their data.
+
+Reference the existing migration file `supabase/migrations/20251031234845_cd59acb1-74a1-4ab2-8eef-a2f4dcd153e3.sql` for the exact list of tables that need RLS disabled.
+
