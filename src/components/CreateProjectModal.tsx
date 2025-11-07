@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -324,7 +325,7 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto bg-white p-0 rounded-xl shadow-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto bg-white p-0 rounded-xl shadow-md overflow-x-visible">
         <DialogHeader className="px-5 pt-4 pb-3 border-b">
           <DialogTitle className="text-base font-semibold text-[#202020]">Create Project</DialogTitle>
         </DialogHeader>
@@ -412,36 +413,38 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
           {/* Project Address with Google Places */}
           <section className="relative">
             <Label className="block text-sm font-medium text-[#202020] mb-1">Project Address *</Label>
-            <Input
-              ref={inputRef}
-              placeholder="Start typing address..."
-              onChange={(e) => handleAddressInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className={`${errors.streetNumber || errors.streetName || errors.city || errors.state || errors.zip ? "border-destructive" : ""}`}
-            />
+            <div className="relative">
+              <Input
+                ref={inputRef}
+                placeholder="Start typing address..."
+                onChange={(e) => handleAddressInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className={`${errors.streetNumber || errors.streetName || errors.city || errors.state || errors.zip ? "border-destructive" : ""}`}
+              />
 
-            {/* Autocomplete Predictions */}
-            {predictions.length > 0 && (
-              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-md max-h-60 overflow-y-auto">
-                {predictions.map((prediction, i) => (
-                  <div
-                    key={prediction.place_id}
-                    onClick={() => handleSelectPrediction(prediction)}
-                    className={`flex items-center px-3 py-2 cursor-pointer border-b last:border-none transition-colors ${
-                      i === activeIndex ? "bg-gray-100" : "hover:bg-gray-50"
-                    }`}
-                  >
-                    <MapPin className="w-4 h-4 text-gray-500 mr-2 flex-shrink-0" />
-                    <span className="text-sm text-[#303030]">
-                      {prediction.structured_formatting.main_text}{" "}
-                      <span className="text-[#7a7a7a]">
-                        {formatSecondaryText(prediction.structured_formatting.secondary_text)}
+              {/* Autocomplete Predictions */}
+              {predictions.length > 0 && (
+                <div className="absolute z-[60] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {predictions.map((prediction, i) => (
+                    <div
+                      key={prediction.place_id}
+                      onClick={() => handleSelectPrediction(prediction)}
+                      className={`flex items-center px-3 py-2 cursor-pointer border-b last:border-none transition-colors ${
+                        i === activeIndex ? "bg-gray-100" : "hover:bg-gray-50"
+                      }`}
+                    >
+                      <MapPin className="w-4 h-4 text-gray-500 mr-2 flex-shrink-0" />
+                      <span className="text-sm text-[#303030]">
+                        {prediction.structured_formatting.main_text}{" "}
+                        <span className="text-[#7a7a7a]">
+                          {formatSecondaryText(prediction.structured_formatting.secondary_text)}
+                        </span>
                       </span>
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Parcel Number Field */}
             <div className="mt-2">
