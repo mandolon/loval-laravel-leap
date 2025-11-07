@@ -30,24 +30,33 @@ export function useWorkspaces() {
     if (!user?.id) return;
 
     try {
-      // Fetch ALL workspaces directly - no membership filtering
+      // Fetch only workspaces where user is a member
       const { data, error } = await supabase
-        .from("workspaces")
-        .select("*")
-        .order('created_at', { ascending: false });
+        .from("workspace_members")
+        .select("workspace_id, workspaces(*)")
+        .eq("user_id", user.id)
+        .is("deleted_at", null);
 
       if (error) throw error;
 
-      setWorkspaces(data || []);
+      // Extract workspaces from the join and sort by created_at
+      const userWorkspaces = (data || [])
+        .map((item: any) => item.workspaces)
+        .filter(Boolean)
+        .sort((a: any, b: any) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+
+      setWorkspaces(userWorkspaces);
       
       // Set current workspace if not set
       const stored = localStorage.getItem("current_workspace_id");
       
-      if (stored && data?.some(w => w.id === stored)) {
+      if (stored && userWorkspaces.some((w: any) => w.id === stored)) {
         setCurrentWorkspaceId(stored);
-      } else if (data && data.length > 0) {
-        setCurrentWorkspaceId(data[0].id);
-        localStorage.setItem("current_workspace_id", data[0].id);
+      } else if (userWorkspaces.length > 0) {
+        setCurrentWorkspaceId(userWorkspaces[0].id);
+        localStorage.setItem("current_workspace_id", userWorkspaces[0].id);
       }
     } catch (error) {
       console.error("Error loading workspaces:", error);
