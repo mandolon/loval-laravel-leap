@@ -66,11 +66,45 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
   const [parcel, setParcel] = useState("");
   const [predictions, setPredictions] = useState<any[]>([]);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
 
   // Google Places API refs
   const autocompleteServiceRef = useRef<any>(null);
   const placesServiceRef = useRef<any>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Calculate dropdown position based on input field
+  const updateDropdownPosition = useCallback(() => {
+    if (inputRef.current) {
+      const rect = inputRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  }, []);
+
+  // Update position when predictions change or window events occur
+  useEffect(() => {
+    if (predictions.length > 0) {
+      updateDropdownPosition();
+    } else {
+      setDropdownPosition(null);
+    }
+  }, [predictions.length, updateDropdownPosition]);
+
+  // Add scroll and resize listeners
+  useEffect(() => {
+    if (predictions.length > 0) {
+      window.addEventListener('scroll', updateDropdownPosition, true);
+      window.addEventListener('resize', updateDropdownPosition);
+      return () => {
+        window.removeEventListener('scroll', updateDropdownPosition, true);
+        window.removeEventListener('resize', updateDropdownPosition);
+      };
+    }
+  }, [predictions.length, updateDropdownPosition]);
 
   // Initialize Google Places API
   useEffect(() => {
@@ -422,9 +456,16 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
                 className={`${errors.streetNumber || errors.streetName || errors.city || errors.state || errors.zip ? "border-destructive" : ""}`}
               />
 
-              {/* Autocomplete Predictions */}
-              {predictions.length > 0 && (
-                <div className="absolute z-[60] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              {/* Autocomplete Predictions - rendered via portal to escape dialog overflow */}
+              {predictions.length > 0 && dropdownPosition && createPortal(
+                <div 
+                  className="fixed z-[60] bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                  style={{
+                    top: `${dropdownPosition.top}px`,
+                    left: `${dropdownPosition.left}px`,
+                    width: `${dropdownPosition.width}px`,
+                  }}
+                >
                   {predictions.map((prediction, i) => (
                     <div
                       key={prediction.place_id}
@@ -442,7 +483,8 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
                       </span>
                     </div>
                   ))}
-                </div>
+                </div>,
+                document.body
               )}
             </div>
 
