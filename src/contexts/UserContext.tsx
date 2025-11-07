@@ -11,6 +11,7 @@ interface UserProfile {
   email: string;
   phone?: string;
   avatar_url?: string;
+  title?: string;
   initials: string;
   last_active_at?: string;
   is_admin: boolean;

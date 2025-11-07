@@ -1,54 +1,71 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Check } from "lucide-react";
 import { AVATAR_COLORS } from "@/constants/avatarColors";
+
+// Utility: robust initials (first + last) from a full name
+function getInitials(name?: string) {
+  const safe = (name || " ").trim().replace(/\s+/g, " ");
+  if (!safe) return "PW";
+  const parts = safe.split(" ");
+  const first = parts[0]?.[0] || "";
+  const last = parts.length > 1 ? parts[parts.length - 1]?.[0] : "";
+  const combo = (first + last).toUpperCase();
+  return combo || "PW";
+}
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(1);
+  const [title, setTitle] = useState("");
   const [selectedAvatar, setSelectedAvatar] = useState<string>(AVATAR_COLORS[0]);
   const [loading, setLoading] = useState(false);
+  const [joining, setJoining] = useState(false);
   const { user, updateUser } = useUser();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleNext = () => {
-    if (step < 3) {
-      setStep(step + 1);
-    }
+  const initials = useMemo(() => getInitials(user?.name), [user?.name]);
+
+  const handleJoin = () => {
+    setJoining(true);
+    setTimeout(() => {
+      setJoining(false);
+      setStep(2);
+    }, 800);
   };
 
-  const handleBack = () => {
-    if (step > 1) {
-      setStep(step - 1);
-    }
-  };
-
-  const handleConfirmAvatar = async () => {
+  const handleConfirmProfile = async () => {
     setLoading(true);
     try {
-      // Update user avatar
+      // Update user avatar and title
       const { error: userError } = await supabase
         .from('users')
-        .update({ avatar_url: selectedAvatar })
+        .update({ avatar_url: selectedAvatar, title })
         .eq('id', user?.id);
 
       if (userError) throw userError;
 
       // Update user preferences to mark onboarding as completed
-      const { error: prefsError } = await supabase
-        .from('user_preferences')
-        .update({ onboarding_completed: true })
-        .eq('user_id', user?.id);
+      // Note: This will fail gracefully if migration hasn't been applied yet
+      try {
+        const { error: prefsError } = await supabase
+          .from('user_preferences')
+          .update({ onboarding_completed: true })
+          .eq('user_id', user?.id);
 
-      if (prefsError) throw prefsError;
+        if (prefsError) {
+          console.warn('Could not update onboarding_completed (migration may not be applied):', prefsError);
+        }
+      } catch (prefsError) {
+        // Silently continue if column doesn't exist yet
+        console.warn('Onboarding tracking not available yet');
+      }
 
       // Update local user state
-      await updateUser({ avatar_url: selectedAvatar });
+      await updateUser({ avatar_url: selectedAvatar, title });
 
       setStep(3);
     } catch (error: any) {
@@ -89,138 +106,125 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
-      <Card className="w-full max-w-2xl">
-        <CardHeader>
-          <CardTitle className="text-2xl">
-            {step === 1 && "Welcome to the Team! 👋"}
-            {step === 2 && "Choose Your Avatar"}
-            {step === 3 && "All Set! 🎉"}
-          </CardTitle>
-          <CardDescription>
-            {step === 1 && "Let's get you set up"}
-            {step === 2 && "Pick a color that represents you"}
-            {step === 3 && "You're ready to start"}
-          </CardDescription>
-        </CardHeader>
+    <div className="min-h-screen w-full relative overflow-hidden">
+      {/* Airy gradient — concentrated top, fade to white bottom (matches auth) */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(45rem 30rem at 50% 4%, hsl(215 75% 94%) 0%, hsl(220 35% 97%) 35%, hsl(0 0% 100%) 100%)",
+        }}
+      />
 
-        <CardContent className="space-y-6">
-          {/* Step 1: Welcome Question */}
-          {step === 1 && (
-            <div className="space-y-6">
-              <div className="text-center space-y-4">
-                <p className="text-lg">Hi <span className="font-semibold">{user?.name}</span>!</p>
-                <p className="text-muted-foreground">
-                  We're excited to have you on board. Let's personalize your profile in just a few quick steps.
-                </p>
-                {/* ADD YOUR CUSTOM QUESTION/CONTENT HERE */}
-                <div className="bg-muted p-6 rounded-lg">
-                  <p className="text-sm text-muted-foreground">
-                    This is where you can add your custom question or content.
-                  </p>
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Button onClick={handleNext} size="lg">
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 text-center select-none">
+        {/* Step 1 — Join invite */}
+        {step === 1 && (
+          <div className="w-full max-w-[440px]">
+            <h1 className="text-lg font-medium text-slate-800">Join the PinerWorks Workspace</h1>
+            <p className="text-sm text-slate-500 mt-2">Invited by {user?.name}</p>
 
-          {/* Step 2: Avatar Selection */}
-          {step === 2 && (
-            <div className="space-y-6">
-              <div className="space-y-4">
-                <p className="text-center text-muted-foreground">
-                  Select an avatar color that suits your style
-                </p>
+            <button
+              onClick={handleJoin}
+              disabled={joining}
+              className="mt-6 h-9 w-full rounded-lg font-semibold inline-flex items-center justify-center gap-2 transition disabled:opacity-60 disabled:cursor-not-allowed bg-[#202020] text-white hover:bg-[#111]"
+            >
+              {joining && <Loader2 className="h-4 w-4 animate-spin" />}
+              {joining ? "Joining workspace…" : "Join PinerWorks"}
+            </button>
+
+            <button
+              onClick={handleJoin}
+              className="mt-3 text-[13px] text-slate-500 hover:text-[#00639b] hover:underline transition"
+            >
+              Decline invite
+            </button>
+          </div>
+        )}
+
+        {/* Step 2 — Avatar + Title customization */}
+        {step === 2 && (
+          <div className="w-full max-w-[720px] flex flex-col md:flex-row items-start justify-center gap-10">
+            {/* Left Section */}
+            <div className="text-left max-w-[320px] w-full">
+              <h1 className="text-xl font-semibold text-slate-800 mb-2">Let's personalize your experience</h1>
+              <p className="text-sm text-slate-500 mb-6">Choose your avatar color and add your title.</p>
+
+              <label className="text-sm font-medium text-slate-700 block mb-1">Job Title</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Architect, Designer, etc."
+                className="w-full h-8 rounded-lg border border-slate-200 bg-white text-[13px] text-slate-800 placeholder:text-slate-400 px-3 outline-none hover:border-slate-300 focus:border-[#00639b] focus:ring-1 focus:ring-[#9ecafc]"
+              />
+
+              <div className="mt-6">
+                <label className="text-sm font-medium text-slate-700 block mb-2">Avatar Color</label>
                 <div className="grid grid-cols-6 gap-3">
-                  {AVATAR_COLORS.map((color, index) => (
+                  {AVATAR_COLORS.map((color, i) => (
                     <button
-                      key={index}
+                      key={i}
                       onClick={() => setSelectedAvatar(color)}
-                      className={`h-16 w-16 rounded-full transition-all flex items-center justify-center text-white font-semibold text-lg ${
-                        selectedAvatar === color
-                          ? 'ring-4 ring-primary ring-offset-4 ring-offset-background scale-110'
-                          : 'hover:scale-105 opacity-70 hover:opacity-100'
+                      className={`h-10 w-10 rounded-full border-2 transition hover:scale-105 ${
+                        selectedAvatar === color ? "border-[#00639b] ring-2 ring-[#9ecafc]" : "border-slate-200"
                       }`}
                       style={{ background: color }}
-                      aria-label={`Avatar option ${index + 1}`}
-                    >
-                      {user?.name?.charAt(0).toUpperCase()}
-                    </button>
+                      aria-label={`Avatar color ${i + 1}`}
+                    />
                   ))}
                 </div>
-                <div className="flex justify-center pt-4">
-                  <div
-                    className="w-32 h-32 rounded-full shadow-lg flex items-center justify-center text-4xl font-bold text-white"
-                    style={{ background: selectedAvatar }}
-                  >
-                    {user?.name?.charAt(0).toUpperCase()}
-                  </div>
-                </div>
               </div>
-              <div className="flex justify-between">
-                <Button onClick={handleBack} variant="outline" disabled={loading}>
-                  Back
-                </Button>
-                <Button onClick={handleConfirmAvatar} size="lg" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    'Confirm'
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
 
-          {/* Step 3: Confirmation */}
-          {step === 3 && (
-            <div className="space-y-6">
-              <div className="text-center space-y-4">
-                <div className="flex justify-center">
-                  <div
-                    className="w-32 h-32 rounded-full shadow-lg flex items-center justify-center text-4xl font-bold text-white"
-                    style={{ background: selectedAvatar }}
-                  >
-                    {user?.name?.charAt(0).toUpperCase()}
-                  </div>
-                </div>
-                <p className="text-lg font-medium">Perfect, {user?.name}!</p>
-                <p className="text-muted-foreground">
-                  Your profile is all set up. You're ready to start collaborating with your team.
-                </p>
-              </div>
-              <div className="flex justify-center">
-                <Button onClick={handleComplete} size="lg" className="px-8">
-                  Get Started
-                </Button>
-              </div>
+              <button
+                onClick={handleConfirmProfile}
+                disabled={!selectedAvatar || !title || loading}
+                className="mt-8 h-9 w-full rounded-lg font-semibold bg-[#00639b] text-white hover:bg-[#005480] disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+              >
+                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                {loading ? "Saving…" : "Continue"}
+              </button>
             </div>
-          )}
 
-          {/* Progress indicator */}
-          <div className="flex justify-center gap-2 pt-4">
-            {[1, 2, 3].map((s) => (
+            {/* Right Section — Avatar Preview */}
+            <div className="flex flex-col items-center justify-center border border-slate-200 rounded-xl bg-white shadow-sm p-8 w-[280px] h-[280px]">
               <div
-                key={s}
-                className={`h-2 rounded-full transition-all ${
-                  s === step
-                    ? 'w-8 bg-primary'
-                    : s < step
-                    ? 'w-2 bg-primary/50'
-                    : 'w-2 bg-muted'
-                }`}
-              />
-            ))}
+                className="h-16 w-16 rounded-full flex items-center justify-center text-white font-semibold text-2xl"
+                style={{ background: selectedAvatar }}
+              >
+                {initials}
+              </div>
+              <p className="mt-4 font-semibold text-slate-800">{user?.name}</p>
+              <p className="text-sm text-slate-500 mt-1">{title ? `PinerWorks ${title}` : "PinerWorks Member"}</p>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        )}
+
+        {/* Step 3 — Completion */}
+        {step === 3 && (
+          <div className="flex flex-col items-center">
+            <div className="h-12 w-12 flex items-center justify-center rounded-full bg-green-100 text-green-600">
+              <Check className="h-6 w-6" />
+            </div>
+            <h1 className="mt-4 text-lg font-medium text-slate-800">All set!</h1>
+            <p className="text-sm text-slate-500 mt-2">Your profile is ready. Welcome to PinerWorks.</p>
+            <button
+              onClick={handleComplete}
+              className="mt-6 h-9 w-48 rounded-lg font-semibold bg-[#00639b] text-white hover:bg-[#005480]"
+            >
+              Go to dashboard
+            </button>
+          </div>
+        )}
+
+        {/* Footer */}
+        <p className="mt-16 text-center text-[11px] text-slate-500">
+          By continuing, you agree to our
+          <a href="#" className="text-[#3a78bd] hover:text-[#2c5e96] hover:underline ml-1">Terms of Service</a>
+          {" "}and
+          <a href="#" className="text-[#3a78bd] hover:text-[#2c5e96] hover:underline ml-1">Privacy Policy</a>
+        </p>
+      </div>
     </div>
   );
 }
