@@ -1,5 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
-import { MapPin, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import type { CreateProjectInput } from "@/lib/api/types";
 import { z } from "zod";
 
@@ -64,352 +63,6 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
     zip: "",
   });
   const [parcel, setParcel] = useState("");
-  const [predictions, setPredictions] = useState<any[]>([]);
-  const [activeIndex, setActiveIndex] = useState(-1);
-  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
-
-  // Google Places API refs
-  const autocompleteServiceRef = useRef<any>(null);
-  const placesServiceRef = useRef<any>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  // Calculate dropdown position based on input field
-  const updateDropdownPosition = useCallback(() => {
-    if (inputRef.current) {
-      const rect = inputRef.current.getBoundingClientRect();
-      const position = {
-        top: rect.bottom + 4, // 4px below the input
-        left: rect.left,
-        width: rect.width,
-      };
-      console.log('[CreateProjectModal] updateDropdownPosition:', {
-        rect: {
-          top: rect.top,
-          bottom: rect.bottom,
-          left: rect.left,
-          right: rect.right,
-          width: rect.width,
-          height: rect.height,
-        },
-        calculatedPosition: position,
-        viewport: {
-          width: window.innerWidth,
-          height: window.innerHeight,
-        },
-        scrollY: window.scrollY,
-        scrollX: window.scrollX,
-      });
-      setDropdownPosition(position);
-    } else {
-      console.warn('[CreateProjectModal] updateDropdownPosition: inputRef.current is null');
-    }
-  }, []);
-
-  // Update position when predictions change or window events occur
-  useEffect(() => {
-    console.log('[CreateProjectModal] predictions changed:', {
-      predictionsLength: predictions.length,
-      hasInputRef: !!inputRef.current,
-      inputRefValue: inputRef.current?.value,
-    });
-    
-    if (predictions.length > 0 && inputRef.current) {
-      // Use requestAnimationFrame to ensure DOM is fully updated
-      const rafId = requestAnimationFrame(() => {
-        console.log('[CreateProjectModal] Calling updateDropdownPosition from RAF');
-        updateDropdownPosition();
-      });
-      return () => cancelAnimationFrame(rafId);
-    } else {
-      console.log('[CreateProjectModal] Clearing dropdownPosition');
-      setDropdownPosition(null);
-    }
-  }, [predictions.length, updateDropdownPosition]);
-
-  // Add scroll and resize listeners, and click-outside handler
-  useEffect(() => {
-    if (predictions.length > 0 && inputRef.current) {
-      console.log('[CreateProjectModal] Setting up scroll/resize/click listeners');
-      const handleScroll = () => {
-        console.log('[CreateProjectModal] Scroll detected, updating position');
-        updateDropdownPosition();
-      };
-      const handleResize = () => {
-        console.log('[CreateProjectModal] Resize detected, updating position');
-        updateDropdownPosition();
-      };
-      const handleClickOutside = (e: MouseEvent) => {
-        // Close dropdown if clicking outside the input and dropdown
-        const target = e.target as Node;
-        if (inputRef.current && !inputRef.current.contains(target)) {
-          const dropdown = document.querySelector('[data-address-dropdown]');
-          if (dropdown && !dropdown.contains(target)) {
-            console.log('[CreateProjectModal] Click outside detected, closing dropdown');
-            setPredictions([]);
-            setDropdownPosition(null);
-          }
-        }
-      };
-      
-      window.addEventListener('scroll', handleScroll, true);
-      window.addEventListener('resize', handleResize);
-      document.addEventListener('mousedown', handleClickOutside);
-      
-      return () => {
-        console.log('[CreateProjectModal] Cleaning up scroll/resize/click listeners');
-        window.removeEventListener('scroll', handleScroll, true);
-        window.removeEventListener('resize', handleResize);
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
-    }
-  }, [predictions.length, updateDropdownPosition]);
-
-  // Debug: Track dropdownPosition state changes
-  useEffect(() => {
-    console.log('[CreateProjectModal] dropdownPosition state changed:', dropdownPosition);
-    if (dropdownPosition) {
-      // Verify the portal element exists in DOM
-      setTimeout(() => {
-        const portalElement = document.querySelector('[data-address-dropdown]');
-        console.log('[CreateProjectModal] Portal element in DOM:', {
-          exists: !!portalElement,
-          computedStyle: portalElement ? window.getComputedStyle(portalElement as Element) : null,
-          boundingRect: portalElement ? (portalElement as Element).getBoundingClientRect() : null,
-        });
-      }, 100);
-    }
-  }, [dropdownPosition]);
-
-  // Initialize Google Places API
-  useEffect(() => {
-    console.log('[CreateProjectModal] Google Places API effect:', { open });
-    if (!open) {
-      console.log('[CreateProjectModal] Dialog closed, skipping API init');
-      return;
-    }
-
-    const apiKey = import.meta.env.VITE_GOOGLE_PLACES_API_KEY;
-    console.log('[CreateProjectModal] API Key check:', {
-      hasKey: !!apiKey,
-      keyLength: apiKey?.length || 0,
-      keyPrefix: apiKey ? `${apiKey.substring(0, 10)}...` : 'N/A',
-    });
-
-    if (!apiKey) {
-      console.error('[CreateProjectModal] VITE_GOOGLE_PLACES_API_KEY is not set in environment variables');
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&loading=async`;
-    script.async = true;
-    script.onload = () => {
-      console.log('[CreateProjectModal] Google Places API script loaded');
-      const googleMaps = (window as any).google;
-      if (googleMaps?.maps?.places) {
-        console.log('[CreateProjectModal] Initializing AutocompleteService and PlacesService');
-        try {
-          autocompleteServiceRef.current = new googleMaps.maps.places.AutocompleteService();
-          placesServiceRef.current = new googleMaps.maps.places.PlacesService(
-            document.createElement("div")
-          );
-          console.log('[CreateProjectModal] Services initialized successfully');
-        } catch (error) {
-          console.error('[CreateProjectModal] Error initializing services:', error);
-        }
-      } else {
-        console.error('[CreateProjectModal] Google Maps Places API not available after script load');
-      }
-    };
-    script.onerror = (error) => {
-      console.error('[CreateProjectModal] Failed to load Google Places API script:', error);
-      console.error('[CreateProjectModal] Check that VITE_GOOGLE_PLACES_API_KEY is valid and has Places API enabled');
-    };
-    
-    // Listen for API errors
-    window.addEventListener('error', (event) => {
-      if (event.message?.includes('Google Maps') || event.message?.includes('InvalidKey')) {
-        console.error('[CreateProjectModal] Google Maps API error detected:', event.message);
-        console.error('[CreateProjectModal] Please check your API key configuration and ensure Places API is enabled');
-      }
-    }, true);
-    
-    document.body.appendChild(script);
-
-    return () => {
-      console.log('[CreateProjectModal] Cleaning up Google Places API script');
-      try {
-        document.body.removeChild(script);
-      } catch (e) {
-        // Script already removed
-        console.log('[CreateProjectModal] Script already removed');
-      }
-    };
-  }, [open]);
-
-  // Handle address input and get predictions
-  const handleAddressInput = useCallback(
-    (value: string) => {
-      console.log('[CreateProjectModal] handleAddressInput:', {
-        value,
-        hasAutocompleteService: !!autocompleteServiceRef.current,
-      });
-      
-      if (!value || !autocompleteServiceRef.current) {
-        if (!autocompleteServiceRef.current) {
-          console.error('[CreateProjectModal] AutocompleteService not available. Check API key and ensure Places API is enabled.');
-        }
-        console.log('[CreateProjectModal] Clearing predictions (no value or service)');
-        setPredictions([]);
-        setDropdownPosition(null);
-        return;
-      }
-
-      autocompleteServiceRef.current.getPlacePredictions(
-        {
-          input: value,
-          types: ["address"],
-          componentRestrictions: { country: "us" },
-        },
-        (results: any, status: any) => {
-          console.log('[CreateProjectModal] getPlacePredictions callback:', {
-            resultsCount: results?.length || 0,
-            status,
-            results: results?.slice(0, 3), // Log first 3 for debugging
-          });
-          
-          if (status !== 'OK' && status !== 'ZERO_RESULTS') {
-            console.error('[CreateProjectModal] Google Places API error:', status);
-            if (status === 'REQUEST_DENIED') {
-              console.error('[CreateProjectModal] API request denied. Check API key permissions and billing.');
-            } else if (status === 'INVALID_REQUEST') {
-              console.error('[CreateProjectModal] Invalid request. Check API key configuration.');
-            }
-          }
-          
-          setPredictions(results || []);
-          setActiveIndex(-1);
-          
-          // Update position after predictions are set
-          if (inputRef.current && results && results.length > 0) {
-            setTimeout(() => {
-              console.log('[CreateProjectModal] Updating position after predictions received');
-              updateDropdownPosition();
-            }, 0);
-          }
-        }
-      );
-    },
-    [updateDropdownPosition]
-  );
-
-  // Fetch parcel number from coordinates
-  const fetchParcelInfo = useCallback(async (lat: number, lng: number) => {
-    try {
-      // Use a backend proxy to avoid CORS issues
-      const response = await fetch("/api/parcel/lookup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lat, lng }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.parcelNumber) {
-          setParcel(data.parcelNumber);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching parcel info:", error);
-      // Silently fail - parcel is optional
-    }
-  }, []);
-
-  // Handle prediction selection
-  const handleSelectPrediction = useCallback(
-    (prediction: any) => {
-      console.log('[CreateProjectModal] handleSelectPrediction:', {
-        placeId: prediction.place_id,
-        description: prediction.description,
-        hasPlacesService: !!placesServiceRef.current,
-      });
-      
-      if (!placesServiceRef.current) {
-        console.warn('[CreateProjectModal] PlacesService not available');
-        return;
-      }
-
-      placesServiceRef.current.getDetails(
-        { placeId: prediction.place_id },
-        (place: any, status: any) => {
-          console.log('[CreateProjectModal] getDetails callback:', {
-            status,
-            hasPlace: !!place,
-            hasAddressComponents: !!place?.address_components,
-          });
-          
-          if (place?.address_components) {
-            const findComponent = (type: string) =>
-              place.address_components.find((c: any) => c.types.includes(type));
-
-            const newAddress = {
-              streetNumber: findComponent("street_number")?.long_name || "",
-              streetName: findComponent("route")?.long_name || "",
-              city: findComponent("locality")?.long_name || "",
-              state: findComponent("administrative_area_level_1")?.short_name || "",
-              zip: findComponent("postal_code")?.long_name || "",
-            };
-
-            console.log('[CreateProjectModal] Parsed address:', newAddress);
-            setAddress(newAddress);
-
-            if (inputRef.current) {
-              const fullAddress = `${newAddress.streetNumber} ${newAddress.streetName}, ${newAddress.city}, ${newAddress.state} ${newAddress.zip}`;
-              inputRef.current.value = fullAddress;
-              console.log('[CreateProjectModal] Set input value:', fullAddress);
-            }
-
-            // Fetch parcel number if we have coordinates
-            if (place.geometry?.location) {
-              const lat = place.geometry.location.lat?.() || place.geometry.location.lat;
-              const lng = place.geometry.location.lng?.() || place.geometry.location.lng;
-              console.log('[CreateProjectModal] Fetching parcel info:', { lat, lng });
-              fetchParcelInfo(lat, lng);
-            }
-          }
-
-          console.log('[CreateProjectModal] Clearing predictions and dropdown');
-          setPredictions([]);
-          setActiveIndex(-1);
-          setDropdownPosition(null);
-        }
-      );
-    },
-    [fetchParcelInfo]
-  );
-
-  // Handle keyboard navigation
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (predictions.length === 0) return;
-
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setActiveIndex((prev) => (prev + 1) % predictions.length);
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setActiveIndex((prev) => (prev - 1 + predictions.length) % predictions.length);
-    } else if (e.key === "Enter" && activeIndex >= 0) {
-      e.preventDefault();
-      handleSelectPrediction(predictions[activeIndex]);
-    }
-  };
-
-  // Format secondary text for autocomplete display
-  const formatSecondaryText = (text?: string): string => {
-    if (!text) return "";
-    const parts = text.split(",").map((p) => p.trim());
-    return parts.filter((part) => !part.match(/USA|United States/i)).join(", ");
-  };
 
   // Handle category toggle
   const handleCategoryToggle = (key: string) => {
@@ -510,11 +163,6 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
     setHasSecondary(false);
     setIsPrivate(false);
     setErrors({});
-    setPredictions([]);
-    setActiveIndex(-1);
-    if (inputRef.current) {
-      inputRef.current.value = "";
-    }
   };
 
   return (
@@ -527,7 +175,7 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto bg-white p-0 rounded-xl shadow-md overflow-x-visible">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto bg-white p-0 rounded-xl shadow-md">
         <DialogHeader className="px-5 pt-4 pb-3 border-b">
           <DialogTitle className="text-base font-semibold text-[#202020]">Create Project</DialogTitle>
         </DialogHeader>
@@ -612,71 +260,46 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
             )}
           </section>
 
-          {/* Project Address with Google Places */}
-          <section className="relative">
-            <Label className="block text-sm font-medium text-[#202020] mb-1">Project Address *</Label>
-            <div className="relative">
+          {/* Project Address - Separate Fields */}
+          <section>
+            <Label className="block text-sm font-medium text-[#202020] mb-2">Project Address *</Label>
+            
+            <div className="grid grid-cols-2 gap-2">
               <Input
-                ref={inputRef}
-                placeholder="Start typing address..."
-                onChange={(e) => handleAddressInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className={`${errors.streetNumber || errors.streetName || errors.city || errors.state || errors.zip ? "border-destructive" : ""}`}
+                placeholder="Street Number *"
+                value={address.streetNumber}
+                onChange={(e) => setAddress({ ...address, streetNumber: e.target.value })}
+                className={errors.streetNumber ? "border-destructive" : ""}
               />
-
-              {/* Autocomplete Predictions - rendered via portal to escape dialog overflow */}
-              {(() => {
-                const shouldRender = predictions.length > 0 && dropdownPosition && inputRef.current;
-                console.log('[CreateProjectModal] Portal render check:', {
-                  shouldRender,
-                  predictionsLength: predictions.length,
-                  hasDropdownPosition: !!dropdownPosition,
-                  dropdownPosition,
-                  hasInputRef: !!inputRef.current,
-                });
-                
-                return shouldRender && createPortal(
-                  <div 
-                    data-address-dropdown
-                    className="fixed z-[60] bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
-                    style={{
-                      top: `${dropdownPosition.top}px`,
-                      left: `${dropdownPosition.left}px`,
-                      width: `${dropdownPosition.width}px`,
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                  {predictions.map((prediction, i) => (
-                    <div
-                      key={prediction.place_id}
-                      onClick={() => handleSelectPrediction(prediction)}
-                      className={`flex items-center px-3 py-2 cursor-pointer border-b last:border-none transition-colors ${
-                        i === activeIndex ? "bg-gray-100" : "hover:bg-gray-50"
-                      }`}
-                    >
-                      <MapPin className="w-4 h-4 text-gray-500 mr-2 flex-shrink-0" />
-                      <span className="text-sm text-[#303030]">
-                        {prediction.structured_formatting.main_text}{" "}
-                        <span className="text-[#7a7a7a]">
-                          {formatSecondaryText(prediction.structured_formatting.secondary_text)}
-                        </span>
-                      </span>
-                    </div>
-                  ))}
-                  </div>,
-                  document.body
-                );
-              })()}
-            </div>
-
-            {/* Parcel Number Field */}
-            <div className="mt-2">
-              <Label className="block text-sm text-[#202020] mb-1">Parcel Number</Label>
               <Input
+                placeholder="Street Name *"
+                value={address.streetName}
+                onChange={(e) => setAddress({ ...address, streetName: e.target.value })}
+                className={errors.streetName ? "border-destructive" : ""}
+              />
+              <Input
+                placeholder="City *"
+                value={address.city}
+                onChange={(e) => setAddress({ ...address, city: e.target.value })}
+                className={errors.city ? "border-destructive" : ""}
+              />
+              <Input
+                placeholder="State (CA) *"
+                value={address.state}
+                onChange={(e) => setAddress({ ...address, state: e.target.value.toUpperCase() })}
+                maxLength={2}
+                className={errors.state ? "border-destructive" : ""}
+              />
+              <Input
+                placeholder="Zip Code *"
+                value={address.zip}
+                onChange={(e) => setAddress({ ...address, zip: e.target.value })}
+                className={errors.zip ? "border-destructive" : ""}
+              />
+              <Input
+                placeholder="Parcel Number"
                 value={parcel}
                 onChange={(e) => setParcel(e.target.value)}
-                placeholder="Auto-fill or enter manually"
-                className="bg-gray-50 text-[#303030]"
               />
             </div>
 
@@ -707,27 +330,26 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
             </div>
           </section>
 
-          {/* Privacy Toggle */}
+          {/* Action Buttons with Privacy Toggle */}
           <div className="flex items-center justify-between border-t pt-4">
             <div className="flex items-center gap-2">
               <Switch checked={isPrivate} onCheckedChange={setIsPrivate} />
               <p className="text-sm font-medium text-[#202020]">Make private</p>
             </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-2 justify-end border-t pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              className="text-sm px-3 py-1.5"
-              onClick={() => setOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" className="text-sm px-3 py-1.5 bg-[#4C75D1] hover:bg-[#3A61B0]">
-              Create Project
-            </Button>
+            
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="text-sm px-3 py-1.5"
+                onClick={() => setOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" className="text-sm px-3 py-1.5 bg-[#4C75D1] hover:bg-[#3A61B0]">
+                Create Project
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>
