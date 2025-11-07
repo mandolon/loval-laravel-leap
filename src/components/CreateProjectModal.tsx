@@ -188,25 +188,52 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
       return;
     }
 
+    const apiKey = import.meta.env.VITE_GOOGLE_PLACES_API_KEY;
+    console.log('[CreateProjectModal] API Key check:', {
+      hasKey: !!apiKey,
+      keyLength: apiKey?.length || 0,
+      keyPrefix: apiKey ? `${apiKey.substring(0, 10)}...` : 'N/A',
+    });
+
+    if (!apiKey) {
+      console.error('[CreateProjectModal] VITE_GOOGLE_PLACES_API_KEY is not set in environment variables');
+      return;
+    }
+
     const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_PLACES_API_KEY}&libraries=places`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&loading=async`;
     script.async = true;
     script.onload = () => {
       console.log('[CreateProjectModal] Google Places API script loaded');
       const googleMaps = (window as any).google;
       if (googleMaps?.maps?.places) {
         console.log('[CreateProjectModal] Initializing AutocompleteService and PlacesService');
-        autocompleteServiceRef.current = new googleMaps.maps.places.AutocompleteService();
-        placesServiceRef.current = new googleMaps.maps.places.PlacesService(
-          document.createElement("div")
-        );
+        try {
+          autocompleteServiceRef.current = new googleMaps.maps.places.AutocompleteService();
+          placesServiceRef.current = new googleMaps.maps.places.PlacesService(
+            document.createElement("div")
+          );
+          console.log('[CreateProjectModal] Services initialized successfully');
+        } catch (error) {
+          console.error('[CreateProjectModal] Error initializing services:', error);
+        }
       } else {
-        console.error('[CreateProjectModal] Google Maps Places API not available');
+        console.error('[CreateProjectModal] Google Maps Places API not available after script load');
       }
     };
-    script.onerror = () => {
-      console.error('[CreateProjectModal] Failed to load Google Places API script');
+    script.onerror = (error) => {
+      console.error('[CreateProjectModal] Failed to load Google Places API script:', error);
+      console.error('[CreateProjectModal] Check that VITE_GOOGLE_PLACES_API_KEY is valid and has Places API enabled');
     };
+    
+    // Listen for API errors
+    window.addEventListener('error', (event) => {
+      if (event.message?.includes('Google Maps') || event.message?.includes('InvalidKey')) {
+        console.error('[CreateProjectModal] Google Maps API error detected:', event.message);
+        console.error('[CreateProjectModal] Please check your API key configuration and ensure Places API is enabled');
+      }
+    }, true);
+    
     document.body.appendChild(script);
 
     return () => {
@@ -229,6 +256,9 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
       });
       
       if (!value || !autocompleteServiceRef.current) {
+        if (!autocompleteServiceRef.current) {
+          console.error('[CreateProjectModal] AutocompleteService not available. Check API key and ensure Places API is enabled.');
+        }
         console.log('[CreateProjectModal] Clearing predictions (no value or service)');
         setPredictions([]);
         setDropdownPosition(null);
@@ -247,6 +277,16 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
             status,
             results: results?.slice(0, 3), // Log first 3 for debugging
           });
+          
+          if (status !== 'OK' && status !== 'ZERO_RESULTS') {
+            console.error('[CreateProjectModal] Google Places API error:', status);
+            if (status === 'REQUEST_DENIED') {
+              console.error('[CreateProjectModal] API request denied. Check API key permissions and billing.');
+            } else if (status === 'INVALID_REQUEST') {
+              console.error('[CreateProjectModal] Invalid request. Check API key configuration.');
+            }
+          }
+          
           setPredictions(results || []);
           setActiveIndex(-1);
           
