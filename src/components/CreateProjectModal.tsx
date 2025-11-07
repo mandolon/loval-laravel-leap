@@ -420,10 +420,11 @@ export const CreateProjectModal = ({ onCreateProject, workspaceId, children }: C
                 onKeyDown={handleKeyDown}
                 className={`${errors.streetNumber || errors.streetName || errors.city || errors.state || errors.zip ? "border-destructive" : ""}`}
               />
+              <p className="text-xs text-muted-foreground mt-1">Select an address to auto-fill all fields</p>
 
               {/* Autocomplete Predictions */}
               {predictions.length > 0 && (
-                <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-md">
+                <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                   {predictions.map((prediction, i) => (
                     <div
                       key={prediction.place_id}
