@@ -28,12 +28,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Users, Check, X, Pencil } from "lucide-react";
+import { Trash2, Users, Check, X, Pencil, RotateCcw } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import { AddUserDialog } from "@/components/AddUserDialog";
 import { AddUserToWorkspaceDialog } from "@/components/AddUserToWorkspaceDialog";
-import { useUsers, useUpdateUserRole } from "@/lib/api/hooks";
+import { useUsers, useUpdateUserRole, useDeletedUsers } from "@/lib/api/hooks";
 import { Badge } from "@/components/ui/badge";
 import { useQueryClient } from "@tanstack/react-query";
 import { DESIGN_TOKENS as T } from "@/lib/design-tokens";
@@ -47,6 +48,7 @@ const TeamPage = () => {
   const queryClient = useQueryClient();
 
   const { data: usersWithWorkspaces, isLoading } = useUsers();
+  const { data: deletedUsers, isLoading: isLoadingDeleted } = useDeletedUsers();
   const updateUserRole = useUpdateUserRole();
 
 
@@ -191,7 +193,36 @@ const TeamPage = () => {
     }
   };
 
-  if (isLoading) {
+  const handleRestore = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ 
+          deleted_at: null,
+          deleted_by: null 
+        })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      await queryClient.refetchQueries({ queryKey: ['users'] });
+      await queryClient.refetchQueries({ queryKey: ['deleted-users'] });
+      
+      toast({
+        title: "User restored",
+        description: "User has been successfully restored",
+      });
+    } catch (error) {
+      console.error('Error restoring user:', error);
+      toast({
+        title: "Error restoring user",
+        description: "Failed to restore user",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (isLoading || isLoadingDeleted) {
     return (
       <div className="p-4 space-y-4 max-w-7xl mx-auto">
         <PageHeader title="User Management" />
@@ -211,175 +242,254 @@ const TeamPage = () => {
         <AddUserDialog />
       </div>
 
-      {/* Content */}
+      {/* Content with Tabs */}
       <div className="flex-1 overflow-auto p-4">
-        {!usersWithWorkspaces || usersWithWorkspaces.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
-              <Users className="h-12 w-12 text-muted-foreground" />
-            </div>
-            <h3 className="text-2xl font-semibold mb-2">No team members</h3>
-            <p className="text-muted-foreground">
-              Team members will appear here
-            </p>
-          </div>
-        ) : (
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Workspaces</TableHead>
-                  <TableHead>Admin Status</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {usersWithWorkspaces.map((user) => (
-                  <TableRow key={user.id}>
-                    {/* Name Cell - Editable */}
-                    <TableCell>
-                      {editingId === user.id ? (
-                        <Input
-                          value={editValues.name}
-                          onChange={(e) => setEditValues({ ...editValues, name: e.target.value })}
-                          placeholder="Full Name"
-                          className="h-8"
-                        />
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">
-                            {user.name}
-                          </span>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-6 w-6"
-                            onClick={() => startEditing(user)}
-                          >
-                            <Pencil className="h-3 w-3 text-muted-foreground" />
-                          </Button>
-                        </div>
-                      )}
-                    </TableCell>
+        <Tabs defaultValue="active" className="w-full">
+          <TabsList>
+            <TabsTrigger value="active">
+              Active Users ({usersWithWorkspaces?.length || 0})
+            </TabsTrigger>
+            <TabsTrigger value="deleted">
+              Deleted Users ({deletedUsers?.length || 0})
+            </TabsTrigger>
+          </TabsList>
 
-                    {/* Role Cell */}
-                    <TableCell>
-                      <Select
-                        value={user.role || 'client'}
-                        onValueChange={(newRole: 'team' | 'consultant' | 'client') => 
-                          handleRoleChange(user.id, newRole)
-                        }
-                      >
-                        <SelectTrigger className="w-[120px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="team">Team</SelectItem>
-                          <SelectItem value="consultant">Consultant</SelectItem>
-                          <SelectItem value="client">Client</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
+          {/* Active Users Tab */}
+          <TabsContent value="active" className="mt-4">
+            {!usersWithWorkspaces || usersWithWorkspaces.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
+                  <Users className="h-12 w-12 text-muted-foreground" />
+                </div>
+                <h3 className="text-2xl font-semibold mb-2">No team members</h3>
+                <p className="text-muted-foreground">
+                  Team members will appear here
+                </p>
+              </div>
+            ) : (
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Workspaces</TableHead>
+                      <TableHead>Admin Status</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {usersWithWorkspaces.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>
+                          {editingId === user.id ? (
+                            <Input
+                              value={editValues.name}
+                              onChange={(e) => setEditValues({ ...editValues, name: e.target.value })}
+                              placeholder="Full Name"
+                              className="h-8"
+                            />
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{user.name}</span>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-6 w-6"
+                                onClick={() => startEditing(user)}
+                              >
+                                <Pencil className="h-3 w-3 text-muted-foreground" />
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={user.role || 'client'}
+                            onValueChange={(newRole: 'team' | 'consultant' | 'client') => 
+                              handleRoleChange(user.id, newRole)
+                            }
+                          >
+                            <SelectTrigger className="w-[120px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="team">Team</SelectItem>
+                              <SelectItem value="consultant">Consultant</SelectItem>
+                              <SelectItem value="client">Client</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          {editingId === user.id ? (
+                            <div className="flex gap-2 items-center">
+                              <Input
+                                value={editValues.title}
+                                onChange={(e) => setEditValues({ ...editValues, title: e.target.value })}
+                                placeholder="Title"
+                                className="h-8"
+                              />
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8"
+                                onClick={() => saveEdit(user.id)}
+                              >
+                                <Check className="h-4 w-4 text-green-600" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8"
+                                onClick={cancelEditing}
+                              >
+                                <X className="h-4 w-4 text-red-600" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">
+                              {user.title || '—'}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                        <TableCell>
+                          {user.workspaces && user.workspaces.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {user.workspaces.map((ws) => (
+                                <Badge key={ws.workspaceId} variant="secondary" className="text-xs">
+                                  {ws.workspaceName}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant={user.isAdmin ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handleToggleAdmin(user.id, user.isAdmin)}
+                            disabled={user.id === currentUser?.id}
+                          >
+                            {user.isAdmin ? '✓ Admin' : 'Make Admin'}
+                          </Button>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-green-600">Active</span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <AddUserToWorkspaceDialog 
+                              userId={user.id} 
+                              userName={user.name}
+                              userWorkspaceIds={user.workspaces.map(w => w.workspaceId)}
+                            />
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              onClick={() => setDeleteUserId(user.id)}
+                              disabled={user.id === currentUser?.id}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </TabsContent>
 
-                    {/* Title Cell - Editable */}
-                    <TableCell>
-                      {editingId === user.id ? (
-                        <div className="flex gap-2 items-center">
-                          <Input
-                            value={editValues.title}
-                            onChange={(e) => setEditValues({ ...editValues, title: e.target.value })}
-                            placeholder="Title"
-                            className="h-8"
-                          />
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8"
-                            onClick={() => saveEdit(user.id)}
-                          >
-                            <Check className="h-4 w-4 text-green-600" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8"
-                            onClick={cancelEditing}
-                          >
-                            <X className="h-4 w-4 text-red-600" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">
+          {/* Deleted Users Tab */}
+          <TabsContent value="deleted" className="mt-4">
+            {!deletedUsers || deletedUsers.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
+                  <Users className="h-12 w-12 text-muted-foreground" />
+                </div>
+                <h3 className="text-2xl font-semibold mb-2">No deleted users</h3>
+                <p className="text-muted-foreground">
+                  Deleted users will appear here and can be restored
+                </p>
+              </div>
+            ) : (
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Workspaces</TableHead>
+                      <TableHead>Was Admin</TableHead>
+                      <TableHead>Deleted At</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {deletedUsers.map((user) => (
+                      <TableRow key={user.id} className="opacity-60">
+                        <TableCell>
+                          <span className="font-medium">{user.name}</span>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">
+                            {user.role || 'client'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
                           {user.title || '—'}
-                        </span>
-                      )}
-                    </TableCell>
-
-                    {/* Email Cell */}
-                    <TableCell className="text-muted-foreground">{user.email}</TableCell>
-
-                    {/* Workspaces Cell */}
-                    <TableCell>
-                      {user.workspaces && user.workspaces.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {user.workspaces.map((ws) => (
-                            <Badge key={ws.workspaceId} variant="secondary" className="text-xs">
-                              {ws.workspaceName}
-                            </Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">—</span>
-                      )}
-                    </TableCell>
-
-                    {/* Admin Toggle */}
-                    <TableCell>
-                      <Button
-                        variant={user.isAdmin ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => handleToggleAdmin(user.id, user.isAdmin)}
-                        disabled={user.id === currentUser?.id}
-                      >
-                        {user.isAdmin ? '✓ Admin' : 'Make Admin'}
-                      </Button>
-                    </TableCell>
-
-                    {/* Status Cell */}
-                    <TableCell>
-                      <span className="text-sm text-green-600">Active</span>
-                    </TableCell>
-
-                    {/* Actions Cell */}
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <AddUserToWorkspaceDialog 
-                          userId={user.id} 
-                          userName={user.name}
-                          userWorkspaceIds={user.workspaces.map(w => w.workspaceId)}
-                        />
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8"
-                          onClick={() => setDeleteUserId(user.id)}
-                          disabled={user.id === currentUser?.id}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                        <TableCell>
+                          {user.workspaces && user.workspaces.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {user.workspaces.map((ws) => (
+                                <Badge key={ws.workspaceId} variant="outline" className="text-xs">
+                                  {ws.workspaceName}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {user.isAdmin && (
+                            <Badge variant="secondary">Admin</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {new Date(user.deletedAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRestore(user.id)}
+                            className="gap-2"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                            Restore
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Delete Confirmation Dialog */}
