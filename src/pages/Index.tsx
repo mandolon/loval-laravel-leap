@@ -10,7 +10,7 @@ import { Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useProjects, useDeleteProject, useHardDeleteProject } from "@/lib/api/hooks/useProjects";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { CreateProjectDialog } from "@/components/CreateProjectDialog";
+import { CreateProjectModal } from "@/components/CreateProjectModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/contexts/UserContext";
 import { DESIGN_TOKENS as T } from "@/lib/design-tokens";

@@ -9,7 +9,7 @@ import { useRoleAwareNavigation } from '@/hooks/useRoleAwareNavigation'
 import { Plus, Folder, CheckSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { CreateProjectDialog } from '@/components/CreateProjectDialog'
+import { CreateProjectModal } from '@/components/CreateProjectModal'
 import { CreateTaskDialog } from '@/components/CreateTaskDialog'
 import { supabase } from '@/integrations/supabase/client'
 import { AIChatThreadsList } from '@/components/chat/AIChatThreadsList'
@@ -200,7 +200,7 @@ export function NavContent({
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
             Projects
           </span>
-          <CreateProjectDialog onCreateProject={handleCreateProject}>
+          <CreateProjectModal onCreateProject={handleCreateProject} workspaceId={currentWorkspaceId || ''}>
             <Button 
               variant="ghost" 
               size="icon" 
@@ -208,7 +208,7 @@ export function NavContent({
             >
               <Plus className="h-3 w-3" />
             </Button>
-          </CreateProjectDialog>
+          </CreateProjectModal>
         </div>
         
         <ScrollArea className="max-h-[300px]">

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { Separator } from "@/components/ui/separator";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
-import { CreateProjectDialog } from "@/components/CreateProjectDialog";
+import { CreateProjectModal } from "@/components/CreateProjectModal";
 import { AIChatThreadsList } from "@/components/chat/AIChatThreadsList";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspaces } from "@/hooks/useWorkspaces";

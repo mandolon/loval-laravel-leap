@@ -33,7 +33,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/contexts/UserContext";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { useCreateProject } from "@/lib/api/hooks/useProjects";
-import { CreateProjectDialog } from "@/components/CreateProjectDialog";
+import { CreateProjectModal } from "@/components/CreateProjectModal";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { TeamAvatarMenu } from "./TeamAvatarMenu";
@@ -114,6 +114,7 @@ interface RailItemProps {
   onActivate: () => void;
   menuEnabled?: boolean;
   onCreateProject?: (input: any) => void;
+  currentWorkspaceId?: string;
 }
 
 interface TopHeaderProps {
@@ -396,6 +397,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
             onActivate={tab === "chat" ? handleChatActivate : tab === "home" ? () => { setActive("home"); navigateToWorkspace(""); } : tab === "projects" ? () => { setActive("projects"); navigateToWorkspace("/projects"); } : () => setActive(tab)}
             menuEnabled={tab === "projects"}
             onCreateProject={tab === "projects" ? handleCreateProject : undefined}
+            currentWorkspaceId={currentWorkspaceId}
           />
         ))}
 
@@ -581,6 +583,7 @@ const RailItem = memo(function RailItem({
   onActivate,
   menuEnabled = false,
   onCreateProject,
+  currentWorkspaceId,
 }: RailItemProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const showTimer = useRef<number | null>(null);
@@ -793,7 +796,7 @@ const RailItem = memo(function RailItem({
             <div className="px-2 pt-1 pb-1.5 text-sm font-medium text-slate-800 tracking-[0.04em] flex items-center justify-between">
               <span>{label}</span>
               {onCreateProject ? (
-                <CreateProjectDialog onCreateProject={onCreateProject}>
+                <CreateProjectModal onCreateProject={onCreateProject} workspaceId={currentWorkspaceId || ''}>
                   <button
                     aria-label="Add project"
                     className="h-6 w-6 grid place-items-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition"
@@ -802,7 +805,7 @@ const RailItem = memo(function RailItem({
                       <path d="M12 5v14M5 12h14" />
                     </svg>
                   </button>
-                </CreateProjectDialog>
+                </CreateProjectModal>
               ) : (
                 <button
                   aria-label="Add project"
