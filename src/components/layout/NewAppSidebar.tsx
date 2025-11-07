@@ -1,7 +1,6 @@
 import { Home, FolderKanban, CheckSquare, Bot, Plus, ChevronRight, ChevronLeft, Sun, Moon, Trash2, Library } from "lucide-react";
-import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import { NavLink, useParams, useNavigate, useLocation } from "react-router-dom";
 import { useRoleAwareNavigation } from "@/hooks/useRoleAwareNavigation";
-import { useWorkspaceFromUrl } from "@/hooks/useWorkspaceFromUrl";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { Separator } from "@/components/ui/separator";
@@ -29,10 +28,9 @@ interface NewAppSidebarProps {
 }
 
 export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
-  const { workspaceId } = useWorkspaceFromUrl();
-  const location = useLocation();
-  const projectId = location.pathname.split('/project/')[1]?.split('/')[0];
+  const { workspaceId, id: projectId } = useParams<{ workspaceId: string; id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { navigateToWorkspace, role } = useRoleAwareNavigation();
   const { toast } = useToast();
   const { user, signOut } = useUser();

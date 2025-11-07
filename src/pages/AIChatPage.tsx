@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
-import { useWorkspaceFromUrl } from "@/hooks/useWorkspaceFromUrl";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAIChat } from "@/hooks/useAIChat";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +14,7 @@ import { NewChatInput } from "@/components/chat/NewChatInput";
 type Message = { role: "user" | "assistant"; content: string };
 
 export default function AIChatPage() {
-  const { workspaceId, loading: workspaceIdLoading } = useWorkspaceFromUrl();
+  const { workspaceId } = useParams<{ workspaceId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const urlThreadId = searchParams.get("thread");
   const { user } = useUser();

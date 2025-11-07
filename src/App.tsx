@@ -18,7 +18,6 @@ import AuthPage from "./pages/AuthPage";
 import NoWorkspacePage from "./pages/NoWorkspacePage";
 import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
-import OnboardingWizard from "./pages/OnboardingWizard";
 
 const queryClient = new QueryClient();
 
@@ -50,14 +49,14 @@ function AppRouter() {
         // Fetch ANY workspace (first one by creation date)
         const { data: workspace, error: workspaceError } = await supabase
           .from('workspaces')
-          .select('id, short_id')
+          .select('id')
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
 
         if (workspaceError) throw workspaceError;
 
-        if (workspace?.short_id) {
+        if (workspace?.id) {
           const { data: roleData } = await supabase
             .from('user_roles')
             .select('role')
@@ -65,7 +64,7 @@ function AppRouter() {
             .maybeSingle();
           
           const userRole = roleData?.role || 'team';
-          navigate(`/${userRole}/workspace/${workspace.short_id}`, { replace: true });
+          navigate(`/${userRole}/workspace/${workspace.id}`, { replace: true });
         }
       } catch (error) {
         console.error('Error fetching default workspace:', error);
@@ -130,11 +129,6 @@ function AppRouter() {
 
   if (!user) {
     return <Routes><Route path="/auth" element={<AuthPage />} /><Route path="*" element={<Navigate to="/auth" replace />} /></Routes>;
-  }
-
-  // Check if user needs to complete onboarding
-  if (!user.onboarding_completed) {
-    return <Routes><Route path="/onboarding" element={<OnboardingWizard />} /><Route path="*" element={<Navigate to="/onboarding" replace />} /></Routes>;
   }
 
   if (!workspaceId) {

@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
-import { useWorkspaceFromUrl } from "@/hooks/useWorkspaceFromUrl";
+import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import type { Task, User } from "@/lib/api/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,7 +24,7 @@ import { UserAvatar } from "@/components/UserAvatar";
 const TasksPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { workspaceId, loading: workspaceIdLoading } = useWorkspaceFromUrl();
+  const { workspaceId } = useParams<{ workspaceId: string }>();
   const [searchParams] = useSearchParams();
   const { user } = useUser();
   const view = searchParams.get('view') || 'all';

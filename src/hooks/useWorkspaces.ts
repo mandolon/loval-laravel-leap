@@ -33,7 +33,7 @@ export function useWorkspaces() {
       // Fetch only workspaces where user is a member
       const { data, error } = await supabase
         .from("workspace_members")
-        .select("workspace_id, workspaces!workspace_members_workspace_id_fkey(*)")
+        .select("workspace_id, workspaces(*)")
         .eq("user_id", user.id)
         .is("deleted_at", null);
 
