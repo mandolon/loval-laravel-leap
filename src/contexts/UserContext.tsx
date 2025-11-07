@@ -11,9 +11,11 @@ interface UserProfile {
   email: string;
   phone?: string;
   avatar_url?: string;
+  title?: string;
   initials: string;
   last_active_at?: string;
   is_admin: boolean;
+  onboarding_completed: boolean;
 }
 
 interface UserContextType {
@@ -98,6 +100,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         auth_id: authUser.id,
         initials,
         is_admin: profile.is_admin || false,
+        onboarding_completed: profile.onboarding_completed || false,
       });
     } catch (error) {
       console.error('Error loading user profile:', error);

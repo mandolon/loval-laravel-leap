@@ -18,6 +18,7 @@ import AuthPage from "./pages/AuthPage";
 import NoWorkspacePage from "./pages/NoWorkspacePage";
 import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
+import OnboardingWizard from "./pages/OnboardingWizard";
 
 const queryClient = new QueryClient();
 
@@ -129,6 +130,11 @@ function AppRouter() {
 
   if (!user) {
     return <Routes><Route path="/auth" element={<AuthPage />} /><Route path="*" element={<Navigate to="/auth" replace />} /></Routes>;
+  }
+
+  // Check if user needs to complete onboarding
+  if (!user.onboarding_completed) {
+    return <Routes><Route path="/onboarding" element={<OnboardingWizard />} /><Route path="*" element={<Navigate to="/onboarding" replace />} /></Routes>;
   }
 
   if (!workspaceId) {
