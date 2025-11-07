@@ -30,28 +30,11 @@ export function useWorkspaces() {
     if (!user?.id) return;
 
     try {
-      // First get workspace IDs for this user
-      const { data: members, error: memberError } = await supabase
-        .from("workspace_members")
-        .select("workspace_id")
-        .eq("user_id", user.id)
-        .is("deleted_at", null);
-
-      if (memberError) throw memberError;
-
-      if (!members || members.length === 0) {
-        setWorkspaces([]);
-        setLoading(false);
-        return;
-      }
-
-      const workspaceIds = members.map(m => m.workspace_id);
-
-      // Then get workspace details
+      // Fetch ALL workspaces directly - no membership filtering
       const { data, error } = await supabase
         .from("workspaces")
         .select("*")
-        .in("id", workspaceIds);
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 

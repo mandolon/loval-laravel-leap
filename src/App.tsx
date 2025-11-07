@@ -46,17 +46,17 @@ function AppRouter() {
 
       setDefaultWorkspaceLoading(true);
       try {
-        const { data: members, error: memberError } = await supabase
-          .from('workspace_members')
-          .select('workspace_id')
-          .eq('user_id', user.id)
-          .is('deleted_at', null)
+        // Fetch ANY workspace (first one by creation date)
+        const { data: workspace, error: workspaceError } = await supabase
+          .from('workspaces')
+          .select('id')
+          .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
 
-        if (memberError) throw memberError;
+        if (workspaceError) throw workspaceError;
 
-        if (members?.workspace_id) {
+        if (workspace?.id) {
           const { data: roleData } = await supabase
             .from('user_roles')
             .select('role')
@@ -64,7 +64,7 @@ function AppRouter() {
             .maybeSingle();
           
           const userRole = roleData?.role || 'team';
-          navigate(`/${userRole}/workspace/${members.workspace_id}`, { replace: true });
+          navigate(`/${userRole}/workspace/${workspace.id}`, { replace: true });
         }
       } catch (error) {
         console.error('Error fetching default workspace:', error);

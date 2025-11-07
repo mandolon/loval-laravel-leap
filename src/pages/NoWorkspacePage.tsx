@@ -43,7 +43,7 @@ export default function NoWorkspacePage() {
       setCreateDialogOpen(false);
       
       // Force full page reload to properly initialize workspace context
-      window.location.href = `/team/workspace/${newWorkspace.id}/projects`;
+      window.location.href = `/${role || 'team'}/workspace/${newWorkspace.id}/projects`;
     }
   };
 
