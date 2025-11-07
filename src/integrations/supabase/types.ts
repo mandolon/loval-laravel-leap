@@ -1600,6 +1600,7 @@ export type Database = {
           id: string
           metadata: Json | null
           notifications_enabled: boolean | null
+          onboarding_completed: boolean | null
           short_id: string
           sidebar_collapsed: boolean | null
           theme: string | null
@@ -1612,6 +1613,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           notifications_enabled?: boolean | null
+          onboarding_completed?: boolean | null
           short_id?: string
           sidebar_collapsed?: boolean | null
           theme?: string | null
@@ -1624,6 +1626,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           notifications_enabled?: boolean | null
+          onboarding_completed?: boolean | null
           short_id?: string
           sidebar_collapsed?: boolean | null
           theme?: string | null
