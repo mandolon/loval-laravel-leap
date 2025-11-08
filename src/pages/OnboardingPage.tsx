@@ -81,8 +81,8 @@ export default function OnboardingPage() {
   };
 
   const handleComplete = () => {
-    // Simply reload the page - TeamRouter will re-check onboarding status
-    window.location.reload();
+    // Safari-compatible reload - TeamRouter will re-check onboarding status
+    window.location.href = window.location.href;
   };
 
   return (
@@ -125,7 +125,7 @@ export default function OnboardingPage() {
 
         {/* Step 2 — Avatar + Title customization */}
         {step === 2 && (
-          <div className="w-full max-w-[720px] flex flex-col md:flex-row items-start justify-center gap-10">
+          <div className="w-full max-w-[720px] flex flex-col md:flex-row items-start justify-center gap-10 md:gap-12">
             {/* Left Section */}
             <div className="text-left max-w-[320px] w-full">
               <h1 className="text-xl font-semibold text-slate-800 mb-2">Let's personalize your experience</h1>
