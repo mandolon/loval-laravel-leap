@@ -201,7 +201,7 @@ const ProjectsPage = () => {
             </p>
           </div>
         ) : (
-          <div className="grid gap-6 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
+          <div className="grid gap-6 [grid-template-columns:repeat(auto-fill,minmax(320px,1fr))]">
             {filteredProjects.map(project => (
               <ProjectCard
                 key={project.id}
