@@ -30,7 +30,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["nsis"],
     "macOS": {
       "minimumSystemVersion": "11.0",
       "signingIdentity": null,
