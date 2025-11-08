@@ -35,59 +35,8 @@ export function NavContent({
   const { toast } = useToast()
   const { user } = useUser()
   const { workspaceId, id: projectId } = useParams<{ workspaceId: string; id: string }>()
-  const [projects, setProjects] = useState<any[]>([])
-  const { data: allProjects = [] } = useProjects(workspaceId || '')
-
   const currentWorkspaceId = workspaceId
-
-  useEffect(() => {
-    if (currentWorkspaceId) {
-      loadProjects()
-    }
-  }, [currentWorkspaceId, location.pathname])
-
-  // Realtime subscription
-  useEffect(() => {
-    if (!currentWorkspaceId) return
-
-    const channel = supabase
-      .channel('sidebar-projects-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'projects',
-          filter: `workspace_id=eq.${currentWorkspaceId}`
-        },
-        () => {
-          loadProjects()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [currentWorkspaceId])
-
-  const loadProjects = async () => {
-    if (!currentWorkspaceId) return
-
-    try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('workspace_id', currentWorkspaceId)
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      setProjects(data || [])
-    } catch (error) {
-      console.error('Error loading projects:', error)
-    }
-  }
+  const { data: projects = [] } = useProjects(currentWorkspaceId || '')
 
   const getNavPath = (basePath: string) => {
     if (!currentWorkspaceId) return basePath
@@ -183,7 +132,6 @@ export function NavContent({
           title: "Project created",
           description: `${newProject.name} has been created successfully`,
         });
-        loadProjects();
       } catch (error) {
         console.error("Error creating project:", error);
         toast({
@@ -262,9 +210,9 @@ export function NavContent({
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
             Tasks
           </span>
-          {allProjects.length > 0 && (
+          {projects.length > 0 && (
             <CreateTaskDialog 
-              projects={allProjects} 
+              projects={projects} 
               onCreateTask={handleCreateTask}
             >
               <Button 
