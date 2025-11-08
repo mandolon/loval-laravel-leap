@@ -238,5 +238,41 @@
       width: var(--default-button-size);
       height: var(--default-button-size);
     }
+
+    /* Override for toolbar ToolIcon shapes like Line tool */
+    &.ToolIcon {
+      width: var(--lg-button-size);
+      height: var(--lg-button-size);
+      background-color: transparent;
+      border: none;
+      padding: 0;
+
+      &:hover {
+        background-color: transparent;
+      }
+
+      &:active {
+        border: none;
+      }
+
+      .ToolIcon__icon {
+        width: var(--lg-button-size);
+        height: var(--lg-button-size);
+        background-color: transparent;
+        border-radius: var(--border-radius-lg);
+      }
+
+      &:hover .ToolIcon__icon {
+        background-color: var(--button-gray-1);
+      }
+
+      &:active .ToolIcon__icon {
+        background-color: var(--button-gray-2);
+      }
+
+      &.ToolIcon--selected .ToolIcon__icon {
+        background-color: var(--button-gray-2);
+      }
+    }
   }
 }
