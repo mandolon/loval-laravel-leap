@@ -36,7 +36,7 @@ export function NavContent({
   const { user } = useUser()
   const { workspaceId, id: projectId } = useParams<{ workspaceId: string; id: string }>()
   const currentWorkspaceId = workspaceId
-  const { data: projects = [] } = useProjects(currentWorkspaceId || '')
+  const { data: projects = [] } = useProjects(currentWorkspaceId || '', user?.id, user?.is_admin)
 
   const getNavPath = (basePath: string) => {
     if (!currentWorkspaceId) return basePath

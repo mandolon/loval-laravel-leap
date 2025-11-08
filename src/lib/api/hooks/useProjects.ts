@@ -55,22 +55,57 @@ const transformProject = (row: any): Project => ({
 });
 
 // Fetch projects list for a workspace
-export const useProjects = (workspaceId: string, query?: ListQuery) => {
+export const useProjects = (workspaceId: string, userId?: string, isAdmin?: boolean, query?: ListQuery) => {
   return useQuery({
     queryKey: projectKeys.list(workspaceId, query),
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('workspace_id', workspaceId)
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false });
+      let data;
+      let error;
+
+      // Admin users see ALL projects
+      if (isAdmin) {
+        const result = await supabase
+          .from('projects')
+          .select('*')
+          .eq('workspace_id', workspaceId)
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false });
+        
+        data = result.data;
+        error = result.error;
+      } else if (userId) {
+        // Non-admin users see only projects they're members of
+        const result = await supabase
+          .from('project_members')
+          .select(`
+            project_id,
+            projects!inner (*)
+          `)
+          .eq('user_id', userId)
+          .eq('projects.workspace_id', workspaceId)
+          .is('projects.deleted_at', null)
+          .order('projects.created_at', { ascending: false });
+        
+        error = result.error;
+        data = result.data?.map((pm: any) => pm.projects) || [];
+      } else {
+        // If no userId provided, show all projects (fallback to admin behavior)
+        const result = await supabase
+          .from('projects')
+          .select('*')
+          .eq('workspace_id', workspaceId)
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false });
+        
+        data = result.data;
+        error = result.error;
+      }
       
       if (error) throw error;
       
       // For each project, count unread project chat messages
       const projectsWithChatCounts = await Promise.all(
-        data.map(async (project) => {
+        (data || []).map(async (project) => {
           const { count } = await supabase
             .from('project_chat_messages')
             .select('*', { count: 'exact', head: true })

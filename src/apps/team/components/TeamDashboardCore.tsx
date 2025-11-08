@@ -1509,7 +1509,8 @@ interface ChatViewProps {
 
 const ChatView = memo(function ChatView({ resetTrigger }: ChatViewProps) {
   const { currentWorkspaceId } = useWorkspaces();
-  const { data: projects = [] } = useProjects(currentWorkspaceId || '');
+  const { user } = useUser();
+  const { data: projects = [] } = useProjects(currentWorkspaceId || '', user?.id, user?.is_admin);
 
   const [selectedProject, setSelectedProject] = React.useState<any>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -1676,7 +1677,7 @@ const TasksView = memo(function TasksView() {
 
   // Fetch data
   const { data: tasks = [], isLoading: tasksLoading } = useWorkspaceTasks(currentWorkspaceId || '');
-  const { data: projects = [] } = useProjects(currentWorkspaceId || '');
+  const { data: projects = [] } = useProjects(currentWorkspaceId || '', user?.id, user?.is_admin);
 
   // Sync selectedTask with updated task from tasks array
   useEffect(() => {
