@@ -559,7 +559,7 @@ export default function TeamChatSlim({
   }
 
   return (
-    <div className="flex h-full w-full">
+    <div className="flex h-full w-full overflow-hidden">
       {/* Side Panel */}
       {showSidePanel && !isSidePanelCollapsed && (
         <ChatSidePanel
@@ -580,7 +580,7 @@ export default function TeamChatSlim({
 
       {/* Main Chat Area */}
       <div
-        className="team-app flex min-h-screen flex-col relative flex-1"
+        className="team-app flex h-full flex-col relative flex-1"
         onDragOver={handleDragOver}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
@@ -712,7 +712,7 @@ export default function TeamChatSlim({
       )}
 
       {/* Messages or Empty State */}
-      <ScrollArea className="flex-1" ref={scrollAreaRef}>
+      <ScrollArea className="flex-1 h-0" ref={scrollAreaRef}>
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-2 md:gap-3 px-4 pt-8 pb-4">
           {!selectedProject && !isWorkspaceChat ? (
             <div className="flex flex-col items-center justify-start pt-32">
