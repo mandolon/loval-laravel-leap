@@ -6,7 +6,7 @@ import { useDrawingVersions, useUpdateDrawingScale, useCreateDrawingPage, useCre
 import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
 import { useHardDeleteProject, useProject } from '@/lib/api/hooks/useProjects';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useRoleAwareNavigation } from '@/hooks/useRoleAwareNavigation';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -289,7 +289,9 @@ export default function ProjectPanel({
   onCalibrate?: () => void;
   inchesPerSceneUnit?: number;
 }) {
-  const [tab, setTab] = useState<'files' | 'whiteboards' | 'settings' | 'info'>('files');
+  const [searchParams] = useSearchParams();
+  const initialTab = (searchParams.get('tab') as 'files' | 'whiteboards' | 'settings' | 'info') || 'files';
+  const [tab, setTab] = useState<'files' | 'whiteboards' | 'settings' | 'info'>(initialTab);
   const [query, setQuery] = useState("");
   const [wbQuery, setWbQuery] = useState("");
   const [selectedWB, setSelectedWB] = useState<any>(null);

@@ -1822,7 +1822,7 @@ const TasksView = memo(function TasksView() {
   }, [allUsers]);
 
   const handleProjectClick = useCallback((projectId: string) => {
-    navigateToWorkspace(`/project/${projectId}`);
+    navigateToWorkspace(`/project/${projectId}?tab=files`);
   }, [navigateToWorkspace]);
 
   const handleStatusToggle = useCallback((taskId: string) => {

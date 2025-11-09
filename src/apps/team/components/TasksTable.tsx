@@ -364,51 +364,47 @@ const TaskRow: React.FC<TaskRowProps> = ({
 
   return (
     <div
-      className="hover:bg-slate-50 cursor-pointer border-b border-[#cecece] grid items-center"
+      className="hover:bg-slate-50/50 border-b border-[#cecece] grid items-center"
       style={{ gridTemplateColumns }}
     >
       {/* Status */}
-      <div className="px-2 py-1.5 flex items-center justify-center">
-        <div style={{ marginLeft: '11px' }}>
+      <div 
+        className="px-2 py-1.5 flex items-center justify-center cursor-pointer"
+        onClick={() => onTaskClick(task)}
+      >
+        <div style={{ marginLeft: '11px' }} onClick={(e) => e.stopPropagation()}>
           <StatusDot status={task.status} onClick={() => onStatusToggle(task.id)} />
         </div>
       </div>
 
       {/* Name */}
-      <div className="px-2 py-1.5">
-        <button
-          type="button"
+      <div 
+        className="px-2 py-1.5 cursor-pointer"
+        onClick={() => onTaskClick(task)}
+      >
+        <div
           data-testid="name-cell"
-          onClick={() => onTaskClick(task)}
-          className="w-full text-left rounded hover:bg-slate-50 focus:bg-slate-50 outline-none px-1 py-0.5 cursor-pointer"
+          className="w-full text-left rounded hover:bg-slate-50 focus-within:bg-slate-50 outline-none px-1 py-0.5"
           style={{ lineHeight: 1.1 }}
         >
-          <span
-            role="link"
+          <button
+            type="button"
             aria-label="Open project"
             title="Open project"
-            tabIndex={0}
             data-testid="project-link"
             onClick={(e) => {
               e.stopPropagation();
               if (project) onProjectClick(project.id);
             }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                e.stopPropagation();
-                if (project) onProjectClick(project.id);
-              }
-            }}
-            className="block text-slate-600 hover:text-slate-900 hover:bg-slate-50 focus:bg-slate-50 rounded px-0.5 cursor-pointer text-[11px] leading-tight mb-0.5"
+            className="block text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:bg-slate-100 rounded px-0.5 cursor-pointer text-[11px] leading-tight mb-0.5"
             style={{ WebkitTapHighlightColor: 'transparent' }}
           >
             {project?.name || '-'}
-          </span>
+          </button>
           <div className="text-slate-900 font-medium leading-tight" style={{ fontSize: '13px' }}>
             {task.title}
           </div>
-        </button>
+        </div>
       </div>
 
       {/* Files */}
