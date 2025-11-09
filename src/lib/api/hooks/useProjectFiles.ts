@@ -546,3 +546,22 @@ export const useRenameProjectFile = (projectId: string) => {
     },
   })
 }
+
+// Download file helper
+export const downloadProjectFile = async (storagePath: string, filename: string) => {
+  const { data, error } = await supabase.storage
+    .from('project-files')
+    .download(storagePath)
+
+  if (error) throw error
+
+  // Create download link
+  const url = URL.createObjectURL(data)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}

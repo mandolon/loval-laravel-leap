@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef, forwardRef, useCallback } from "react";
 import { Search, FolderClosed, BookOpen, MoreVertical, Settings2, Info, Upload } from "lucide-react";
-import { useProjectFolders, useProjectFiles, useDeleteProjectFile, useDeleteFolder, useMoveProjectFile, useRenameFolder, useRenameProjectFile, useUploadProjectFiles } from '@/lib/api/hooks/useProjectFiles';
+import { useProjectFolders, useProjectFiles, useDeleteProjectFile, useDeleteFolder, useMoveProjectFile, useRenameFolder, useRenameProjectFile, useUploadProjectFiles, downloadProjectFile } from '@/lib/api/hooks/useProjectFiles';
 import { useProjectFolderDragDrop } from '@/lib/api/hooks/useProjectFolderDragDrop';
 import { useDrawingVersions, useUpdateDrawingScale, useCreateDrawingPage, useCreateDrawingVersion, useDeleteDrawingVersion, useDeleteDrawingPage, useUpdateDrawingVersion, useUpdateDrawingPageName } from '@/lib/api/hooks/useDrawings';
 import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { useRoleAwareNavigation } from '@/hooks/useRoleAwareNavigation';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 /**
  * PROJECT PANEL — Files & Whiteboards now share identical interaction rules
@@ -166,7 +166,6 @@ function ItemRow({
   onDragOver,
   onDrop,
   dragOverPosition,
-  onMouseDown,
 }: any) {
   const [editValue, setEditValue] = useState(item.name);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -189,7 +188,6 @@ function ItemRow({
       }`}
       onClick={onClick}
       onContextMenu={onContextMenu}
-      onMouseDown={onMouseDown}
       draggable={draggable}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
@@ -288,6 +286,7 @@ export default function ProjectPanel({
   const { navigateToWorkspace } = useRoleAwareNavigation();
   const hardDeleteProjectMutation = useHardDeleteProject(currentWorkspaceId || "");
   const { data: project } = useProject(projectId);
+  const { toast } = useToast();
 
   // Database queries for Files tab
   const { data: rawFolders = [], isLoading: foldersLoading } = useProjectFolders(projectId);
@@ -324,9 +323,6 @@ export default function ProjectPanel({
   // Local state for drag/drop mutations - initialize from database data
   const [localSections, setLocalSections] = useState<typeof sections>([]);
   const [localLists, setLocalLists] = useState<typeof lists>({});
-  
-  // File cache for drag-to-download functionality
-  const fileCacheRef = useRef<Map<string, File>>(new Map());
   
   // Folder partitioning state (above/below separator)
   const [separatorIndex, setSeparatorIndex] = useState<number>(-1); // -1 means no separator, or index where separator appears
@@ -549,110 +545,11 @@ export default function ProjectPanel({
     }
   };
 
-  // Helper function to fetch and cache a file
-  const fetchAndCacheFile = useCallback(async (fileId: string, storagePath: string, filename: string, mimetype: string | null): Promise<File | null> => {
-    // Check cache first
-    if (fileCacheRef.current.has(fileId)) {
-      return fileCacheRef.current.get(fileId)!;
-    }
-    
-    try {
-      // Fetch the file from Supabase storage
-      const { data: blob, error } = await supabase.storage
-        .from('project-files')
-        .download(storagePath);
-      
-      if (error || !blob) {
-        console.error('Failed to fetch file for drag:', error);
-        return null;
-      }
-      
-      // Create a File object from the blob
-      const file = new File(
-        [blob],
-        filename,
-        { type: mimetype || 'application/octet-stream' }
-      );
-      
-      // Cache the file
-      fileCacheRef.current.set(fileId, file);
-      
-      return file;
-    } catch (error) {
-      console.error('Error fetching file for drag:', error);
-      return null;
-    }
-  }, []);
-
-  // Pre-fetch file on mouse down (before drag starts) to improve drag-to-download performance
-  const handleItemMouseDown = useCallback((itemId: string) => {
-    // Only pre-fetch if not already cached
-    if (fileCacheRef.current.has(itemId)) {
-      console.log('✓ File already cached:', itemId);
-      return;
-    }
-    
-    const fileData = rawFiles.find(f => f.id === itemId);
-    if (fileData && fileData.storage_path) {
-      console.log('🔄 Pre-fetching file on mousedown:', fileData.filename);
-      // Pre-fetch the file in the background
-      fetchAndCacheFile(
-        itemId,
-        fileData.storage_path,
-        fileData.filename,
-        fileData.mimetype
-      ).then((file) => {
-        if (file) {
-          console.log('✅ File pre-fetched and cached:', fileData.filename);
-        }
-      }).catch((error) => {
-        console.error('❌ Pre-fetch failed:', error);
-      });
-    }
-  }, [rawFiles, fetchAndCacheFile]);
-
   // ---- Files: item drag/drop ----
   const handleItemDragStart = (listId: string, itemId: string, e: any) => {
     e.stopPropagation();
-    
-    // Set up internal drag state for moving files between folders
     setDragState({ fromList: listId, itemId });
-    
-    // Allow both move (internal) and copy (external) operations
-    e.dataTransfer.effectAllowed = "all";
-    
-    // Find the file data from rawFiles
-    const fileData = rawFiles.find(f => f.id === itemId);
-    if (fileData && fileData.storage_path) {
-      // Try to get file from cache first (synchronous)
-      const cachedFile = fileCacheRef.current.get(itemId);
-      if (cachedFile) {
-        // File is cached, add it immediately
-        try {
-          e.dataTransfer.items.add(cachedFile);
-          console.log('✅ Added cached file to drag:', fileData.filename);
-        } catch (addError) {
-          console.warn('❌ Could not add cached file to drag:', addError);
-        }
-      } else {
-        // File not cached - log warning
-        console.warn('⚠️ File not in cache for drag:', fileData.filename, 'Pre-fetch may have failed');
-        
-        // Try to fetch synchronously (won't work but log it)
-        fetchAndCacheFile(
-          itemId,
-          fileData.storage_path,
-          fileData.filename,
-          fileData.mimetype
-        ).then((file) => {
-          if (file) {
-            console.log('📦 File fetched but too late for drag:', fileData.filename);
-          }
-        }).catch((error) => {
-          console.error('❌ Failed to fetch file:', error);
-        });
-      }
-    }
+    e.dataTransfer.effectAllowed = "move";
   };
   const handleItemDragOver = (listId: string, index: number, e: any) => {
     if (!dragState) return;
@@ -1054,7 +951,6 @@ export default function ProjectPanel({
                       setEditing(null);
                     }}
                     draggable={!isItemEditing}
-                    onMouseDown={() => handleItemMouseDown(item.id)}
                     onDragStart={(e: any) => handleItemDragStart(id, item.id, e)}
                     onDragOver={(e: any) => handleItemDragOver(id, idx, e)}
                     onDrop={(e: any) => handleItemDrop(id, idx, e)}
@@ -1349,6 +1245,33 @@ export default function ProjectPanel({
                     >
                       Rename
                     </button>
+                    {menu.target?.type === "item" && (
+                      <button
+                        className="block w-full px-3 py-1.5 text-left text-[11px] text-slate-800 hover:bg-slate-100 border-t border-slate-100"
+                        onClick={async () => {
+                          if (!menu.target?.id) return;
+                          const file = rawFiles.find(f => f.id === menu.target.id);
+                          if (file && file.storage_path && file.filename) {
+                            try {
+                              await downloadProjectFile(file.storage_path, file.filename);
+                              toast({
+                                title: 'Download started',
+                                description: `Downloading ${file.filename}`,
+                              });
+                            } catch (error: any) {
+                              toast({
+                                title: 'Download failed',
+                                description: error?.message || 'Failed to download file',
+                                variant: 'destructive',
+                              });
+                            }
+                          }
+                          setMenu((m: any) => ({ ...m, show: false }));
+                        }}
+                      >
+                        Download
+                      </button>
+                    )}
                     {menu.target?.type === "section" && (
                       <button
                         className="block w-full px-3 py-1.5 text-left text-[11px] text-slate-800 hover:bg-slate-100 border-t border-slate-100"
