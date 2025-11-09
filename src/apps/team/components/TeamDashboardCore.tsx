@@ -1957,7 +1957,7 @@ const TasksView = memo(function TasksView() {
             style={{ marginRight: selectedTask ? drawerWidth : 0 }}
           >
             {/* Filter row - moves left with table */}
-            <div className="-mx-6 px-6 mt-3 mb-0 flex items-center justify-between gap-2 text-[12px] h-6 shrink-0">
+            <div className="-mx-6 px-6 mt-1.5 mb-0 flex items-center justify-between gap-2 text-[12px] h-6 shrink-0">
               <div className="flex items-center gap-2.5 text-[#202020] font-medium">
                 <button className="inline-flex items-center gap-1 h-6 px-3 rounded-full border border-slate-200 bg-white text-[#202020] hover:bg-slate-50 transition-colors">
                   Group: Status
