@@ -68,7 +68,6 @@ export const FileUploadChip = ({
           border: '2px solid rgba(0,0,0,.15)',
           borderTopColor: 'currentColor',
           borderRadius: '9999px',
-          animation: 'spin .8s linear infinite',
         }} />
       ) : (
         <svg className="h-4 w-4 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor">

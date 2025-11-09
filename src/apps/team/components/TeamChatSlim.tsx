@@ -202,47 +202,61 @@ export default function TeamChatSlim({
     }));
     setUploads((prev) => [...prev, ...newUploads]);
 
-    // Simulate upload progress then actually upload
+    // Upload files and track real progress
     newUploads.forEach(async (item) => {
-      const totalMs = 1500 + Math.random() * 1500;
-      const start = Date.now();
       const fileId = item.id;
       
-      const tick = () => {
-        const elapsed = Date.now() - start;
-        const p = Math.min(100, Math.round((elapsed / totalMs) * 100));
-        setUploads((files) =>
-          files.map((f) => (f.id === fileId ? { ...f, progress: p, status: p >= 100 ? 'done' : 'uploading' } : f))
-        );
-        if (p < 100) requestAnimationFrame(tick);
-      };
-      requestAnimationFrame(tick);
-
-      // Actually upload the file
       try {
+        // Simulate progress while uploading
+        let simulatedProgress = 0;
+        const progressInterval = setInterval(() => {
+          simulatedProgress = Math.min(90, simulatedProgress + 10);
+          setUploads((files) =>
+            files.map((f) => 
+              f.id === fileId 
+                ? { ...f, progress: simulatedProgress } 
+                : f
+            )
+          );
+        }, 200);
+
+        // Actually upload the file
+        let uploadedFiles;
         if (isWorkspaceChat && workspaceId) {
-          const uploadedFiles = await uploadWorkspaceFiles.mutateAsync({
+          uploadedFiles = await uploadWorkspaceFiles.mutateAsync({
             files: [item.file],
           });
-          if (uploadedFiles.length > 0) {
-            setAttachedFiles(prev => [...prev, {
-              id: uploadedFiles[0].id,
-              name: uploadedFiles[0].filename
-            }]);
-          }
         } else if (selectedProject) {
-          const uploadedFiles = await uploadProjectChatFiles.mutateAsync([item.file]);
-          if (uploadedFiles.length > 0) {
-            setAttachedFiles(prev => [...prev, {
-              id: uploadedFiles[0].id,
-              name: uploadedFiles[0].filename
-            }]);
-          }
+          uploadedFiles = await uploadProjectChatFiles.mutateAsync([item.file]);
+        }
+
+        // Clear interval and complete progress
+        clearInterval(progressInterval);
+        
+        if (uploadedFiles && uploadedFiles.length > 0) {
+          setUploads((files) =>
+            files.map((f) => 
+              f.id === fileId 
+                ? { ...f, progress: 100, status: 'done' as UploadStatus } 
+                : f
+            )
+          );
+          
+          setAttachedFiles(prev => [...prev, {
+            id: uploadedFiles[0].id,
+            name: uploadedFiles[0].filename
+          }]);
+        } else {
+          throw new Error('Upload failed');
         }
       } catch (error) {
         console.error('Error uploading file:', error);
         setUploads((files) =>
-          files.map((f) => (f.id === fileId ? { ...f, status: 'error' as UploadStatus } : f))
+          files.map((f) => 
+            f.id === fileId 
+              ? { ...f, status: 'error' as UploadStatus } 
+              : f
+          )
         );
       }
     });
@@ -663,12 +677,6 @@ export default function TeamChatSlim({
         }
         .animate-fadeIn {
           animation: fadeIn 0.3s ease-in-out;
-        }
-        @keyframes spin { 
-          to { transform: rotate(360deg); } 
-        }
-        .spinner { 
-          animation: spin .8s linear infinite; 
         }
         @media (max-width: 767px) {
           .message-content {
