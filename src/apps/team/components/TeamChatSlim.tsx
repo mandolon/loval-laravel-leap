@@ -169,6 +169,7 @@ export default function TeamChatSlim({
 
     setText("");
     setAttachedFiles([]);
+    setUploads([]);
     setReplyingTo(null);
     
     requestAnimationFrame(() => {
