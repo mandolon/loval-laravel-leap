@@ -262,9 +262,9 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
 
       <div
         ref={containerRef}
-        className={`flex-1 flex flex-col transition-transform duration-200 ease-out ${open ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`flex-1 min-h-0 flex flex-col transition-transform duration-200 ease-out ${open ? 'translate-x-0' : 'translate-x-full'}`}
       >
-        <div className="flex flex-col h-full bg-white" data-testid="task-drawer-root">
+        <div className="flex flex-col h-full min-h-0 bg-white" data-testid="task-drawer-root">
           {/* Header */}
           <div className="border-b border-[#cecece] bg-white shadow-[inset_0_-1px_0_0_#f1f1f1] shrink-0">
             <div className="py-1 px-5">
@@ -285,7 +285,7 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
           </div>
 
           {/* Main */}
-          <div className="flex-1 overflow-auto px-10 pt-5">
+          <div className="flex-1 min-h-0 overflow-auto px-10 pt-5">
             <div className="max-w-[840px] mx-auto pb-5">
               {/* Status + ID */}
               <div className="flex items-center justify-between mt-2 mb-2">
