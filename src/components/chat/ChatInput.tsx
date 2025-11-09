@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Send, X, Plus } from 'lucide-react'
+import { Send, X } from 'lucide-react'
 import type { ChatMessageData } from './ChatMessage'
 import { UTILITY_CLASSES } from '@/lib/design-tokens'
 import FileUploadChip, { type UploadStatus } from './FileUploadChip'
@@ -15,7 +15,7 @@ interface ChatInputProps {
 type UploadItem = {
   id: string
   file: File
-  uploadedBytes: number
+  progress: number
   status: UploadStatus
 }
 
@@ -62,43 +62,25 @@ export const ChatInput = ({ onSendMessage, replyingTo, onCancelReply, disabled, 
     const newUploads: UploadItem[] = files.map((f, i) => ({
       id: `${now}-${i}-${Math.random().toString(36).slice(2, 8)}`,
       file: f,
-      uploadedBytes: 0,
-      status: 'uploading',
+      progress: 0,
+      status: 'uploading' as UploadStatus,
     }))
     setUploads((prev) => [...prev, ...newUploads])
 
     // Simulate upload progress; replace with real upload integration
     newUploads.forEach((item) => {
-      const total = item.file.size || 1
-      const step = Math.max(1024 * 50, Math.round(total / 40)) // ~40 ticks
-      const interval = setInterval(() => {
-        setUploads((prev) => {
-          const next = prev.map((u) => {
-            if (u.id !== item.id) return u
-            const nextBytes = Math.min(total, u.uploadedBytes + step)
-            const done = nextBytes >= total
-            return { ...u, uploadedBytes: nextBytes, status: done ? 'done' : u.status }
-          })
-          return next
-        })
-      }, 120)
-
-      // Stop the interval when finished
-      const stopWhenDone = setInterval(() => {
-        setUploads((prev) => {
-          const me = prev.find((u) => u.id === item.id)
-          if (!me) {
-            clearInterval(interval)
-            clearInterval(stopWhenDone)
-            return prev
-          }
-          if (me.uploadedBytes >= total) {
-            clearInterval(interval)
-            clearInterval(stopWhenDone)
-          }
-          return prev
-        })
-      }, 250)
+      const totalMs = 1500 + Math.random() * 1500
+      const start = Date.now()
+      const fileId = item.id
+      const tick = () => {
+        const elapsed = Date.now() - start
+        const p = Math.min(100, Math.round((elapsed / totalMs) * 100))
+        setUploads((files) =>
+          files.map((f) => (f.id === fileId ? { ...f, progress: p, status: p >= 100 ? 'done' : 'uploading' } : f))
+        )
+        if (p < 100) requestAnimationFrame(tick)
+      }
+      requestAnimationFrame(tick)
     })
   }
 
@@ -130,31 +112,19 @@ export const ChatInput = ({ onSendMessage, replyingTo, onCancelReply, disabled, 
     processFiles(files)
   }
 
-  const cancelUpload = (id: string) => {
-    setUploads((prev) => prev.map((u) => (u.id === id ? { ...u, status: 'canceled' } : u)))
-    // Optionally remove after brief delay
-    setTimeout(() => setUploads((prev) => prev.filter((u) => u.id !== id)), 300)
+  const removeUpload = (id: string) => {
+    setUploads((prev) => prev.filter((u) => u.id !== id))
   }
+
+  const hasUploading = uploads.some((f) => f.status === 'uploading')
 
   return (
     <form onSubmit={handleSubmit}>
-      {/* Pending uploads row */}
-      {uploads.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-2 overflow-x-auto">
-          {uploads.map((u) => (
-            <FileUploadChip
-              key={u.id}
-              id={u.id}
-              filename={u.file.name}
-              projectName={projectName}
-              totalBytes={u.file.size}
-              uploadedBytes={u.uploadedBytes}
-              status={u.status}
-              onCancel={cancelUpload}
-            />
-          ))}
-        </div>
-      )}
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner { animation: spin .8s linear infinite; }
+      `}</style>
+      
       {replyingTo && (
         <div className={`mb-2 flex items-center justify-between ${UTILITY_CLASSES.chatBubble} px-2 py-1 max-w-full`}>
           <div className="flex items-center gap-1.5">
@@ -171,47 +141,107 @@ export const ChatInput = ({ onSendMessage, replyingTo, onCancelReply, disabled, 
         </div>
       )}
       
-      <div
-        className={`grid grid-cols-[1fr_auto_auto] gap-2 ${dragOver ? 'ring-1 ring-sky-300 dark:ring-sky-700 rounded-[6px] bg-sky-50/40 dark:bg-sky-900/10' : ''}`}
-        onDragOver={handleDragOver}
-        onDragEnter={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
+      <div className="flex flex-col gap-3 rounded-lg border p-3 shadow-sm" style={{ borderColor: 'var(--chat-line, #E7E5E4)', background: 'var(--chat-card, #FFFFFF)' }}>
+        {uploads.length > 0 && (
+          <div className="flex max-h-28 flex-wrap gap-2 overflow-y-auto">
+            {uploads.map((u) => (
+              <FileUploadChip
+                key={u.id}
+                id={u.id}
+                filename={u.file.name}
+                projectName={projectName}
+                size={u.file.size}
+                status={u.status}
+                progress={u.progress}
+                onRemove={removeUpload}
+              />
+            ))}
+          </div>
+        )}
+        
         <textarea
           ref={textareaRef}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Type a message…"
+          onDragOver={handleDragOver}
+          onDragEnter={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          placeholder="Reply..."
           rows={1}
           disabled={disabled}
-          className={`${UTILITY_CLASSES.inputBase} resize-none`}
+          className="w-full max-h-40 resize-none bg-transparent px-2 text-[15px] leading-[1.5] outline-none"
+          style={{ fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Ubuntu, Cantarell, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji", sans-serif' }}
         />
-        {/* hidden file input */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          className="hidden"
-          onChange={handleFilesSelected}
-        />
-        <button
-          type="button"
-          onClick={handlePickFiles}
-          disabled={disabled}
-          className="h-8 w-8 bg-white dark:bg-[#0E1118] border border-slate-200 dark:border-[#283046]/60 rounded-[6px] text-[12px] text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-[#141C28] disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 flex items-center justify-center"
-          title="Add files"
-        >
-          <Plus className="h-3.5 w-3.5" />
-        </button>
-        <button 
-          type="submit" 
-          disabled={!message.trim() || disabled}
-          className="h-8 px-3 bg-white dark:bg-[#0E1118] border border-slate-200 dark:border-[#283046]/60 rounded-[6px] text-[12px] text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-[#141C28] disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-[#9ecafc] dark:focus:ring-[#3b82f6]/40 flex items-center justify-center"
-        >
-          <Send className="h-3 w-3" />
-        </button>
+        
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {/* hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={handleFilesSelected}
+            />
+            <button
+              type="button"
+              onClick={handlePickFiles}
+              disabled={disabled}
+              title="Add attachment"
+              className="relative grid h-8 w-8 place-items-center rounded-md border transition-colors hover:bg-black/5"
+              style={{ borderColor: 'var(--chat-line, #E7E5E4)' }}
+              aria-busy={hasUploading}
+            >
+              {hasUploading ? (
+                <div className="spinner" aria-hidden style={{
+                  width: '14px',
+                  height: '14px',
+                  border: '2px solid rgba(0,0,0,.15)',
+                  borderTopColor: 'currentColor',
+                  borderRadius: '9999px',
+                }} />
+              ) : (
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              )}
+            </button>
+            {projectName && (
+              <button
+                type="button"
+                className="flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-sm transition-colors hover:bg-black/5"
+                style={{ borderColor: 'var(--chat-line, #E7E5E4)' }}
+              >
+                <span>{projectName}</span>
+                <svg className="h-3.5 w-3.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            )}
+          </div>
+          <button
+            type="submit"
+            disabled={!message.trim() || disabled}
+            className="grid h-8 w-8 place-items-center rounded-md transition-colors disabled:opacity-40"
+            style={{
+              background: message.trim() ? 'var(--chat-ink, #1C1917)' : '#d4d4d8',
+              color: message.trim() ? 'var(--chat-card, #FFFFFF)' : '#a1a1aa',
+            }}
+            onMouseEnter={(e) => {
+              if (message.trim()) (e.currentTarget as HTMLButtonElement).style.background = '#111111'
+            }}
+            onMouseLeave={(e) => {
+              if (message.trim()) (e.currentTarget as HTMLButtonElement).style.background = 'var(--chat-ink, #1C1917)'
+            }}
+            title="Send"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+            </svg>
+          </button>
+        </div>
       </div>
     </form>
   )

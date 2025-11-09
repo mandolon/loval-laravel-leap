@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ChevronDown, Lock, X } from 'lucide-react'
+import FileUploadChip, { type UploadStatus } from './FileUploadChip'
 
 interface ChatInputProps {
   message: string
@@ -18,6 +19,14 @@ interface ChatInputProps {
   projects: Array<{ id: string; name: string }>
   wrapperClassName?: string
   summaryAction?: ReactNode
+  workspaceName?: string
+}
+
+type UploadItem = {
+  id: string
+  file: File
+  progress: number
+  status: UploadStatus
 }
 
 export function NewChatInput({
@@ -32,10 +41,14 @@ export function NewChatInput({
   projects,
   wrapperClassName,
   summaryAction,
+  workspaceName,
 }: ChatInputProps) {
   const [projectPopoverOpen, setProjectPopoverOpen] = useState(false)
   const [projectSearch, setProjectSearch] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploads, setUploads] = useState<UploadItem[]>([])
+  const [dragOver, setDragOver] = useState(false)
 
   const allProjects = [
     { id: 'all', name: 'All Projects' },
@@ -89,9 +102,97 @@ export function NewChatInput({
   const defaultPadding = chatOpened ? 'px-4 pb-4 pt-3' : 'px-4'
   const containerPadding = wrapperClassName || defaultPadding
 
+  const handlePickFiles = () => {
+    fileInputRef.current?.click()
+  }
+
+  const processFiles = (files: File[]) => {
+    if (!files.length) return
+
+    const now = Date.now()
+    const newUploads: UploadItem[] = files.map((f, i) => ({
+      id: `${now}-${i}-${Math.random().toString(36).slice(2, 8)}`,
+      file: f,
+      progress: 0,
+      status: 'uploading' as UploadStatus,
+    }))
+    setUploads((prev) => [...prev, ...newUploads])
+
+    // Simulate upload progress; replace with real upload integration
+    newUploads.forEach((item) => {
+      const totalMs = 1500 + Math.random() * 1500
+      const start = Date.now()
+      const fileId = item.id
+      const tick = () => {
+        const elapsed = Date.now() - start
+        const p = Math.min(100, Math.round((elapsed / totalMs) * 100))
+        setUploads((files) =>
+          files.map((f) => (f.id === fileId ? { ...f, progress: p, status: p >= 100 ? 'done' : 'uploading' } : f))
+        )
+        if (p < 100) requestAnimationFrame(tick)
+      }
+      requestAnimationFrame(tick)
+    })
+  }
+
+  const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    processFiles(files)
+    // reset input to allow same file selection again
+    e.target.value = ''
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragOver(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragOver(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragOver(false)
+    const dt = e.dataTransfer
+    const files = dt?.files ? Array.from(dt.files) : []
+    processFiles(files)
+  }
+
+  const removeUpload = (id: string) => {
+    setUploads((prev) => prev.filter((u) => u.id !== id))
+  }
+
+  const hasUploading = uploads.some((f) => f.status === 'uploading')
+
   return (
     <div className={`w-full transition-all duration-700 ease-out ${containerPadding}`}>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner { animation: spin .8s linear infinite; }
+      `}</style>
       <div className="relative overflow-hidden rounded-2xl ring-1 ring-border bg-background shadow-[0_22px_45px_-28px_rgba(15,23,42,0.35)] backdrop-blur-sm transition-all duration-300 max-w-3xl mx-auto">
+        {uploads.length > 0 && (
+          <div className="flex max-h-28 flex-wrap gap-2 overflow-y-auto px-5 pt-4 pb-2">
+            {uploads.map((u) => (
+              <FileUploadChip
+                key={u.id}
+                id={u.id}
+                filename={u.file.name}
+                projectName={workspaceName}
+                size={u.file.size}
+                status={u.status}
+                progress={u.progress}
+                onRemove={removeUpload}
+              />
+            ))}
+          </div>
+        )}
+        
         <Textarea
           ref={textareaRef}
           value={message}
@@ -106,11 +207,45 @@ export function NewChatInput({
               onSubmit()
             }
           }}
+          onDragOver={handleDragOver}
+          onDragEnter={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
         />
 
         {/* Input Controls */}
         <div className="flex items-center justify-between bg-background px-4 py-2.5 text-sm text-foreground transition-colors duration-200 rounded-none">
           <div className="flex items-center gap-2">
+            {/* hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={handleFilesSelected}
+            />
+            <button
+              type="button"
+              onClick={handlePickFiles}
+              disabled={isLoading}
+              title="Add attachment"
+              className="relative grid h-8 w-8 place-items-center rounded-md border transition-colors hover:bg-accent disabled:opacity-50"
+              aria-busy={hasUploading}
+            >
+              {hasUploading ? (
+                <div className="spinner" aria-hidden style={{
+                  width: '14px',
+                  height: '14px',
+                  border: '2px solid rgba(0,0,0,.15)',
+                  borderTopColor: 'currentColor',
+                  borderRadius: '9999px',
+                }} />
+              ) : (
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              )}
+            </button>
             <Popover open={projectLocked ? false : projectPopoverOpen} onOpenChange={handleProjectPopoverChange}>
               <PopoverTrigger asChild>
                 <Button
