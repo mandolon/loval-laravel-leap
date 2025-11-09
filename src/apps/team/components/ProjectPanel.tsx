@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef, forwardRef, useCallback } from "react";
-import { Search, FolderClosed, BookOpen, MoreVertical, Settings2, Info, Upload } from "lucide-react";
+import { Search, FolderClosed, BookOpen, MoreVertical, Settings2, Info, Plus } from "lucide-react";
 import { useProjectFolders, useProjectFiles, useDeleteProjectFile, useDeleteFolder, useMoveProjectFile, useRenameFolder, useRenameProjectFile, useUploadProjectFiles, downloadProjectFile } from '@/lib/api/hooks/useProjectFiles';
 import { useProjectFolderDragDrop } from '@/lib/api/hooks/useProjectFolderDragDrop';
 import { useDrawingVersions, useUpdateDrawingScale, useCreateDrawingPage, useCreateDrawingVersion, useDeleteDrawingVersion, useDeleteDrawingPage, useUpdateDrawingVersion, useUpdateDrawingPageName } from '@/lib/api/hooks/useDrawings';
@@ -101,6 +101,7 @@ function SectionHeader({
   onDragOver,
   onDrop,
   icon,
+  onUpload,
 }: any) {
   const [editValue, setEditValue] = useState(title);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -148,7 +149,20 @@ function SectionHeader({
       ) : (
         <span className="text-[11px] font-medium text-slate-800">{title}</span>
       )}
-      <MoreVertical className="ml-auto hidden h-3.5 w-3.5 text-slate-400 group-hover:block" />
+      {onUpload ? (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onUpload();
+          }}
+          className="ml-auto hidden h-3.5 w-3.5 text-slate-400 group-hover:block hover:text-slate-600 transition-colors"
+          title="Upload files to this folder"
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </button>
+      ) : (
+        <MoreVertical className="ml-auto hidden h-3.5 w-3.5 text-slate-400 group-hover:block" />
+      )}
     </div>
   );
 }
@@ -905,6 +919,7 @@ export default function ProjectPanel({
             onDragStart={(e: any) => handleSectionDragStart(id, e)}
             onDragOver={() => {}}
             onDrop={() => {}}
+            onUpload={() => handleUploadClick(id)}
           />
           <Expander isOpen={isOpen}>
             <div className="ml-3">
@@ -1069,6 +1084,12 @@ export default function ProjectPanel({
             onDragStart={(e: any) => handleWbSectionDragStart(id, e)}
             onDragOver={() => {}}
             onDrop={() => {}}
+            onUpload={() => {
+              createDrawingPage.mutate({
+                drawingId: id,
+                projectId
+              });
+            }}
           />
           <Expander isOpen={isOpen}>
             <div className="ml-3">
@@ -1175,20 +1196,6 @@ export default function ProjectPanel({
                     />
                     <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                   </div>
-                  <button
-                    onClick={() => {
-                      // Default to first folder or show folder selector
-                      const firstFolderId = localSections[0]?.id;
-                      if (firstFolderId) {
-                        handleUploadClick(firstFolderId);
-                      }
-                    }}
-                    disabled={isUploading || localSections.length === 0}
-                    className="h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed"
-                    title="Upload files"
-                  >
-                    <Upload className="h-4 w-4 text-slate-700" />
-                  </button>
                 </div>
                 
                 {/* Hidden file input */}
