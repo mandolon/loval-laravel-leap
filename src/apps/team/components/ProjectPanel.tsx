@@ -588,19 +588,25 @@ export default function ProjectPanel({
   const handleItemMouseDown = useCallback((itemId: string) => {
     // Only pre-fetch if not already cached
     if (fileCacheRef.current.has(itemId)) {
+      console.log('✓ File already cached:', itemId);
       return;
     }
     
     const fileData = rawFiles.find(f => f.id === itemId);
     if (fileData && fileData.storage_path) {
+      console.log('🔄 Pre-fetching file on mousedown:', fileData.filename);
       // Pre-fetch the file in the background
       fetchAndCacheFile(
         itemId,
         fileData.storage_path,
         fileData.filename,
         fileData.mimetype
-      ).catch((error) => {
-        console.debug('Pre-fetch failed (non-critical):', error);
+      ).then((file) => {
+        if (file) {
+          console.log('✅ File pre-fetched and cached:', fileData.filename);
+        }
+      }).catch((error) => {
+        console.error('❌ Pre-fetch failed:', error);
       });
     }
   }, [rawFiles, fetchAndCacheFile]);
@@ -624,12 +630,15 @@ export default function ProjectPanel({
         // File is cached, add it immediately
         try {
           e.dataTransfer.items.add(cachedFile);
+          console.log('✅ Added cached file to drag:', fileData.filename);
         } catch (addError) {
-          console.warn('Could not add cached file to drag:', addError);
+          console.warn('❌ Could not add cached file to drag:', addError);
         }
       } else {
-        // File not in cache, fetch it asynchronously
-        // Note: This may not work if the fetch takes too long, but we try anyway
+        // File not cached - log warning
+        console.warn('⚠️ File not in cache for drag:', fileData.filename, 'Pre-fetch may have failed');
+        
+        // Try to fetch synchronously (won't work but log it)
         fetchAndCacheFile(
           itemId,
           fileData.storage_path,
@@ -637,15 +646,10 @@ export default function ProjectPanel({
           fileData.mimetype
         ).then((file) => {
           if (file) {
-            // Try to add the file even though dragStart may have completed
-            // Some browsers support this
-            try {
-              e.dataTransfer.items.add(file);
-            } catch (addError) {
-              // Silently fail - the file will be cached for next time
-              console.debug('Could not add file to drag (may have started already):', addError);
-            }
+            console.log('📦 File fetched but too late for drag:', fileData.filename);
           }
+        }).catch((error) => {
+          console.error('❌ Failed to fetch file:', error);
         });
       }
     }
