@@ -1,17 +1,17 @@
 [package]
-name = "loval-laravel-leap"
+name = "rehome"
 version = "1.0.0"
 description = "Project and task management for construction professionals"
 authors = ["you"]
 edition = "2021"
 
 [build-dependencies]
-tauri-build = { version = "2.0", features = [] }
+tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2.0", features = [] }
-tauri-plugin-opener = "2.0"
-tauri-plugin-updater = "2.0"
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+tauri-plugin-updater = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 

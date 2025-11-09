@@ -41,7 +41,11 @@
       "providerShortName": null,
       "files": {}
     },
-    "icon": ["icons/icon.png"],
+    "icon": [
+      "icons/icon.png",
+      "icons/icon.ico",
+      "icons/icon.icns"
+    ],
     "resources": [],
     "copyright": "",
     "category": "Productivity",

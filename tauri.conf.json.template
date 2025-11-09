@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2.0.0",
-  "productName": "loval-laravel-leap",
+  "productName": "rehome",
   "version": "1.0.0",
-  "identifier": "app.lovable.loval-laravel-leap",
+  "identifier": "app.lovable.rehome",
   "build": {
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build:desktop",
@@ -13,7 +13,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "Loval Laravel Leap",
+        "title": "rehome",
         "width": 1280,
         "height": 800,
         "minWidth": 800,
