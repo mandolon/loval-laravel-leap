@@ -301,8 +301,8 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
                         aria-label="Change status"
                       >
                         <span 
-                          className="inline-block w-[9px] h-[9px] rounded-full" 
-                          style={{ backgroundColor: task ? getStatusColor(task.status) : '#94a3b8' }}
+                          className="inline-block w-4 h-4 rounded-full border-2" 
+                          style={{ borderColor: task ? getStatusColor(task.status) : '#94a3b8' }}
                         />
                       </button>
                     }
@@ -317,8 +317,8 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
                             }`}
                           >
                             <span 
-                              className="inline-block w-[9px] h-[9px] rounded-full flex-shrink-0" 
-                              style={{ backgroundColor: option.color }}
+                              className="inline-block w-4 h-4 rounded-full border-2 flex-shrink-0" 
+                              style={{ borderColor: option.color }}
                             />
                             <span>{option.label}</span>
                           </button>
@@ -327,7 +327,7 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
                     }
                   />
                   <span className="w-px h-4 bg-gray-300" />
-                  <span className="text-[#202020] text-[12px]">{task.shortId}</span>
+                  <span className="text-[#202020] text-[14px]">{task.shortId}</span>
                 </div>
               </div>
 
