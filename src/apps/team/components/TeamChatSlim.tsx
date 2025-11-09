@@ -25,6 +25,7 @@ import WorkspaceFilesView from "./WorkspaceFilesView";
 import { ChatHeader } from "./chat/ChatHeader";
 import { ChatSidePanel } from "./chat/ChatSidePanel";
 import { supabase } from "@/integrations/supabase/client";
+import FileUploadChip, { type UploadStatus } from "@/components/chat/FileUploadChip";
 
 // Theme Configuration - Exact from reference
 const THEME = {
@@ -74,6 +75,7 @@ export default function TeamChatSlim({
   const { user } = useUser();
   const [text, setText] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<Array<{ id: string; name: string }>>([]);
+  const [uploads, setUploads] = useState<Array<{ id: string; file: File; progress: number; status: UploadStatus }>>([]);
   const [selectedTag, setSelectedTag] = useState("General");
   const [showChatSelector, setShowChatSelector] = useState(false);
   const [showTagSelector, setShowTagSelector] = useState(false);
@@ -188,50 +190,70 @@ export default function TeamChatSlim({
     fileInputRef.current?.click();
   };
 
+  const processFiles = (files: File[]) => {
+    if (!files.length) return;
+
+    const now = Date.now();
+    const newUploads = files.map((f, i) => ({
+      id: `${now}-${i}-${Math.random().toString(36).slice(2, 8)}`,
+      file: f,
+      progress: 0,
+      status: 'uploading' as UploadStatus,
+    }));
+    setUploads((prev) => [...prev, ...newUploads]);
+
+    // Simulate upload progress then actually upload
+    newUploads.forEach(async (item) => {
+      const totalMs = 1500 + Math.random() * 1500;
+      const start = Date.now();
+      const fileId = item.id;
+      
+      const tick = () => {
+        const elapsed = Date.now() - start;
+        const p = Math.min(100, Math.round((elapsed / totalMs) * 100));
+        setUploads((files) =>
+          files.map((f) => (f.id === fileId ? { ...f, progress: p, status: p >= 100 ? 'done' : 'uploading' } : f))
+        );
+        if (p < 100) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+
+      // Actually upload the file
+      try {
+        if (isWorkspaceChat && workspaceId) {
+          const uploadedFiles = await uploadWorkspaceFiles.mutateAsync({
+            files: [item.file],
+          });
+          if (uploadedFiles.length > 0) {
+            setAttachedFiles(prev => [...prev, {
+              id: uploadedFiles[0].id,
+              name: uploadedFiles[0].filename
+            }]);
+          }
+        } else if (selectedProject) {
+          const uploadedFiles = await uploadProjectChatFiles.mutateAsync([item.file]);
+          if (uploadedFiles.length > 0) {
+            setAttachedFiles(prev => [...prev, {
+              id: uploadedFiles[0].id,
+              name: uploadedFiles[0].filename
+            }]);
+          }
+        }
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        setUploads((files) =>
+          files.map((f) => (f.id === fileId ? { ...f, status: 'error' as UploadStatus } : f))
+        );
+      }
+    });
+  };
+
   const handleFileInputChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
     const fileArray = Array.from(files);
-
-    if (isWorkspaceChat && workspaceId) {
-      try {
-        console.log('Uploading workspace files:', fileArray.length);
-        const uploadedFiles = await uploadWorkspaceFiles.mutateAsync({
-          files: fileArray,
-        });
-        
-        console.log('Workspace files uploaded:', uploadedFiles.length);
-        const newAttachedFiles = uploadedFiles.map(f => ({
-          id: f.id,
-          name: f.filename
-        }));
-        setAttachedFiles(prev => [...prev, ...newAttachedFiles]);
-      } catch (error) {
-        console.error('Error uploading workspace files:', error);
-      }
-    } else if (selectedProject) {
-      try {
-        console.log('Uploading project chat files:', fileArray.length);
-        const uploadedFiles = await uploadProjectChatFiles.mutateAsync(fileArray);
-        
-        console.log('Project chat files uploaded:', uploadedFiles.length);
-        const newAttachedFiles = uploadedFiles.map(f => ({
-          id: f.id,
-          name: f.filename
-        }));
-        setAttachedFiles(prev => [...prev, ...newAttachedFiles]);
-      } catch (error) {
-        console.error('Error uploading project chat files:', error);
-      }
-    } else {
-      // For project chat, keep existing demo behavior for now
-      const demoFiles = fileArray.map(file => ({
-        id: uid(),
-        name: file.name
-      }));
-      setAttachedFiles(prev => [...prev, ...demoFiles]);
-    }
+    processFiles(fileArray);
 
     // Reset the input
     if (fileInputRef.current) {
@@ -239,9 +261,15 @@ export default function TeamChatSlim({
     }
   };
 
+  const handleRemoveUpload = (fileId: string) => {
+    setUploads((prev) => prev.filter((u) => u.id !== fileId));
+  };
+
   const handleRemoveFile = (fileId: string) => {
     setAttachedFiles((files) => files.filter((f) => f.id !== fileId));
   };
+
+  const hasUploading = uploads.some((f) => f.status === 'uploading');
 
   const handleTagClick = () => {
     setShowTagSelector(!showTagSelector);
@@ -340,13 +368,9 @@ export default function TeamChatSlim({
     e.stopPropagation();
     setIsDragging(false);
 
-    const files = Array.from(e.dataTransfer.files);
-    const newFiles = files.map((file) => ({
-      id: uid(),
-      name: file.name,
-    }));
-
-    setAttachedFiles((prev) => [...prev, ...newFiles]);
+    const dt = e.dataTransfer;
+    const files = dt?.files ? Array.from(dt.files) : [];
+    processFiles(files);
   };
 
   const headerTitle = useMemo(
@@ -640,6 +664,12 @@ export default function TeamChatSlim({
         .animate-fadeIn {
           animation: fadeIn 0.3s ease-in-out;
         }
+        @keyframes spin { 
+          to { transform: rotate(360deg); } 
+        }
+        .spinner { 
+          animation: spin .8s linear infinite; 
+        }
         @media (max-width: 767px) {
           .message-content {
             -webkit-user-select: none;
@@ -850,10 +880,19 @@ export default function TeamChatSlim({
               onChange={handleFileInputChange}
               accept="*/*"
             />
-            {attachedFiles.length > 0 && (
-              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-                {attachedFiles.map((file) => (
-                  <FileChip key={file.id} file={file} onRemove={handleRemoveFile} />
+            {uploads.length > 0 && (
+              <div className="flex max-h-28 flex-wrap gap-2 overflow-y-auto">
+                {uploads.map((u) => (
+                  <FileUploadChip
+                    key={u.id}
+                    id={u.id}
+                    filename={u.file.name}
+                    projectName={isWorkspaceChat ? 'Workspace' : selectedProject?.name}
+                    size={u.file.size}
+                    status={u.status}
+                    progress={u.progress}
+                    onRemove={handleRemoveUpload}
+                  />
                 ))}
               </div>
             )}
@@ -877,19 +916,30 @@ export default function TeamChatSlim({
                 <button
                   onClick={handleAddFile}
                   title="Add attachment"
-                  className="grid h-8 w-8 shrink-0 place-items-center rounded-md border transition-colors"
+                  className="relative grid h-8 w-8 shrink-0 place-items-center rounded-md border transition-colors"
                   style={{ borderColor: THEME.border }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = THEME.hover)}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  aria-busy={hasUploading}
                 >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
+                  {hasUploading ? (
+                    <div className="spinner" aria-hidden style={{
+                      width: '14px',
+                      height: '14px',
+                      border: '2px solid rgba(0,0,0,.15)',
+                      borderTopColor: 'currentColor',
+                      borderRadius: '9999px',
+                    }} />
+                  ) : (
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
+                  )}
                 </button>
                 <div className="relative">
                   <button
