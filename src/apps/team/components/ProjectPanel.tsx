@@ -453,6 +453,12 @@ export default function ProjectPanel({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadTargetFolderId, setUploadTargetFolderId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
+  const [uploadingFiles, setUploadingFiles] = useState<Array<{
+    name: string;
+    progress: number;
+    status: 'uploading' | 'done' | 'error';
+  }>>([]);
 
   // Context menu (files)
   const [menu, setMenu] = useState<any>({ show: false, x: 0, y: 0, target: null });
@@ -714,12 +720,39 @@ export default function ProjectPanel({
     const files = e.target.files;
     if (!files || files.length === 0 || !uploadTargetFolderId) return;
 
+    const fileArray = Array.from(files);
     setIsUploading(true);
+    
+    // Initialize upload tracking
+    setUploadingFiles(fileArray.map(f => ({
+      name: f.name,
+      progress: 0,
+      status: 'uploading' as const
+    })));
+
     try {
       await uploadFiles.mutateAsync({
-        files: Array.from(files),
+        files: fileArray,
         folder_id: uploadTargetFolderId
       });
+      
+      // Mark all as done
+      setUploadingFiles(prev => prev.map(f => ({
+        ...f,
+        progress: 100,
+        status: 'done' as const
+      })));
+      
+      // Clear after 2 seconds
+      setTimeout(() => {
+        setUploadingFiles([]);
+      }, 2000);
+    } catch (error) {
+      // Mark all as error
+      setUploadingFiles(prev => prev.map(f => ({
+        ...f,
+        status: 'error' as const
+      })));
     } finally {
       setIsUploading(false);
       setUploadTargetFolderId(null);
@@ -739,6 +772,28 @@ export default function ProjectPanel({
     e.dataTransfer.dropEffect = 'copy';
   };
 
+  const handleFolderDragEnter = (e: React.DragEvent, folderId: string) => {
+    // Only track OS file drags (not internal drag operations)
+    if (dragState) return;
+    
+    // Check if dragging files (not other elements)
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragOverFolderId(folderId);
+    }
+  };
+
+  const handleFolderDragLeave = (e: React.DragEvent, folderId: string) => {
+    if (dragState) return;
+    
+    // Only clear if actually leaving this specific folder
+    const relatedTarget = e.relatedTarget as HTMLElement;
+    if (!e.currentTarget.contains(relatedTarget)) {
+      setDragOverFolderId(null);
+    }
+  };
+
   const handleFolderDrop = async (e: React.DragEvent, folderId: string) => {
     // Check if dragging files from OS
     if (dragState) return; // Internal drag, handled elsewhere
@@ -746,15 +801,44 @@ export default function ProjectPanel({
     e.preventDefault();
     e.stopPropagation();
     
+    // Clear drag-over state
+    setDragOverFolderId(null);
+    
     const files = Array.from(e.dataTransfer.files);
     if (files.length === 0) return;
 
     setIsUploading(true);
+    
+    // Initialize upload tracking
+    setUploadingFiles(files.map(f => ({
+      name: f.name,
+      progress: 0,
+      status: 'uploading' as const
+    })));
+
     try {
       await uploadFiles.mutateAsync({
         files,
         folder_id: folderId
       });
+      
+      // Mark all as done
+      setUploadingFiles(prev => prev.map(f => ({
+        ...f,
+        progress: 100,
+        status: 'done' as const
+      })));
+      
+      // Clear after 2 seconds
+      setTimeout(() => {
+        setUploadingFiles([]);
+      }, 2000);
+    } catch (error) {
+      // Mark all as error
+      setUploadingFiles(prev => prev.map(f => ({
+        ...f,
+        status: 'error' as const
+      })));
     } finally {
       setIsUploading(false);
     }
@@ -782,6 +866,9 @@ export default function ProjectPanel({
           <div className="absolute left-2 right-2 -top-1 h-0.5 bg-blue-400 rounded" />
         )}
         <div 
+          className={`transition-all ${dragOverFolderId === id ? 'bg-blue-50 ring-2 ring-blue-400 ring-inset rounded-lg' : ''}`}
+          onDragEnter={(e) => handleFolderDragEnter(e, id)}
+          onDragLeave={(e) => handleFolderDragLeave(e, id)}
           onDragOver={(e) => {
             handleSectionDragOver(index, isAboveSeparator, e);
             handleFolderDragOver(e, id);
@@ -1715,6 +1802,53 @@ export default function ProjectPanel({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Upload Progress Bar */}
+      {uploadingFiles.length > 0 && (
+        <div className="absolute bottom-0 left-0 right-0 bg-background border-t border-border shadow-lg">
+          <div className="px-3 py-2 max-h-32 overflow-y-auto">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[11px] font-medium text-foreground">
+                Uploading {uploadingFiles.length} file{uploadingFiles.length > 1 ? 's' : ''}...
+              </span>
+              {uploadingFiles.every(f => f.status === 'done') && (
+                <span className="text-[10px] text-green-600">✓ Complete</span>
+              )}
+            </div>
+            {uploadingFiles.map((file, idx) => (
+              <div key={idx} className="mb-1.5 last:mb-0">
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-[10px] text-muted-foreground truncate flex-1 mr-2">
+                    {file.name}
+                  </span>
+                  {file.status === 'uploading' && (
+                    <span className="text-[9px] text-blue-600">Uploading...</span>
+                  )}
+                  {file.status === 'done' && (
+                    <span className="text-[9px] text-green-600">✓</span>
+                  )}
+                  {file.status === 'error' && (
+                    <span className="text-[9px] text-red-600">Failed</span>
+                  )}
+                </div>
+                <div className="h-1 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full transition-all duration-300 ${
+                      file.status === 'error' ? 'bg-red-500' :
+                      file.status === 'done' ? 'bg-green-500' :
+                      'bg-blue-500'
+                    }`}
+                    style={{ 
+                      width: file.status === 'uploading' ? '60%' : '100%',
+                      animation: file.status === 'uploading' ? 'pulse 1.5s ease-in-out infinite' : 'none'
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
