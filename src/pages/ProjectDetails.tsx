@@ -723,6 +723,7 @@ const ProjectDetails = () => {
               replyingTo={replyingTo}
               onCancelReply={() => setReplyingTo(null)}
               disabled={sendChatMutation.isPending}
+              projectName={project.name}
             />
           </div>
         </div>
