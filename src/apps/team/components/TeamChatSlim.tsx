@@ -163,6 +163,7 @@ export default function TeamChatSlim({
         projectId: selectedProject.id,
         content: body,
         replyToMessageId: replyingTo?.messageId,
+        referencedFiles: attachedFiles.map(f => f.id),
       });
     }
 
