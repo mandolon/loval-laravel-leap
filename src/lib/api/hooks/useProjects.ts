@@ -83,11 +83,13 @@ export const useProjects = (workspaceId: string, userId?: string, isAdmin?: bool
           `)
           .eq('user_id', userId)
           .eq('projects.workspace_id', workspaceId)
-          .is('projects.deleted_at', null)
-          .order('projects.created_at', { ascending: false });
+          .is('deleted_at', null)
+          .is('projects.deleted_at', null);
         
         error = result.error;
-        data = result.data?.map((pm: any) => pm.projects) || [];
+        // Extract projects and sort by created_at in JavaScript
+        data = result.data?.map((pm: any) => pm.projects)
+          .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) || [];
       } else {
         // If no userId provided, show all projects (fallback to admin behavior)
         const result = await supabase

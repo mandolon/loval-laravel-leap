@@ -34,7 +34,7 @@ export function AddUserToWorkspaceDialog({
   const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
   
   const { data: workspaces, isLoading: isLoadingWorkspaces } = useAllWorkspaces();
-  const { data: allProjects } = useProjects('', { limit: 1000 });
+  const { data: allProjects } = useProjects('', undefined, undefined, { limit: 1000 });
   
   const assignMember = useAssignMember();
   const assignProjectMember = useAssignProjectMember();

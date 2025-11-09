@@ -110,7 +110,7 @@ export default function TeamChatSlim({
   const { toast } = useToast();
   
   // Fetch workspace projects for header dropdown when in workspace mode
-  const { data: workspaceProjects = [] } = useProjects(workspaceId || "", {});
+  const { data: workspaceProjects = [] } = useProjects(workspaceId || "");
 
   // Use appropriate messages based on mode
   const rawMessages = isWorkspaceChat ? rawWorkspaceMessages : rawProjectMessages;
