@@ -1152,6 +1152,7 @@ export default function ProjectPanel({
           <button
             className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "files" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"}`}
             aria-label="Files"
+            title="Files"
             onClick={() => setTab("files")}
           >
             <FolderClosed className="h-4 w-4 text-slate-700" />
@@ -1159,6 +1160,7 @@ export default function ProjectPanel({
           <button
             className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "whiteboards" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"}`}
             aria-label="Whiteboards"
+            title="Whiteboards"
             onClick={() => setTab("whiteboards")}
           >
             <BookOpen className="h-4 w-4 text-slate-700" />
@@ -1166,13 +1168,15 @@ export default function ProjectPanel({
           <button
             className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "info" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"}`}
             aria-label="Project Info"
+            title="Project Info"
             onClick={() => setTab("info")}
           >
             <Info className="h-4 w-4 text-slate-700" />
           </button>
           <button
             className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "settings" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"} ml-auto`}
-            aria-label="Settings"
+            aria-label="Project Settings"
+            title="Project Settings"
             onClick={() => setTab("settings")}
           >
             <Settings2 className="h-4 w-4 text-slate-700" />
