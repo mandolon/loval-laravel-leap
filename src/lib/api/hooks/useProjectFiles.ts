@@ -432,3 +432,117 @@ export const useUploadChatFiles = (projectId: string) => {
     },
   })
 }
+
+// Move a file to a different folder (for drag-and-drop)
+export const useMoveProjectFile = (projectId: string) => {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: async (input: { fileId: string; newFolderId: string }) => {
+      const { error } = await supabase
+        .from('files')
+        .update({
+          folder_id: input.newFolderId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', input.fileId)
+
+      if (error) {
+        console.error('Move file error:', error)
+        throw error
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectFilesKeys.files(projectId) })
+      toast({
+        title: 'Success',
+        description: 'File moved successfully',
+      })
+    },
+    onError: (error: Error) => {
+      console.error('Move file mutation error:', error)
+      toast({
+        title: 'Error',
+        description: `Failed to move file: ${error.message}`,
+        variant: 'destructive',
+      })
+    },
+  })
+}
+
+// Rename a folder
+export const useRenameFolder = (projectId: string) => {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: async (input: { folderId: string; newName: string }) => {
+      const { error } = await supabase
+        .from('folders')
+        .update({
+          name: input.newName,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', input.folderId)
+
+      if (error) {
+        console.error('Rename folder error:', error)
+        throw error
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectFilesKeys.folders(projectId) })
+      toast({
+        title: 'Success',
+        description: 'Folder renamed successfully',
+      })
+    },
+    onError: (error: Error) => {
+      console.error('Rename folder mutation error:', error)
+      toast({
+        title: 'Error',
+        description: `Failed to rename folder: ${error.message}`,
+        variant: 'destructive',
+      })
+    },
+  })
+}
+
+// Rename a file
+export const useRenameProjectFile = (projectId: string) => {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: async (input: { fileId: string; newName: string }) => {
+      const { error } = await supabase
+        .from('files')
+        .update({
+          filename: input.newName,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', input.fileId)
+
+      if (error) {
+        console.error('Rename file error:', error)
+        throw error
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectFilesKeys.files(projectId) })
+      toast({
+        title: 'Success',
+        description: 'File renamed successfully',
+      })
+    },
+    onError: (error: Error) => {
+      console.error('Rename file mutation error:', error)
+      toast({
+        title: 'Error',
+        description: `Failed to rename file: ${error.message}`,
+        variant: 'destructive',
+      })
+    },
+  })
+}

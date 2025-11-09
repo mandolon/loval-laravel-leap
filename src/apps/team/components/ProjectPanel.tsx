@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef, forwardRef, useCallback } from "react";
 import { Search, FolderClosed, BookOpen, MoreVertical, Settings2, Info } from "lucide-react";
-import { useProjectFolders, useProjectFiles, useDeleteProjectFile, useDeleteFolder } from '@/lib/api/hooks/useProjectFiles';
+import { useProjectFolders, useProjectFiles, useDeleteProjectFile, useDeleteFolder, useMoveProjectFile, useRenameFolder, useRenameProjectFile } from '@/lib/api/hooks/useProjectFiles';
+import { useProjectFolderDragDrop } from '@/lib/api/hooks/useProjectFolderDragDrop';
 import { useDrawingVersions, useUpdateDrawingScale, useCreateDrawingPage, useCreateDrawingVersion, useDeleteDrawingVersion, useDeleteDrawingPage, useUpdateDrawingVersion, useUpdateDrawingPageName } from '@/lib/api/hooks/useDrawings';
 import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
 import { useHardDeleteProject, useProject } from '@/lib/api/hooks/useProjects';
@@ -290,6 +291,10 @@ export default function ProjectPanel({
   const { data: rawFiles = [], isLoading: filesLoading } = useProjectFiles(projectId);
   const deleteFile = useDeleteProjectFile(projectId);
   const deleteFolder = useDeleteFolder(projectId);
+  const moveFile = useMoveProjectFile(projectId);
+  const renameFolder = useRenameFolder(projectId);
+  const renameFile = useRenameProjectFile(projectId);
+  const { reorderFoldersMutation, moveFolderAcrossSectionsMutation, batchUpdateFoldersMutation } = useProjectFolderDragDrop(projectId);
 
   // Transform database data to component format
   const sections = useMemo(() => {
@@ -548,6 +553,8 @@ export default function ProjectPanel({
     const { fromList, itemId } = dragState;
     const item = (localLists[fromList] || []).find((i) => i.id === itemId);
     if (!item) return;
+    
+    // Update UI optimistically
     setLocalLists((prev) => ({ ...prev, [fromList]: prev[fromList].filter((i) => i.id !== itemId) }));
     setLocalLists((prev) => {
       const target = [...(prev[listId] || [])];
@@ -555,6 +562,15 @@ export default function ProjectPanel({
       target.splice(insertIndex, 0, item);
       return { ...prev, [listId]: target };
     });
+    
+    // If moving to a different folder, update the database
+    if (fromList !== listId) {
+      moveFile.mutate({
+        fileId: itemId,
+        newFolderId: listId
+      });
+    }
+    
     setDragState(null);
     setDragOverState(null);
   };
@@ -615,9 +631,17 @@ export default function ProjectPanel({
         }
       }
       
-      // Save arrangement
+      // Save arrangement to localStorage for separator position
       setSeparatorIndex(newSeparatorIndex);
       saveFolderArrangement(next, newSeparatorIndex);
+      
+      // Persist folder order to database
+      // For now, we just reorder locally - in a real app, you'd batch update all folder positions
+      reorderFoldersMutation.mutate({
+        folderId: sectionDragId,
+        newIndex: adjustedDropIndex,
+        parentFolderId: null
+      });
       
       return next;
     });
@@ -707,7 +731,14 @@ export default function ProjectPanel({
             }}
             editing={isEditing}
             onCommitEdit={(name: string) => {
-              setLocalSections((prev) => prev.map((s) => (s.id === id ? { ...s, title: name } : s)));
+              const trimmedName = name.trim();
+              if (trimmedName && trimmedName !== title) {
+                renameFolder.mutate({
+                  folderId: id,
+                  newName: trimmedName
+                });
+              }
+              setLocalSections((prev) => prev.map((s) => (s.id === id ? { ...s, title: trimmedName || title } : s)));
               setEditing(null);
             }}
             draggable={true}
@@ -746,9 +777,16 @@ export default function ProjectPanel({
                     }}
                     editing={isItemEditing}
                     onCommitEdit={(name: string) => {
+                      const trimmedName = name.trim();
+                      if (trimmedName && trimmedName !== item.name) {
+                        renameFile.mutate({
+                          fileId: item.id,
+                          newName: trimmedName
+                        });
+                      }
                       setLocalLists((prev) => ({
                         ...prev,
-                        [id]: prev[id].map((i) => (i.id === item.id ? { ...i, name } : i)),
+                        [id]: prev[id].map((i) => (i.id === item.id ? { ...i, name: trimmedName || item.name } : i)),
                       }));
                       setEditing(null);
                     }}
