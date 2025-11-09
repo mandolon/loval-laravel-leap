@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef, forwardRef, useCallback } from "react";
-import { Search, FolderClosed, BookOpen, MoreVertical, Settings2, Info } from "lucide-react";
-import { useProjectFolders, useProjectFiles, useDeleteProjectFile, useDeleteFolder, useMoveProjectFile, useRenameFolder, useRenameProjectFile } from '@/lib/api/hooks/useProjectFiles';
+import { Search, FolderClosed, BookOpen, MoreVertical, Settings2, Info, Upload } from "lucide-react";
+import { useProjectFolders, useProjectFiles, useDeleteProjectFile, useDeleteFolder, useMoveProjectFile, useRenameFolder, useRenameProjectFile, useUploadProjectFiles } from '@/lib/api/hooks/useProjectFiles';
 import { useProjectFolderDragDrop } from '@/lib/api/hooks/useProjectFolderDragDrop';
 import { useDrawingVersions, useUpdateDrawingScale, useCreateDrawingPage, useCreateDrawingVersion, useDeleteDrawingVersion, useDeleteDrawingPage, useUpdateDrawingVersion, useUpdateDrawingPageName } from '@/lib/api/hooks/useDrawings';
 import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
@@ -294,6 +294,7 @@ export default function ProjectPanel({
   const moveFile = useMoveProjectFile(projectId);
   const renameFolder = useRenameFolder(projectId);
   const renameFile = useRenameProjectFile(projectId);
+  const uploadFiles = useUploadProjectFiles(projectId);
   const { reorderFoldersMutation, moveFolderAcrossSectionsMutation, batchUpdateFoldersMutation } = useProjectFolderDragDrop(projectId);
 
   // Transform database data to component format
@@ -447,6 +448,11 @@ export default function ProjectPanel({
   // Selection / editing (files)
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editing, setEditing] = useState<any>(null);
+
+  // File upload state
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadTargetFolderId, setUploadTargetFolderId] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Context menu (files)
   const [menu, setMenu] = useState<any>({ show: false, x: 0, y: 0, target: null });
@@ -698,6 +704,62 @@ export default function ProjectPanel({
     document.addEventListener('mouseup', handleMouseUp);
   };
   
+  // ---- Files: upload handlers ----
+  const handleUploadClick = (folderId: string) => {
+    setUploadTargetFolderId(folderId);
+    fileInputRef.current?.click();
+  };
+
+  const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !uploadTargetFolderId) return;
+
+    setIsUploading(true);
+    try {
+      await uploadFiles.mutateAsync({
+        files: Array.from(files),
+        folder_id: uploadTargetFolderId
+      });
+    } finally {
+      setIsUploading(false);
+      setUploadTargetFolderId(null);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleFolderDragOver = (e: React.DragEvent, folderId: string) => {
+    // Check if dragging files from OS (not internal drag)
+    if (dragState) return; // Internal drag, ignore
+    
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
+  };
+
+  const handleFolderDrop = async (e: React.DragEvent, folderId: string) => {
+    // Check if dragging files from OS
+    if (dragState) return; // Internal drag, handled elsewhere
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+
+    setIsUploading(true);
+    try {
+      await uploadFiles.mutateAsync({
+        files,
+        folder_id: folderId
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   // ---- Files: helpers ----
   const getFilteredItems = (listId: string) => {
     const items = localLists[listId] || [];
@@ -719,7 +781,16 @@ export default function ProjectPanel({
         {sectionDragId && sectionDropIndex === actualIndex && !sectionDropSide && (
           <div className="absolute left-2 right-2 -top-1 h-0.5 bg-blue-400 rounded" />
         )}
-        <div onDragOver={(e) => handleSectionDragOver(index, isAboveSeparator, e)} onDrop={handleSectionDrop}>
+        <div 
+          onDragOver={(e) => {
+            handleSectionDragOver(index, isAboveSeparator, e);
+            handleFolderDragOver(e, id);
+          }} 
+          onDrop={(e) => {
+            handleSectionDrop(e);
+            handleFolderDrop(e, id);
+          }}
+        >
           <SectionHeader
             title={title}
             open={isOpen}
@@ -1005,8 +1076,8 @@ export default function ProjectPanel({
               </div>
             ) : (
               <>
-                <div className="sticky top-10 z-10 h-9 px-2.5 border-b border-slate-200 bg-[#fcfcfc] flex items-center">
-                  <div className="relative w-full">
+                <div className="sticky top-10 z-10 h-9 px-2.5 border-b border-slate-200 bg-[#fcfcfc] flex items-center gap-2">
+                  <div className="relative flex-1">
                     <input
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
@@ -1015,7 +1086,31 @@ export default function ProjectPanel({
                     />
                     <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                   </div>
+                  <button
+                    onClick={() => {
+                      // Default to first folder or show folder selector
+                      const firstFolderId = localSections[0]?.id;
+                      if (firstFolderId) {
+                        handleUploadClick(firstFolderId);
+                      }
+                    }}
+                    disabled={isUploading || localSections.length === 0}
+                    className="h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Upload files"
+                  >
+                    <Upload className="h-4 w-4 text-slate-700" />
+                  </button>
                 </div>
+                
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  onChange={handleFileInputChange}
+                  className="hidden"
+                  aria-label="Upload files"
+                />
 
                 <div className="px-2.5 pt-1.5 pb-2" onDragEnd={handleItemDragEnd}>
                   <SectionHeader
@@ -1061,8 +1156,20 @@ export default function ProjectPanel({
                     >
                       Rename
                     </button>
+                    {menu.target?.type === "section" && (
+                      <button
+                        className="block w-full px-3 py-1.5 text-left text-[11px] text-slate-800 hover:bg-slate-100 border-t border-slate-100"
+                        onClick={() => {
+                          if (!menu.target?.list) return;
+                          handleUploadClick(menu.target.list);
+                          setMenu((m: any) => ({ ...m, show: false }));
+                        }}
+                      >
+                        Upload Files…
+                      </button>
+                    )}
                     <button
-                      className="block w-full px-3 py-1.5 text-left text-[11px] text-red-600 hover:bg-red-50"
+                      className="block w-full px-3 py-1.5 text-left text-[11px] text-red-600 hover:bg-red-50 border-t border-slate-100"
                       onClick={() => {
                         if (!menu.target) return;
                         if (menu.target.type === "item") {
