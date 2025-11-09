@@ -86,26 +86,8 @@ export function ChatHeader({
       style={{ background: THEME.backdrop }}
     >
       <div className="flex h-16 w-full items-center justify-between px-4">
-        {/* Left: Sidebar toggle */}
-        <div className="flex items-center">
-          <button
-            onClick={onToggleSidebar}
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-md border transition-colors"
-            style={{ borderColor: THEME.border, background: THEME.card }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = THEME.hover)}
-            onMouseLeave={(e) => (e.currentTarget.style.background = THEME.card)}
-            title="Toggle sidebar"
-          >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
-          </button>
-        </div>
+        {/* Left: Spacer for layout balance */}
+        <div className="w-8" />
 
         {/* Center: Project selector */}
         <div className="absolute left-1/2 -translate-x-1/2 flex items-center">

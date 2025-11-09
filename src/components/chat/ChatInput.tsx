@@ -120,11 +120,6 @@ export const ChatInput = ({ onSendMessage, replyingTo, onCancelReply, disabled, 
 
   return (
     <form onSubmit={handleSubmit}>
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .spinner { animation: spin .8s linear infinite; }
-      `}</style>
-      
       {replyingTo && (
         <div className={`mb-2 flex items-center justify-between ${UTILITY_CLASSES.chatBubble} px-2 py-1 max-w-full`}>
           <div className="flex items-center gap-1.5">

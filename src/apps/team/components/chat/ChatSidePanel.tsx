@@ -58,7 +58,7 @@ export function ChatSidePanel({
 
   return (
     <div
-      className="w-64 h-full flex flex-col border-r"
+      className="w-64 h-full flex flex-col border-r overflow-hidden"
       style={{
         background: THEME.background,
         borderColor: THEME.border,
@@ -104,7 +104,7 @@ export function ChatSidePanel({
       </div>
 
       {/* Content */}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 h-0">
         {/* Recent Projects */}
         {recentProjects.length > 0 && (
           <div className="p-4">
