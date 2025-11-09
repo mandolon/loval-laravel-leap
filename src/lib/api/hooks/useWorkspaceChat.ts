@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
+import { useUser } from "@/contexts/UserContext";
 
 // Query keys
 const workspaceChatKeys = {
@@ -151,6 +152,7 @@ export function useWorkspaceMessages(workspaceId: string) {
 export function useCreateWorkspaceMessage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useUser();
 
   return useMutation({
     mutationFn: async (data: {
@@ -160,14 +162,13 @@ export function useCreateWorkspaceMessage() {
       referenced_files?: string[];
       referenced_tasks?: string[];
     }) => {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error("Not authenticated");
+      if (!user) throw new Error("Not authenticated");
 
       const { data: result, error } = await supabase
         .from('workspace_chat_messages')
         .insert([{
           workspace_id: data.workspace_id,
-          user_id: user.user.id,
+          user_id: user.id,
           content: data.content,
           reply_to_message_id: data.reply_to_message_id,
           referenced_files: data.referenced_files || [],
