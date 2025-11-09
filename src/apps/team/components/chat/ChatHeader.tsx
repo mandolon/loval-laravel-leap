@@ -86,6 +86,9 @@ export function ChatHeader({
       style={{ background: THEME.backdrop }}
     >
       <div className="flex h-16 w-full items-center justify-between px-4">
+        {/* Left: Spacer for layout balance */}
+        <div className="w-8" />
+
         {/* Center: Project selector */}
         <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
           <button
