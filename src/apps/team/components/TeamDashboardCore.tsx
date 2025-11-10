@@ -6,7 +6,7 @@ import React, {
   useMemo,
   memo,
 } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useRoleAwareNavigation } from "@/hooks/useRoleAwareNavigation";
 import {
   Home,
@@ -347,6 +347,10 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
   // No fallback to hardcoded data - show empty list if no projects exist
   const projectItems = userProjects.map((p: any) => p.name);
 
+  const [searchParams] = useSearchParams();
+  const projectPanelTab = searchParams.get('projectTab') || 'files';
+  const isInfoTabActive = projectPanelTab === 'info';
+
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
       {/* Soft background */}
@@ -481,7 +485,14 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
               <div className="h-full flex flex-col">
                 {/* File/Whiteboard Viewer Area */}
                 <div className="flex-1 min-h-0 h-full">
-                  {selectedWhiteboard ? (
+                  {isInfoTabActive ? (
+                    <div className="h-full flex items-center justify-center">
+                      <div className="text-center text-slate-600">
+                        <p className="text-sm font-medium">Project information</p>
+                        <p className="text-xs mt-1">View details in the info panel →</p>
+                      </div>
+                    </div>
+                  ) : selectedWhiteboard ? (
                     <DrawingErrorBoundary 
                       onReset={() => {
                         // Reset whiteboard selection to force reload
@@ -533,7 +544,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
             top: "calc(0.375rem + 2.25rem + 0.25rem)",
             bottom: "0.75rem",
             right: "0.375rem",
-            width: projectPanelCollapsed ? 0 : "240px",
+            width: projectPanelCollapsed ? 0 : isInfoTabActive ? "calc(100% - 240px - 1rem)" : "240px",
             opacity: projectPanelCollapsed ? 0 : 1,
             overflow: "hidden",
           }}

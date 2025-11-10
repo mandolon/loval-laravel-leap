@@ -290,8 +290,8 @@ export default function ProjectPanel({
   onCalibrate?: () => void;
   inchesPerSceneUnit?: number;
 }) {
-  const [searchParams] = useSearchParams();
-  const initialTab = (searchParams.get('tab') as 'files' | 'whiteboards' | 'settings' | 'info') || 'files';
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = (searchParams.get('projectTab') as 'files' | 'whiteboards' | 'settings' | 'info') || 'files';
   const [tab, setTab] = useState<'files' | 'whiteboards' | 'settings' | 'info'>(initialTab);
   const [query, setQuery] = useState("");
   const [wbQuery, setWbQuery] = useState("");
@@ -1144,17 +1144,27 @@ export default function ProjectPanel({
     );
   };
 
+  // Update URL when tab changes
+  const handleTabChange = (newTab: typeof tab) => {
+    setTab(newTab);
+    setSearchParams(prev => {
+      const params = new URLSearchParams(prev);
+      params.set('projectTab', newTab);
+      return params;
+    });
+  };
+
   return (
-    <div className="h-full w-full grid place-items-start">
+    <div className="h-full w-full flex flex-col">
       <HiddenScrollCSS />
       
-      {/* Tab buttons - always visible */}
-      <div className="absolute top-2 left-2 z-20 h-10 px-2.5 bg-white border border-slate-200 rounded-lg flex items-center gap-2">
+      {/* Tab buttons header - always visible, part of normal flow */}
+      <div className="sticky top-0 z-10 h-10 px-2.5 border-b border-slate-200 bg-white flex items-center gap-2 shrink-0">
         <button
           className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "files" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"}`}
           aria-label="Files"
           title="Files"
-          onClick={() => setTab("files")}
+          onClick={() => handleTabChange("files")}
         >
           <FolderClosed className="h-4 w-4 text-slate-700" />
         </button>
@@ -1162,7 +1172,7 @@ export default function ProjectPanel({
           className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "whiteboards" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"}`}
           aria-label="Whiteboards"
           title="Whiteboards"
-          onClick={() => setTab("whiteboards")}
+          onClick={() => handleTabChange("whiteboards")}
         >
           <BookOpen className="h-4 w-4 text-slate-700" />
         </button>
@@ -1170,34 +1180,34 @@ export default function ProjectPanel({
           className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "info" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"}`}
           aria-label="Project Info"
           title="Project Info"
-          onClick={() => setTab("info")}
+          onClick={() => handleTabChange("info")}
         >
           <Info className="h-4 w-4 text-slate-700" />
         </button>
         <button
-          className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "settings" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"}`}
+          className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "settings" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"} ml-auto`}
           aria-label="Project Settings"
           title="Project Settings"
-          onClick={() => setTab("settings")}
+          onClick={() => handleTabChange("settings")}
         >
           <Settings2 className="h-4 w-4 text-slate-700" />
         </button>
       </div>
       
-      {tab === "info" ? (
-        // Full-width container for Project Info
-        <div className="h-full w-full rounded-xl bg-white border border-slate-200 overflow-hidden">
+      {/* Content area - flex-1 to take remaining height */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        {tab === "info" ? (
+          // Full-width EnhancedProjectInfo (has its own internal layout with side nav + content)
           <EnhancedProjectInfo 
             projectId={projectId}
             workspaceId={currentWorkspaceId || ''}
-            onClose={() => setTab('files')}
+            onClose={() => handleTabChange('files')}
           />
-        </div>
-      ) : (
-        // Normal 240px panel for other tabs
-        <div className="h-full w-[240px] rounded-xl bg-[#fcfcfc] border border-slate-200 overflow-y-auto no-scrollbar text-[11px]">
-          {/* Files: search + tree */}
-          {tab === "files" && (
+        ) : (
+          // Normal panel content for files/whiteboards/settings
+          <div className="h-full w-full overflow-y-auto no-scrollbar text-[11px] bg-[#fcfcfc]">
+            {/* Files: search + tree */}
+            {tab === "files" && (
           <>
             {(foldersLoading || filesLoading) ? (
               <div className="px-2.5 py-4 text-[11px] text-slate-500 text-center">
@@ -1691,8 +1701,9 @@ export default function ProjectPanel({
             </div>
           </div>
         )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
