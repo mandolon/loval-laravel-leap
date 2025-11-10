@@ -83,9 +83,8 @@ export const ContentSideMenu = memo(function ContentSideMenu() {
       {/* Download and Log out buttons at bottom */}
       <div className="mt-auto p-2 border-t border-slate-200 space-y-1">
         <a 
-          href="https://github.com/mandolon/app.rehome/releases/latest/download/rehome_x64_en-US.msi"
-          target="_blank"
-          rel="noopener noreferrer"
+          href="/rehome.exe"
+          download="rehome.exe"
           className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-[13px] hover:bg-blue-50 text-blue-600 hover:text-blue-700 transition-colors"
           data-menu-item="download"
         >
