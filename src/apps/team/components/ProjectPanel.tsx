@@ -1213,7 +1213,7 @@ export default function ProjectPanel({
               </div>
             ) : (
               <>
-                <div className="sticky top-10 z-10 h-9 px-2.5 border-b border-slate-200 bg-[#fcfcfc] flex items-center gap-2">
+                <div className="sticky top-0 z-10 h-9 px-2.5 border-b border-slate-200 bg-[#fcfcfc] flex items-center gap-2">
                   <div className="relative flex-1">
                     <input
                       value={query}
@@ -1370,7 +1370,7 @@ export default function ProjectPanel({
         {/* Whiteboards: search + tree with full interactions */}
         {tab === "whiteboards" && (
           <>
-            <div className="sticky top-10 z-10 h-9 px-2.5 border-b border-slate-200 bg-[#fcfcfc] flex items-center">
+            <div className="sticky top-0 z-10 h-9 px-2.5 border-b border-slate-200 bg-[#fcfcfc] flex items-center">
               <div className="w-full flex items-center gap-1">
                 {selectedWB && (
                   <button
