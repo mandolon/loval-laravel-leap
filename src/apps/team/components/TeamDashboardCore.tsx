@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useRoleAwareNavigation } from "@/hooks/useRoleAwareNavigation";
+import { ProjectInfoContent } from './ProjectInfoContent';
 import {
   Home,
   FolderKanban,
@@ -486,12 +487,11 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
                 {/* File/Whiteboard Viewer Area */}
                 <div className="flex-1 min-h-0 h-full">
                   {isInfoTabActive ? (
-                    <div className="h-full flex items-center justify-center">
-                      <div className="text-center text-slate-600">
-                        <p className="text-sm font-medium">Project information</p>
-                        <p className="text-xs mt-1">View details in the info panel →</p>
-                      </div>
-                    </div>
+                    <ProjectInfoContent
+                      projectId={userProjects.find((p: any) => p.name === selected?.item)?.id || ''}
+                      workspaceId={currentWorkspaceId || ''}
+                      contentType={(searchParams.get('infoSection') || 'project-profile') as any}
+                    />
                   ) : selectedWhiteboard ? (
                     <DrawingErrorBoundary 
                       onReset={() => {

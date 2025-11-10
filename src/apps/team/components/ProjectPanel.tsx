@@ -11,7 +11,7 @@ import { useRoleAwareNavigation } from '@/hooks/useRoleAwareNavigation';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import EnhancedProjectInfo from './EnhancedProjectInfo';
+import { ProjectInfoNavigation } from './ProjectInfoNavigation';
 
 /**
  * PROJECT PANEL — Files & Whiteboards now share identical interaction rules
@@ -1197,14 +1197,12 @@ export default function ProjectPanel({
       {/* Content area - flex-1 to take remaining height */}
       <div className="flex-1 min-h-0 overflow-hidden">
         {tab === "info" ? (
-          // Full-width EnhancedProjectInfo (has its own internal layout with side nav + content)
-          <EnhancedProjectInfo 
+          <ProjectInfoNavigation
             projectId={projectId}
             workspaceId={currentWorkspaceId || ''}
             onClose={() => handleTabChange('files')}
           />
         ) : (
-          // Normal panel content for files/whiteboards/settings
           <div className="h-full w-full overflow-y-auto no-scrollbar text-[11px] bg-[#fcfcfc]">
             {/* Files: search + tree */}
             {tab === "files" && (
