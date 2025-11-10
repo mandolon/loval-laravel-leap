@@ -1655,7 +1655,7 @@ const TasksView = memo(function TasksView() {
   const [taskCreator, setTaskCreator] = useState<User | null>(null);
   const [viewTab, setViewTab] = useState("List");
   const deleteTaskMutation = useDeleteTask();
-  const [drawerWidth, setDrawerWidth] = useState(520);
+  const [drawerWidth, setDrawerWidth] = useState(640);
   const tabsRef = useRef<HTMLDivElement>(null);
   const [tabsTop, setTabsTop] = useState(0);
 
