@@ -544,7 +544,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
             top: "calc(0.375rem + 2.25rem + 0.25rem)",
             bottom: "0.75rem",
             right: "0.375rem",
-            width: projectPanelCollapsed ? 0 : isInfoTabActive ? "calc(100% - 240px - 1rem)" : "240px",
+            width: projectPanelCollapsed ? 0 : "240px",
             opacity: projectPanelCollapsed ? 0 : 1,
             overflow: "hidden",
           }}
