@@ -6,8 +6,9 @@ import React, {
   useMemo,
   memo,
 } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useRoleAwareNavigation } from "@/hooks/useRoleAwareNavigation";
+import { ProjectInfoContent } from './ProjectInfoContent';
 import {
   Home,
   FolderKanban,
@@ -347,6 +348,10 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
   // No fallback to hardcoded data - show empty list if no projects exist
   const projectItems = userProjects.map((p: any) => p.name);
 
+  const [searchParams] = useSearchParams();
+  const projectPanelTab = searchParams.get('projectTab') || 'files';
+  const isInfoTabActive = projectPanelTab === 'info';
+
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
       {/* Soft background */}
@@ -481,7 +486,13 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
               <div className="h-full flex flex-col">
                 {/* File/Whiteboard Viewer Area */}
                 <div className="flex-1 min-h-0 h-full">
-                  {selectedWhiteboard ? (
+                  {isInfoTabActive ? (
+                    <ProjectInfoContent
+                      projectId={userProjects.find((p: any) => p.name === selected?.item)?.id || ''}
+                      workspaceId={currentWorkspaceId || ''}
+                      contentType={(searchParams.get('infoSection') || 'project-profile') as any}
+                    />
+                  ) : selectedWhiteboard ? (
                     <DrawingErrorBoundary 
                       onReset={() => {
                         // Reset whiteboard selection to force reload

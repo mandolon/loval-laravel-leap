@@ -11,6 +11,7 @@ import { useRoleAwareNavigation } from '@/hooks/useRoleAwareNavigation';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { ProjectInfoNavigation } from './ProjectInfoNavigation';
 
 /**
  * PROJECT PANEL — Files & Whiteboards now share identical interaction rules
@@ -289,8 +290,8 @@ export default function ProjectPanel({
   onCalibrate?: () => void;
   inchesPerSceneUnit?: number;
 }) {
-  const [searchParams] = useSearchParams();
-  const initialTab = (searchParams.get('tab') as 'files' | 'whiteboards' | 'settings' | 'info') || 'files';
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = (searchParams.get('projectTab') as 'files' | 'whiteboards' | 'settings' | 'info') || 'files';
   const [tab, setTab] = useState<'files' | 'whiteboards' | 'settings' | 'info'>(initialTab);
   const [query, setQuery] = useState("");
   const [wbQuery, setWbQuery] = useState("");
@@ -1143,48 +1144,68 @@ export default function ProjectPanel({
     );
   };
 
-  return (
-    <div className="h-full w-full grid place-items-start">
-      <HiddenScrollCSS />
-      <div className="h-full w-[240px] rounded-xl bg-[#fcfcfc] border border-slate-200 overflow-y-auto no-scrollbar text-[11px]">
-        {/* Tabs */}
-        <div className="sticky top-0 z-10 h-10 px-2.5 border-b border-slate-200 bg-white flex items-center gap-2">
-          <button
-            className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "files" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"}`}
-            aria-label="Files"
-            title="Files"
-            onClick={() => setTab("files")}
-          >
-            <FolderClosed className="h-4 w-4 text-slate-700" />
-          </button>
-          <button
-            className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "whiteboards" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"}`}
-            aria-label="Whiteboards"
-            title="Whiteboards"
-            onClick={() => setTab("whiteboards")}
-          >
-            <BookOpen className="h-4 w-4 text-slate-700" />
-          </button>
-          <button
-            className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "info" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"}`}
-            aria-label="Project Info"
-            title="Project Info"
-            onClick={() => setTab("info")}
-          >
-            <Info className="h-4 w-4 text-slate-700" />
-          </button>
-          <button
-            className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "settings" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"} ml-auto`}
-            aria-label="Project Settings"
-            title="Project Settings"
-            onClick={() => setTab("settings")}
-          >
-            <Settings2 className="h-4 w-4 text-slate-700" />
-          </button>
-        </div>
+  // Update URL when tab changes
+  const handleTabChange = (newTab: typeof tab) => {
+    setTab(newTab);
+    setSearchParams(prev => {
+      const params = new URLSearchParams(prev);
+      params.set('projectTab', newTab);
+      return params;
+    });
+  };
 
-        {/* Files: search + tree */}
-        {tab === "files" && (
+  return (
+    <div className="h-full w-full flex flex-col">
+      <HiddenScrollCSS />
+      
+      {/* Tab buttons header - always visible, part of normal flow */}
+      <div className="sticky top-0 z-10 h-10 px-2.5 border-b border-slate-200 bg-white flex items-center gap-2 shrink-0">
+        <button
+          className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "files" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"}`}
+          aria-label="Files"
+          title="Files"
+          onClick={() => handleTabChange("files")}
+        >
+          <FolderClosed className="h-4 w-4 text-slate-700" />
+        </button>
+        <button
+          className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "whiteboards" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"}`}
+          aria-label="Whiteboards"
+          title="Whiteboards"
+          onClick={() => handleTabChange("whiteboards")}
+        >
+          <BookOpen className="h-4 w-4 text-slate-700" />
+        </button>
+        <button
+          className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "info" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"}`}
+          aria-label="Project Info"
+          title="Project Info"
+          onClick={() => handleTabChange("info")}
+        >
+          <Info className="h-4 w-4 text-slate-700" />
+        </button>
+        <button
+          className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "settings" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"} ml-auto`}
+          aria-label="Project Settings"
+          title="Project Settings"
+          onClick={() => handleTabChange("settings")}
+        >
+          <Settings2 className="h-4 w-4 text-slate-700" />
+        </button>
+      </div>
+      
+      {/* Content area - flex-1 to take remaining height */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        {tab === "info" ? (
+          <ProjectInfoNavigation
+            projectId={projectId}
+            workspaceId={currentWorkspaceId || ''}
+            onClose={() => handleTabChange('files')}
+          />
+        ) : (
+          <div className="h-full w-full overflow-y-auto no-scrollbar text-[11px] bg-[#fcfcfc]">
+            {/* Files: search + tree */}
+            {tab === "files" && (
           <>
             {(foldersLoading || filesLoading) ? (
               <div className="px-2.5 py-4 text-[11px] text-slate-500 text-center">
@@ -1192,7 +1213,7 @@ export default function ProjectPanel({
               </div>
             ) : (
               <>
-                <div className="sticky top-10 z-10 h-9 px-2.5 border-b border-slate-200 bg-[#fcfcfc] flex items-center gap-2">
+                <div className="sticky top-0 z-10 h-9 px-2.5 border-b border-slate-200 bg-[#fcfcfc] flex items-center gap-2">
                   <div className="relative flex-1">
                     <input
                       value={query}
@@ -1349,7 +1370,7 @@ export default function ProjectPanel({
         {/* Whiteboards: search + tree with full interactions */}
         {tab === "whiteboards" && (
           <>
-            <div className="sticky top-10 z-10 h-9 px-2.5 border-b border-slate-200 bg-[#fcfcfc] flex items-center">
+            <div className="sticky top-0 z-10 h-9 px-2.5 border-b border-slate-200 bg-[#fcfcfc] flex items-center">
               <div className="w-full flex items-center gap-1">
                 {selectedWB && (
                   <button
@@ -1654,136 +1675,6 @@ export default function ProjectPanel({
           </>
         )}
 
-        {/* Info tab */}
-        {tab === "info" && (
-          <div className="px-2.5 pt-1.5 pb-2 overflow-auto">
-            {project ? (
-              <div className="space-y-3 text-[11px]">
-                <div>
-                  <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Project Name</div>
-                  <div className="text-slate-900">{project.name}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Project ID</div>
-                  <div className="text-slate-900">{project.shortId}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Status</div>
-                  <div className="text-slate-900 capitalize">{project.status}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Phase</div>
-                  <div className="text-slate-900">{project.phase}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Progress</div>
-                  <div className="text-slate-900">{project.progress ?? 0}%</div>
-                </div>
-                {project.address && (
-                  <div>
-                    <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Address</div>
-                    <div className="text-slate-900">
-                      {[project.address.streetNumber, project.address.streetName, project.address.city, project.address.state, project.address.zipCode].filter(Boolean).join(' ') || '—'}
-                    </div>
-                  </div>
-                )}
-                {project.primaryClient && (
-                  <>
-                    <div className="pt-2 border-t border-slate-200">
-                      <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-2">Primary Client</div>
-                      <div className="space-y-2">
-                        <div>
-                          <div className="text-[10px] text-slate-500 mb-0.5">Name</div>
-                          <div className="text-slate-900">
-                            {[project.primaryClient.firstName, project.primaryClient.lastName].filter(Boolean).join(' ') || '—'}
-                          </div>
-                        </div>
-                        {project.primaryClient.email && (
-                          <div>
-                            <div className="text-[10px] text-slate-500 mb-0.5">Email</div>
-                            <div className="text-slate-900">{project.primaryClient.email}</div>
-                          </div>
-                        )}
-                        {project.primaryClient.phone && (
-                          <div>
-                            <div className="text-[10px] text-slate-500 mb-0.5">Phone</div>
-                            <div className="text-slate-900">{project.primaryClient.phone}</div>
-                          </div>
-                        )}
-                        {project.primaryClient.address && (
-                          <div>
-                            <div className="text-[10px] text-slate-500 mb-0.5">Address</div>
-                            <div className="text-slate-900">
-                              {[project.primaryClient.address.street, project.primaryClient.address.city, project.primaryClient.address.state, project.primaryClient.address.zip].filter(Boolean).join(', ') || '—'}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </>
-                )}
-                {project.secondaryClient && (
-                  <div className="pt-2 border-t border-slate-200">
-                    <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-2">Secondary Client</div>
-                    <div className="space-y-2">
-                      <div>
-                        <div className="text-[10px] text-slate-500 mb-0.5">Name</div>
-                        <div className="text-slate-900">
-                          {[project.secondaryClient.firstName, project.secondaryClient.lastName].filter(Boolean).join(' ') || '—'}
-                        </div>
-                      </div>
-                      {project.secondaryClient.email && (
-                        <div>
-                          <div className="text-[10px] text-slate-500 mb-0.5">Email</div>
-                          <div className="text-slate-900">{project.secondaryClient.email}</div>
-                        </div>
-                      )}
-                      {project.secondaryClient.phone && (
-                        <div>
-                          <div className="text-[10px] text-slate-500 mb-0.5">Phone</div>
-                          <div className="text-slate-900">{project.secondaryClient.phone}</div>
-                        </div>
-                      )}
-                      {project.secondaryClient.address && (
-                        <div>
-                          <div className="text-[10px] text-slate-500 mb-0.5">Address</div>
-                          <div className="text-slate-900">
-                            {[project.secondaryClient.address.street, project.secondaryClient.address.city, project.secondaryClient.address.state, project.secondaryClient.address.zip].filter(Boolean).join(', ') || '—'}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {project.estimatedAmount && (
-                  <div className="pt-2 border-t border-slate-200">
-                    <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Estimated Amount</div>
-                    <div className="text-slate-900">
-                      {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(project.estimatedAmount)}
-                    </div>
-                  </div>
-                )}
-                {project.dueDate && (
-                  <div>
-                    <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Due Date</div>
-                    <div className="text-slate-900">
-                      {new Date(project.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                    </div>
-                  </div>
-                )}
-                {project.description && (
-                  <div>
-                    <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Description</div>
-                    <div className="text-slate-900 whitespace-pre-wrap text-[10px]">{project.description}</div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-[10px] text-slate-500">Loading project information...</div>
-            )}
-          </div>
-        )}
-
         {/* Settings tab */}
         {tab === "settings" && (
           <div className="px-2.5 pt-1.5 pb-2">
@@ -1806,6 +1697,8 @@ export default function ProjectPanel({
                 </div>
               </div>
             </div>
+          </div>
+        )}
           </div>
         )}
       </div>
