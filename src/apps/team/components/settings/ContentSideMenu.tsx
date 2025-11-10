@@ -1,6 +1,6 @@
 import { memo, useCallback } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
-import { User, LayoutGrid, Users, Repeat, Trash2, LogOut, Settings } from 'lucide-react';
+import { User, LayoutGrid, Users, Repeat, Trash2, LogOut, Settings, Download } from 'lucide-react';
 import { useRoleAwareNavigation } from '@/hooks/useRoleAwareNavigation';
 
 const menuGroups = [
@@ -80,8 +80,19 @@ export const ContentSideMenu = memo(function ContentSideMenu() {
         ))}
       </div>
       
-      {/* Log out button at bottom */}
-      <div className="mt-auto p-2 border-t border-slate-200">
+      {/* Download and Log out buttons at bottom */}
+      <div className="mt-auto p-2 border-t border-slate-200 space-y-1">
+        <a 
+          href="https://github.com/mandolon/app.rehome/releases/latest/download/rehome_x64_en-US.msi"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-[13px] hover:bg-blue-50 text-blue-600 hover:text-blue-700 transition-colors"
+          data-menu-item="download"
+        >
+          <Download className="h-4 w-4" />
+          <span>Download rehome for Windows</span>
+        </a>
+        
         <button 
           className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-[13px] hover:bg-slate-100 text-[var(--text)]"
           data-menu-item="logout"
