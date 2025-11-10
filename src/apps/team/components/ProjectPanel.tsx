@@ -1147,45 +1147,57 @@ export default function ProjectPanel({
   return (
     <div className="h-full w-full grid place-items-start">
       <HiddenScrollCSS />
-      <div className="h-full w-[240px] rounded-xl bg-[#fcfcfc] border border-slate-200 overflow-y-auto no-scrollbar text-[11px]">
-        {/* Tabs */}
-        <div className="sticky top-0 z-10 h-10 px-2.5 border-b border-slate-200 bg-white flex items-center gap-2">
-          <button
-            className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "files" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"}`}
-            aria-label="Files"
-            title="Files"
-            onClick={() => setTab("files")}
-          >
-            <FolderClosed className="h-4 w-4 text-slate-700" />
-          </button>
-          <button
-            className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "whiteboards" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"}`}
-            aria-label="Whiteboards"
-            title="Whiteboards"
-            onClick={() => setTab("whiteboards")}
-          >
-            <BookOpen className="h-4 w-4 text-slate-700" />
-          </button>
-          <button
-            className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "info" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"}`}
-            aria-label="Project Info"
-            title="Project Info"
-            onClick={() => setTab("info")}
-          >
-            <Info className="h-4 w-4 text-slate-700" />
-          </button>
-          <button
-            className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "settings" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"} ml-auto`}
-            aria-label="Project Settings"
-            title="Project Settings"
-            onClick={() => setTab("settings")}
-          >
-            <Settings2 className="h-4 w-4 text-slate-700" />
-          </button>
+      
+      {/* Tab buttons - always visible */}
+      <div className="absolute top-2 left-2 z-20 h-10 px-2.5 bg-white border border-slate-200 rounded-lg flex items-center gap-2">
+        <button
+          className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "files" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"}`}
+          aria-label="Files"
+          title="Files"
+          onClick={() => setTab("files")}
+        >
+          <FolderClosed className="h-4 w-4 text-slate-700" />
+        </button>
+        <button
+          className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "whiteboards" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"}`}
+          aria-label="Whiteboards"
+          title="Whiteboards"
+          onClick={() => setTab("whiteboards")}
+        >
+          <BookOpen className="h-4 w-4 text-slate-700" />
+        </button>
+        <button
+          className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "info" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"}`}
+          aria-label="Project Info"
+          title="Project Info"
+          onClick={() => setTab("info")}
+        >
+          <Info className="h-4 w-4 text-slate-700" />
+        </button>
+        <button
+          className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "settings" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"}`}
+          aria-label="Project Settings"
+          title="Project Settings"
+          onClick={() => setTab("settings")}
+        >
+          <Settings2 className="h-4 w-4 text-slate-700" />
+        </button>
+      </div>
+      
+      {tab === "info" ? (
+        // Full-width container for Project Info
+        <div className="h-full w-full rounded-xl bg-white border border-slate-200 overflow-hidden">
+          <EnhancedProjectInfo 
+            projectId={projectId}
+            workspaceId={currentWorkspaceId || ''}
+            onClose={() => setTab('files')}
+          />
         </div>
-
-        {/* Files: search + tree */}
-        {tab === "files" && (
+      ) : (
+        // Normal 240px panel for other tabs
+        <div className="h-full w-[240px] rounded-xl bg-[#fcfcfc] border border-slate-200 overflow-y-auto no-scrollbar text-[11px]">
+          {/* Files: search + tree */}
+          {tab === "files" && (
           <>
             {(foldersLoading || filesLoading) ? (
               <div className="px-2.5 py-4 text-[11px] text-slate-500 text-center">
@@ -1655,15 +1667,6 @@ export default function ProjectPanel({
           </>
         )}
 
-        {/* Info tab */}
-        {tab === "info" && (
-          <EnhancedProjectInfo 
-            projectId={projectId}
-            workspaceId={currentWorkspaceId || ''}
-            onClose={() => setTab('files')}
-          />
-        )}
-
         {/* Settings tab */}
         {tab === "settings" && (
           <div className="px-2.5 pt-1.5 pb-2">
@@ -1688,7 +1691,8 @@ export default function ProjectPanel({
             </div>
           </div>
         )}
-      </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
