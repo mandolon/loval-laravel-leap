@@ -11,6 +11,7 @@ import { useRoleAwareNavigation } from '@/hooks/useRoleAwareNavigation';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import EnhancedProjectInfo from './EnhancedProjectInfo';
 
 /**
  * PROJECT PANEL — Files & Whiteboards now share identical interaction rules
@@ -1656,132 +1657,11 @@ export default function ProjectPanel({
 
         {/* Info tab */}
         {tab === "info" && (
-          <div className="px-2.5 pt-1.5 pb-2 overflow-auto">
-            {project ? (
-              <div className="space-y-3 text-[11px]">
-                <div>
-                  <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Project Name</div>
-                  <div className="text-slate-900">{project.name}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Project ID</div>
-                  <div className="text-slate-900">{project.shortId}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Status</div>
-                  <div className="text-slate-900 capitalize">{project.status}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Phase</div>
-                  <div className="text-slate-900">{project.phase}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Progress</div>
-                  <div className="text-slate-900">{project.progress ?? 0}%</div>
-                </div>
-                {project.address && (
-                  <div>
-                    <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Address</div>
-                    <div className="text-slate-900">
-                      {[project.address.streetNumber, project.address.streetName, project.address.city, project.address.state, project.address.zipCode].filter(Boolean).join(' ') || '—'}
-                    </div>
-                  </div>
-                )}
-                {project.primaryClient && (
-                  <>
-                    <div className="pt-2 border-t border-slate-200">
-                      <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-2">Primary Client</div>
-                      <div className="space-y-2">
-                        <div>
-                          <div className="text-[10px] text-slate-500 mb-0.5">Name</div>
-                          <div className="text-slate-900">
-                            {[project.primaryClient.firstName, project.primaryClient.lastName].filter(Boolean).join(' ') || '—'}
-                          </div>
-                        </div>
-                        {project.primaryClient.email && (
-                          <div>
-                            <div className="text-[10px] text-slate-500 mb-0.5">Email</div>
-                            <div className="text-slate-900">{project.primaryClient.email}</div>
-                          </div>
-                        )}
-                        {project.primaryClient.phone && (
-                          <div>
-                            <div className="text-[10px] text-slate-500 mb-0.5">Phone</div>
-                            <div className="text-slate-900">{project.primaryClient.phone}</div>
-                          </div>
-                        )}
-                        {project.primaryClient.address && (
-                          <div>
-                            <div className="text-[10px] text-slate-500 mb-0.5">Address</div>
-                            <div className="text-slate-900">
-                              {[project.primaryClient.address.street, project.primaryClient.address.city, project.primaryClient.address.state, project.primaryClient.address.zip].filter(Boolean).join(', ') || '—'}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </>
-                )}
-                {project.secondaryClient && (
-                  <div className="pt-2 border-t border-slate-200">
-                    <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-2">Secondary Client</div>
-                    <div className="space-y-2">
-                      <div>
-                        <div className="text-[10px] text-slate-500 mb-0.5">Name</div>
-                        <div className="text-slate-900">
-                          {[project.secondaryClient.firstName, project.secondaryClient.lastName].filter(Boolean).join(' ') || '—'}
-                        </div>
-                      </div>
-                      {project.secondaryClient.email && (
-                        <div>
-                          <div className="text-[10px] text-slate-500 mb-0.5">Email</div>
-                          <div className="text-slate-900">{project.secondaryClient.email}</div>
-                        </div>
-                      )}
-                      {project.secondaryClient.phone && (
-                        <div>
-                          <div className="text-[10px] text-slate-500 mb-0.5">Phone</div>
-                          <div className="text-slate-900">{project.secondaryClient.phone}</div>
-                        </div>
-                      )}
-                      {project.secondaryClient.address && (
-                        <div>
-                          <div className="text-[10px] text-slate-500 mb-0.5">Address</div>
-                          <div className="text-slate-900">
-                            {[project.secondaryClient.address.street, project.secondaryClient.address.city, project.secondaryClient.address.state, project.secondaryClient.address.zip].filter(Boolean).join(', ') || '—'}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {project.estimatedAmount && (
-                  <div className="pt-2 border-t border-slate-200">
-                    <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Estimated Amount</div>
-                    <div className="text-slate-900">
-                      {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(project.estimatedAmount)}
-                    </div>
-                  </div>
-                )}
-                {project.dueDate && (
-                  <div>
-                    <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Due Date</div>
-                    <div className="text-slate-900">
-                      {new Date(project.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                    </div>
-                  </div>
-                )}
-                {project.description && (
-                  <div>
-                    <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Description</div>
-                    <div className="text-slate-900 whitespace-pre-wrap text-[10px]">{project.description}</div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-[10px] text-slate-500">Loading project information...</div>
-            )}
-          </div>
+          <EnhancedProjectInfo 
+            projectId={projectId}
+            workspaceId={currentWorkspaceId || ''}
+            onClose={() => setTab('files')}
+          />
         )}
 
         {/* Settings tab */}
