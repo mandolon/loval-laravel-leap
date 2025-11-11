@@ -244,6 +244,7 @@ export type Database = {
           filesize: number
           id: string
           mimetype: string
+          scale: string | null
           short_id: string
           storage_path: string
           subfolder_id: string | null
@@ -263,6 +264,7 @@ export type Database = {
           filesize: number
           id?: string
           mimetype: string
+          scale?: string | null
           short_id: string
           storage_path: string
           subfolder_id?: string | null
@@ -282,6 +284,7 @@ export type Database = {
           filesize?: number
           id?: string
           mimetype?: string
+          scale?: string | null
           short_id?: string
           storage_path?: string
           subfolder_id?: string | null
@@ -1039,6 +1042,7 @@ export type Database = {
           id: string
           project_id: string
           short_id: string
+          title: string
           updated_at: string | null
           updated_by: string | null
         }
@@ -1051,6 +1055,7 @@ export type Database = {
           id?: string
           project_id: string
           short_id?: string
+          title?: string
           updated_at?: string | null
           updated_by?: string | null
         }
@@ -1063,6 +1068,7 @@ export type Database = {
           id?: string
           project_id?: string
           short_id?: string
+          title?: string
           updated_at?: string | null
           updated_by?: string | null
         }
