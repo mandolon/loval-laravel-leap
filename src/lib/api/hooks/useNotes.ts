@@ -7,6 +7,7 @@ export interface Note {
   id: string
   shortId: string
   projectId: string
+  title: string
   content: string
   createdBy: string
   createdAt: string
@@ -28,6 +29,7 @@ const transformDbToNote = (data: any): Note => ({
   id: data.id,
   shortId: data.short_id,
   projectId: data.project_id,
+  title: data.title,
   content: data.content,
   createdBy: data.created_by,
   createdAt: data.created_at,
@@ -62,7 +64,7 @@ export const useCreateNote = (projectId: string) => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (input: { content: string }) => {
+    mutationFn: async (input: { title: string; content: string }) => {
       const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) throw new Error('Not authenticated')
 
@@ -78,6 +80,7 @@ export const useCreateNote = (projectId: string) => {
         .from('notes')
         .insert({
           project_id: projectId,
+          title: input.title,
           content: input.content,
           created_by: userProfile.id,
         })
@@ -110,7 +113,7 @@ export const useUpdateNote = (projectId: string) => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, content }: { id: string; content: string }) => {
+    mutationFn: async ({ id, content, title }: { id: string; content?: string; title?: string }) => {
       const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) throw new Error('Not authenticated')
 
@@ -122,13 +125,16 @@ export const useUpdateNote = (projectId: string) => {
 
       if (!userProfile) throw new Error('User profile not found')
 
+      const updateData: any = {
+        updated_by: userProfile.id,
+        updated_at: new Date().toISOString(),
+      };
+      if (content !== undefined) updateData.content = content;
+      if (title !== undefined) updateData.title = title;
+
       const { data, error } = await supabase
         .from('notes')
-        .update({
-          content,
-          updated_by: userProfile.id,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', id)
         .select()
         .single()

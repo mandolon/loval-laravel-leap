@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Trash2, FileText, Map, User, Receipt, Users, Activity as ActivityIcon } from 'lucide-react';
+import { Trash2, FileText, Map, User, Receipt, Users, Activity as ActivityIcon, FileEdit } from 'lucide-react';
 import { useHardDeleteProject } from '@/lib/api/hooks/useProjects';
 import {
   AlertDialog,
@@ -13,7 +13,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-type RouteId = "project-profile" | "client-profile" | "parcel-information" | "invoices" | "team-members" | "activity";
+type RouteId = "project-profile" | "client-profile" | "parcel-information" | "invoices" | "team-members" | "activity" | "notes";
 
 const menuGroups = [
   {
@@ -26,6 +26,7 @@ const menuGroups = [
       { id: "invoices", label: "Invoices", icon: Receipt },
       { id: "team-members", label: "Team", icon: Users },
       { id: "activity", label: "Activity", icon: ActivityIcon },
+      { id: "notes", label: "Notes", icon: FileEdit },
     ],
   },
 ] as const;

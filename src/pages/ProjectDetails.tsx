@@ -636,7 +636,7 @@ const ProjectDetails = () => {
                     <CardTitle>Notes</CardTitle>
                     <CardDescription className="text-slate-500 dark:text-neutral-400">Project notes and comments</CardDescription>
                   </div>
-                  <CreateNoteDialog onCreateNote={(content) => createNoteMutation.mutate({ content })} />
+                  <CreateNoteDialog onCreateNote={(content) => createNoteMutation.mutate({ title: 'Untitled Note', content })} />
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {notesLoading ? (

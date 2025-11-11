@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useProject, useUpdateProject } from '@/lib/api/hooks/useProjects';
 import { useProjectMembers } from '@/lib/api/hooks/useProjectMembers';
+import { ProjectNotes } from './ProjectNotes';
 
 // Constants
 const INPUT =
@@ -30,7 +31,7 @@ const labelFor = (opts: readonly { value: string; label: string }[], v: string) 
 const initials = (name: string) => 
   name.split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]!.toUpperCase()).join("");
 
-type RouteId = "project-profile" | "client-profile" | "parcel-information" | "invoices" | "team-members" | "activity";
+type RouteId = "project-profile" | "client-profile" | "parcel-information" | "invoices" | "team-members" | "activity" | "notes";
 
 // EditBar Component
 function EditBar({ 
@@ -615,6 +616,9 @@ export function ProjectInfoContent({
       {contentType === "parcel-information" && <ParcelInformationContent />}
       {contentType === "invoices" && <InvoicesContent />}
       {contentType === "activity" && <ActivityContent />}
+      {contentType === "notes" && (
+        <ProjectNotes projectId={projectId} workspaceId={workspaceId} />
+      )}
     </div>
   );
 }
