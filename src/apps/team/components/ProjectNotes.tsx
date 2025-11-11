@@ -412,33 +412,37 @@ export function ProjectNotes({ projectId, workspaceId }: ProjectNotesProps) {
       <div
         data-testid="notes-resizer"
         onMouseDown={() => setIsResizing(true)}
-        className="w-3 cursor-col-resize shrink-0 flex items-stretch hover:bg-slate-100 dark:hover:bg-slate-800 group relative"
-      >
-        <div
-          data-testid="notes-resizer-line"
-          className="w-px bg-slate-200 dark:bg-slate-700 group-hover:bg-slate-300 dark:group-hover:bg-slate-600 transition-colors mx-auto"
-        />
-      </div>
+        className="w-3 cursor-col-resize shrink-0"
+      />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-white dark:bg-slate-900">
         {activeNoteId ? (
           <>
             <div data-testid="notes-main-scroll" className="flex-1 overflow-y-auto px-8 py-6">
+              <div className="text-[13px] text-gray-500 dark:text-slate-400 flex items-center gap-1 mb-4">
+                <ChainIcon className="text-gray-500 dark:text-slate-400" />
+                <span className="hover:underline cursor-pointer">Link Task or Doc</span>
+              </div>
+
               <div
                 ref={titleRef}
+                contentEditable
+                suppressContentEditableWarning
                 onKeyDown={onTitleKeyDown}
                 onBlur={commitRename}
-                onDoubleClick={beginRename}
-                className="text-[34px] font-semibold text-slate-900 dark:text-slate-100 mb-2 outline-none cursor-text"
+                className="text-[34px] font-semibold text-slate-900 dark:text-slate-100 mb-2 outline-none"
               >
                 {noteTitle}
               </div>
 
-              <div className="text-[13px] text-gray-500 dark:text-slate-400 flex items-center gap-1 mb-6">
-                <ChainIcon className="text-gray-500 dark:text-slate-400" />
-                <span className="hover:underline cursor-pointer">Link Task or Doc</span>
-              </div>
+              {createdByUser && (
+                <div className="text-[12px] text-slate-500 dark:text-slate-400 mb-6 flex items-center gap-2">
+                  <span>Created by {createdByUser.name}</span>
+                  <span className="mx-1">•</span>
+                  <span>Last updated {new Date(lastUpdated).toLocaleDateString()} at {new Date(lastUpdated).toLocaleTimeString()}</span>
+                </div>
+              )}
 
               <div
                 ref={editableRef}
@@ -447,13 +451,6 @@ export function ProjectNotes({ projectId, workspaceId }: ProjectNotesProps) {
                 className="text-[15.5px] leading-7 text-slate-800 dark:text-slate-200 outline-none"
                 style={{ minHeight: '480px' }}
               />
-
-              {createdByUser && (
-                <div className="mt-8 pt-4 border-t border-slate-200 dark:border-slate-700 text-[12px] text-slate-500 dark:text-slate-400">
-                  <div>Created by {createdByUser.name}</div>
-                  <div>Last updated {new Date(lastUpdated).toLocaleString()}</div>
-                </div>
-              )}
             </div>
           </>
         ) : (
