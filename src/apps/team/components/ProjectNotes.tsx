@@ -431,7 +431,7 @@ export function ProjectNotes({ projectId, workspaceId }: ProjectNotesProps) {
                 suppressContentEditableWarning
                 onKeyDown={onTitleKeyDown}
                 onBlur={commitRename}
-                className="text-[34px] font-semibold text-slate-900 dark:text-slate-100 mb-2 outline-none"
+                className="text-[34px] font-semibold text-slate-900 dark:text-slate-100 mb-4 outline-none"
               >
                 {noteTitle}
               </div>
