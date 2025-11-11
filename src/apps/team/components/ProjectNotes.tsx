@@ -406,6 +406,17 @@ export function ProjectNotes({ projectId, workspaceId }: ProjectNotesProps) {
             ))}
           </div>
         </div>
+
+        {/* Add Page Button */}
+        <div className="p-3 border-t border-slate-200 dark:border-slate-700">
+          <button
+            onClick={() => onMenuAction("new")}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-[13px] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+          >
+            <span className="text-lg leading-none">+</span>
+            <span>Add Page</span>
+          </button>
+        </div>
       </div>
 
       {/* Resizer */}
