@@ -373,7 +373,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
 
       {/* Fixed narrow rail */}
       <aside
-        className="fixed left-1.5 top-1.5 bottom-1.5 w-14 z-40 text-white rounded-xl shadow-xl border border-white/10 backdrop-blur-md flex flex-col items-center pt-3 gap-0"
+        className="fixed left-1.5 top-1.5 bottom-1.5 w-16 z-40 text-white rounded-xl shadow-xl border border-white/10 backdrop-blur-md flex flex-col items-center pt-3 gap-0"
         style={{
           background: RAIL_GRADIENT,
           transform: railCollapsed
@@ -461,7 +461,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
             ? mdUp
               ? "calc(0.375rem + 6px + 0.75rem)"
               : "0.375rem"
-            : "calc(0.375rem + 3.5rem + 0.75rem)",
+            : "calc(0.375rem + 4rem + 0.75rem)",
         }}
       >
         <div className="h-full overflow-hidden flex flex-col">
@@ -741,7 +741,7 @@ const RailItem = memo(function RailItem({
 
   return (
     <div
-      className="relative z-40 flex flex-col items-center gap-1.5 mb-3 group/nav"
+      className="relative z-40 flex flex-col items-center gap-2.5 mb-2.5 group/nav"
       ref={containerRef}
     >
       <button
@@ -754,11 +754,12 @@ const RailItem = memo(function RailItem({
         aria-label={label}
         aria-haspopup="menu"
         aria-expanded={menuEnabled && openTab === tabKey}
-        className={`relative group h-9 w-9 cursor-pointer grid place-items-center rounded-xl transition duration-300 ease-out ${
+        className={`relative group h-11 w-11 cursor-pointer grid place-items-center rounded-xl transition duration-300 ease-out touch-manipulation ${
           active
             ? "bg-white/10 text-white"
             : "text-white/80 hover:text-white hover:bg-white/5"
         }`}
+        style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
       >
         <span
           aria-hidden
@@ -784,7 +785,7 @@ const RailItem = memo(function RailItem({
       </button>
 
       <div
-        className={`w-12 px-1 text-center text-[10px] leading-tight tracking-wide select-none transition-colors ${
+        className={`w-12 px-1 text-center text-[11px] leading-tight tracking-wide select-none transition-colors ${
           active ? "text-white" : "text-white/70"
         } group-hover/nav:text-white`}
       >
@@ -795,7 +796,7 @@ const RailItem = memo(function RailItem({
         <div
           role="menu"
           data-open={openTab === tabKey ? "true" : "false"}
-          className={`absolute left-14 top-1/2 -translate-y-1/2 w-56 rounded-2xl border border-slate-200 bg-white/95 backdrop-blur-md shadow-md p-2 z-50 ${
+          className={`absolute left-16 top-1/2 -translate-y-1/2 w-56 rounded-2xl border border-slate-200 bg-white/95 backdrop-blur-md shadow-md p-2 z-50 ${
             openTab === tabKey
               ? "opacity-100 translate-x-0 pointer-events-auto"
               : "opacity-0 -translate-x-2 pointer-events-none"
@@ -1032,7 +1033,7 @@ const SettingsRailItem = memo(function SettingsRailItem({
   };
 
   return (
-    <div className="relative z-40 flex flex-col items-center gap-1.5 mb-3 group/nav">
+    <div className="relative z-40 flex flex-col items-center gap-2.5 mb-2.5 group/nav">
       {/* Settings icon button - centered */}
       <button
         onClick={() => {
@@ -1040,21 +1041,23 @@ const SettingsRailItem = memo(function SettingsRailItem({
           setActive('settings');
           navigateToWorkspace("/settings");
         }}
-        className={`relative h-7 w-7 rounded-lg grid place-items-center transition-all duration-200 ${
+        className={`relative h-11 w-11 rounded-lg grid place-items-center transition-all duration-200 touch-manipulation ${
           active
             ? "bg-white/20 text-white shadow-[0_0_16px_rgba(255,255,255,0.15)]"
             : "text-white/80 hover:text-white hover:bg-white/10 hover:shadow-[0_0_12px_rgba(255,255,255,0.1)]"
         }`}
+        style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
         title="Settings"
       >
-        <Settings className="h-4 w-4" />
+        <Settings className="h-5 w-5" />
       </button>
 
       {/* Workspace name dropdown - opens full menu directly */}
       <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
         <DropdownMenuTrigger asChild>
           <button
-            className="w-12 px-1 py-1 text-center text-[10px] leading-tight text-white/90 hover:text-white/100 transition-all cursor-pointer truncate rounded-lg bg-white/10 hover:bg-white/15 border border-white/10"
+            className="w-12 min-h-[44px] px-1 py-1.5 text-center text-[11px] leading-tight text-white/90 hover:text-white/100 transition-all cursor-pointer truncate rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 touch-manipulation"
+            style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
             title={currentWorkspace?.name || "Switch workspace"}
           >
             {currentWorkspace?.name || "Workspace"}
