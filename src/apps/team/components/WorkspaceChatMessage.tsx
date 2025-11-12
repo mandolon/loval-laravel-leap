@@ -46,6 +46,36 @@ export const WorkspaceChatMessage = ({
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
   const touchStart = useRef({ x: 0, y: 0 })
   const [hasPopoverOpen, setHasPopoverOpen] = useState(false)
+
+  // Inject CSS animation for unread highlights
+  useEffect(() => {
+    const style = document.createElement('style')
+    style.id = 'workspace-chat-animations'
+    if (!document.getElementById('workspace-chat-animations')) {
+      style.textContent = `
+        @keyframes unreadHighlight {
+          0% {
+            background-color: rgba(76, 117, 209, 0.08);
+            box-shadow: inset 3px 0 0 0 #4C75D1;
+          }
+          100% {
+            background-color: transparent;
+            box-shadow: none;
+          }
+        }
+        .unread-message-highlight {
+          animation: unreadHighlight 2.5s ease-out forwards;
+        }
+      `
+      document.head.appendChild(style)
+    }
+    return () => {
+      const existingStyle = document.getElementById('workspace-chat-animations')
+      if (existingStyle && document.querySelectorAll('.unread-message-highlight').length === 0) {
+        existingStyle.remove()
+      }
+    }
+  }, [])
   
   if (!message.user) return null
 

@@ -1712,7 +1712,10 @@ const ChatView = memo(function ChatView({ resetTrigger }: ChatViewProps) {
   React.useEffect(() => {
     setSelectedProject(null);
     setPage('chat');
+    setIsWorkspaceChat(false); // Also reset workspace chat state
   }, [resetTrigger]);
+
+  const [isWorkspaceChat, setIsWorkspaceChat] = React.useState(false);
 
   const handleToggleSidebar = () => setSidebarCollapsed((prev) => !prev);
   const handleToggleFiles = () => setPage((prev) => prev === 'chat' ? 'files' : 'chat');
@@ -1730,6 +1733,8 @@ const ChatView = memo(function ChatView({ resetTrigger }: ChatViewProps) {
         onPageChange={setPage}
         showSidePanel={!sidebarCollapsed}
         workspaceId={currentWorkspaceId || undefined}
+        isWorkspaceChat={isWorkspaceChat}
+        onWorkspaceChatChange={setIsWorkspaceChat}
       />
     </div>
   );

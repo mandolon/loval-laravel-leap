@@ -112,6 +112,8 @@ interface TeamChatSlimProps {
   onPageChange?: (page: 'chat' | 'files') => void;
   showSidePanel?: boolean;
   workspaceId?: string;
+  isWorkspaceChat?: boolean;
+  onWorkspaceChatChange?: (isWorkspaceChat: boolean) => void;
 }
 
 export default function TeamChatSlim({
@@ -125,6 +127,8 @@ export default function TeamChatSlim({
   onPageChange,
   showSidePanel = false,
   workspaceId,
+  isWorkspaceChat: controlledIsWorkspaceChat = false,
+  onWorkspaceChatChange,
 }: TeamChatSlimProps) {
   const { user } = useUser();
   const [text, setText] = useState("");
@@ -138,7 +142,11 @@ export default function TeamChatSlim({
   const [popoverPosition, setPopoverPosition] = useState({ x: 0, y: 0 });
   const [popoverMessageId, setPopoverMessageId] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<{ messageId: string; userName: string } | null>(null);
-  const [isWorkspaceChat, setIsWorkspaceChat] = useState(false);
+  const isWorkspaceChat = controlledIsWorkspaceChat;
+  const setIsWorkspaceChat = (value: boolean | ((prev: boolean) => boolean)) => {
+    const newValue = typeof value === 'function' ? value(controlledIsWorkspaceChat) : value;
+    onWorkspaceChatChange?.(newValue);
+  };
   const [isSidePanelCollapsed, setIsSidePanelCollapsed] = useState(true);
   const [fileViewMode, setFileViewMode] = useState<'grid' | 'list'>('grid');
   const [fileSelectMode, setFileSelectMode] = useState(false);
