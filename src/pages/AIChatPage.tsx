@@ -25,7 +25,7 @@ export default function AIChatPage() {
   const [input, setInput] = useState("");
   const [threadId, setThreadId] = useState<string>("");
   const [selectedProject, setSelectedProject] = useState<string>("all");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
   
   const { sendMessage, isLoading } = useAIChat(threadId, workspaceId || "", selectedProject === "all" ? "" : selectedProject);
