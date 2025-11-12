@@ -30,12 +30,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Users, Check, X, Pencil, RotateCcw } from "lucide-react";
+import { Trash2, Users, Check, X, Pencil, RotateCcw, LogOut } from "lucide-react";
 import { formatDistanceToNow, format } from 'date-fns';
 import { useUser } from "@/contexts/UserContext";
 import { AddUserDialog } from "@/components/AddUserDialog";
 import { AddUserToWorkspaceDialog } from "@/components/AddUserToWorkspaceDialog";
-import { useUsers, useUpdateUserRole, useDeletedUsers } from "@/lib/api/hooks";
+import { useUsers, useUpdateUserRole, useDeletedUsers, useForceSignOut } from "@/lib/api/hooks";
 import { Badge } from "@/components/ui/badge";
 import { useQueryClient } from "@tanstack/react-query";
 import { DESIGN_TOKENS as T } from "@/lib/design-tokens";
@@ -44,6 +44,8 @@ const TeamPage = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState({ name: '', title: '' });
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
+  const [forceSignOutUserId, setForceSignOutUserId] = useState<string | null>(null);
+  const [forceSignOutUserName, setForceSignOutUserName] = useState<string>('');
   const { toast } = useToast();
   const { user: currentUser } = useUser();
   const queryClient = useQueryClient();
@@ -51,6 +53,7 @@ const TeamPage = () => {
   const { data: usersWithWorkspaces, isLoading } = useUsers();
   const { data: deletedUsers, isLoading: isLoadingDeleted } = useDeletedUsers();
   const updateUserRole = useUpdateUserRole();
+  const forceSignOutMutation = useForceSignOut();
 
 
   if (!currentUser?.is_admin) {
@@ -218,6 +221,26 @@ const TeamPage = () => {
       toast({
         title: "Error restoring user",
         description: "Failed to restore user",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleForceSignOut = async () => {
+    if (!forceSignOutUserId) return;
+
+    try {
+      await forceSignOutMutation.mutateAsync(forceSignOutUserId);
+      toast({
+        title: "User signed out",
+        description: `${forceSignOutUserName} has been signed out successfully.`,
+      });
+      setForceSignOutUserId(null);
+      setForceSignOutUserName('');
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to sign out user.",
         variant: "destructive",
       });
     }
@@ -409,6 +432,25 @@ const TeamPage = () => {
                               size="icon"
                               variant="ghost"
                               className="h-8 w-8"
+                              onClick={() => {
+                                setForceSignOutUserId(user.id);
+                                setForceSignOutUserName(user.name);
+                              }}
+                              disabled={user.id === currentUser?.id || !user.isOnline}
+                              title={
+                                user.id === currentUser?.id 
+                                  ? "Cannot sign out yourself" 
+                                  : !user.isOnline 
+                                  ? "User is already offline" 
+                                  : "Force sign out user"
+                              }
+                            >
+                              <LogOut className="h-4 w-4 text-orange-500" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
                               onClick={() => setDeleteUserId(user.id)}
                               disabled={user.id === currentUser?.id}
                             >
@@ -522,6 +564,33 @@ const TeamPage = () => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Force Sign Out Confirmation Dialog */}
+      <AlertDialog open={forceSignOutUserId !== null} onOpenChange={(open) => {
+        if (!open) {
+          setForceSignOutUserId(null);
+          setForceSignOutUserName('');
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Force Sign Out User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to sign out <strong>{forceSignOutUserName}</strong>? 
+              This will immediately invalidate all their active sessions and they will need to log in again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleForceSignOut}
+              className="bg-orange-500 hover:bg-orange-600"
+            >
+              Sign Out User
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
