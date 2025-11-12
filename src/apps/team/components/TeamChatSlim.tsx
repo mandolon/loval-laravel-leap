@@ -59,7 +59,7 @@ function DateDivider({ date }: { date: string }) {
   };
 
   return (
-    <div className="flex items-center justify-center my-6 px-4">
+    <div className="flex items-center justify-center my-2 px-4">
       <div 
         className="text-xs font-normal px-2.5 py-1 rounded-md"
         style={{ 
@@ -773,13 +773,14 @@ export default function TeamChatSlim({
         onClick={(e) => {
           const chatSelector = document.querySelector(".chat-selector-dropdown");
           const tagSelector = document.querySelector(".tag-selector-dropdown");
-          const chatButton = (e.target as HTMLElement).closest("button");
+          const chatButton = (e.target as HTMLElement).closest(".chat-selector-trigger");
+          const tagButton = (e.target as HTMLElement).closest("button");
 
           if (
             showChatSelector &&
             chatSelector &&
             !chatSelector.contains(e.target as Node) &&
-            (!chatButton || (!chatButton.textContent?.includes(headerTitle.name) && !chatButton.textContent?.includes('Select project')))
+            !chatButton
           ) {
             setShowChatSelector(false);
           }
@@ -788,7 +789,7 @@ export default function TeamChatSlim({
             showTagSelector &&
             tagSelector &&
             !tagSelector.contains(e.target as Node) &&
-            (!chatButton || !availableTags.some((tag) => chatButton.textContent?.includes(tag)))
+            (!tagButton || !availableTags.some((tag) => tagButton.textContent?.includes(tag)))
           ) {
             setShowTagSelector(false);
           }
@@ -898,7 +899,7 @@ export default function TeamChatSlim({
 
       {/* Messages or Empty State */}
       <ScrollArea className="flex-1 h-0" ref={scrollAreaRef}>
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-2 md:gap-3 px-4 pt-8 pb-4">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-2 md:gap-3 px-4 pt-3 pb-32">
           {!selectedProject && !isWorkspaceChat ? (
             <div className="flex flex-col items-center justify-start pt-32">
               <div className="text-center max-w-md">
@@ -1167,7 +1168,7 @@ export default function TeamChatSlim({
                 <div className="relative">
                   <button
                     onClick={() => !isWorkspaceChat && !selectedProject && setShowChatSelector(true)}
-                    className="flex h-8 items-center gap-1.5 rounded-md border px-2.5 transition-colors text-sm whitespace-nowrap"
+                    className="chat-selector-trigger flex h-8 items-center gap-1.5 rounded-md border px-2.5 transition-colors text-sm whitespace-nowrap"
                     style={{
                       borderColor: THEME.border,
                       cursor: isWorkspaceChat || selectedProject ? "default" : "pointer",
@@ -1187,7 +1188,7 @@ export default function TeamChatSlim({
 
                   {!isWorkspaceChat && !selectedProject && showChatSelector && (
                     <div
-                      className="absolute bottom-full left-0 mb-2 w-80 rounded-2xl border shadow-lg z-30 max-h-96 overflow-y-auto"
+                      className="chat-selector-dropdown absolute bottom-full left-0 mb-2 w-80 rounded-2xl border shadow-lg z-30 max-h-96 overflow-y-auto"
                       style={{
                         borderColor: THEME.border,
                         background: THEME.card,
@@ -1671,8 +1672,8 @@ function MessageBlock({ msg, currentUserId, onReply, onScrollToMessage }: any) {
           }}
         >
           <div className="min-w-0 flex-1">
-            <div className="flex items-baseline gap-2 mb-1 flex-wrap">
-              <span className="font-semibold text-[15px]" style={{ color: THEME.text }}>
+            <div className="flex items-baseline gap-2 mb-0.5 flex-wrap">
+              <span className="font-medium text-[14px]" style={{ color: THEME.text }}>
                 {name || "You"}
               </span>
               <span className="text-xs opacity-50">{formatTime(msg.createdAt)}</span>
@@ -1737,15 +1738,15 @@ function MessageBlock({ msg, currentUserId, onReply, onScrollToMessage }: any) {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className="flex items-start gap-3 justify-start cursor-pointer rounded-2xl p-2 -m-2 transition-colors"
+        className="flex items-start gap-3 justify-start cursor-pointer rounded-2xl py-1.5 px-2 -mx-2 transition-colors"
         style={{
           background: isHighlighted ? THEME.highlight : "transparent",
         }}
       >
         <AvatarCircle name={name} user={msg.user} />
         <div className="min-w-0 flex-1">
-          <div className="flex items-baseline gap-2 mb-1 flex-wrap">
-            <span className="font-semibold text-[15px]" style={{ color: THEME.text }}>
+          <div className="flex items-baseline gap-2 mb-0.5 flex-wrap">
+            <span className="font-medium text-[14px]" style={{ color: THEME.text }}>
               {name}
             </span>
             <span className="text-xs opacity-50">{formatTime(msg.createdAt)}</span>

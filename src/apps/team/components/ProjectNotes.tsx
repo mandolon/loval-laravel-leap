@@ -724,21 +724,9 @@ export function ProjectNotes({ projectId, workspaceId }: ProjectNotesProps) {
                       isFocused: document.activeElement === titleRef.current
                     });
                   }}
-                  className="text-[34px] font-semibold text-slate-900 dark:text-slate-100 mb-2 outline-none break-words cursor-text"
+                  className="text-[34px] font-semibold text-slate-900 dark:text-slate-100 mb-4 outline-none break-words cursor-text"
                   style={{ color: '#0f172a' }}
                 />
-
-                {/* Helper text for title */}
-                {showTitleHelper && (
-                  <div className="mb-2 flex items-center justify-between text-[11px]">
-                    <span className={titleError ? "text-red-500" : "text-slate-400"}>
-                      {titleError || "Press Enter to save"}
-                    </span>
-                    <span className={titleCharCount >= 40 ? "text-red-500 font-medium" : "text-slate-400"}>
-                      {titleCharCount}/40
-                    </span>
-                  </div>
-                )}
 
                 {createdByUser && (
                   <div className="text-[12px] flex items-center gap-2 overflow-hidden" style={{ color: '#202020' }}>

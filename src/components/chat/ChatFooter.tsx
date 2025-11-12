@@ -8,11 +8,11 @@ export function ChatFooter({ chatOpened }: ChatFooterProps) {
       className={`text-center transition-all duration-700 ease-out ${
         chatOpened
           ? 'opacity-0 scale-95 h-0 overflow-hidden pointer-events-none mt-0'
-          : 'opacity-100 scale-100 mt-7'
+          : 'opacity-100 scale-100 mt-4'
       }`}
     >
-      <p className="text-[10px] text-muted-foreground">
-        AI can make mistakes. Please verify important information.
+      <p className="text-[11px] text-muted-foreground">
+        AI Assistant only supports project management inside this workspace.
       </p>
     </div>
   )

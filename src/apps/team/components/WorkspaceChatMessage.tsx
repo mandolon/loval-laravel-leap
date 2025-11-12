@@ -284,15 +284,15 @@ export const WorkspaceChatMessage = ({
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className="flex items-start gap-3 justify-start cursor-pointer rounded-2xl p-2 -m-2 transition-colors"
+        className="flex items-start gap-3 justify-start cursor-pointer rounded-2xl py-1.5 px-2 -mx-2 transition-colors"
         style={{
           background: isHighlighted ? THEME.highlight : "transparent",
         }}
       >
         <AvatarCircle name={name} user={message.user} />
         <div className="min-w-0 flex-1">
-          <div className="flex items-baseline gap-2 mb-1 flex-wrap">
-            <span className="font-semibold text-[15px]" style={{ color: THEME.text }}>
+          <div className="flex items-baseline gap-2 mb-0.5 flex-wrap">
+            <span className="font-medium text-[14px]" style={{ color: THEME.text }}>
               {name}
             </span>
             <span className="text-xs opacity-50">{formatTime(message.createdAt)}</span>

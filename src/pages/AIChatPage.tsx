@@ -200,7 +200,7 @@ export default function AIChatPage() {
     <div className="h-full w-full text-[12px] overflow-hidden flex relative">
       {/* Sidebar with chat threads */}
       <div
-        className="transition-all duration-300 ease-out border-r border-slate-200 bg-white overflow-hidden flex-shrink-0"
+        className="transition-all duration-300 ease-out border-r border-slate-200 bg-white overflow-hidden flex-shrink-0 md:relative absolute inset-y-0 left-0 z-30"
         style={{
           width: sidebarCollapsed ? 0 : "240px",
           opacity: sidebarCollapsed ? 0 : 1,
@@ -216,10 +216,18 @@ export default function AIChatPage() {
         </div>
       </div>
 
+      {/* Mobile backdrop */}
+      {!sidebarCollapsed && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black/20 z-20"
+          onClick={() => setSidebarCollapsed(true)}
+        />
+      )}
+
       {/* Toggle button */}
       <button
         onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-        className="absolute top-4 z-20 p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 transition-all duration-300 shadow-sm"
+        className="absolute top-4 z-30 p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 transition-all duration-300 shadow-lg md:shadow-sm"
         style={{
           left: sidebarCollapsed ? '8px' : '248px',
         }}
@@ -247,8 +255,8 @@ export default function AIChatPage() {
         </div>
         
         {/* Floating input area with dynamic positioning */}
-        <div className={`absolute left-1/2 bottom-0 z-10 w-full max-w-3xl -translate-x-1/2 transition-transform duration-700 ease-out ${
-          chatOpened ? 'translate-y-0' : '-translate-y-[32vh]'
+        <div className={`absolute left-1/2 bottom-0 z-10 w-full max-w-3xl -translate-x-1/2 transition-transform duration-700 ease-out px-4 md:px-0 ${
+          chatOpened ? 'translate-y-0' : 'md:-translate-y-[32vh] -translate-y-[25vh]'
         }`}>
           
           {/* Header and Quick Actions - fade out when chat opens */}
@@ -275,8 +283,8 @@ export default function AIChatPage() {
             projects={projects}
             wrapperClassName={
               chatOpened
-                ? 'relative z-10 px-4 pb-4 pt-3'
-                : 'relative z-10 px-0 mt-12'
+                ? 'relative z-10 px-0 pb-4 pt-3'
+                : 'relative z-10 px-0 mt-8 md:mt-12'
             }
           />
           

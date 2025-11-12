@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { MouseEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ChevronDown, Lock, X } from 'lucide-react'
 import FileUploadChip, { type UploadStatus } from './FileUploadChip'
@@ -71,11 +70,8 @@ export function NewChatInput({
     const textarea = textareaRef.current
     if (!textarea) return
 
-    const minHeight = 48
-    const maxHeight = 150
-
     textarea.style.height = 'auto'
-    const nextHeight = Math.min(Math.max(textarea.scrollHeight, minHeight), maxHeight)
+    const nextHeight = Math.min(textarea.scrollHeight, 160)
     textarea.style.height = `${nextHeight}px`
   }, [message, chatOpened])
 
@@ -175,9 +171,9 @@ export function NewChatInput({
         @keyframes spin { to { transform: rotate(360deg); } }
         .spinner { animation: spin .8s linear infinite; }
       `}</style>
-      <div className="relative overflow-hidden rounded-2xl ring-1 ring-border bg-background shadow-[0_22px_45px_-28px_rgba(15,23,42,0.35)] backdrop-blur-sm transition-all duration-300 max-w-3xl mx-auto">
+      <div className="flex flex-col gap-3 rounded-2xl border shadow-sm max-w-3xl mx-auto px-3 py-4" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--card))' }}>
         {uploads.length > 0 && (
-          <div className="flex max-h-28 flex-wrap gap-2 overflow-y-auto px-5 pt-4 pb-2">
+          <div className="flex max-h-28 flex-wrap gap-2 overflow-y-auto">
             {uploads.map((u) => (
               <FileUploadChip
                 key={u.id}
@@ -193,19 +189,24 @@ export function NewChatInput({
           </div>
         )}
         
-        <Textarea
+        <textarea
           ref={textareaRef}
           value={message}
           onChange={(event) => setMessage(event.target.value)}
-          placeholder={chatOpened ? 'Message AI Assistant...' : 'Message AI Assistant...'}
+          placeholder="Message AI Piner for assistance..."
           rows={1}
-          className="border-0 bg-transparent px-5 py-4 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground resize-none rounded-none"
-          style={{ minHeight: 48, maxHeight: 150 }}
+          className="w-full max-h-40 resize-none bg-transparent text-[15px] leading-[1.5] outline-none px-2 my-1"
+          style={{ fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif', color: 'hsl(var(--foreground))' }}
           onKeyDown={(event) => {
             if (event.key === 'Enter' && !event.shiftKey) {
               event.preventDefault()
               onSubmit()
             }
+          }}
+          onInput={(e) => {
+            const textarea = e.currentTarget
+            textarea.style.height = 'auto'
+            textarea.style.height = `${Math.min(textarea.scrollHeight, 160)}px`
           }}
           onDragOver={handleDragOver}
           onDragEnter={handleDragOver}
@@ -214,7 +215,7 @@ export function NewChatInput({
         />
 
         {/* Input Controls */}
-        <div className="flex items-center justify-between bg-background px-4 py-2.5 text-sm text-foreground transition-colors duration-200 rounded-none">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {/* hidden file input */}
             <input
@@ -229,7 +230,10 @@ export function NewChatInput({
               onClick={handlePickFiles}
               disabled={isLoading}
               title="Add attachment"
-              className="relative grid h-8 w-8 place-items-center rounded-md border transition-colors hover:bg-accent disabled:opacity-50"
+              className="relative grid h-8 w-8 shrink-0 place-items-center rounded-md border transition-colors disabled:opacity-50"
+              style={{ borderColor: 'hsl(var(--border))' }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'hsl(var(--accent))')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
               aria-busy={hasUploading}
             >
               {hasUploading ? (
@@ -248,18 +252,14 @@ export function NewChatInput({
             </button>
             <Popover open={projectLocked ? false : projectPopoverOpen} onOpenChange={handleProjectPopoverChange}>
               <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <button
+                  type="button"
                   disabled={projectLocked}
-                  className={`h-6 text-[10px] gap-1 border transition-all duration-300 ease-in-out relative ${
+                  className={`inline-flex items-center justify-center h-8 text-[11px] gap-1.5 border rounded-md transition-all duration-300 ease-in-out relative px-2.5 font-medium ${
                     selectedProject !== 'all'
-                      ? 'text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:pr-8'
-                      : 'text-muted-foreground hover:text-foreground border-border'
+                      ? 'text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:pr-8 bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900'
+                      : 'text-foreground hover:text-foreground border-border bg-card hover:bg-slate-100 dark:hover:bg-slate-800'
                   } ${!projectLocked && selectedProject !== 'all' ? 'group' : ''}`}
-                  style={{
-                    backgroundColor: selectedProject !== 'all' ? '#e5f3ff' : 'transparent',
-                  }}
                   title={projectLocked ? 'Project selection is locked for this chat' : undefined}
                 >
                   {selectedProjectName}
@@ -277,26 +277,28 @@ export function NewChatInput({
                   ) : (
                     <ChevronDown className="w-3 h-3" />
                   )}
-                </Button>
+                </button>
               </PopoverTrigger>
-              <PopoverContent className="p-1" align="start" collisionPadding={8}>
-                <div className="flex flex-col gap-0.5">
+              <PopoverContent className="p-2 w-64" align="start" collisionPadding={8}>
+                <div className="flex flex-col gap-1">
                   <Input
-                    placeholder="Search"
+                    placeholder="Search projects..."
                     value={projectSearch}
                     onChange={(event) => setProjectSearch(event.target.value)}
-                    className="mb-1 text-[10px] h-6"
+                    className="mb-1.5 text-[11px] h-7"
                     onClick={(event) => event.stopPropagation()}
                   />
                   {filteredProjects.map((project) => (
                     <div
                       key={project.id}
-                      className={`flex items-center gap-1.5 px-1.5 py-1 hover:bg-accent rounded cursor-pointer ${
-                        selectedProject === project.id ? 'bg-accent/50' : ''
+                      className={`flex items-center gap-2 px-2.5 py-2 rounded-md cursor-pointer transition-colors ${
+                        selectedProject === project.id 
+                          ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-400' 
+                          : 'hover:bg-accent/50'
                       }`}
                       onClick={() => handleProjectSelect(project.id)}
                     >
-                      <span className="text-[10px] text-foreground">{project.name}</span>
+                      <span className="text-[11px] font-medium">{project.name}</span>
                     </div>
                   ))}
                 </div>
@@ -310,14 +312,22 @@ export function NewChatInput({
                 {summaryAction}
               </div>
             )}
-            <span>Gemini 2.5 Flash</span>
+            <span>Piner 1.0</span>
             <button
               type="button"
               onClick={onSubmit}
               disabled={!message.trim() || isLoading}
-              className={`inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground shadow-sm transition-colors duration-200 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 ${
-                message.trim() ? 'bg-blue-700 text-white hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700' : ''
-              }`}
+              className="grid h-8 w-8 place-items-center rounded-md transition-colors disabled:opacity-40"
+              style={{
+                background: message.trim() ? '#1C1917' : '#d4d4d8',
+                color: message.trim() ? '#FFFFFF' : '#a1a1aa',
+              }}
+              onMouseEnter={(e) => {
+                if (message.trim()) e.currentTarget.style.background = '#111111'
+              }}
+              onMouseLeave={(e) => {
+                if (message.trim()) e.currentTarget.style.background = '#1C1917'
+              }}
               aria-label="Send message"
             >
               {isLoading ? (

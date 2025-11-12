@@ -47,12 +47,12 @@ export function QuickActions({ chatOpened, onActionClick }: QuickActionsProps) {
       {quickActions.map((action, index) => (
         <Button
           key={index}
-          variant="secondary"
+          variant="outline"
           size="sm"
-          className="h-8 text-[10px] gap-2 hover:bg-accent transition-colors"
+          className="h-8 text-xs gap-2 border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium transition-colors"
           onClick={() => onActionClick(action.description)}
         >
-          <action.icon className="w-3 h-3" />
+          <action.icon className="w-3.5 h-3.5" />
           <span>{action.label}</span>
         </Button>
       ))}

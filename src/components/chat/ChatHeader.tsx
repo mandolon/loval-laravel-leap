@@ -14,8 +14,8 @@ export function ChatHeader({ chatOpened }: ChatHeaderProps) {
       }`}
     >
       <div className="flex items-center justify-center gap-2 mb-4">
-        <Sparkles className="w-5 h-5 text-orange-500" />
-        <h1 className="text-[10px] font-semibold leading-tight tracking-normal text-foreground">
+        <Sparkles className="w-5 h-5 text-blue-600" />
+        <h1 className="text-2xl font-semibold leading-tight tracking-normal text-foreground">
           How can I help you today?
         </h1>
       </div>

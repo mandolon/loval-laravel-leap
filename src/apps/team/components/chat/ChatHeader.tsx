@@ -93,9 +93,14 @@ export function ChatHeader({
         <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
           <button
             onClick={onToggleChatSelector}
-            className="flex items-center gap-2 transition-all px-3 py-1.5 rounded-lg"
+            className="flex items-center gap-2 transition-all px-3 py-2 rounded-lg border"
+            style={{
+              borderColor: THEME.border,
+              background: THEME.card,
+              color: THEME.text,
+            }}
             onMouseEnter={(e) => (e.currentTarget.style.background = THEME.hover)}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = THEME.card)}
           >
             <span className="chat-header-project-name text-[16px] font-semibold">{headerTitle}</span>
             <ChevronDown className="h-4 w-4 opacity-60" />

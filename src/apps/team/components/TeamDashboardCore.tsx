@@ -649,10 +649,10 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
                     <div className="h-full flex items-center justify-center">
                       <div className="text-center max-w-md px-6">
                         <h2 className="text-2xl font-semibold mb-3 text-slate-900">
-                          Select a project to start
+                          Open a project to begin
                         </h2>
                         <p className="text-lg text-slate-600">
-                          Hover Projects to choose a project. Then preview PDFs, images, whiteboards, and project info here.
+                          In the sidebar, hover over Projects and select. Use the Project Panel to manage files, preview PDFs and images, mark up in Whiteboards, and edit project info.
                         </p>
                       </div>
                     </div>
@@ -791,19 +791,18 @@ const RailItem = memo(function RailItem({
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       isTouchRef.current = e.pointerType === "touch";
-      suppressClickRef.current = isTouchRef.current;
+      suppressClickRef.current = false; // Don't suppress clicks
       overIcon.current = true;
 
       if (isTouchRef.current && menuEnabled) {
         if (longPressTimer.current) clearTimeout(longPressTimer.current);
         longPressTimer.current = window.setTimeout(() => {
-          onActivate();
-          setOpenTab(null);
+          setOpenTab(tabKey);
           lastTapRef.current = 0;
         }, LONG_PRESS_MS);
       }
     },
-    [menuEnabled, onActivate, setOpenTab]
+    [menuEnabled, setOpenTab, tabKey]
   );
 
   const handlePointerUp = useCallback(() => {
@@ -824,20 +823,24 @@ const RailItem = memo(function RailItem({
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
-      if (suppressClickRef.current) {
-        e.preventDefault();
-        e.stopPropagation();
-        suppressClickRef.current = false;
-        return;
-      }
-      onActivate();
-      // After navigating via icon click, close hover menu. Reopens on next hover.
-      if (menuEnabled) {
-        if (showTimer.current) clearTimeout(showTimer.current);
-        if (hideTimer.current) clearTimeout(hideTimer.current);
-        overIcon.current = false;
-        overPanel.current = false;
-        setOpenTab(null);
+      // Don't prevent default on touch devices
+      if (!isTouchRef.current) {
+        // For mouse clicks, navigate immediately
+        onActivate();
+        // After navigating via icon click, close hover menu. Reopens on next hover.
+        if (menuEnabled) {
+          if (showTimer.current) clearTimeout(showTimer.current);
+          if (hideTimer.current) clearTimeout(hideTimer.current);
+          overIcon.current = false;
+          overPanel.current = false;
+          setOpenTab(null);
+        }
+      } else {
+        // For touch, let handlePointerUp handle the logic
+        if (!menuEnabled) {
+          // If menu not enabled, navigate on touch
+          onActivate();
+        }
       }
     },
     [onActivate, menuEnabled, setOpenTab]

@@ -52,10 +52,10 @@ export default function ProjectsPage() {
             // Empty state: No project selected
             <div className="flex flex-col items-center justify-center text-center max-w-md px-6">
               <h2 className="text-2xl font-semibold mb-3 text-slate-900">
-                Select a project to start
+                Open a project to begin
               </h2>
               <p className="text-lg text-slate-600">
-                Hover Projects to choose a project. Then preview PDFs, images, whiteboards, and project info here.
+                In the sidebar, hover over Projects and select. Use the Project Panel to manage files, preview PDFs and images, mark up in Whiteboards, and edit project info.
               </p>
             </div>
           ) : (
