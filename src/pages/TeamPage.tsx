@@ -35,7 +35,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { useUser } from "@/contexts/UserContext";
 import { AddUserDialog } from "@/components/AddUserDialog";
 import { AddUserToWorkspaceDialog } from "@/components/AddUserToWorkspaceDialog";
-import { useUsers, useUpdateUserRole, useDeletedUsers, useForceSignOut } from "@/lib/api/hooks";
+import { useUsers, useUpdateUserRole, useDeletedUsers, useForceSignOut, usePermanentDeleteUser } from "@/lib/api/hooks";
 import { Badge } from "@/components/ui/badge";
 import { useQueryClient } from "@tanstack/react-query";
 import { DESIGN_TOKENS as T } from "@/lib/design-tokens";
@@ -46,6 +46,8 @@ const TeamPage = () => {
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [forceSignOutUserId, setForceSignOutUserId] = useState<string | null>(null);
   const [forceSignOutUserName, setForceSignOutUserName] = useState<string>('');
+  const [permanentDeleteUserId, setPermanentDeleteUserId] = useState<string | null>(null);
+  const [permanentDeleteUserName, setPermanentDeleteUserName] = useState<string>('');
   const { toast } = useToast();
   const { user: currentUser } = useUser();
   const queryClient = useQueryClient();
@@ -54,6 +56,7 @@ const TeamPage = () => {
   const { data: deletedUsers, isLoading: isLoadingDeleted } = useDeletedUsers();
   const updateUserRole = useUpdateUserRole();
   const forceSignOutMutation = useForceSignOut();
+  const permanentDeleteMutation = usePermanentDeleteUser();
 
 
   if (!currentUser?.is_admin) {
@@ -241,6 +244,26 @@ const TeamPage = () => {
       toast({
         title: "Error",
         description: error.message || "Failed to sign out user.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePermanentDelete = async () => {
+    if (!permanentDeleteUserId) return;
+
+    try {
+      await permanentDeleteMutation.mutateAsync(permanentDeleteUserId);
+      toast({
+        title: "User permanently deleted",
+        description: `${permanentDeleteUserName} has been permanently removed from the system.`,
+      });
+      setPermanentDeleteUserId(null);
+      setPermanentDeleteUserName('');
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to permanently delete user.",
         variant: "destructive",
       });
     }
@@ -530,15 +553,29 @@ const TeamPage = () => {
                           {new Date(user.deletedAt).toLocaleDateString()}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleRestore(user.id)}
-                            className="gap-2"
-                          >
-                            <RotateCcw className="h-4 w-4" />
-                            Restore
-                          </Button>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleRestore(user.id)}
+                              className="gap-2"
+                            >
+                              <RotateCcw className="h-4 w-4" />
+                              Restore
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => {
+                                setPermanentDeleteUserId(user.id);
+                                setPermanentDeleteUserName(user.name);
+                              }}
+                              className="gap-2"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Permanent Delete
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -591,6 +628,61 @@ const TeamPage = () => {
               className="bg-orange-500 hover:bg-orange-600"
             >
               Sign Out User
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Permanent Delete Confirmation Dialog */}
+      <AlertDialog open={permanentDeleteUserId !== null} onOpenChange={(open) => {
+        if (!open) {
+          setPermanentDeleteUserId(null);
+          setPermanentDeleteUserName('');
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive">⚠️ Permanently Delete User</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                Are you sure you want to <strong className="text-destructive">permanently delete</strong>{' '}
+                <strong>{permanentDeleteUserName}</strong>?
+              </p>
+              <div className="bg-destructive/10 border border-destructive/20 rounded p-3 space-y-2">
+                <p className="font-semibold text-destructive text-sm">This action CANNOT be undone and will:</p>
+                <ul className="text-sm space-y-1 list-disc list-inside text-muted-foreground">
+                  <li>Permanently delete their user account</li>
+                  <li>Remove all workspace and project memberships</li>
+                  <li>Delete all their time entries and activity logs</li>
+                  <li>Remove all their chat messages and notifications</li>
+                  <li>Delete their authentication credentials</li>
+                </ul>
+              </div>
+              <p className="text-sm font-medium">
+                Type <span className="font-mono bg-muted px-1 rounded">DELETE</span> to confirm:
+              </p>
+              <Input
+                id="confirm-delete"
+                placeholder="Type DELETE to confirm"
+                onChange={(e) => {
+                  const input = e.target as HTMLInputElement;
+                  const confirmBtn = document.getElementById('confirm-permanent-delete-btn') as HTMLButtonElement;
+                  if (confirmBtn) {
+                    confirmBtn.disabled = input.value !== 'DELETE';
+                  }
+                }}
+              />
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              id="confirm-permanent-delete-btn"
+              onClick={handlePermanentDelete}
+              disabled={true}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Permanently Delete User
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
