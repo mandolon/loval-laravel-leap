@@ -77,6 +77,7 @@ import { useProjects } from '@/lib/api/hooks/useProjects';
 import { TasksTable } from './TasksTable';
 import TaskDrawer from '@/components/TaskDrawer';
 import { TeamDetailLibraryView } from './TeamDetailLibraryView';
+import { useWorkspaceChatUnreadCount } from '@/lib/api/hooks/useChatReadReceipts';
 
 // ----------------------------------
 // Theme & constants
@@ -243,13 +244,12 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
     };
   }, [currentWorkspaceId, queryClient]);
 
-  // Check if workspace has unread messages
-  const hasUnreadWorkspaceMessages = useMemo(() => {
-    if (!currentWorkspaceId || workspaceMessages.length === 0) return false;
-    const key = `last_viewed_workspace_${currentWorkspaceId}`;
-    const lastViewed = parseInt(localStorage.getItem(key) || '0', 10);
-    return workspaceMessages.length > lastViewed;
-  }, [currentWorkspaceId, workspaceMessages.length]);
+  // Check if workspace has unread messages using database-backed read receipts
+  const { data: workspaceUnreadCount = 0 } = useWorkspaceChatUnreadCount(
+    currentWorkspaceId || '',
+    user?.id || ''
+  );
+  const hasUnreadWorkspaceMessages = workspaceUnreadCount > 0;
 
   // Sync active state with URL
   useEffect(() => {

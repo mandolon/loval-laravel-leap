@@ -706,9 +706,7 @@ export default function ProjectPanel({
         filesize: file.filesize || 0,
         storage_path: file.storage_path,
         folder_id: file.folder_id,
-        project_id: file.project_id,
-        uploaded_by: file.uploaded_by,
-        created_at: file.created_at,
+        updated_at: file.updated_at || new Date().toISOString(),
       });
     }
   }, [initialFileId, rawFiles, onFileSelect]);

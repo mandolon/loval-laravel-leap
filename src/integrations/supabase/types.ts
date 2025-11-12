@@ -198,6 +198,67 @@ export type Database = {
           },
         ]
       }
+      chat_read_receipts: {
+        Row: {
+          created_at: string
+          id: string
+          last_read_at: string
+          last_read_message_id: string | null
+          message_type: string
+          project_id: string | null
+          short_id: string
+          updated_at: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_read_at?: string
+          last_read_message_id?: string | null
+          message_type: string
+          project_id?: string | null
+          short_id?: string
+          updated_at?: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_read_at?: string
+          last_read_message_id?: string | null
+          message_type?: string
+          project_id?: string | null
+          short_id?: string
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_read_receipts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_read_receipts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_read_receipts_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       detail_library_categories: {
         Row: {
           created_at: string | null

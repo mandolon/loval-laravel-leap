@@ -28,6 +28,7 @@ interface WorkspaceChatMessageProps {
   onEdit?: (id: string, content: string) => void
   onCopy?: (content: string) => void
   currentUserId?: string
+  isUnread?: boolean
 }
 
 export const WorkspaceChatMessage = ({ 
@@ -36,7 +37,8 @@ export const WorkspaceChatMessage = ({
   onReply, 
   onEdit,
   onCopy, 
-  currentUserId 
+  currentUserId,
+  isUnread = false
 }: WorkspaceChatMessageProps) => {
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(message.content)
@@ -168,7 +170,7 @@ export const WorkspaceChatMessage = ({
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          className="rounded-2xl border p-4 shadow-[0_1px_0_rgba(0,0,0,0.03)] cursor-pointer transition-colors flex items-start gap-3"
+          className={`rounded-2xl border p-4 shadow-[0_1px_0_rgba(0,0,0,0.03)] cursor-pointer transition-colors flex items-start gap-3 ${isUnread ? 'unread-message-highlight' : ''}`}
           style={{
             borderColor: THEME.border,
             background: isHighlighted ? THEME.highlight : THEME.card,

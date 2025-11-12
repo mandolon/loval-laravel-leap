@@ -28,6 +28,13 @@ import { ChatSidePanel } from "./chat/ChatSidePanel";
 import { supabase } from "@/integrations/supabase/client";
 import FileUploadChip, { type UploadStatus } from "@/components/chat/FileUploadChip";
 import { format, isToday, isYesterday, isSameDay, parseISO } from "date-fns";
+import { 
+  useMarkWorkspaceChatAsRead, 
+  useMarkProjectChatAsRead, 
+  useWorkspaceLastReadAt, 
+  useProjectLastReadAt,
+  useUnreadMessageIds 
+} from "@/lib/api/hooks/useChatReadReceipts";
 
 // Theme Configuration - Exact from reference
 const THEME = {
@@ -136,6 +143,22 @@ export default function TeamChatSlim({
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
+  // Get mark as read mutations
+  const markWorkspaceChatAsRead = useMarkWorkspaceChatAsRead();
+  const markProjectChatAsRead = useMarkProjectChatAsRead();
+
+  // Get last read timestamps for highlighting new messages
+  const { data: workspaceLastReadAt } = useWorkspaceLastReadAt(
+    isWorkspaceChat ? (workspaceId || "") : "",
+    user?.id || ""
+  );
+  const { data: projectLastReadAt } = useProjectLastReadAt(
+    isWorkspaceChat ? "" : (selectedProject?.id || ""),
+    user?.id || ""
+  );
+
+  const currentLastReadAt = isWorkspaceChat ? workspaceLastReadAt : projectLastReadAt;
+
   // Fetch project messages or workspace messages based on mode
   const { data: rawProjectMessages = [] } = useProjectMessages(
     isWorkspaceChat ? "" : (selectedProject?.id || "")
@@ -167,24 +190,34 @@ export default function TeamChatSlim({
     return null;
   };
 
-  // Mark chat as viewed when messages are loaded
+  // Mark chat as viewed when messages are loaded - use database instead of localStorage
   useEffect(() => {
-    if (selectedProject?.id && rawProjectMessages.length > 0) {
-      const key = getLastViewedKey(selectedProject.id, null);
-      if (key) {
-        localStorage.setItem(key, rawProjectMessages.length.toString());
+    if (selectedProject?.id && rawProjectMessages.length > 0 && user?.id) {
+      const latestMessage = rawProjectMessages[rawProjectMessages.length - 1];
+      // Only mark as read if message is from another user
+      if (latestMessage.userId !== user.id) {
+        markProjectChatAsRead.mutate({
+          projectId: selectedProject.id,
+          userId: user.id,
+          lastMessageId: latestMessage.id,
+        });
       }
     }
-  }, [selectedProject?.id, rawProjectMessages.length]);
+  }, [selectedProject?.id, rawProjectMessages.length, user?.id]);
 
   useEffect(() => {
-    if (isWorkspaceChat && workspaceId && rawWorkspaceMessages.length > 0) {
-      const key = getLastViewedKey(null, workspaceId);
-      if (key) {
-        localStorage.setItem(key, rawWorkspaceMessages.length.toString());
+    if (isWorkspaceChat && workspaceId && rawWorkspaceMessages.length > 0 && user?.id) {
+      const latestMessage = rawWorkspaceMessages[rawWorkspaceMessages.length - 1];
+      // Only mark as read if message is from another user
+      if (latestMessage.userId !== user.id) {
+        markWorkspaceChatAsRead.mutate({
+          workspaceId,
+          userId: user.id,
+          lastMessageId: latestMessage.id,
+        });
       }
     }
-  }, [isWorkspaceChat, workspaceId, rawWorkspaceMessages.length]);
+  }, [isWorkspaceChat, workspaceId, rawWorkspaceMessages.length, user?.id]);
 
   // Check if workspace has unread messages
   const hasWorkspaceMessages = useMemo(() => {
@@ -312,6 +345,17 @@ export default function TeamChatSlim({
       };
     });
   }, [rawMessages]);
+
+  // Get unread message IDs for highlighting
+  const unreadMessageIds = useUnreadMessageIds(
+    rawMessages.map(m => ({
+      id: m.id,
+      created_at: m.createdAt,
+      user_id: m.userId,
+    })),
+    currentLastReadAt,
+    user?.id || ''
+  );
 
   const handleSend = () => {
     const body = text.trim();
@@ -866,6 +910,19 @@ export default function TeamChatSlim({
         .animate-fadeIn {
           animation: fadeIn 0.3s ease-in-out;
         }
+        @keyframes unreadHighlight {
+          0% {
+            background-color: rgba(76, 117, 209, 0.08);
+            box-shadow: inset 3px 0 0 0 #4C75D1;
+          }
+          100% {
+            background-color: transparent;
+            box-shadow: none;
+          }
+        }
+        .unread-message-highlight {
+          animation: unreadHighlight 2.5s ease-out forwards;
+        }
         @media (max-width: 767px) {
           .message-content {
             -webkit-user-select: none;
@@ -1022,6 +1079,7 @@ export default function TeamChatSlim({
                         onEdit={handleEditMessage}
                         onCopy={handleCopyMessage}
                         currentUserId={user?.id}
+                        isUnread={unreadMessageIds.includes(msg.id)}
                       />
                     );
                   } else {
