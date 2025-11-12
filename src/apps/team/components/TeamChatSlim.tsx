@@ -33,7 +33,9 @@ import {
   useMarkProjectChatAsRead, 
   useWorkspaceLastReadAt, 
   useProjectLastReadAt,
-  useUnreadMessageIds 
+  useUnreadMessageIds,
+  useWorkspaceChatUnreadCount,
+  useAllProjectChatUnreadCounts
 } from "@/lib/api/hooks/useChatReadReceipts";
 
 // Theme Configuration - Exact from reference
@@ -180,22 +182,20 @@ export default function TeamChatSlim({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
+  // Get unread counts
+  const { data: workspaceUnreadCount = 0 } = useWorkspaceChatUnreadCount(workspaceId || "", user?.id || "");
+  const projectIds = useMemo(() => projects.map((p: any) => p.id), [projects]);
+  const { data: allProjectUnreadCounts = {} } = useAllProjectChatUnreadCounts(user?.id || "", projectIds);
+  
   // Fetch workspace projects for header dropdown when in workspace mode
   const { data: workspaceProjects = [] } = useProjects(workspaceId || "");
 
-  // Track last viewed message counts to determine if there are unread messages
-  const getLastViewedKey = (projectId: string | null, workspaceIdParam: string | null) => {
-    if (projectId) return `last_viewed_project_${projectId}`;
-    if (workspaceIdParam) return `last_viewed_workspace_${workspaceIdParam}`;
-    return null;
-  };
-
-  // Mark chat as viewed when messages are loaded - use database instead of localStorage
+  // Mark chat as viewed when messages are loaded
   useEffect(() => {
     if (selectedProject?.id && rawProjectMessages.length > 0 && user?.id) {
       const latestMessage = rawProjectMessages[rawProjectMessages.length - 1];
-      // Only mark as read if message is from another user
-      if (latestMessage.userId !== user.id) {
+      if (latestMessage) {
+        // Mark as read regardless of who sent the last message
         markProjectChatAsRead.mutate({
           projectId: selectedProject.id,
           userId: user.id,
@@ -208,8 +208,8 @@ export default function TeamChatSlim({
   useEffect(() => {
     if (isWorkspaceChat && workspaceId && rawWorkspaceMessages.length > 0 && user?.id) {
       const latestMessage = rawWorkspaceMessages[rawWorkspaceMessages.length - 1];
-      // Only mark as read if message is from another user
-      if (latestMessage.userId !== user.id) {
+      if (latestMessage) {
+        // Mark as read regardless of who sent the last message
         markWorkspaceChatAsRead.mutate({
           workspaceId,
           userId: user.id,
@@ -218,24 +218,6 @@ export default function TeamChatSlim({
       }
     }
   }, [isWorkspaceChat, workspaceId, rawWorkspaceMessages.length, user?.id]);
-
-  // Check if workspace has unread messages
-  const hasWorkspaceMessages = useMemo(() => {
-    if (!workspaceId || rawWorkspaceMessages.length === 0) return false;
-    const key = getLastViewedKey(null, workspaceId);
-    if (!key) return false;
-    const lastViewed = parseInt(localStorage.getItem(key) || '0', 10);
-    return rawWorkspaceMessages.length > lastViewed;
-  }, [workspaceId, rawWorkspaceMessages.length]);
-
-  // Check if a project has unread messages
-  const hasUnreadProjectMessages = (projectId: string, messageCount: number) => {
-    if (messageCount === 0) return false;
-    const key = getLastViewedKey(projectId, null);
-    if (!key) return false;
-    const lastViewed = parseInt(localStorage.getItem(key) || '0', 10);
-    return messageCount > lastViewed;
-  };
 
   // Fetch latest message timestamp for each project
   const { data: projectLatestMessages = [] } = useQuery({
@@ -274,7 +256,7 @@ export default function TeamChatSlim({
 
   // Set up realtime subscription for instant notification updates
   useEffect(() => {
-    if (!workspaceId) return;
+    if (!workspaceId || !user?.id) return;
 
     const channel = supabase
       .channel('all-project-messages-realtime')
@@ -289,12 +271,25 @@ export default function TeamChatSlim({
           queryClient.invalidateQueries({ queryKey: ['project-latest-messages', workspaceId] });
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'chat_read_receipts',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          // Invalidate all read receipt queries when they change
+          queryClient.invalidateQueries({ queryKey: ['chat-read-receipts'] });
+        }
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [workspaceId, queryClient]);
+  }, [workspaceId, user?.id, queryClient]);
 
   // Filter and sort projects with chat messages, limit to 5
   const recentProjectsWithChats = useMemo(() => {
@@ -999,7 +994,7 @@ export default function TeamChatSlim({
                           </div>
                         </div>
                       </div>
-                      {hasWorkspaceMessages && (
+                      {workspaceUnreadCount > 0 && (
                         <div 
                           className="w-2 h-2 rounded-full flex-shrink-0 self-center"
                           style={{ backgroundColor: '#e93d82' }}
@@ -1014,7 +1009,7 @@ export default function TeamChatSlim({
                         RECENT PROJECTS
                       </div>
                       {recentProjectsWithChats.map((project) => {
-                        const hasUnread = hasUnreadProjectMessages(project.id, project.unreadChatCount || 0);
+                        const hasUnread = (allProjectUnreadCounts[project.id] || 0) > 0;
                         return (
                           <button
                             key={project.id}

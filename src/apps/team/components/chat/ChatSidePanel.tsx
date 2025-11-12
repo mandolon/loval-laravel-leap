@@ -5,6 +5,11 @@ import { useState, useMemo, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspaceMessages } from "@/lib/api/hooks/useWorkspaceChat";
+import { useUser } from "@/contexts/UserContext";
+import { 
+  useWorkspaceChatUnreadCount, 
+  useAllProjectChatUnreadCounts 
+} from "@/lib/api/hooks/useChatReadReceipts";
 
 // Collapsible container with smooth animation (same as ProjectPanel)
 function Expander({ isOpen, children }: { isOpen: boolean; children: React.ReactNode }) {
@@ -59,10 +64,17 @@ export function ChatSidePanel({
 }: ChatSidePanelProps) {
   const [recentExpanded, setRecentExpanded] = useState(true);
   const [allExpanded, setAllExpanded] = useState(true);
+  const [showAllProjects, setShowAllProjects] = useState(false);
   const queryClient = useQueryClient();
+  const { user } = useUser();
 
-  // Fetch workspace messages to check for unread
+  // Fetch workspace messages
   const { data: workspaceMessages = [] } = useWorkspaceMessages(workspaceId || "");
+
+  // Database-backed unread counts
+  const { data: workspaceUnreadCount = 0 } = useWorkspaceChatUnreadCount(workspaceId || "", user?.id || "");
+  const projectIds = useMemo(() => projects.map((p) => p.id), [projects]);
+  const { data: allProjectUnreadCounts = {} } = useAllProjectChatUnreadCounts(user?.id || "", projectIds);
 
   // Fetch latest message timestamps for all projects
   const { data: projectLatestMessages = [] } = useQuery({
@@ -102,7 +114,7 @@ export function ChatSidePanel({
 
   // Set up realtime subscription for instant notification updates on all project messages
   useEffect(() => {
-    if (!workspaceId) return;
+    if (!workspaceId || !user?.id) return;
 
     const channel = supabase
       .channel('chat-side-panel-realtime')
@@ -118,37 +130,25 @@ export function ChatSidePanel({
           queryClient.invalidateQueries({ queryKey: ['project-latest-messages-side-panel'] });
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'chat_read_receipts',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          // Invalidate all read receipt queries when they change
+          queryClient.invalidateQueries({ queryKey: ['chat-read-receipts'] });
+        }
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [workspaceId, queryClient]);
-
-  // Helper to check unread messages
-  const getLastViewedKey = (projectId: string | null, workspaceIdParam: string | null) => {
-    if (projectId) return `last_viewed_project_${projectId}`;
-    if (workspaceIdParam) return `last_viewed_workspace_${workspaceIdParam}`;
-    return null;
-  };
-
-  // Check if workspace has unread messages
-  const hasUnreadWorkspaceMessages = useMemo(() => {
-    if (!workspaceId || workspaceMessages.length === 0) return false;
-    const key = getLastViewedKey(null, workspaceId);
-    if (!key) return false;
-    const lastViewed = parseInt(localStorage.getItem(key) || '0', 10);
-    return workspaceMessages.length > lastViewed;
-  }, [workspaceId, workspaceMessages.length]);
-
-  // Check if a project has unread messages
-  const hasUnreadProjectMessages = (projectId: string, messageCount: number) => {
-    if (messageCount === 0) return false;
-    const key = getLastViewedKey(projectId, null);
-    if (!key) return false;
-    const lastViewed = parseInt(localStorage.getItem(key) || '0', 10);
-    return messageCount > lastViewed;
-  };
+  }, [workspaceId, user?.id, queryClient]);
 
   // Sort projects by most recent message timestamp
   const sortedProjects = useMemo(() => {
@@ -224,7 +224,7 @@ export function ChatSidePanel({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {hasUnreadWorkspaceMessages && (
+            {workspaceUnreadCount > 0 && (
               <div 
                 className="w-2 h-2 rounded-full flex-shrink-0"
                 style={{ backgroundColor: '#e93d82' }}
@@ -256,7 +256,7 @@ export function ChatSidePanel({
             <Expander isOpen={recentExpanded}>
               <div className="space-y-1 mb-2">
                 {recentProjects.map((project) => {
-                  const hasUnread = hasUnreadProjectMessages(project.id, project.unreadChatCount || 0);
+                  const hasUnread = (allProjectUnreadCounts[project.id] || 0) > 0;
                   return (
                     <button
                       key={project.id}
@@ -320,7 +320,7 @@ export function ChatSidePanel({
           <Expander isOpen={allExpanded}>
             <div className="space-y-1">
               {allProjects.map((project) => {
-                const hasUnread = hasUnreadProjectMessages(project.id, project.unreadChatCount || 0);
+                const hasUnread = (allProjectUnreadCounts[project.id] || 0) > 0;
                 return (
                   <button
                     key={project.id}

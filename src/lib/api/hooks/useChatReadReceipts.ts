@@ -142,26 +142,45 @@ export const useMarkWorkspaceChatAsRead = () => {
       userId: string;
       lastMessageId: string;
     }) => {
-      const { error } = await supabase
+      // First try to get existing record
+      const { data: existing } = await supabase
         .from("chat_read_receipts")
-        .upsert(
-          {
+        .select("id")
+        .eq("user_id", userId)
+        .eq("workspace_id", workspaceId)
+        .eq("message_type", "workspace")
+        .maybeSingle();
+
+      if (existing) {
+        // Update existing record
+        const { error } = await supabase
+          .from("chat_read_receipts")
+          .update({
+            last_read_message_id: lastMessageId,
+            last_read_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+        if (error) throw error;
+      } else {
+        // Insert new record
+        const { error } = await supabase
+          .from("chat_read_receipts")
+          .insert({
             user_id: userId,
             workspace_id: workspaceId,
             message_type: "workspace",
             last_read_message_id: lastMessageId,
             last_read_at: new Date().toISOString(),
-          },
-          {
-            onConflict: "user_id,workspace_id",
-          }
-        );
-
-      if (error) throw error;
+          });
+        if (error) throw error;
+      }
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: chatReadReceiptKeys.workspace(variables.workspaceId, variables.userId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: chatReadReceiptKeys.allProjects(variables.userId),
       });
     },
     onError: () => {
@@ -184,22 +203,38 @@ export const useMarkProjectChatAsRead = () => {
       userId: string;
       lastMessageId: string;
     }) => {
-      const { error } = await supabase
+      // First try to get existing record
+      const { data: existing } = await supabase
         .from("chat_read_receipts")
-        .upsert(
-          {
+        .select("id")
+        .eq("user_id", userId)
+        .eq("project_id", projectId)
+        .eq("message_type", "project")
+        .maybeSingle();
+
+      if (existing) {
+        // Update existing record
+        const { error } = await supabase
+          .from("chat_read_receipts")
+          .update({
+            last_read_message_id: lastMessageId,
+            last_read_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+        if (error) throw error;
+      } else {
+        // Insert new record
+        const { error } = await supabase
+          .from("chat_read_receipts")
+          .insert({
             user_id: userId,
             project_id: projectId,
             message_type: "project",
             last_read_message_id: lastMessageId,
             last_read_at: new Date().toISOString(),
-          },
-          {
-            onConflict: "user_id,project_id",
-          }
-        );
-
-      if (error) throw error;
+          });
+        if (error) throw error;
+      }
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
