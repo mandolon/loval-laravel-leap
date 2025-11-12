@@ -26,7 +26,7 @@ export type Database = {
           resource_id: string | null
           resource_type: string
           short_id: string
-          user_id: string
+          user_id: string | null
           workspace_id: string
         }
         Insert: {
@@ -40,7 +40,7 @@ export type Database = {
           resource_id?: string | null
           resource_type: string
           short_id?: string
-          user_id: string
+          user_id?: string | null
           workspace_id: string
         }
         Update: {
@@ -54,7 +54,7 @@ export type Database = {
           resource_id?: string | null
           resource_type?: string
           short_id?: string
-          user_id?: string
+          user_id?: string | null
           workspace_id?: string
         }
         Relationships: [
@@ -132,6 +132,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "ai_chat_messages_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ai_chat_messages_thread_id_fkey"
             columns: ["thread_id"]
             isOneToOne: false
@@ -149,7 +156,7 @@ export type Database = {
           short_id: string
           title: string
           updated_at: string
-          user_id: string
+          user_id: string | null
           workspace_id: string
         }
         Insert: {
@@ -160,7 +167,7 @@ export type Database = {
           short_id?: string
           title: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           workspace_id: string
         }
         Update: {
@@ -171,7 +178,7 @@ export type Database = {
           short_id?: string
           title?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           workspace_id?: string
         }
         Relationships: [
@@ -311,7 +318,7 @@ export type Database = {
           subfolder_id: string | null
           title: string
           updated_at: string | null
-          uploaded_by: string
+          uploaded_by: string | null
         }
         Insert: {
           author_name?: string | null
@@ -331,7 +338,7 @@ export type Database = {
           subfolder_id?: string | null
           title: string
           updated_at?: string | null
-          uploaded_by: string
+          uploaded_by?: string | null
         }
         Update: {
           author_name?: string | null
@@ -351,7 +358,7 @@ export type Database = {
           subfolder_id?: string | null
           title?: string
           updated_at?: string | null
-          uploaded_by?: string
+          uploaded_by?: string | null
         }
         Relationships: [
           {
@@ -362,10 +369,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "detail_library_files_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "detail_library_files_subfolder_id_fkey"
             columns: ["subfolder_id"]
             isOneToOne: false
             referencedRelation: "detail_library_subfolders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "detail_library_files_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -424,7 +445,7 @@ export type Database = {
         Row: {
           category_id: string
           created_at: string | null
-          created_by: string
+          created_by: string | null
           id: string
           name: string
           short_id: string
@@ -434,7 +455,7 @@ export type Database = {
         Insert: {
           category_id: string
           created_at?: string | null
-          created_by: string
+          created_by?: string | null
           id?: string
           name: string
           short_id?: string
@@ -444,7 +465,7 @@ export type Database = {
         Update: {
           category_id?: string
           created_at?: string | null
-          created_by?: string
+          created_by?: string | null
           id?: string
           name?: string
           short_id?: string
@@ -457,6 +478,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "detail_library_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "detail_library_subfolders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -666,6 +694,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "file_annotations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "file_annotations_file_id_fkey"
             columns: ["file_id"]
             isOneToOne: false
@@ -700,7 +735,7 @@ export type Database = {
           storage_path: string
           task_id: string | null
           updated_at: string | null
-          uploaded_by: string
+          uploaded_by: string | null
           version_number: number | null
         }
         Insert: {
@@ -721,7 +756,7 @@ export type Database = {
           storage_path: string
           task_id?: string | null
           updated_at?: string | null
-          uploaded_by: string
+          uploaded_by?: string | null
           version_number?: number | null
         }
         Update: {
@@ -742,7 +777,7 @@ export type Database = {
           storage_path?: string
           task_id?: string | null
           updated_at?: string | null
-          uploaded_by?: string
+          uploaded_by?: string | null
           version_number?: number | null
         }
         Relationships: [
@@ -758,13 +793,6 @@ export type Database = {
             columns: ["folder_id"]
             isOneToOne: false
             referencedRelation: "folders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "files_new_deleted_by_fkey"
-            columns: ["deleted_by"]
-            isOneToOne: false
-            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -800,7 +828,7 @@ export type Database = {
       folders: {
         Row: {
           created_at: string | null
-          created_by: string
+          created_by: string | null
           deleted_at: string | null
           deleted_by: string | null
           id: string
@@ -814,7 +842,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          created_by: string
+          created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           id?: string
@@ -828,7 +856,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          created_by?: string
+          created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           id?: string
@@ -850,13 +878,6 @@ export type Database = {
           },
           {
             foreignKeyName: "folders_deleted_by_fkey"
-            columns: ["deleted_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "folders_new_deleted_by_fkey"
             columns: ["deleted_by"]
             isOneToOne: false
             referencedRelation: "users"
@@ -925,7 +946,7 @@ export type Database = {
       invoices: {
         Row: {
           created_at: string | null
-          created_by: string
+          created_by: string | null
           deleted_at: string | null
           deleted_by: string | null
           due_date: string
@@ -950,7 +971,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          created_by: string
+          created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           due_date: string
@@ -975,7 +996,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          created_by?: string
+          created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           due_date?: string
@@ -1032,7 +1053,7 @@ export type Database = {
       links: {
         Row: {
           created_at: string
-          created_by: string
+          created_by: string | null
           deleted_at: string | null
           deleted_by: string | null
           description: string | null
@@ -1045,7 +1066,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          created_by: string
+          created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           description?: string | null
@@ -1058,7 +1079,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           description?: string | null
@@ -1097,7 +1118,7 @@ export type Database = {
         Row: {
           content: string
           created_at: string | null
-          created_by: string
+          created_by: string | null
           deleted_at: string | null
           deleted_by: string | null
           id: string
@@ -1110,7 +1131,7 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string | null
-          created_by: string
+          created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           id?: string
@@ -1123,7 +1144,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string | null
-          created_by?: string
+          created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           id?: string
@@ -1176,7 +1197,7 @@ export type Database = {
           short_id: string
           title: string
           type: string
-          user_id: string
+          user_id: string | null
           workspace_id: string | null
         }
         Insert: {
@@ -1190,7 +1211,7 @@ export type Database = {
           short_id?: string
           title: string
           type: string
-          user_id: string
+          user_id?: string | null
           workspace_id?: string | null
         }
         Update: {
@@ -1204,7 +1225,7 @@ export type Database = {
           short_id?: string
           title?: string
           type?: string
-          user_id?: string
+          user_id?: string | null
           workspace_id?: string | null
         }
         Relationships: [
@@ -1244,7 +1265,7 @@ export type Database = {
           reply_to_message_id: string | null
           short_id: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           content: string
@@ -1258,7 +1279,7 @@ export type Database = {
           reply_to_message_id?: string | null
           short_id?: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           content?: string
@@ -1272,7 +1293,7 @@ export type Database = {
           reply_to_message_id?: string | null
           short_id?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -1366,7 +1387,7 @@ export type Database = {
           assessor_parcel_info: Json | null
           completed_tasks: number | null
           created_at: string | null
-          created_by: string
+          created_by: string | null
           deleted_at: string | null
           deleted_by: string | null
           description: string | null
@@ -1399,7 +1420,7 @@ export type Database = {
           assessor_parcel_info?: Json | null
           completed_tasks?: number | null
           created_at?: string | null
-          created_by: string
+          created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           description?: string | null
@@ -1432,7 +1453,7 @@ export type Database = {
           assessor_parcel_info?: Json | null
           completed_tasks?: number | null
           created_at?: string | null
-          created_by?: string
+          created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           description?: string | null
@@ -1462,6 +1483,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "projects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "projects_new_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -1489,6 +1524,13 @@ export type Database = {
             referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "projects_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
         ]
       }
       tasks: {
@@ -1497,7 +1539,7 @@ export type Database = {
           assignees: string[] | null
           attached_files: string[] | null
           created_at: string | null
-          created_by: string
+          created_by: string | null
           deleted_at: string | null
           deleted_by: string | null
           description: string | null
@@ -1518,7 +1560,7 @@ export type Database = {
           assignees?: string[] | null
           attached_files?: string[] | null
           created_at?: string | null
-          created_by: string
+          created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           description?: string | null
@@ -1539,7 +1581,7 @@ export type Database = {
           assignees?: string[] | null
           attached_files?: string[] | null
           created_at?: string | null
-          created_by?: string
+          created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           description?: string | null
@@ -1556,6 +1598,20 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tasks_new_created_by_fkey"
             columns: ["created_by"]
@@ -1584,6 +1640,13 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "tasks_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
         ]
       }
       time_entries: {
@@ -1599,7 +1662,7 @@ export type Database = {
           short_id: string
           task_id: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -1613,7 +1676,7 @@ export type Database = {
           short_id?: string
           task_id?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -1627,7 +1690,7 @@ export type Database = {
           short_id?: string
           task_id?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -1813,7 +1876,7 @@ export type Database = {
           reply_to_message_id: string | null
           short_id: string
           updated_at: string
-          user_id: string
+          user_id: string | null
           workspace_id: string
         }
         Insert: {
@@ -1827,7 +1890,7 @@ export type Database = {
           reply_to_message_id?: string | null
           short_id?: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           workspace_id: string
         }
         Update: {
@@ -1841,7 +1904,7 @@ export type Database = {
           reply_to_message_id?: string | null
           short_id?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           workspace_id?: string
         }
         Relationships: [
@@ -1850,7 +1913,7 @@ export type Database = {
             columns: ["deleted_by"]
             isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["auth_id"]
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "workspace_chat_messages_user_id_fkey"
@@ -1878,7 +1941,7 @@ export type Database = {
           short_id: string
           storage_path: string
           updated_at: string | null
-          uploaded_by: string
+          uploaded_by: string | null
           version_number: number | null
           workspace_id: string
         }
@@ -1898,7 +1961,7 @@ export type Database = {
           short_id?: string
           storage_path: string
           updated_at?: string | null
-          uploaded_by: string
+          uploaded_by?: string | null
           version_number?: number | null
           workspace_id: string
         }
@@ -1918,11 +1981,18 @@ export type Database = {
           short_id?: string
           storage_path?: string
           updated_at?: string | null
-          uploaded_by?: string
+          uploaded_by?: string | null
           version_number?: number | null
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "workspace_files_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "workspace_files_uploaded_by_fkey"
             columns: ["uploaded_by"]
@@ -1942,7 +2012,7 @@ export type Database = {
       workspace_folders: {
         Row: {
           created_at: string | null
-          created_by: string
+          created_by: string | null
           deleted_at: string | null
           deleted_by: string | null
           id: string
@@ -1956,7 +2026,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          created_by: string
+          created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           id?: string
@@ -1970,7 +2040,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          created_by?: string
+          created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           id?: string
@@ -1986,6 +2056,13 @@ export type Database = {
           {
             foreignKeyName: "workspace_folders_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_folders_deleted_by_fkey"
+            columns: ["deleted_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
