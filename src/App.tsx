@@ -10,6 +10,7 @@ import { UpdateChecker } from "./components/UpdateChecker";
 import { useWorkspaceRole } from "./hooks/useWorkspaceRole";
 import { LoadingSpinner } from "./components/LoadingSpinner";
 import { supabase } from "@/integrations/supabase/client";
+import { useActivityTracker } from "./hooks/useActivityTracker";
 import AdminRouter from "./routers/AdminRouter";
 import TeamRouter from "./routers/TeamRouter";
 import ConsultantRouter from "./routers/ConsultantRouter";
@@ -28,6 +29,9 @@ function AppRouter() {
   const [routingReady, setRoutingReady] = useState(false);
   const [defaultWorkspaceLoading, setDefaultWorkspaceLoading] = useState(false);
   const [defaultWorkspaceFetched, setDefaultWorkspaceFetched] = useState(false);
+  
+  // Track user activity for online status
+  useActivityTracker();
   
   // Extract workspace ID from URL path - support both old and new formats
   const workspaceIdMatch = location.pathname.match(/\/(admin|team|consultant|client)\/workspace\/([^/]+)/) 
