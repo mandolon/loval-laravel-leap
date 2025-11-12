@@ -67,32 +67,23 @@ Deno.serve(async (req) => {
 
     const authId = userData?.auth_id;
 
-    // SIMPLIFIED DELETION: Keep all user-created content (projects, tasks, files, messages, etc.)
-    // Only delete user-specific records and the user itself
+    console.log('Deleting user record...');
     
-    console.log('Step 1: Deleting user-specific data (read receipts, memberships)...');
-    
-    // 1. Delete user-specific tracking data (not content)
-    await supabaseAdmin.from('chat_read_receipts').delete().eq('user_id', userId);
-    
-    // 2. Delete memberships (not the content they created)
-    await supabaseAdmin.from('project_members').delete().eq('user_id', userId);
-    await supabaseAdmin.from('workspace_members').delete().eq('user_id', userId);
+    // Delete main user record - database will handle the rest via SET NULL constraints
+    // All user content (projects, tasks, files, messages, etc.) will be preserved
+    // Memberships, preferences, and roles will cascade delete automatically
+    const { error: deleteError } = await supabaseAdmin
+      .from('users')
+      .delete()
+      .eq('id', userId);
 
-    console.log('Step 2: Deleting user metadata...');
-    
-    // 3. Delete user metadata
-    await supabaseAdmin.from('user_roles').delete().eq('user_id', userId);
-    await supabaseAdmin.from('user_preferences').delete().eq('user_id', userId);
+    if (deleteError) {
+      throw new Error(`Failed to delete user: ${deleteError.message}`);
+    }
 
-    console.log('Step 3: Deleting main user record...');
+    console.log('Deleting auth record...');
     
-    // 4. Delete main user record
-    await supabaseAdmin.from('users').delete().eq('id', userId);
-
-    console.log('Step 4: Deleting auth record...');
-    
-    // 5. Delete from auth.users if auth_id exists
+    // Delete from auth.users if auth_id exists
     if (authId) {
       try {
         await supabaseAdmin.auth.admin.deleteUser(authId);
