@@ -10,6 +10,8 @@ import { ChatFooter } from "@/components/chat/ChatFooter";
 import { QuickActions } from "@/components/chat/QuickActions";
 import { MessageList } from "@/components/chat/MessageList";
 import { NewChatInput } from "@/components/chat/NewChatInput";
+import { AIChatThreadsList } from "@/components/chat/AIChatThreadsList";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -23,6 +25,7 @@ export default function AIChatPage() {
   const [input, setInput] = useState("");
   const [threadId, setThreadId] = useState<string>("");
   const [selectedProject, setSelectedProject] = useState<string>("all");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   
   const { sendMessage, isLoading } = useAIChat(threadId, workspaceId || "", selectedProject === "all" ? "" : selectedProject);
@@ -194,8 +197,42 @@ export default function AIChatPage() {
   };
 
   return (
-    <div className="h-full w-full text-[12px] overflow-hidden pb-6 pr-1">
-      <div className="flex h-full flex-col">
+    <div className="h-full w-full text-[12px] overflow-hidden flex relative">
+      {/* Sidebar with chat threads */}
+      <div
+        className="transition-all duration-300 ease-out border-r border-slate-200 bg-white overflow-hidden flex-shrink-0"
+        style={{
+          width: sidebarCollapsed ? 0 : "240px",
+          opacity: sidebarCollapsed ? 0 : 1,
+        }}
+      >
+        <div className="h-full flex flex-col">
+          <div className="p-4 border-b border-slate-200">
+            <h3 className="text-sm font-semibold text-slate-900">AI Chats</h3>
+          </div>
+          <div className="flex-1 overflow-hidden">
+            <AIChatThreadsList workspaceId={workspaceId || ""} />
+          </div>
+        </div>
+      </div>
+
+      {/* Toggle button */}
+      <button
+        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+        className="absolute top-4 z-20 p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 transition-all duration-300 shadow-sm"
+        style={{
+          left: sidebarCollapsed ? '8px' : '248px',
+        }}
+      >
+        {sidebarCollapsed ? (
+          <ChevronRight className="h-4 w-4 text-slate-600" />
+        ) : (
+          <ChevronLeft className="h-4 w-4 text-slate-600" />
+        )}
+      </button>
+
+      {/* Main chat area */}
+      <div className="flex-1 flex flex-col min-w-0">
       {/* Center container for all chat content */}
       <div className="relative flex h-full flex-col overflow-hidden">
         

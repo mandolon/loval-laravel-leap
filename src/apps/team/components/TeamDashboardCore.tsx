@@ -679,6 +679,8 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
               <ChatView resetTrigger={chatResetTrigger} />
             ) : active === "home" ? (
               <HomeView />
+            ) : active === "ai" ? (
+              children
             ) : active === "settings" ? (
               children
             ) : null}

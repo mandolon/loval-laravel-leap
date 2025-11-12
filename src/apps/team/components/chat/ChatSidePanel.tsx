@@ -167,7 +167,8 @@ export function ChatSidePanel({
       });
   }, [projects, projectLatestMessages]);
 
-  const recentProjects = sortedProjects.slice(0, 6);
+  // Filter recent projects to only show those with messages
+  const recentProjects = sortedProjects.filter(p => p.latestMessageAt).slice(0, 6);
   const allProjects = sortedProjects;
 
   const formatAccessTime = (timestamp?: string) => {
