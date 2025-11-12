@@ -1,4 +1,7 @@
--- Create chat_read_receipts table to track which messages users have read
+-- Drop existing table if it exists
+DROP TABLE IF EXISTS public.chat_read_receipts CASCADE;
+
+-- Create fresh chat_read_receipts table
 CREATE TABLE public.chat_read_receipts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
@@ -16,30 +19,13 @@ CREATE TABLE public.chat_read_receipts (
   )
 );
 
--- Add indexes for performance
+-- Performance indexes
 CREATE INDEX idx_chat_read_receipts_user_workspace ON public.chat_read_receipts(user_id, workspace_id) WHERE workspace_id IS NOT NULL;
 CREATE INDEX idx_chat_read_receipts_user_project ON public.chat_read_receipts(user_id, project_id) WHERE project_id IS NOT NULL;
 CREATE UNIQUE INDEX idx_chat_read_receipts_user_workspace_unique ON public.chat_read_receipts(user_id, workspace_id) WHERE workspace_id IS NOT NULL;
 CREATE UNIQUE INDEX idx_chat_read_receipts_user_project_unique ON public.chat_read_receipts(user_id, project_id) WHERE project_id IS NOT NULL;
 
--- Enable RLS
-ALTER TABLE public.chat_read_receipts ENABLE ROW LEVEL SECURITY;
-
--- RLS policies
-CREATE POLICY "Users can view their own read receipts"
-ON public.chat_read_receipts FOR SELECT
-USING (auth.uid() = (SELECT auth_id FROM public.users WHERE id = user_id));
-
-CREATE POLICY "Users can insert their own read receipts"
-ON public.chat_read_receipts FOR INSERT
-WITH CHECK (auth.uid() = (SELECT auth_id FROM public.users WHERE id = user_id));
-
-CREATE POLICY "Users can update their own read receipts"
-ON public.chat_read_receipts FOR UPDATE
-USING (auth.uid() = (SELECT auth_id FROM public.users WHERE id = user_id))
-WITH CHECK (auth.uid() = (SELECT auth_id FROM public.users WHERE id = user_id));
-
--- Add trigger for updated_at
+-- Auto-update trigger
 CREATE TRIGGER update_chat_read_receipts_updated_at
 BEFORE UPDATE ON public.chat_read_receipts
 FOR EACH ROW
