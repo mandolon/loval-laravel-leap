@@ -16,6 +16,9 @@ export interface UserWithWorkspaces {
   isAdmin: boolean;
   title?: string;
   role: 'team' | 'consultant' | 'client' | null;
+  lastActiveAt?: string | null;
+  lastSignInAt?: string | null;
+  isOnline: boolean;
   workspaces: Array<{
     membershipId: string;
     workspaceId: string;
@@ -27,27 +30,29 @@ export const useUsers = () => {
   return useQuery({
     queryKey: ['users'],
     queryFn: async () => {
-      // Step 1: Fetch all active users with their roles
-      const { data: users, error: usersError } = await supabase
-        .from('users')
-        .select(`
-          id, 
-          name, 
-          email, 
-          avatar_url, 
-          is_admin, 
-          title,
-          user_roles(role)
-        `)
-        .is('deleted_at', null)
-        .order('name');
+      // Step 1: Call RPC to get users with auth data (last_sign_in_at, last_active_at)
+      const { data: usersWithAuth, error: usersError } = await supabase
+        .rpc('get_users_with_auth_data');
 
       if (usersError) throw usersError;
-      if (!users) return [];
+      if (!usersWithAuth) return [];
 
-      // Step 2: Fetch all workspace memberships for these users
-      const userIds = users.map(u => u.id);
-      
+      // Calculate online status (active within last 10 minutes)
+      const now = new Date();
+      const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
+
+      // Step 2: Fetch user roles for all users
+      const userIds = usersWithAuth.map((u: any) => u.id);
+      const { data: userRoles } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('user_id', userIds);
+
+      const rolesByUserId = new Map(
+        (userRoles || []).map((r: any) => [r.user_id, r.role])
+      );
+
+      // Step 3: Fetch all workspace memberships for these users
       let memberships: any[] = [];
       if (userIds.length > 0) {
         const { data: membershipsData, error: membershipsError } = await supabase
@@ -56,7 +61,6 @@ export const useUsers = () => {
           .in('user_id', userIds)
           .is('deleted_at', null);
 
-        // If membership query fails, log error but continue with empty memberships
         if (membershipsError) {
           console.error('Error fetching workspace memberships:', membershipsError);
         } else {
@@ -64,7 +68,7 @@ export const useUsers = () => {
         }
       }
 
-      // Step 3: Group memberships by user
+      // Step 4: Group memberships by user
       const membershipsByUser = new Map<string, Array<{
         membershipId: string;
         workspaceId: string;
@@ -82,17 +86,25 @@ export const useUsers = () => {
         });
       });
 
-      // Step 4: Combine user data with workspace assignments
-      return users.map(user => ({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        avatar_url: user.avatar_url,
-        isAdmin: user.is_admin,
-        title: user.title,
-        role: (user.user_roles as any)?.role || null,
-        workspaces: membershipsByUser.get(user.id) || [],
-      })) as UserWithWorkspaces[];
+      // Step 5: Combine all data with online status
+      return usersWithAuth.map((user: any) => {
+        const lastActiveAt = user.last_active_at ? new Date(user.last_active_at) : null;
+        const isOnline = lastActiveAt ? lastActiveAt >= tenMinutesAgo : false;
+
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          avatar_url: user.avatar_url,
+          isAdmin: user.is_admin,
+          title: user.title,
+          role: rolesByUserId.get(user.id) || null,
+          lastActiveAt: user.last_active_at,
+          lastSignInAt: user.last_sign_in_at,
+          isOnline,
+          workspaces: membershipsByUser.get(user.id) || [],
+        };
+      }) as UserWithWorkspaces[];
     },
   });
 };

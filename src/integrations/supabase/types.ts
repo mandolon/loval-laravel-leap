@@ -2153,6 +2153,19 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_users_with_auth_data: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          email: string
+          id: string
+          is_admin: boolean
+          last_active_at: string
+          last_sign_in_at: string
+          name: string
+          title: string
+        }[]
+      }
       is_workspace_member: {
         Args: { _user_id: string; _workspace_id: string }
         Returns: boolean

@@ -31,6 +31,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Users, Check, X, Pencil, RotateCcw } from "lucide-react";
+import { formatDistanceToNow, format } from 'date-fns';
 import { useUser } from "@/contexts/UserContext";
 import { AddUserDialog } from "@/components/AddUserDialog";
 import { AddUserToWorkspaceDialog } from "@/components/AddUserToWorkspaceDialog";
@@ -275,6 +276,7 @@ const TeamPage = () => {
                       <TableHead>Role</TableHead>
                       <TableHead>Title</TableHead>
                       <TableHead>Email</TableHead>
+                      <TableHead>Last Sign In</TableHead>
                       <TableHead>Workspaces</TableHead>
                       <TableHead>Admin Status</TableHead>
                       <TableHead>Status</TableHead>
@@ -356,6 +358,15 @@ const TeamPage = () => {
                           )}
                         </TableCell>
                         <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {user.lastSignInAt ? (
+                            <span title={format(new Date(user.lastSignInAt), 'PPpp')}>
+                              {formatDistanceToNow(new Date(user.lastSignInAt), { addSuffix: true })}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">Never</span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           {user.workspaces && user.workspaces.length > 0 ? (
                             <div className="flex flex-wrap gap-1">
@@ -380,7 +391,12 @@ const TeamPage = () => {
                           </Button>
                         </TableCell>
                         <TableCell>
-                          <span className="text-sm text-green-600">Active</span>
+                          <div className="flex items-center gap-2">
+                            <div className={`h-2 w-2 rounded-full ${user.isOnline ? 'bg-green-500' : 'bg-gray-300'}`} />
+                            <span className={`text-sm ${user.isOnline ? 'text-green-600' : 'text-muted-foreground'}`}>
+                              {user.isOnline ? 'Online' : 'Offline'}
+                            </span>
+                          </div>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
