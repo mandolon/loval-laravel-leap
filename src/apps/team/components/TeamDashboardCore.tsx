@@ -405,13 +405,16 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
     
     const project = userProjects.find((p: any) => p.id === urlProjectId);
     if (project && selected?.item !== project.name) {
+      // Sync the selected state with URL when projectId changes
       setSelected({ tab: 'projects', item: project.name });
     }
-  }, [urlProjectId, userProjects, active, selected?.item]);
+  }, [urlProjectId, userProjects, active]);
 
-  // Update URL when project selection changes
+  // Update URL when project selection changes (skip if we're on info tab to avoid conflicts)
   useEffect(() => {
     if (active !== 'projects' || !selected?.item) return;
+    // Skip URL updates when on info tab - ProjectInfoNavigation handles those
+    if (projectPanelTab === 'info') return;
     
     const project = userProjects.find((p: any) => p.name === selected.item);
     if (project && urlProjectId !== project.id) {
@@ -421,7 +424,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
         return newParams;
       }, { replace: true });
     }
-  }, [selected?.item, userProjects, active, urlProjectId, setSearchParams]);
+  }, [selected?.item, userProjects, active, urlProjectId, setSearchParams, projectPanelTab]);
 
   // Update URL when file selection changes
   useEffect(() => {

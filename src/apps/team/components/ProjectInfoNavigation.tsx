@@ -80,7 +80,20 @@ export function ProjectInfoNavigation({ projectId, workspaceId, onClose }: Proje
     
     // Stay on the same info section when switching projects
     const currentSection = searchParams.get('infoSection') || 'project-profile';
-    navigate(`/team/${workspaceId}/project/${selectedProjectId}?tab=info&infoSection=${currentSection}`);
+    
+    // Find the selected project to get its name
+    const selectedProject = projects.find((p: any) => p.id === selectedProjectId);
+    if (!selectedProject) return;
+    
+    // Update URL params to switch project while staying on info tab
+    // Use replace to avoid adding to history and batch the update
+    setSearchParams(prev => {
+      const params = new URLSearchParams(prev);
+      params.set('projectId', selectedProjectId);
+      params.set('projectTab', 'info');
+      params.set('infoSection', currentSection);
+      return params;
+    }, { replace: true });
   };
 
   // Close selector when clicking outside
