@@ -103,10 +103,6 @@ export default function AuthPage() {
       if (signInError) {
         setError(signInError.message);
       } else {
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully signed in.",
-        });
         navigate("/");
       }
     } catch (err) {
