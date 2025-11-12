@@ -192,7 +192,7 @@ const ITEMS_CONFIG = {
 // Root App
 // ----------------------------------
 export default function RehomeDoubleSidebar({ children }: { children?: React.ReactNode }) {
-  const [active, setActive] = useState("tasks");
+  const [active, setActive] = useState("home");
   const [openTab, setOpenTab] = useState<string | null>(null);
   const [selected, setSelected] = useState<{ tab: string; item: string } | null>(null);
   const [railCollapsed, setRailCollapsed] = useState(false);
