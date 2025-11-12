@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
-import { useToast } from '@/hooks/use-toast'
-import { handleApiError } from '../errors'
+import { toast } from 'sonner'
 
 export interface Note {
   id: string
@@ -60,7 +59,6 @@ export const useNotes = (projectId: string) => {
 
 // Create note
 export const useCreateNote = (projectId: string) => {
-  const { toast } = useToast()
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -92,24 +90,15 @@ export const useCreateNote = (projectId: string) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: noteKeys.list(projectId) })
-      toast({
-        title: 'Note created',
-        description: 'Your note has been saved',
-      })
     },
     onError: (error) => {
-      toast({
-        title: 'Failed to create note',
-        description: handleApiError(error),
-        variant: 'destructive',
-      })
+      console.error('Failed to create note:', error)
     },
   })
 }
 
 // Update note
 export const useUpdateNote = (projectId: string) => {
-  const { toast } = useToast()
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -144,24 +133,15 @@ export const useUpdateNote = (projectId: string) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: noteKeys.list(projectId) })
-      toast({
-        title: 'Note updated',
-        description: 'Your changes have been saved',
-      })
     },
     onError: (error) => {
-      toast({
-        title: 'Failed to update note',
-        description: handleApiError(error),
-        variant: 'destructive',
-      })
+      console.error('Failed to update note:', error)
     },
   })
 }
 
 // Delete note (soft delete)
 export const useDeleteNote = (projectId: string) => {
-  const { toast } = useToast()
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -189,17 +169,11 @@ export const useDeleteNote = (projectId: string) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: noteKeys.list(projectId) })
-      toast({
-        title: 'Note deleted',
-        description: 'Your note has been removed',
-      })
+      toast.success('Note deleted')
     },
     onError: (error) => {
-      toast({
-        title: 'Failed to delete note',
-        description: handleApiError(error),
-        variant: 'destructive',
-      })
+      console.error('Failed to delete note:', error)
+      toast.error('Failed to delete note')
     },
   })
 }

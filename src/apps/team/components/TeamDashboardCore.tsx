@@ -130,6 +130,7 @@ interface PageHeaderProps {
   selected?: { tab: string; item: string } | null;
   projectPanelCollapsed?: boolean;
   onToggleProjectPanel?: () => void;
+  projectName?: string;
 }
 
 interface TabsRowProps {
@@ -219,6 +220,8 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
       setActive('settings');
     } else if (path.includes('/chat')) {
       setActive('chat');
+    } else if (path.includes('/home')) {
+      setActive('home');
     } else if (path.includes('/projects')) {
       setActive('projects');
     } else if (path.includes('/tasks')) {
@@ -228,7 +231,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
     } else if (path.includes('/detail-library')) {
       setActive('details');
     } else if (path.endsWith(`/workspace/${currentWorkspaceId}`)) {
-      setActive('tasks');
+      setActive('home');
     }
   }, [location.pathname, currentWorkspaceId]);
 
@@ -472,6 +475,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
               selected={selected}
               projectPanelCollapsed={projectPanelCollapsed}
               onToggleProjectPanel={() => setProjectPanelCollapsed(!projectPanelCollapsed)}
+              projectName={active === "projects" && selected?.item ? selected.item : undefined}
             />
           )}
 
@@ -741,7 +745,7 @@ const RailItem = memo(function RailItem({
 
   return (
     <div
-      className="relative z-40 flex flex-col items-center gap-2.5 mb-2.5 group/nav"
+      className="relative z-40 flex flex-col items-center gap-1 mb-4 group/nav"
       ref={containerRef}
     >
       <button
@@ -1056,8 +1060,13 @@ const SettingsRailItem = memo(function SettingsRailItem({
       <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
         <DropdownMenuTrigger asChild>
           <button
-            className="w-12 min-h-[44px] px-1 py-1.5 text-center text-[11px] leading-tight text-white/90 hover:text-white/100 transition-all cursor-pointer truncate rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 touch-manipulation"
-            style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
+            className="w-12 px-1 text-center text-[11px] leading-tight text-white/90 hover:text-white/100 transition-all cursor-pointer truncate rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 touch-manipulation"
+            style={{ 
+              WebkitTapHighlightColor: 'transparent', 
+              touchAction: 'manipulation',
+              height: '28px',
+              padding: '0 4px'
+            }}
             title={currentWorkspace?.name || "Switch workspace"}
           >
             {currentWorkspace?.name || "Workspace"}
@@ -1444,7 +1453,8 @@ const PageHeader = memo(function PageHeader({
   title, 
   selected, 
   projectPanelCollapsed, 
-  onToggleProjectPanel 
+  onToggleProjectPanel,
+  projectName 
 }: PageHeaderProps) {
   const Icon = ICON_MAP[tabKey] || Home;
   const showCollapseButton = tabKey === "projects" && selected?.tab === "projects";
@@ -1458,6 +1468,12 @@ const PageHeader = memo(function PageHeader({
           </div>
           <span className="truncate text-[#202020] text-[15px] font-medium">
             {title}
+            {projectName && (
+              <>
+                <span className="mx-2 text-slate-400">—</span>
+                <span className="truncate" title={projectName}>{projectName}</span>
+              </>
+            )}
           </span>
         </div>
         <div className="flex items-center gap-2">

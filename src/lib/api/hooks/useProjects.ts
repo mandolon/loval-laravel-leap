@@ -260,9 +260,18 @@ export const useUpdateProject = (workspaceId: string) => {
 
   return useMutation({
     mutationFn: async ({ id, input }: { id: string; input: UpdateProjectInput }) => {
-      const { data: user } = await supabase.auth.getUser();
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) throw new Error('Not authenticated');
+
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', userData.user.id)
+        .single();
+
+      if (!userProfile) throw new Error('User profile not found');
       
-      const updateData: any = { updated_by: user.user?.id };
+      const updateData: any = { updated_by: userProfile.id };
       if (input.name !== undefined) updateData.name = input.name;
       if (input.description !== undefined) updateData.description = input.description;
       if (input.status !== undefined) updateData.status = input.status;

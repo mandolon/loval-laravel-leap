@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Search, MoreHorizontal } from "lucide-react";
+import { Search, MoreHorizontal, User, Move } from "lucide-react";
 import { useNotes, useCreateNote, useUpdateNote, useDeleteNote } from "@/lib/api/hooks/useNotes";
 import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -279,11 +279,13 @@ export function ProjectNotes({ projectId, workspaceId }: ProjectNotesProps) {
 
   const openMenuAtButton = (btn: HTMLElement) => {
     const rect = btn.getBoundingClientRect();
-    setMenu({ open: true, x: rect.left, y: rect.bottom + 4 });
+    // Position menu to the left of the button, aligned with its top
+    setMenu({ open: true, x: rect.left - 165, y: rect.top - 5 });
   };
 
   const onListContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setMenu({ open: true, x: e.clientX, y: e.clientY });
   };
 
@@ -345,7 +347,7 @@ export function ProjectNotes({ projectId, workspaceId }: ProjectNotesProps) {
       {/* Left Sidebar */}
       <div style={{ width: sidebarW }} className="flex flex-col border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shrink-0">
         {/* Header */}
-        <div data-testid="notes-sidebar-header" className="h-14 px-3 flex items-center justify-between border-b border-slate-200 dark:border-slate-700 shrink-0">
+        <div data-testid="notes-sidebar-header" className="h-10 px-3 flex items-center justify-between border-b border-slate-200 dark:border-slate-700 shrink-0">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             {!showSearch ? (
               <h2 className="text-[15px] font-semibold text-slate-900 dark:text-slate-100 truncate">Notes</h2>
@@ -381,8 +383,19 @@ export function ProjectNotes({ projectId, workspaceId }: ProjectNotesProps) {
                 data-testid="date-item"
                 onClick={() => selectNote(note.id)}
                 onContextMenu={onListContextMenu}
-                className={`flex items-center justify-between gap-2 pl-0 pr-2 py-2 rounded-[10px] cursor-pointer transition-colors ${
-                  activeNoteId === note.id ? 'bg-gray-100 dark:bg-slate-800' : 'hover:bg-gray-50 dark:hover:bg-slate-800/50'
+                style={activeNoteId !== note.id ? { transition: 'background-color 0.2s' } : undefined}
+                onMouseEnter={(e) => {
+                  if (activeNoteId !== note.id) {
+                    e.currentTarget.style.backgroundColor = '#F5F5F5';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeNoteId !== note.id) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
+                }}
+                className={`flex items-center justify-between gap-2 pl-0 pr-2 py-2 rounded-[10px] cursor-pointer ${
+                  activeNoteId === note.id ? 'bg-gray-100 dark:bg-slate-800' : ''
                 }`}
               >
                 <div
@@ -428,38 +441,46 @@ export function ProjectNotes({ projectId, workspaceId }: ProjectNotesProps) {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-white dark:bg-slate-900">
         {activeNoteId ? (
           <>
-            <div data-testid="notes-main-scroll" className="flex-1 overflow-y-auto px-8 py-6">
-              <div className="text-[13px] text-gray-500 dark:text-slate-400 flex items-center gap-1 mb-4">
-                <ChainIcon className="text-gray-500 dark:text-slate-400" />
-                <span className="hover:underline cursor-pointer">Link Task or Doc</span>
-              </div>
-
-              <div
-                ref={titleRef}
-                contentEditable
-                suppressContentEditableWarning
-                onKeyDown={onTitleKeyDown}
-                onBlur={commitRename}
-                className="text-[34px] font-semibold text-slate-900 dark:text-slate-100 mb-4 outline-none"
-              >
-                {noteTitle}
-              </div>
-
-              {createdByUser && (
-                <div className="text-[12px] text-slate-500 dark:text-slate-400 mb-6 flex items-center gap-2">
-                  <span>Created by {createdByUser.name}</span>
-                  <span className="mx-1">•</span>
-                  <span>Last updated {new Date(lastUpdated).toLocaleDateString()} at {new Date(lastUpdated).toLocaleTimeString()}</span>
+            <div data-testid="notes-main-scroll" className="flex-1 overflow-y-auto px-8 py-6 flex justify-center">
+              <div className="w-full max-w-3xl">
+                <div className="text-[13px] text-gray-500 dark:text-slate-400 flex items-center gap-1 mb-4 mt-8">
+                  <Move className="w-4 h-4 text-gray-500 dark:text-slate-400" />
+                  <span className="hover:underline cursor-pointer" style={{ fontWeight: 500 }}>Link Task or Doc</span>
                 </div>
-              )}
 
-              <div
-                ref={editableRef}
-                contentEditable
-                onInput={handleInput}
-                className="text-[15.5px] leading-7 text-slate-800 dark:text-slate-200 outline-none"
-                style={{ minHeight: '480px' }}
-              />
+                <div
+                  ref={titleRef}
+                  contentEditable
+                  suppressContentEditableWarning
+                  onKeyDown={onTitleKeyDown}
+                  onBlur={commitRename}
+                  className="text-[34px] font-semibold text-slate-900 dark:text-slate-100 mb-6 outline-none"
+                >
+                  {noteTitle}
+                </div>
+
+                {createdByUser && (
+                  <div className="text-[12px] mb-6 flex items-center gap-2" style={{ color: '#202020' }}>
+                    <User className="h-3.5 w-3.5" />
+                    <span><span style={{ fontWeight: 500 }}>Created by:</span> {createdByUser.name}</span>
+                    <span className="mx-1">•</span>
+                    <span>Last updated: <span style={{ fontWeight: 500 }}>{new Date(lastUpdated).toLocaleDateString()} at {new Date(lastUpdated).toLocaleTimeString()}</span></span>
+                  </div>
+                )}
+
+                <div
+                  ref={editableRef}
+                  contentEditable
+                  onInput={handleInput}
+                  className="outline-none [&_*]:text-[15.5px] [&_*]:leading-7"
+                  style={{ 
+                    minHeight: '480px',
+                    fontSize: '15.5px !important',
+                    lineHeight: '1.75rem',
+                    color: '#1e293b'
+                  }}
+                />
+              </div>
             </div>
           </>
         ) : (

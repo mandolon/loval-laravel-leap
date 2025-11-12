@@ -1,7 +1,9 @@
-import { useState, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Trash2, FileText, Map, User, Receipt, Users, Activity as ActivityIcon, FileEdit } from 'lucide-react';
-import { useHardDeleteProject } from '@/lib/api/hooks/useProjects';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Trash2, FileText, Map, User, Receipt, Users, Activity as ActivityIcon, FileEdit, ChevronDown } from 'lucide-react';
+import { PanelHeaderBar } from './ProjectPanel';
+import { colors, componentText } from './ProjectPanelTheme';
+import { useHardDeleteProject, useProjects, useProject } from '@/lib/api/hooks/useProjects';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,9 +41,16 @@ interface ProjectInfoNavigationProps {
 
 export function ProjectInfoNavigation({ projectId, workspaceId, onClose }: ProjectInfoNavigationProps) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const activeSection = searchParams.get('infoSection') || 'project-profile';
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [selectorOpen, setSelectorOpen] = useState(false);
+  const selectorRef = useRef<HTMLDivElement>(null);
   const deleteProject = useHardDeleteProject(workspaceId);
+  
+  // Fetch current project and all projects
+  const { data: currentProject } = useProject(projectId);
+  const { data: projects = [] } = useProjects(workspaceId);
 
   const handleSectionChange = useCallback((sectionId: string) => {
     setSearchParams(prev => {
@@ -61,14 +70,115 @@ export function ProjectInfoNavigation({ projectId, workspaceId, onClose }: Proje
     }
   };
 
+  const handleProjectSelect = (selectedProjectId: string) => {
+    setSelectorOpen(false);
+    
+    // If selecting the same project, just close the dropdown
+    if (selectedProjectId === projectId) {
+      return;
+    }
+    
+    // Stay on the same info section when switching projects
+    const currentSection = searchParams.get('infoSection') || 'project-profile';
+    navigate(`/team/${workspaceId}/project/${selectedProjectId}?tab=info&infoSection=${currentSection}`);
+  };
+
+  // Close selector when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (selectorRef.current && !selectorRef.current.contains(event.target as Node)) {
+        setSelectorOpen(false);
+      }
+    };
+
+    if (selectorOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [selectorOpen]);
+
   return (
     <>
-      <aside className="w-full h-full shrink-0 bg-white/80 backdrop-blur-sm flex flex-col">
-        <div className="flex-1 pt-3 pb-2 text-[11px] overflow-auto">
+      <div className="h-full w-full overflow-y-auto no-scrollbar text-[11px] bg-white flex flex-col">
+        {/* Project Selector Container - using design tokens */}
+        <PanelHeaderBar>
+          <div className="relative flex-1" ref={selectorRef}>
+            <button
+              onClick={() => setSelectorOpen(!selectorOpen)}
+              className="w-full h-7 pr-2 rounded-[6px] flex items-center justify-start cursor-pointer focus:outline-none transition-all"
+              style={{
+                backgroundColor: colors.bg.input,
+                border: `1px solid ${colors.border.input}`,
+                color: '#9CA3AF',
+                fontSize: '10px !important' as any,
+                paddingLeft: '32px',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = colors.border.input;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = colors.border.input;
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = '#F59E0B';
+                e.currentTarget.style.boxShadow = '0 0 0 3px #F59E0B15';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = colors.border.input;
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              <span className="truncate" style={{ fontSize: '11px' }}>{currentProject?.name || 'Select Project'}</span>
+            </button>
+            <ChevronDown 
+              className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none transition-transform" 
+              style={{ 
+                color: '#9CA3AF',
+                transform: selectorOpen ? 'translateY(-50%) rotate(180deg)' : 'translateY(-50%)'
+              }}
+            />
+            
+            {/* Project Selector Popover */}
+            {selectorOpen && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto" style={{ border: '1px solid #E5E7EB' }}>
+                {projects.length === 0 ? (
+                  <div className="px-3 py-2 text-[11px] text-slate-500 text-center">
+                    No projects available
+                  </div>
+                ) : (
+                  projects.map((project: any) => (
+                    <button
+                      key={project.id}
+                      onClick={() => handleProjectSelect(project.id)}
+                      className="w-full px-3 py-2 text-left text-[11px] transition-colors"
+                      style={{
+                        backgroundColor: 'transparent',
+                        color: '#0F172A',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#F5F5F5';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      <div className="truncate">{project.name}</div>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        </PanelHeaderBar>
+        
+        <div className="flex-1 pt-1.5 pb-2 text-[11px] overflow-auto">
           {menuGroups.map((g, idx) => (
-            <div key={g.id} className="mb-3">
-              <div className="px-3 py-1 text-slate-900 tracking-wide">{g.title}</div>
-              <div className="px-2 flex flex-col gap-1">
+            <div key={g.id} className="px-2.5">
+              {/* Section Header - using design tokens */}
+              <div className={`flex items-center gap-1 py-[2px] px-1 select-none bg-${colors.bg.section} rounded-lg mb-1`}>
+                <span className={componentText.sectionHeader.className}>{g.title}</span>
+              </div>
+              <div className="mt-1 flex flex-col gap-1">
                 {g.items.map((it) => {
                   const active = activeSection === it.id;
                   const IconComp = it.icon;
@@ -77,7 +187,7 @@ export function ProjectInfoNavigation({ projectId, workspaceId, onClose }: Proje
                       key={it.id} 
                       onClick={() => handleSectionChange(it.id)} 
                       className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[13px] ${
-                        active ? "bg-[#E7F0FF] text-slate-900" : "hover:bg-slate-100 text-slate-900"
+                        active ? "bg-[#F5F5F5] text-slate-900" : "hover:bg-[#F9FAFB] text-slate-900"
                       }`}
                     >
                       <IconComp className="h-4 w-4 text-slate-600" />
@@ -86,12 +196,12 @@ export function ProjectInfoNavigation({ projectId, workspaceId, onClose }: Proje
                   );
                 })}
               </div>
-              {idx < menuGroups.length - 1 && <div className="my-2 h-px bg-slate-200" />}
+              {idx < menuGroups.length - 1 && <div className="mt-2 mb-1 mx-2.5 h-px bg-slate-200" />}
             </div>
           ))}
         </div>
         
-        <div className="mt-auto p-2 border-t border-slate-200">
+        <div className="mt-auto p-2.5 border-t border-slate-200">
           <button 
             onClick={() => setDeleteConfirmOpen(true)}
             className="w-full flex items-center justify-start gap-2 px-2 py-1.5 rounded-lg text-[13px] hover:bg-red-50 text-red-600"
@@ -100,7 +210,7 @@ export function ProjectInfoNavigation({ projectId, workspaceId, onClose }: Proje
             <span>Delete project</span>
           </button>
         </div>
-      </aside>
+      </div>
 
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>

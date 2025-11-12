@@ -58,7 +58,7 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
       setActiveTab('tasks');
     } else if (path.includes('/projects') || path.includes('/project/')) {
       setActiveTab('workspace');
-    } else if (path === '/' || path.includes('/workspace/')) {
+    } else if (path === '/' || (path.includes('/workspace/') && !path.match(/\/workspace\/[^\/]+\/\w+/))) {
       setActiveTab('home');
     }
   }, [location.pathname]);
@@ -345,15 +345,22 @@ export function NewAppSidebar({ onWorkspaceChange }: NewAppSidebarProps) {
             to={item.path}
             title={item.label}
           >
-            <button
-              className={`h-10 w-10 flex items-center justify-center ${T.radiusSmall} transition-colors ${T.focus} ${
-                activeTab === item.id 
-                  ? 'bg-slate-100 dark:bg-[#141C28] text-[#00639b] dark:text-blue-300' 
-                  : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28]/60'
-              }`}
-            >
-              <item.icon className="h-5 w-5" />
-            </button>
+            <div className="flex flex-col items-center gap-0.5">
+              <button
+                className={`h-10 w-10 flex items-center justify-center ${T.radiusSmall} transition-colors ${T.focus} ${
+                  activeTab === item.id 
+                    ? 'bg-slate-100 dark:bg-[#141C28] text-[#00639b] dark:text-blue-300' 
+                    : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-[#141C28]/60'
+                }`}
+              >
+                <item.icon className="h-5 w-5" />
+              </button>
+              {!isCollapsed && (
+                <span className={`text-[9px] ${activeTab === item.id ? 'text-[#00639b] dark:text-blue-300' : 'text-slate-500 dark:text-neutral-400'}`}>
+                  {item.label}
+                </span>
+              )}
+            </div>
           </NavLink>
         ))}
       </div>

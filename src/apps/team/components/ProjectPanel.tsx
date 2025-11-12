@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { ProjectInfoNavigation } from './ProjectInfoNavigation';
+import { theme, SOFT_SQUARE, radius, shadows, typography } from './ProjectPanelTheme';
 
 /**
  * PROJECT PANEL — Files & Whiteboards now share identical interaction rules
@@ -25,8 +26,6 @@ import { ProjectInfoNavigation } from './ProjectInfoNavigation';
  * Still: selecting a page opens Properties inline (no tab switch)
  */
 
-const SOFT_SQUARE = 12;
-
 // Hide scrollbars
 const HiddenScrollCSS = () => (
   <style>{`
@@ -35,18 +34,40 @@ const HiddenScrollCSS = () => (
   `}</style>
 );
 
-// Small soft square (filled/dashed) used by folders/versions
+// Modern soft square component with theme colors
 const SoftSquare = forwardRef(function SoftSquare(
-  { filled = false, dashed = false }: { filled?: boolean; dashed?: boolean },
+  { filled = false, dashed = false, color = 'files' }: { filled?: boolean; dashed?: boolean; color?: 'files' | 'whiteboards' },
   ref: any
 ) {
+  const baseColor = color === 'whiteboards' ? theme.whiteboards : theme.files;
+  
+  if (dashed) {
+    return (
+      <span
+        ref={ref}
+        className="inline-block align-middle border border-dashed"
+        style={{
+          width: SOFT_SQUARE,
+          height: SOFT_SQUARE,
+          borderColor: theme.border.input,
+          borderRadius: radius.sm,
+        }}
+      />
+    );
+  }
+  
   return (
     <span
       ref={ref}
-      className={`inline-block rounded-[4px] align-middle ${
-        dashed ? "border border-dashed border-slate-500" : filled ? "bg-[#4C75D1] opacity-70" : "border border-slate-400"
-      }`}
-      style={{ width: SOFT_SQUARE, height: SOFT_SQUARE, boxShadow: filled ? "inset 0 0 0 1px rgba(0,0,0,.28)" : undefined }}
+      className="inline-block align-middle"
+      style={{
+        width: SOFT_SQUARE,
+        height: SOFT_SQUARE,
+        borderRadius: radius.sm,
+        backgroundColor: filled ? baseColor : `${baseColor}15`,
+        border: filled ? 'none' : `1px solid ${baseColor}40`,
+        boxShadow: filled ? `inset 0 0 0 1px ${baseColor}30` : 'none',
+      }}
     />
   );
 });
@@ -75,6 +96,43 @@ function nextNewVersionName(existingTitles: string[]) {
   return `${base} (${n})`;
 }
 
+// Modern panel styling with theme (compact spacing)
+const panelStyles = {
+  header: {
+    position: 'sticky' as const,
+    top: 0,
+    zIndex: 10,
+    height: '36px',
+    padding: '0 10px',
+    borderBottom: `1px solid ${theme.border.default}`,
+    backgroundColor: theme.bg.header,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  input: {
+    width: '100%',
+    height: '28px',
+    padding: '0 8px 0 32px',
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.normal,
+    backgroundColor: theme.bg.input,
+    border: `1px solid ${theme.border.input}`,
+    borderRadius: radius.sm,
+    outline: 'none',
+    transition: 'all 0.2s',
+    color: theme.text.primary,
+  },
+};
+
+export function PanelHeaderBar({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={panelStyles.header}>
+      {children}
+    </div>
+  );
+}
+
 // Collapsible container with smooth animation
 function Expander({ isOpen, children }: { isOpen: boolean; children: React.ReactNode }) {
   const style = {
@@ -89,7 +147,7 @@ function Expander({ isOpen, children }: { isOpen: boolean; children: React.React
   );
 }
 
-// Clickable section row (folder/version)
+// Modern clickable section row (folder/version)
 function SectionHeader({
   title,
   open,
@@ -103,6 +161,7 @@ function SectionHeader({
   onDrop,
   icon,
   onUpload,
+  color = 'files',
 }: any) {
   const [editValue, setEditValue] = useState(title);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -120,7 +179,21 @@ function SectionHeader({
 
   return (
     <div
-      className={`group relative flex items-center gap-1 py-[2px] px-1 rounded-lg select-none ${editing ? "border border-blue-400" : "hover:bg-slate-100"}`}
+      className="group relative flex items-center select-none cursor-pointer"
+      style={{
+        gap: '8px',
+        padding: '4px 4px',
+        height: '28px',
+        borderRadius: radius.md,
+        backgroundColor: editing ? theme.bg.active : 'transparent',
+        transition: 'background-color 0.15s ease',
+      }}
+      onMouseEnter={(e) => {
+        if (!editing) e.currentTarget.style.backgroundColor = theme.bg.hover;
+      }}
+      onMouseLeave={(e) => {
+        if (!editing) e.currentTarget.style.backgroundColor = 'transparent';
+      }}
       onClick={onToggle}
       onContextMenu={onContextMenu}
       draggable={draggable}
@@ -133,7 +206,7 @@ function SectionHeader({
           {icon}
         </span>
       ) : (
-        <SoftSquare filled={!open} dashed={!!editing} />
+        <SoftSquare filled={!open} dashed={!!editing} color={color} />
       )}
       {editing ? (
         <input
@@ -144,11 +217,22 @@ function SectionHeader({
           onKeyDown={handleKeyDown}
           onBlur={() => onCommitEdit(editValue)}
           onClick={(e) => e.stopPropagation()}
-          className="w-full bg-transparent outline-none border-b border-slate-300 text-slate-800"
-          style={{ fontSize: 11 }}
+          style={{
+            width: '100%',
+            backgroundColor: 'transparent',
+            outline: 'none',
+            borderBottom: `2px solid ${theme.border.focus}`,
+            color: theme.text.primary,
+            fontSize: typography.size.sm,
+            fontWeight: typography.weight.medium,
+          }}
         />
       ) : (
-        <span className="text-[11px] font-medium text-slate-800">{title}</span>
+        <span style={{
+          fontSize: typography.size.sm,
+          fontWeight: typography.weight.semibold,
+          color: theme.text.primary,
+        }}>{title}</span>
       )}
       {onUpload ? (
         <button
@@ -156,7 +240,15 @@ function SectionHeader({
             e.stopPropagation();
             onUpload();
           }}
-          className="ml-auto hidden h-3.5 w-3.5 text-slate-400 group-hover:block hover:text-slate-600 transition-colors"
+          className="ml-auto hidden group-hover:block"
+          style={{
+            width: '20px',
+            height: '20px',
+            color: theme.text.muted,
+            transition: 'color 0.15s',
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = theme.text.primary}
+          onMouseLeave={(e) => e.currentTarget.style.color = theme.text.muted}
           title="Upload files to this folder"
         >
           <Plus className="h-3.5 w-3.5" />
@@ -181,6 +273,7 @@ function ItemRow({
   onDragOver,
   onDrop,
   dragOverPosition,
+  color = 'files',
 }: any) {
   const [editValue, setEditValue] = useState(item.name);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -195,12 +288,15 @@ function ItemRow({
     if (e.key === "Enter") onCommitEdit(editValue);
     else if (e.key === "Escape") onCommitEdit(item.name);
   };
+  
+  const itemColor = '#202020'; // Always use dark charcoal for text
 
   return (
     <div
       className={`group relative flex items-center gap-0.5 py-[2px] px-1 rounded-lg cursor-pointer select-none transition-colors border ${
-        selected ? "border-blue-400 ring-1 ring-blue-400/30 bg-slate-50" : "border-transparent hover:bg-slate-100"
+        selected ? "border-[#D1D5DB] ring-1 ring-[#D1D5DB]/30 bg-[#F3F4F6]" : "border-transparent hover:bg-[#F5F5F5]"
       }`}
+      style={{ height: '22px' }}
       onClick={onClick}
       onContextMenu={onContextMenu}
       draggable={draggable}
@@ -218,14 +314,14 @@ function ItemRow({
           onChange={(e) => setEditValue(e.target.value)}
           onKeyDown={handleKeyDown}
           onBlur={() => onCommitEdit(editValue)}
-          className="flex-1 bg-transparent outline-none border-b border-slate-300 text-slate-800"
-          style={{ fontSize: 11 }}
+          className="flex-1 bg-transparent outline-none border-b border-[#4C75D1]"
+          style={{ fontSize: 11, color: itemColor }}
         />
       ) : (
-        <span className="text-[11px] text-slate-800 truncate">{item.name}</span>
+        <span className="text-[11px] truncate group-hover:underline" style={{ color: itemColor, textUnderlineOffset: '3px' }}>{item.name}</span>
       )}
 
-      <MoreVertical className="ml-auto hidden h-3.5 w-3.5 text-slate-400 group-hover:block" />
+      <MoreVertical className="ml-auto hidden h-3.5 w-3.5 text-[#99a8b8] group-hover:block" />
 
       {dragOverPosition === "above" && <div className="absolute left-2 right-2 -top-[1px] h-[2px] bg-blue-400 rounded" />}
       {dragOverPosition === "below" && <div className="absolute left-2 right-2 -bottom-[1px] h-[2px] bg-blue-400 rounded" />}
@@ -514,8 +610,8 @@ export default function ProjectPanel({
   
   // Remove local measurement state - now controlled by parent
 
-  // Expanded/collapsed (whiteboards)
-  const [wbExpanded, setWbExpanded] = useState<any>({ v2: true, v15: true, v10: true });
+  // Expanded/collapsed (whiteboards) - all sections expanded by default
+  const [wbExpanded, setWbExpanded] = useState<any>({});
 
   // Drag & drop state (whiteboards)
   const [wbDragState, setWbDragState] = useState<any>(null);
@@ -927,7 +1023,7 @@ export default function ProjectPanel({
           <Expander isOpen={isOpen}>
             <div className="ml-3">
               {!query.trim() && items.length === 0 && (
-                <div className="group relative flex items-center gap-0.5 py-[2px] px-1 rounded-lg select-none text-slate-500/90">
+                <div className="group relative flex items-center gap-0.5 py-[2px] px-1 rounded-lg select-none text-[#99a8b8]">
                   <span className="inline-block" style={{ width: SOFT_SQUARE, height: SOFT_SQUARE }} />
                   <span className="text-[11px] italic">empty</span>
                 </div>
@@ -1052,7 +1148,7 @@ export default function ProjectPanel({
   // ---- Whiteboards: renderers ----
   const renderWbSection = (section: any, index: number) => {
     const { id, title } = section;
-    const isOpen = wbQuery.trim() ? true : !!wbExpanded[id];
+    const isOpen = wbQuery.trim() ? true : (wbExpanded[id] !== undefined ? wbExpanded[id] : true);
     const isEditing = wbEditing?.type === "section" && wbEditing?.list === id;
     const items = getWbFilteredPages(id);
 
@@ -1093,11 +1189,12 @@ export default function ProjectPanel({
                 projectId
               });
             }}
+            color="whiteboards"
           />
           <Expander isOpen={isOpen}>
             <div className="ml-3">
               {!wbQuery.trim() && items.length === 0 && (
-                <div className="group relative flex items-center gap-0.5 py-[2px] px-1 rounded-lg select-none text-slate-500/90">
+                <div className="group relative flex items-center gap-0.5 py-[2px] px-1 rounded-lg select-none text-[#99a8b8]">
                   <span className="inline-block" style={{ width: SOFT_SQUARE, height: SOFT_SQUARE }} />
                   <span className="text-[11px] italic">empty</span>
                 </div>
@@ -1134,6 +1231,7 @@ export default function ProjectPanel({
                     onDragOver={(e: any) => handleWbItemDragOver(id, idx, e)}
                     onDrop={(e: any) => handleWbItemDrop(id, idx, e)}
                     dragOverPosition={null}
+                    color="whiteboards"
                   />
                 );
               })}
@@ -1158,43 +1256,136 @@ export default function ProjectPanel({
     <div className="h-full w-full flex flex-col">
       <HiddenScrollCSS />
       
-      {/* Tab buttons header - always visible, part of normal flow */}
-      <div className="sticky top-0 z-10 h-10 px-2.5 border-b border-slate-200 bg-white flex items-center gap-2 shrink-0">
+      {/* Modern Tab Navigation */}
+      <div style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 20,
+        height: '40px',
+        padding: '0 10px',
+        borderBottom: `1px solid ${theme.border.default}`,
+        backgroundColor: theme.bg.header,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        flexShrink: 0,
+      }}>
         <button
-          className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "files" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"}`}
+          style={{
+            width: '28px',
+            height: '28px',
+            borderRadius: radius.md,
+            border: tab === "files" ? `1px solid ${theme.files}` : '1px solid rgba(229, 231, 235, 0.5)',
+            backgroundColor: tab === "files" ? theme.files : 'transparent',
+            display: 'grid',
+            placeItems: 'center',
+            transition: 'all 0.2s',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            if (tab !== "files") e.currentTarget.style.backgroundColor = `${theme.files}15`;
+          }}
+          onMouseLeave={(e) => {
+            if (tab !== "files") e.currentTarget.style.backgroundColor = 'transparent';
+          }}
           aria-label="Files"
           title="Files"
           onClick={() => handleTabChange("files")}
         >
-          <FolderClosed className="h-4 w-4 text-slate-700" />
+          <FolderClosed style={{
+            width: '16px',
+            height: '16px',
+            color: tab === "files" ? '#FFFFFF' : 'rgba(96, 165, 250, 0.5)',
+          }} />
         </button>
         <button
-          className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "whiteboards" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"}`}
+          style={{
+            width: '28px',
+            height: '28px',
+            borderRadius: radius.md,
+            border: tab === "whiteboards" ? `1px solid ${theme.whiteboards}` : '1px solid rgba(229, 231, 235, 0.5)',
+            backgroundColor: tab === "whiteboards" ? theme.whiteboards : 'transparent',
+            display: 'grid',
+            placeItems: 'center',
+            transition: 'all 0.2s',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            if (tab !== "whiteboards") e.currentTarget.style.backgroundColor = `${theme.whiteboards}15`;
+          }}
+          onMouseLeave={(e) => {
+            if (tab !== "whiteboards") e.currentTarget.style.backgroundColor = 'transparent';
+          }}
           aria-label="Whiteboards"
           title="Whiteboards"
           onClick={() => handleTabChange("whiteboards")}
         >
-          <BookOpen className="h-4 w-4 text-slate-700" />
+          <BookOpen style={{
+            width: '16px',
+            height: '16px',
+            color: tab === "whiteboards" ? '#FFFFFF' : 'rgba(167, 139, 250, 0.5)',
+          }} />
         </button>
         <button
-          className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "info" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"}`}
+          style={{
+            width: '28px',
+            height: '28px',
+            borderRadius: radius.md,
+            border: tab === "info" ? `1px solid ${theme.info}` : '1px solid rgba(229, 231, 235, 0.5)',
+            backgroundColor: tab === "info" ? theme.info : 'transparent',
+            display: 'grid',
+            placeItems: 'center',
+            transition: 'all 0.2s',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            if (tab !== "info") e.currentTarget.style.backgroundColor = `${theme.info}15`;
+          }}
+          onMouseLeave={(e) => {
+            if (tab !== "info") e.currentTarget.style.backgroundColor = 'transparent';
+          }}
           aria-label="Project Info"
           title="Project Info"
           onClick={() => handleTabChange("info")}
         >
-          <Info className="h-4 w-4 text-slate-700" />
+          <Info style={{
+            width: '16px',
+            height: '16px',
+            color: tab === "info" ? '#FFFFFF' : 'rgba(251, 191, 36, 0.5)',
+          }} />
         </button>
         <button
-          className={`h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity grid place-items-center border ${tab === "settings" ? "border-slate-500 bg-white" : "border-transparent hover:bg-slate-100"} ml-auto`}
+          style={{
+            width: '28px',
+            height: '28px',
+            borderRadius: radius.md,
+            border: tab === "settings" ? `1px solid ${theme.settings}` : '1px solid rgba(229, 231, 235, 0.5)',
+            backgroundColor: tab === "settings" ? theme.settings : 'transparent',
+            display: 'grid',
+            placeItems: 'center',
+            transition: 'all 0.2s',
+            cursor: 'pointer',
+            marginLeft: 'auto',
+          }}
+          onMouseEnter={(e) => {
+            if (tab !== "settings") e.currentTarget.style.backgroundColor = `${theme.settings}15`;
+          }}
+          onMouseLeave={(e) => {
+            if (tab !== "settings") e.currentTarget.style.backgroundColor = 'transparent';
+          }}
           aria-label="Project Settings"
           title="Project Settings"
           onClick={() => handleTabChange("settings")}
         >
-          <Settings2 className="h-4 w-4 text-slate-700" />
+          <Settings2 style={{
+            width: '16px',
+            height: '16px',
+            color: tab === "settings" ? '#FFFFFF' : 'rgba(52, 211, 153, 0.5)',
+          }} />
         </button>
       </div>
       
-      {/* Content area - flex-1 to take remaining height */}
+      {/* Modern Content Area */}
       <div className="flex-1 min-h-0 overflow-hidden">
         {tab === "info" ? (
           <ProjectInfoNavigation
@@ -1203,27 +1394,47 @@ export default function ProjectPanel({
             onClose={() => handleTabChange('files')}
           />
         ) : (
-          <div className="h-full w-full overflow-y-auto no-scrollbar text-[11px] bg-[#fcfcfc]">
+          <div className="h-full w-full overflow-y-auto no-scrollbar" style={{
+            fontSize: typography.size.sm,
+            backgroundColor: theme.bg.panel,
+          }}>
             {/* Files: search + tree */}
             {tab === "files" && (
           <>
             {(foldersLoading || filesLoading) ? (
-              <div className="px-2.5 py-4 text-[11px] text-slate-500 text-center">
+              <div className="px-2.5 py-4 text-[11px] text-[#6b7d8f] text-center">
                 Loading...
               </div>
             ) : (
               <>
-                <div className="sticky top-0 z-10 h-9 px-2.5 border-b border-slate-200 bg-[#fcfcfc] flex items-center gap-2">
+                <PanelHeaderBar>
                   <div className="relative flex-1">
                     <input
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
-                      placeholder="Search"
-                      className="w-full h-7 pl-6 pr-2 text-[11px] bg-white border border-slate-300 rounded-[6px] focus:outline-none"
+                      placeholder="Search Files"
+                      style={panelStyles.input}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = theme.files;
+                        e.target.style.boxShadow = `0 0 0 3px ${theme.files}15`;
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = theme.border.input;
+                        e.target.style.boxShadow = 'none';
+                      }}
                     />
-                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                    <Search style={{
+                      position: 'absolute',
+                      left: '12px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: '16px',
+                      height: '16px',
+                      color: theme.text.muted,
+                      pointerEvents: 'none',
+                    }} />
                   </div>
-                </div>
+                </PanelHeaderBar>
                 
                 {/* Hidden file input */}
                 <input
@@ -1236,13 +1447,24 @@ export default function ProjectPanel({
                 />
 
                 <div className="px-2.5 pt-1.5 pb-2" onDragEnd={handleItemDragEnd}>
-                  <SectionHeader
-                    title={projectName}
-                    open={true}
-                    onToggle={() => {}}
-                    onContextMenu={(e: any) => e.preventDefault()}
-                    icon={<FolderClosed className="h-3 w-3 text-slate-700" />}
-                  />
+                  {/* Modern section header */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '2px 4px',
+                    backgroundColor: theme.bg.section,
+                    borderRadius: radius.sm,
+                  }}>
+                    <span style={{
+                      fontSize: typography.size.sm,
+                      fontWeight: typography.weight.bold,
+                      color: theme.text.primary,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                    }}>Project Files</span>
+                  </div>
+                  
                   <div className="mt-1" onDragEnd={handleSectionDragEnd}>
                     {/* Sections above separator */}
                     {!query.trim() && separatorIndex >= 0 && sectionsAbove.map((s, idx) => renderSection(s, idx, true))}
@@ -1264,12 +1486,12 @@ export default function ProjectPanel({
                 {/* Context Menu (Files) */}
                 {menu.show && (
                   <div
-                    className="fixed z-50 w-40 rounded-md border border-slate-200 bg-white shadow-xl overflow-hidden"
+                    className="fixed z-50 w-40 rounded-md border border-[#e1e8ed] bg-white shadow-xl overflow-hidden"
                     style={{ left: menu.x, top: menu.y }}
                     onClick={(e) => e.stopPropagation()}
                   >
                     <button
-                      className="block w-full px-3 py-1.5 text-left text-[11px] text-slate-800 hover:bg-slate-100"
+                      className="block w-full px-3 py-1.5 text-left text-[11px] text-[#1a2332] hover:bg-[#f0f4f8] transition-colors"
                       onClick={() => {
                         if (!menu.target) return;
                         if (menu.target.type === "item") setEditing({ type: "item", list: menu.target.list, id: menu.target.id });
@@ -1281,7 +1503,7 @@ export default function ProjectPanel({
                     </button>
                     {menu.target?.type === "item" && (
                       <button
-                        className="block w-full px-3 py-1.5 text-left text-[11px] text-slate-800 hover:bg-slate-100 border-t border-slate-100"
+                        className="block w-full px-3 py-1.5 text-left text-[11px] text-[#1a2332] hover:bg-[#f0f4f8] border-t border-[#f0f4f8] transition-colors"
                         onClick={async () => {
                           if (!menu.target?.id) return;
                           const file = rawFiles.find(f => f.id === menu.target.id);
@@ -1308,7 +1530,7 @@ export default function ProjectPanel({
                     )}
                     {menu.target?.type === "section" && (
                       <button
-                        className="block w-full px-3 py-1.5 text-left text-[11px] text-slate-800 hover:bg-slate-100 border-t border-slate-100"
+                        className="block w-full px-3 py-1.5 text-left text-[11px] text-[#1a2332] hover:bg-[#f0f4f8] border-t border-[#f0f4f8] transition-colors"
                         onClick={() => {
                           if (!menu.target?.list) return;
                           handleUploadClick(menu.target.list);
@@ -1319,7 +1541,7 @@ export default function ProjectPanel({
                       </button>
                     )}
                     <button
-                      className="block w-full px-3 py-1.5 text-left text-[11px] text-red-600 hover:bg-red-50 border-t border-slate-100"
+                      className="block w-full px-3 py-1.5 text-left text-[11px] text-[#e63946] hover:bg-[#ffe5e7] border-t border-[#f0f4f8] transition-colors"
                       onClick={() => {
                         if (!menu.target) return;
                         if (menu.target.type === "item") {
@@ -1370,32 +1592,47 @@ export default function ProjectPanel({
         {/* Whiteboards: search + tree with full interactions */}
         {tab === "whiteboards" && (
           <>
-            <div className="sticky top-0 z-10 h-9 px-2.5 border-b border-slate-200 bg-[#fcfcfc] flex items-center">
-              <div className="w-full flex items-center gap-1">
-                {selectedWB && (
-                  <button
-                    onClick={() => setSelectedWB(null)}
-                    className="h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity border border-slate-300 bg-white grid place-items-center hover:bg-slate-50"
-                    aria-label="Back to whiteboards"
-                  >
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="m15 18-6-6 6-6" />
-                    </svg>
-                  </button>
-                )}
-                {!selectedWB && (
-                  <div className="relative flex-1">
-                    <input
-                      value={wbQuery}
-                      onChange={(e) => setWbQuery(e.target.value)}
-                      placeholder="Search whiteboards"
-                      className="w-full h-7 pl-6 pr-2 text-[11px] bg-white border border-slate-300 rounded-[6px] focus:outline-none"
-                    />
-                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                  </div>
-                )}
-              </div>
-            </div>
+            <PanelHeaderBar>
+              {selectedWB && (
+                <button
+                  onClick={() => setSelectedWB(null)}
+                  className="h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity border border-slate-300 bg-white grid place-items-center hover:bg-slate-50"
+                  aria-label="Back to whiteboards"
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="m15 18-6-6 6-6" />
+                  </svg>
+                </button>
+              )}
+              {!selectedWB && (
+                <div className="relative flex-1">
+                  <input
+                    value={wbQuery}
+                    onChange={(e) => setWbQuery(e.target.value)}
+                    placeholder="Search whiteboards"
+                    style={panelStyles.input}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = theme.whiteboards;
+                      e.target.style.boxShadow = `0 0 0 3px ${theme.whiteboards}15`;
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = theme.border.input;
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  />
+                  <Search style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    width: '16px',
+                    height: '16px',
+                    color: theme.text.muted,
+                    pointerEvents: 'none',
+                  }} />
+                </div>
+              )}
+            </PanelHeaderBar>
 
             {/* List view */}
             {wbLoading ? (
@@ -1425,17 +1662,24 @@ export default function ProjectPanel({
                   setWbMenu({ show: true, x: e.clientX, y: e.clientY, target: { type: "background" } });
                 }}
               >
-                <SectionHeader
-                  title="Whiteboards"
-                  open={true}
-                  onToggle={() => {}}
-                  onContextMenu={(e: any) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setWbMenu({ show: true, x: e.clientX, y: e.clientY, target: { type: "background" } });
-                  }}
-                  icon={<BookOpen className="h-3 w-3 text-slate-700" />}
-                />
+                {/* Modern Whiteboards section header */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '2px 4px',
+                  backgroundColor: theme.bg.section,
+                  borderRadius: radius.sm,
+                }}>
+                  <span style={{
+                    fontSize: typography.size.sm,
+                    fontWeight: typography.weight.bold,
+                    color: theme.text.primary,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                  }}>Whiteboards</span>
+                </div>
+                
                 <div className="mt-1" onDragEnd={handleWbSectionDragEnd}>
                   {(wbQuery ? filterSections(wbQuery, wbSections, wbPages) : wbSections).map((s, idx) => renderWbSection(s, idx))}
                 </div>
@@ -1445,7 +1689,7 @@ export default function ProjectPanel({
             {/* Context Menu (Whiteboards) */}
             {wbMenu.show && (
               <div
-                className="fixed z-50 w-44 rounded-md border border-slate-200 bg-white shadow-xl overflow-hidden"
+                className="fixed z-50 w-44 rounded-md border border-[#e1e8ed] bg-white shadow-xl overflow-hidden"
                 style={{ left: wbMenu.x, top: wbMenu.y }}
                 onClick={(e) => e.stopPropagation()}
               >
@@ -1453,7 +1697,7 @@ export default function ProjectPanel({
                 {wbMenu.target && wbMenu.target.type !== "background" && (
                   <>
                     <button
-                      className="block w-full px-3 py-1.5 text-left text-[11px] text-slate-800 hover:bg-slate-100"
+                      className="block w-full px-3 py-1.5 text-left text-[11px] text-[#1a2332] hover:bg-[#f0f4f8] transition-colors"
                       onClick={() => {
                         if (!wbMenu.target) return;
                         if (wbMenu.target.type === "item") {
@@ -1468,7 +1712,7 @@ export default function ProjectPanel({
                     </button>
                     {wbMenu.target?.type === "section" && (
                       <button
-                        className="block w-full px-3 py-1.5 text-left text-[11px] text-slate-800 hover:bg-slate-100 border-t border-slate-100"
+                        className="block w-full px-3 py-1.5 text-left text-[11px] text-[#1a2332] hover:bg-[#f0f4f8] border-t border-[#f0f4f8] transition-colors"
                         onClick={() => {
                           if (!wbMenu.target?.list) return;
                           createDrawingPage.mutate({ 
@@ -1482,7 +1726,7 @@ export default function ProjectPanel({
                       </button>
                     )}
                     <button
-                      className="block w-full px-3 py-1.5 text-left text-[11px] text-red-600 hover:bg-red-50 border-t border-slate-100"
+                      className="block w-full px-3 py-1.5 text-left text-[11px] text-[#e63946] hover:bg-[#ffe5e7] border-t border-[#f0f4f8] transition-colors"
                       onClick={() => {
                         if (!wbMenu.target) return;
                         
@@ -1521,7 +1765,7 @@ export default function ProjectPanel({
                 )}
                 {/* Show "New Version" for background clicks or always show at bottom */}
                 <button
-                  className={`block w-full px-3 py-1.5 text-left text-[11px] text-slate-800 hover:bg-slate-100 ${wbMenu.target && wbMenu.target.type !== "background" ? "border-t border-slate-100" : ""}`}
+                  className={`block w-full px-3 py-1.5 text-left text-[11px] text-[#1a2332] hover:bg-[#f0f4f8] transition-colors ${wbMenu.target && wbMenu.target.type !== "background" ? "border-t border-[#f0f4f8]" : ""}`}
                   onClick={() => {
                     if (!currentWorkspaceId) return;
                     
@@ -1680,7 +1924,7 @@ export default function ProjectPanel({
           <div className="px-2.5 pt-1.5 pb-2">
             <div className="space-y-4">
               <div>
-                <div className="text-[11px] font-medium text-slate-700 mb-2">Project Settings</div>
+                <div className="text-[13px] font-medium text-slate-700 mb-2">Project Settings</div>
                 <div className="text-[10px] text-slate-500 mb-4">{projectName}</div>
               </div>
               

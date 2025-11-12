@@ -190,7 +190,8 @@ export function WorkspaceSwitcher({ onWorkspaceChange }: WorkspaceSwitcherProps)
         <DropdownMenuTrigger asChild>
           <Button 
             variant="ghost" 
-            className="w-full justify-between gap-2 h-auto py-2 px-3 hover:bg-accent/30"
+            className="w-full justify-between gap-2 h-7 px-3 py-0 hover:bg-accent/30"
+            style={{ height: '28px', padding: '0 12px' }}
           >
             <span className="truncate text-xs">{currentWorkspace?.name || 'Select Workspace'}</span>
             <ChevronDown className="h-3 w-3 opacity-50 flex-shrink-0" />

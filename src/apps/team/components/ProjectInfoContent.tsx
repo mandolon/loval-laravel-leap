@@ -85,8 +85,8 @@ function TwoCol({
   children: React.ReactNode;
 }) {
   return (
-    <div className="p-4 md:p-6 text-slate-600">
-      <div className="grid gap-6 md:grid-cols-[270px_minmax(0,1fr)] items-start">
+    <div className="p-4 md:px-48 md:py-6 text-slate-600">
+      <div className="grid gap-6 md:grid-cols-[380px_minmax(0,1fr)] items-start">
         <div>
           <h1 className="text-slate-900 text-xl font-medium mb-1">{title}</h1>
           <p className="text-[13px]">{desc}</p>
@@ -175,19 +175,36 @@ function ProjectProfileContent({
     }
   };
 
+  const handleCancel = () => {
+    setFormData(backup.current);
+    setEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!editing) return;
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSave();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleCancel();
+    }
+  };
+
   return (
     <TwoCol 
       title="Project information" 
       desc="Core details about this project including address, status, phase, and a short summary."
     >
-      <EditBar
-        editing={editing}
-        onStart={() => { backup.current = formData; setEditing(true); }}
-        onCancel={() => { setFormData(backup.current); setEditing(false); }}
-        onSave={handleSave}
-      />
+      <div onKeyDown={handleKeyDown}>
+        <EditBar
+          editing={editing}
+          onStart={() => { backup.current = formData; setEditing(true); }}
+          onCancel={handleCancel}
+          onSave={handleSave}
+        />
 
-      <div className="mb-4">
+        <div className="mb-4">
         <label className="block text-sm text-slate-900 mb-1">Project name</label>
         <EditableInput 
           value={formData.name} 
@@ -267,14 +284,15 @@ function ProjectProfileContent({
         </div>
       </div>
 
-      <div className="mb-2">
-        <label className="block text-sm text-slate-900 mb-1">Description</label>
-        <textarea 
-          value={formData.description} 
-          onChange={e => setFormData(p => ({...p, description: e.target.value}))} 
-          readOnly={!editing} 
-          className={`${TEXTAREA} ${!editing ? 'bg-slate-50 text-slate-600 hover:border-slate-200 focus:ring-0 focus:border-slate-200' : 'border-slate-400 focus:border-slate-500 focus:ring-slate-300'}`} 
-        />
+        <div className="mb-2">
+          <label className="block text-sm text-slate-900 mb-1">Description</label>
+          <textarea 
+            value={formData.description} 
+            onChange={e => setFormData(p => ({...p, description: e.target.value}))} 
+            readOnly={!editing} 
+            className={`${TEXTAREA} ${!editing ? 'bg-slate-50 text-slate-600 hover:border-slate-200 focus:ring-0 focus:border-slate-200' : 'border-slate-400 focus:border-slate-500 focus:ring-slate-300'}`} 
+          />
+        </div>
       </div>
     </TwoCol>
   );
@@ -345,19 +363,36 @@ function ClientProfileContent({
     }
   };
 
+  const handleCancel = () => {
+    setFormData(backup.current);
+    setEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!editing) return;
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSave();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleCancel();
+    }
+  };
+
   return (
     <TwoCol 
       title="Client information" 
       desc="Details about the primary and secondary clients for this project."
     >
-      <EditBar
-        editing={editing}
-        onStart={() => { backup.current = formData; setEditing(true); }}
-        onCancel={() => { setFormData(backup.current); setEditing(false); }}
-        onSave={handleSave}
-      />
+      <div onKeyDown={handleKeyDown}>
+        <EditBar
+          editing={editing}
+          onStart={() => { backup.current = formData; setEditing(true); }}
+          onCancel={handleCancel}
+          onSave={handleSave}
+        />
 
-      <div className="mb-6">
+        <div className="mb-6">
         <h3 className="text-sm font-medium text-slate-900 mb-3">Primary Client</h3>
         <div className="space-y-3">
           <div className="grid gap-2 md:grid-cols-2">
@@ -439,6 +474,7 @@ function ClientProfileContent({
             />
           </div>
         </div>
+      </div>
       </div>
     </TwoCol>
   );
