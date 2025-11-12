@@ -371,7 +371,9 @@ export default function ProjectPanel({
   onScaleChange,
   arrowStats,
   onCalibrate,
-  inchesPerSceneUnit
+  inchesPerSceneUnit,
+  initialFileId,
+  initialWhiteboardPageId
 }: { 
   projectId: string; 
   projectName?: string; 
@@ -385,6 +387,8 @@ export default function ProjectPanel({
   arrowStats?: ArrowCounterStats;
   onCalibrate?: () => void;
   inchesPerSceneUnit?: number;
+  initialFileId?: string | null;
+  initialWhiteboardPageId?: string | null;
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = (searchParams.get('projectTab') as 'files' | 'whiteboards' | 'settings' | 'info') || 'files';
@@ -475,11 +479,29 @@ export default function ProjectPanel({
   useEffect(() => {
     if (localSections.length > 0 && separatorIndex < 0) {
       const saved = localStorage.getItem(STORAGE_KEY);
+      
       if (!saved) {
         // Only initialize if no saved arrangement exists
-        const mid = Math.floor(localSections.length / 2);
-        setSeparatorIndex(mid);
-        saveFolderArrangement(localSections, mid);
+        // Default folder order: Pre-Design, Design, Permit, Build | Plans, Photos, Attachments
+        // Separator should be at index 4 (after Build)
+        const defaultOrder = ['Pre-Design', 'Design', 'Permit', 'Build', 'Plans', 'Photos', 'Attachments'];
+        
+        const sortedSections = [...localSections].sort((a, b) => {
+          // Safety checks for undefined titles
+          if (!a?.title || !b?.title) return 0;
+          
+          const aIndex = defaultOrder.indexOf(a.title);
+          const bIndex = defaultOrder.indexOf(b.title);
+          if (aIndex === -1 && bIndex === -1) return a.title.localeCompare(b.title);
+          if (aIndex === -1) return 1;
+          if (bIndex === -1) return -1;
+          return aIndex - bIndex;
+        });
+        
+        setLocalSections(sortedSections);
+        const separatorIdx = 4; // After Build
+        setSeparatorIndex(separatorIdx);
+        saveFolderArrangement(sortedSections, separatorIdx);
       }
     }
   }, [localSections.length, separatorIndex, saveFolderArrangement, STORAGE_KEY]);
@@ -489,25 +511,71 @@ export default function ProjectPanel({
     if (JSON.stringify(localSections) !== JSON.stringify(sections)) {
       // When sections change, check if we have a saved order
       const saved = localStorage.getItem(STORAGE_KEY);
+      
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (parsed.order && Array.isArray(parsed.order)) {
-            // Reorder sections based on saved order
+          
+          // Check if saved arrangement has wrong separator index (should be 4, not 3)
+          const needsReset = parsed.separatorIndex !== undefined && parsed.separatorIndex === 3;
+          
+          if (needsReset) {
+            // Clear the old saved arrangement and apply default order
+            localStorage.removeItem(STORAGE_KEY);
+            
+            const defaultOrder = ['Pre-Design', 'Design', 'Permit', 'Build', 'Plans', 'Photos', 'Attachments'];
+            const sortedSections = [...sections].sort((a, b) => {
+              if (!a?.title || !b?.title) return 0;
+              
+              const aIndex = defaultOrder.indexOf(a.title);
+              const bIndex = defaultOrder.indexOf(b.title);
+              if (aIndex === -1 && bIndex === -1) return a.title.localeCompare(b.title);
+              if (aIndex === -1) return 1;
+              if (bIndex === -1) return -1;
+              return aIndex - bIndex;
+            });
+            setLocalSections(sortedSections);
+            setSeparatorIndex(4); // Set correct separator
+            saveFolderArrangement(sortedSections, 4);
+          } else if (parsed.order && Array.isArray(parsed.order)) {
+            // Check if the saved order matches the correct default folder order
             const orderMap = new Map(parsed.order.map((id: string, idx: number) => [id, idx]));
             const sorted = [...sections].sort((a, b) => {
               const aIdx = orderMap.get(a.id) ?? Infinity;
               const bIdx = orderMap.get(b.id) ?? Infinity;
               return (aIdx as number) - (bIdx as number);
             });
-            // Only use sorted order if all current sections are in the saved order
-            const allInOrder = sections.every(s => orderMap.has(s.id));
-            if (allInOrder && sorted.length === sections.length) {
-              setLocalSections(sorted);
+            
+            const sortedTitles = sorted.map(s => s.title);
+            const expectedOrder = ['Pre-Design', 'Design', 'Permit', 'Build', 'Plans', 'Photos', 'Attachments'];
+            const isCorrectOrder = sortedTitles.every((title, idx) => title === expectedOrder[idx]);
+            
+            if (!isCorrectOrder) {
+              localStorage.removeItem(STORAGE_KEY);
+              
+              const defaultSorted = [...sections].sort((a, b) => {
+                if (!a?.title || !b?.title) return 0;
+                
+                const aIndex = expectedOrder.indexOf(a.title);
+                const bIndex = expectedOrder.indexOf(b.title);
+                if (aIndex === -1 && bIndex === -1) return a.title.localeCompare(b.title);
+                if (aIndex === -1) return 1;
+                if (bIndex === -1) return -1;
+                return aIndex - bIndex;
+              });
+              setLocalSections(defaultSorted);
+              setSeparatorIndex(4);
+              saveFolderArrangement(defaultSorted, 4);
             } else {
-              // If new folders were added, append them to the end
-              const newFolders = sections.filter(s => !orderMap.has(s.id));
-              setLocalSections([...sorted, ...newFolders]);
+              // Order is correct, use saved order
+              const allInOrder = sections.every(s => orderMap.has(s.id));
+              if (allInOrder && sorted.length === sections.length) {
+                setLocalSections(sorted);
+              } else {
+                // If new folders were added, append them to the end
+                const newFolders = sections.filter(s => !orderMap.has(s.id));
+                setLocalSections([...sorted, ...newFolders]);
+              }
             }
           } else {
             setLocalSections(sections);
@@ -517,7 +585,19 @@ export default function ProjectPanel({
           setLocalSections(sections);
         }
       } else {
-        setLocalSections(sections);
+        // No saved arrangement - apply default order
+        const defaultOrder = ['Pre-Design', 'Design', 'Permit', 'Build', 'Plans', 'Photos', 'Attachments'];
+        const sortedSections = [...sections].sort((a, b) => {
+          if (!a?.title || !b?.title) return 0;
+          
+          const aIndex = defaultOrder.indexOf(a.title);
+          const bIndex = defaultOrder.indexOf(b.title);
+          if (aIndex === -1 && bIndex === -1) return a.title.localeCompare(b.title);
+          if (aIndex === -1) return 1;
+          if (bIndex === -1) return -1;
+          return aIndex - bIndex;
+        });
+        setLocalSections(sortedSections);
       }
     }
   }, [sections, STORAGE_KEY]);
@@ -607,6 +687,50 @@ export default function ProjectPanel({
     });
     return pages;
   }, [drawingVersions]);
+  
+  // Track if initial restoration has been done to prevent infinite loops
+  const hasRestoredFileRef = useRef(false);
+  const hasRestoredWhiteboardRef = useRef(false);
+
+  // Restore file selection from URL (only once)
+  useEffect(() => {
+    if (!initialFileId || rawFiles.length === 0 || !onFileSelect || hasRestoredFileRef.current) return;
+    
+    const file = rawFiles.find(f => f.id === initialFileId);
+    if (file) {
+      hasRestoredFileRef.current = true;
+      onFileSelect({
+        id: file.id,
+        filename: file.filename,
+        mimetype: file.mimetype || '',
+        filesize: file.filesize || 0,
+        storage_path: file.storage_path,
+        folder_id: file.folder_id,
+        project_id: file.project_id,
+        uploaded_by: file.uploaded_by,
+        created_at: file.created_at,
+      });
+    }
+  }, [initialFileId, rawFiles, onFileSelect]);
+
+  // Restore whiteboard selection from URL (only once)
+  useEffect(() => {
+    if (!initialWhiteboardPageId || !drawingVersions || !onWhiteboardSelect || hasRestoredWhiteboardRef.current) return;
+    
+    // Search through all versions to find the page
+    for (const version of drawingVersions) {
+      const page = version.drawing_pages?.find((p: any) => p.id === initialWhiteboardPageId);
+      if (page) {
+        hasRestoredWhiteboardRef.current = true;
+        onWhiteboardSelect({
+          pageId: page.id,
+          pageName: page.name || 'Untitled',
+          versionTitle: version.version_number || 'Untitled Version',
+        });
+        return;
+      }
+    }
+  }, [initialWhiteboardPageId, drawingVersions, onWhiteboardSelect]);
   
   // Remove local measurement state - now controlled by parent
 
@@ -1153,7 +1277,7 @@ export default function ProjectPanel({
     const items = getWbFilteredPages(id);
 
     return (
-      <div key={id} className="relative mb-1">
+      <div key={id} className="relative mb-0.5">
         {wbSectionDragId && wbSectionDropIndex === index && (
           <div className="absolute left-2 right-2 -top-1 h-0.5 bg-blue-400 rounded" />
         )}
@@ -1462,7 +1586,7 @@ export default function ProjectPanel({
                       color: theme.text.primary,
                       textTransform: 'uppercase',
                       letterSpacing: '0.5px',
-                    }}>Project Files</span>
+                    }}>FILE EXPLORER</span>
                   </div>
                   
                   <div className="mt-1" onDragEnd={handleSectionDragEnd}>

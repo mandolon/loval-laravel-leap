@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Search, MoreHorizontal, User, Move } from "lucide-react";
+import { Search, MoreHorizontal, User, Move, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNotes, useCreateNote, useUpdateNote, useDeleteNote } from "@/lib/api/hooks/useNotes";
 import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,10 +43,19 @@ export function ProjectNotes({ projectId, workspaceId }: ProjectNotesProps) {
   const editableRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLDivElement>(null);
   const listTitleRef = useRef<HTMLDivElement>(null);
+  const sidebarScrollRef = useRef<HTMLDivElement>(null);
+  const mainScrollRef = useRef<HTMLDivElement>(null);
+
+  // Title validation state
+  const [titleCharCount, setTitleCharCount] = useState(0);
+  const [showTitleHelper, setShowTitleHelper] = useState(false);
+  const [titleError, setTitleError] = useState<string | null>(null);
 
   // Resizable sidebar state
   const [sidebarW, setSidebarW] = useState(280);
   const [isResizing, setIsResizing] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [autoCollapsed, setAutoCollapsed] = useState(false);
   const rowRef = useRef<HTMLDivElement>(null);
 
   // Context menu
@@ -104,6 +113,7 @@ export function ProjectNotes({ projectId, workspaceId }: ProjectNotesProps) {
       setDoc(firstNote.content);
       setLastUpdated(firstNote.updatedAt);
       loadCreatedByUser(firstNote.createdBy);
+      saveCtl.current.lastSaved = firstNote.content;
     }
   }, [notes, activeNoteId]);
 
@@ -213,6 +223,87 @@ export function ProjectNotes({ projectId, workspaceId }: ProjectNotesProps) {
     setDoc(editableRef.current ? editableRef.current.innerHTML : "");
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    // Enable undo/redo
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+      if (e.shiftKey) {
+        // Ctrl+Shift+Z or Cmd+Shift+Z = Redo
+        e.preventDefault();
+        document.execCommand('redo', false);
+      } else {
+        // Ctrl+Z or Cmd+Z = Undo
+        e.preventDefault();
+        document.execCommand('undo', false);
+      }
+    } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+      // Ctrl+Y = Redo (Windows)
+      e.preventDefault();
+      document.execCommand('redo', false);
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    
+    const clipboardData = e.clipboardData;
+    const html = clipboardData.getData('text/html');
+    const text = clipboardData.getData('text/plain');
+    
+    if (html) {
+      // Parse HTML and remove font-size styles while keeping other formatting
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      
+      // Recursively remove font-size and font-family from all elements
+      const cleanElement = (el: Element) => {
+        if (el instanceof HTMLElement) {
+          // Remove font-size, font-family, and font shorthand
+          el.style.fontSize = '';
+          el.style.fontFamily = '';
+          el.style.font = '';
+          
+          // Remove size attributes from font tags
+          if (el.tagName === 'FONT') {
+            el.removeAttribute('size');
+            el.removeAttribute('face');
+          }
+          
+          // Remove style attribute if it only contained font properties
+          if (el.style.length === 0) {
+            el.removeAttribute('style');
+          }
+        }
+        
+        // Recursively clean children
+        Array.from(el.children).forEach(cleanElement);
+      };
+      
+      Array.from(tempDiv.children).forEach(cleanElement);
+      
+      // Insert the cleaned HTML
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        
+        const fragment = document.createDocumentFragment();
+        const nodes = Array.from(tempDiv.childNodes);
+        nodes.forEach(node => fragment.appendChild(node.cloneNode(true)));
+        
+        range.insertNode(fragment);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    } else {
+      // Plain text fallback
+      document.execCommand('insertText', false, text);
+    }
+    
+    // Trigger input handler to save
+    handleInput();
+  };
+
   const beginRename = () => {
     const el = titleRef.current;
     if (!el) return;
@@ -229,11 +320,33 @@ export function ProjectNotes({ projectId, workspaceId }: ProjectNotesProps) {
   const commitRename = () => {
     const el = titleRef.current;
     if (!el) return;
-    const next = (el.innerText || "").trim();
-    setNoteTitle(next || "Untitled Page");
-    el.removeAttribute("contenteditable");
+    let next = (el.innerText || "").trim();
+    
+    // Validate: don't allow blank titles
+    if (!next) {
+      setTitleError("Title cannot be empty");
+      setShowTitleHelper(true);
+      // Restore previous title
+      el.textContent = noteTitle;
+      return;
+    }
+    
+    // Limit to 40 characters
+    if (next.length > 40) {
+      next = next.substring(0, 40);
+      el.textContent = next; // Update display immediately
+    }
+    
+    console.log('[TITLE DEBUG] commitRename called', { next, activeNoteId, length: next.length });
+    setTitleError(null);
+    setShowTitleHelper(false);
+    setNoteTitle(next);
+    setTitleCharCount(next.length);
+    
+    // Don't remove contenteditable - keep it editable
     if (activeNoteId) {
-      updateNoteMutation.mutate({ id: activeNoteId, title: next || "Untitled Page" });
+      console.log('[TITLE DEBUG] Updating note title in database');
+      updateNoteMutation.mutate({ id: activeNoteId, title: next });
     }
   };
 
@@ -277,6 +390,34 @@ export function ProjectNotes({ projectId, workspaceId }: ProjectNotesProps) {
     }
   };
 
+  const onTitleInput = (e: React.FormEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    const text = el.textContent || "";
+    
+    // Update character count
+    setTitleCharCount(text.length);
+    
+    // Clear error if user starts typing
+    if (text.trim().length > 0) {
+      setTitleError(null);
+    }
+    
+    // Enforce 40 character limit in real-time
+    if (text.length > 40) {
+      const truncated = text.substring(0, 40);
+      el.textContent = truncated;
+      setTitleCharCount(40);
+      
+      // Move cursor to end
+      const range = document.createRange();
+      const sel = window.getSelection();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
+  };
+
   const openMenuAtButton = (btn: HTMLElement) => {
     const rect = btn.getBoundingClientRect();
     // Position menu to the left of the button, aligned with its top
@@ -294,10 +435,36 @@ export function ProjectNotes({ projectId, workspaceId }: ProjectNotesProps) {
       beginListRename();
     } else if (action === "delete") {
       if (activeNoteId) {
-        deleteNoteMutation.mutate(activeNoteId);
+        const currentNoteId = activeNoteId;
+        
+        // Clear the current note immediately
         setActiveNoteId(null);
         setNoteTitle("");
         setDoc("");
+        setCreatedByUser(null);
+        setLastUpdated("");
+        
+        // Clear the editable ref
+        if (editableRef.current) {
+          editableRef.current.innerHTML = "";
+        }
+        
+        // Delete from database
+        deleteNoteMutation.mutate(currentNoteId, {
+          onSuccess: () => {
+            // After successful delete, select the first remaining note if any
+            const remainingNotes = notes.filter(n => n.id !== currentNoteId);
+            if (remainingNotes.length > 0) {
+              const firstNote = remainingNotes[0];
+              setActiveNoteId(firstNote.id);
+              setNoteTitle(firstNote.title);
+              setDoc(firstNote.content);
+              setLastUpdated(firstNote.updatedAt);
+              loadCreatedByUser(firstNote.createdBy);
+              saveCtl.current.lastSaved = firstNote.content;
+            }
+          }
+        });
       }
     } else if (action === "new") {
       createNoteMutation.mutate(
@@ -333,10 +500,68 @@ export function ProjectNotes({ projectId, workspaceId }: ProjectNotesProps) {
   };
 
   useEffect(() => {
-    if (editableRef.current && editableRef.current.innerHTML === "" && doc) {
-      editableRef.current.innerHTML = doc;
+    if (editableRef.current && doc !== undefined) {
+      const currentHTML = editableRef.current.innerHTML;
+      const isFocused = document.activeElement === editableRef.current;
+      
+      // Only update if not currently editing and content is different
+      if (!isFocused && currentHTML !== doc) {
+        editableRef.current.innerHTML = doc;
+        saveCtl.current.lastSaved = doc;
+      }
     }
-  }, [doc]);
+  }, [doc, activeNoteId]);
+
+  // Sync title to ref when it changes (but not when focused)
+  useEffect(() => {
+    if (titleRef.current && noteTitle !== undefined) {
+      const isFocused = document.activeElement === titleRef.current;
+      console.log('[TITLE DEBUG] Title sync effect running', {
+        noteTitle,
+        currentText: titleRef.current.textContent,
+        isFocused,
+        contentEditable: titleRef.current.getAttribute('contenteditable'),
+        activeNoteId
+      });
+      
+      // Only update if not currently editing
+      if (!isFocused && titleRef.current.textContent !== noteTitle) {
+        console.log('[TITLE DEBUG] Updating title textContent from', titleRef.current.textContent, 'to', noteTitle);
+        titleRef.current.textContent = noteTitle;
+      }
+    }
+  }, [noteTitle, activeNoteId]);
+
+  // Auto-collapse sidebar on small screens
+  useEffect(() => {
+    let autoCollapsedRef = false;
+    
+    const handleResize = () => {
+      const width = window.innerWidth;
+      const shouldCollapse = width < 1200; // Breakpoint at 1200px
+      
+      setSidebarCollapsed(prev => {
+        if (shouldCollapse && !prev) {
+          autoCollapsedRef = true;
+          setAutoCollapsed(true);
+          return true;
+        } else if (!shouldCollapse && autoCollapsedRef) {
+          autoCollapsedRef = false;
+          setAutoCollapsed(false);
+          return false;
+        }
+        return prev;
+      });
+    };
+
+    // Check on mount
+    handleResize();
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []); // Empty dependency array
+
+
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-full">Loading notes...</div>;
@@ -345,12 +570,15 @@ export function ProjectNotes({ projectId, workspaceId }: ProjectNotesProps) {
   return (
     <div ref={rowRef} className="flex h-full w-full overflow-hidden">
       {/* Left Sidebar */}
-      <div style={{ width: sidebarW }} className="flex flex-col border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shrink-0">
+      <div 
+        style={{ width: sidebarCollapsed ? 0 : sidebarW }} 
+        className="flex flex-col border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shrink-0 transition-all duration-200 overflow-hidden"
+      >
         {/* Header */}
         <div data-testid="notes-sidebar-header" className="h-10 px-3 flex items-center justify-between border-b border-slate-200 dark:border-slate-700 shrink-0">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             {!showSearch ? (
-              <h2 className="text-[15px] font-semibold text-slate-900 dark:text-slate-100 truncate">Notes</h2>
+              <h2 className="text-[15px] font-semibold text-slate-900 dark:text-slate-100 truncate">Project Notes</h2>
             ) : (
               <label data-testid="search-container" className="flex-1 relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -365,17 +593,26 @@ export function ProjectNotes({ projectId, workspaceId }: ProjectNotesProps) {
               </label>
             )}
           </div>
-          <button
-            data-testid="search-toggle"
-            onClick={focusSearch}
-            className="h-7 w-7 grid place-items-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400"
-          >
-            <Search className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              data-testid="search-toggle"
+              onClick={focusSearch}
+              className="h-7 w-7 grid place-items-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setSidebarCollapsed(true)}
+              className="h-7 w-7 grid place-items-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400"
+              title="Collapse sidebar"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Notes List */}
-        <div data-testid="notes-sidebar-scroll" className="flex-1 overflow-y-auto thin-scrollbar pr-0">
+        <div ref={sidebarScrollRef} data-testid="notes-sidebar-scroll" className="flex-1 overflow-y-auto thin-scrollbar pr-0">
           <div className="p-2 space-y-1">
             {notes.filter(n => matchesPage).map((note) => (
               <div
@@ -438,14 +675,26 @@ export function ProjectNotes({ projectId, workspaceId }: ProjectNotesProps) {
       />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-white dark:bg-slate-900">
+      <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-slate-900 relative">
+        {/* Expand button when sidebar is collapsed */}
+        {sidebarCollapsed && (
+          <button
+            onClick={() => setSidebarCollapsed(false)}
+            className="absolute top-2 left-2 z-10 h-8 w-8 grid place-items-center rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 shadow-sm"
+            title="Expand sidebar"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        )}
+        
         {activeNoteId ? (
           <>
-            <div data-testid="notes-main-scroll" className="flex-1 overflow-y-auto px-8 py-6 flex justify-center">
+            {/* Header area - fixed, no scroll */}
+            <div className="shrink-0 px-8 pt-12 pb-4 flex justify-center">
               <div className="w-full max-w-3xl">
-                <div className="text-[13px] text-gray-500 dark:text-slate-400 flex items-center gap-1 mb-4 mt-8">
-                  <Move className="w-4 h-4 text-gray-500 dark:text-slate-400" />
-                  <span className="hover:underline cursor-pointer" style={{ fontWeight: 500 }}>Link Task or Doc</span>
+                <div className="text-[13px] text-gray-500 dark:text-slate-400 flex items-center gap-1 mb-4 overflow-hidden">
+                  <Move className="w-4 h-4 shrink-0 text-gray-500 dark:text-slate-400" />
+                  <span className="hover:underline cursor-pointer truncate" style={{ fontWeight: 500 }}>Link Task or Doc</span>
                 </div>
 
                 <div
@@ -453,29 +702,68 @@ export function ProjectNotes({ projectId, workspaceId }: ProjectNotesProps) {
                   contentEditable
                   suppressContentEditableWarning
                   onKeyDown={onTitleKeyDown}
-                  onBlur={commitRename}
-                  className="text-[34px] font-semibold text-slate-900 dark:text-slate-100 mb-6 outline-none"
-                >
-                  {noteTitle}
-                </div>
+                  onInput={onTitleInput}
+                  onBlur={(e) => {
+                    console.log('[TITLE DEBUG] onBlur triggered');
+                    setShowTitleHelper(false);
+                    commitRename();
+                  }}
+                  onFocus={() => {
+                    console.log('[TITLE DEBUG] onFocus triggered', {
+                      contentEditable: titleRef.current?.getAttribute('contenteditable'),
+                      textContent: titleRef.current?.textContent
+                    });
+                    setShowTitleHelper(true);
+                    const text = titleRef.current?.textContent || "";
+                    setTitleCharCount(text.length);
+                  }}
+                  onClick={() => {
+                    console.log('[TITLE DEBUG] onClick triggered', {
+                      contentEditable: titleRef.current?.getAttribute('contenteditable'),
+                      textContent: titleRef.current?.textContent,
+                      isFocused: document.activeElement === titleRef.current
+                    });
+                  }}
+                  className="text-[34px] font-semibold text-slate-900 dark:text-slate-100 mb-2 outline-none break-words cursor-text"
+                  style={{ color: '#0f172a' }}
+                />
 
-                {createdByUser && (
-                  <div className="text-[12px] mb-6 flex items-center gap-2" style={{ color: '#202020' }}>
-                    <User className="h-3.5 w-3.5" />
-                    <span><span style={{ fontWeight: 500 }}>Created by:</span> {createdByUser.name}</span>
-                    <span className="mx-1">•</span>
-                    <span>Last updated: <span style={{ fontWeight: 500 }}>{new Date(lastUpdated).toLocaleDateString()} at {new Date(lastUpdated).toLocaleTimeString()}</span></span>
+                {/* Helper text for title */}
+                {showTitleHelper && (
+                  <div className="mb-2 flex items-center justify-between text-[11px]">
+                    <span className={titleError ? "text-red-500" : "text-slate-400"}>
+                      {titleError || "Press Enter to save"}
+                    </span>
+                    <span className={titleCharCount >= 40 ? "text-red-500 font-medium" : "text-slate-400"}>
+                      {titleCharCount}/40
+                    </span>
                   </div>
                 )}
 
+                {createdByUser && (
+                  <div className="text-[12px] flex items-center gap-2 overflow-hidden" style={{ color: '#202020' }}>
+                    <User className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate"><span style={{ fontWeight: 500 }}>Created by:</span> {createdByUser.name}</span>
+                    <span className="mx-1 shrink-0">•</span>
+                    <span className="truncate">Last updated: <span style={{ fontWeight: 500 }}>{new Date(lastUpdated).toLocaleDateString()} at {new Date(lastUpdated).toLocaleTimeString()}</span></span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Editable area - independent scroll */}
+            <div ref={mainScrollRef} data-testid="notes-main-scroll" className="flex-1 overflow-y-auto px-8 py-6 flex justify-center">
+              <div className="w-full max-w-3xl">
                 <div
                   ref={editableRef}
-                  contentEditable
+                  contentEditable={true}
                   onInput={handleInput}
-                  className="outline-none [&_*]:text-[15.5px] [&_*]:leading-7"
+                  onKeyDown={handleKeyDown}
+                  onPaste={handlePaste}
+                  className="outline-none text-[15.5px] leading-[1.75rem] cursor-text"
                   style={{ 
                     minHeight: '480px',
-                    fontSize: '15.5px !important',
+                    fontSize: '15.5px',
                     lineHeight: '1.75rem',
                     color: '#1e293b'
                   }}
@@ -484,22 +772,22 @@ export function ProjectNotes({ projectId, workspaceId }: ProjectNotesProps) {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center px-8">
+          <div className="flex-1 flex items-center justify-center px-8">
             <div className="text-center max-w-md">
-              <div className="mb-4 text-slate-400 dark:text-slate-500">
-                <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="mb-6 text-slate-400 dark:text-slate-500">
+                <svg className="w-20 h-20 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                No notes yet
+              <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-3">
+                No project notes yet
               </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-                Create your first note to get started
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-8">
+                Create your first note for this project. Notes here are specific to this project.
               </p>
               <button
                 onClick={() => onMenuAction("new")}
-                className="px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white text-sm font-medium rounded-lg transition-colors"
+                className="px-6 py-2.5 bg-amber-400 hover:bg-amber-500 text-slate-900 text-sm font-medium rounded-lg transition-colors shadow-sm"
               >
                 Create Note
               </button>

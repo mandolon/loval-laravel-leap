@@ -50,7 +50,7 @@ function EditBar({
       {!editing ? (
         <button 
           onClick={onStart} 
-          className="h-8 px-3 rounded-lg border border-transparent bg-slate-700 text-white text-[13px] hover:bg-slate-800"
+          className="h-8 px-3 rounded-lg border border-transparent bg-amber-400 hover:bg-amber-500 text-slate-900 text-[13px] font-medium"
         >
           Edit
         </button>
@@ -64,7 +64,7 @@ function EditBar({
           </button>
           <button 
             onClick={onSave} 
-            className="h-8 px-3 rounded-lg border border-[#4C75D1] bg-[#4C75D1] text-white text-[13px] hover:bg-[#3f64b3]"
+            className="h-8 px-3 rounded-lg border border-amber-400 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[13px] font-medium"
           >
             Save
           </button>
@@ -85,13 +85,15 @@ function TwoCol({
   children: React.ReactNode;
 }) {
   return (
-    <div className="p-4 md:px-48 md:py-6 text-slate-600">
-      <div className="grid gap-6 md:grid-cols-[380px_minmax(0,1fr)] items-start">
-        <div>
-          <h1 className="text-slate-900 text-xl font-medium mb-1">{title}</h1>
-          <p className="text-[13px]">{desc}</p>
+    <div className="p-4 md:p-6 lg:p-8 text-slate-600">
+      <div className="max-w-[1400px] mx-auto">
+        <div className="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[380px_minmax(0,1fr)] items-start">
+          <div>
+            <h1 className="text-slate-900 text-xl font-medium mb-1">{title}</h1>
+            <p className="text-[13px]">{desc}</p>
+          </div>
+          <div>{children}</div>
         </div>
-        <div>{children}</div>
       </div>
     </div>
   );
@@ -640,20 +642,25 @@ export function ProjectInfoContent({
 }: ProjectInfoContentProps) {
   return (
     <div className="h-full overflow-auto bg-white">
-      {contentType === "project-profile" && (
-        <ProjectProfileContent projectId={projectId} workspaceId={workspaceId} />
-      )}
-      {contentType === "client-profile" && (
-        <ClientProfileContent projectId={projectId} workspaceId={workspaceId} />
-      )}
-      {contentType === "team-members" && (
-        <TeamMembersContent projectId={projectId} />
-      )}
-      {contentType === "parcel-information" && <ParcelInformationContent />}
-      {contentType === "invoices" && <InvoicesContent />}
-      {contentType === "activity" && <ActivityContent />}
-      {contentType === "notes" && (
-        <ProjectNotes projectId={projectId} workspaceId={workspaceId} />
+      {contentType === "notes" ? (
+        <div className="h-full">
+          <ProjectNotes projectId={projectId} workspaceId={workspaceId} />
+        </div>
+      ) : (
+        <div className="min-h-full">
+          {contentType === "project-profile" && (
+            <ProjectProfileContent projectId={projectId} workspaceId={workspaceId} />
+          )}
+          {contentType === "client-profile" && (
+            <ClientProfileContent projectId={projectId} workspaceId={workspaceId} />
+          )}
+          {contentType === "team-members" && (
+            <TeamMembersContent projectId={projectId} />
+          )}
+          {contentType === "parcel-information" && <ParcelInformationContent />}
+          {contentType === "invoices" && <InvoicesContent />}
+          {contentType === "activity" && <ActivityContent />}
+        </div>
       )}
     </div>
   );

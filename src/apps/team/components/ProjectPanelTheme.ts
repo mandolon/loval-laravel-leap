@@ -284,7 +284,7 @@ export const spacing = {
 };
 
 export const radius = {
-  sm: '6px',
+  sm: '3px',
   md: '8px',
   lg: '12px',
   full: '9999px',
@@ -317,7 +317,7 @@ export const typography = {
 // SOFT SQUARE SIZE
 // ============================================================================
 
-export const SOFT_SQUARE = 12;
+export const SOFT_SQUARE = 11;
 
 // ============================================================================
 // HELPER FUNCTIONS

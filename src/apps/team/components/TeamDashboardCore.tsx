@@ -196,6 +196,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
   const [selected, setSelected] = useState<{ tab: string; item: string } | null>(null);
   const [railCollapsed, setRailCollapsed] = useState(false);
   const [projectPanelCollapsed, setProjectPanelCollapsed] = useState(false);
+  const [autoCollapsedProjectPanel, setAutoCollapsedProjectPanel] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [selectedWhiteboard, setSelectedWhiteboard] = useState<{ pageId: string; pageName: string; versionTitle: string } | null>(null);
   const [showArrowStats, setShowArrowStats] = useState(true); // Toggle visibility of stats display
@@ -282,6 +283,12 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
   const handleCalibration = useCallback(() => {
     window.dispatchEvent(new Event('trigger-calibration'));
   }, []);
+
+  // Read URL parameters early for use in effects
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlProjectId = searchParams.get('projectId');
+  const urlFileId = searchParams.get('fileId');
+  const urlWhiteboardPageId = searchParams.get('whiteboardPageId');
 
   const handleCreateProject = useCallback(async (input: any) => {
     if (!currentWorkspaceId || !user?.id) {
@@ -389,9 +396,89 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
   // No fallback to hardcoded data - show empty list if no projects exist
   const projectItems = userProjects.map((p: any) => p.name);
 
-  const [searchParams] = useSearchParams();
   const projectPanelTab = searchParams.get('projectTab') || 'files';
   const isInfoTabActive = projectPanelTab === 'info';
+
+  // Restore project selection from URL on load
+  useEffect(() => {
+    if (!urlProjectId || !userProjects.length || active !== 'projects') return;
+    
+    const project = userProjects.find((p: any) => p.id === urlProjectId);
+    if (project && selected?.item !== project.name) {
+      setSelected({ tab: 'projects', item: project.name });
+    }
+  }, [urlProjectId, userProjects, active, selected?.item]);
+
+  // Update URL when project selection changes
+  useEffect(() => {
+    if (active !== 'projects' || !selected?.item) return;
+    
+    const project = userProjects.find((p: any) => p.name === selected.item);
+    if (project && urlProjectId !== project.id) {
+      setSearchParams(prev => {
+        const newParams = new URLSearchParams(prev);
+        newParams.set('projectId', project.id);
+        return newParams;
+      }, { replace: true });
+    }
+  }, [selected?.item, userProjects, active, urlProjectId, setSearchParams]);
+
+  // Update URL when file selection changes
+  useEffect(() => {
+    if (!selectedFile || active !== 'projects') return;
+    
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      if (selectedFile.id) {
+        newParams.set('fileId', selectedFile.id);
+        newParams.delete('whiteboardPageId');
+      }
+      return newParams;
+    }, { replace: true });
+  }, [selectedFile, active, setSearchParams]);
+
+  // Update URL when whiteboard selection changes
+  useEffect(() => {
+    if (!selectedWhiteboard || active !== 'projects') return;
+    
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      if (selectedWhiteboard.pageId) {
+        newParams.set('whiteboardPageId', selectedWhiteboard.pageId);
+        newParams.delete('fileId');
+      }
+      return newParams;
+    }, { replace: true });
+  }, [selectedWhiteboard, active, setSearchParams]);
+
+  // Auto-collapse project panel on small screens
+  useEffect(() => {
+    let autoCollapsedRef = false;
+    
+    const handleResize = () => {
+      const width = window.innerWidth;
+      const shouldCollapse = width < 1400; // Breakpoint at 1400px
+      
+      setProjectPanelCollapsed(prev => {
+        if (shouldCollapse && !prev) {
+          autoCollapsedRef = true;
+          setAutoCollapsedProjectPanel(true);
+          return true;
+        } else if (!shouldCollapse && autoCollapsedRef) {
+          autoCollapsedRef = false;
+          setAutoCollapsedProjectPanel(false);
+          return false;
+        }
+        return prev;
+      });
+    };
+
+    // Check on mount
+    handleResize();
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []); // Empty dependency array
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
@@ -571,10 +658,10 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
                     <div className="h-full flex items-center justify-center">
                       <div className="text-center max-w-md px-6">
                         <h2 className="text-2xl font-semibold mb-3 text-slate-900">
-                          Select an item to preview
+                          Start in the Project Panel
                         </h2>
                         <p className="text-lg text-slate-600">
-                          Pick a file, whiteboard, or project info from the panel to view it here.
+                          Click the tabs to open files, whiteboard pages, or project info—then pick an item to preview here.
                         </p>
                       </div>
                     </div>
@@ -631,6 +718,8 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
               arrowStats={arrowStats}
               onCalibrate={handleCalibration}
               inchesPerSceneUnit={inchesPerSceneUnit}
+              initialFileId={urlFileId}
+              initialWhiteboardPageId={urlWhiteboardPageId}
             />
         </div>
       )}
@@ -1535,7 +1624,7 @@ const PageHeader = memo(function PageHeader({
             {projectName && (
               <>
                 <span className="mx-2 text-slate-400">—</span>
-                <span className="truncate" title={projectName}>{projectName}</span>
+                <span className="truncate text-[15px] font-normal text-slate-400" title={projectName}>{projectName}</span>
               </>
             )}
           </span>
