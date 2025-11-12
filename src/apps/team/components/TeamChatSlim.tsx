@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useState, useEffect } from "react";
 import { ChevronDown, PanelLeftClose, PanelLeft } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
   useProjectMessages, 
   useCreateMessage, 
@@ -26,6 +27,7 @@ import { ChatHeader } from "./chat/ChatHeader";
 import { ChatSidePanel } from "./chat/ChatSidePanel";
 import { supabase } from "@/integrations/supabase/client";
 import FileUploadChip, { type UploadStatus } from "@/components/chat/FileUploadChip";
+import { format, isToday, isYesterday, isSameDay, parseISO } from "date-fns";
 
 // Theme Configuration - Exact from reference
 const THEME = {
@@ -46,6 +48,49 @@ const THEME = {
 };
 
 const availableTags = ["General", "Markup", "Progress", "Complete"];
+
+// Date Divider Component
+function DateDivider({ date }: { date: string }) {
+  const formatDate = (dateStr: string) => {
+    const parsedDate = parseISO(dateStr);
+    if (isToday(parsedDate)) return "Today";
+    if (isYesterday(parsedDate)) return "Yesterday";
+    return format(parsedDate, "MMMM d, yyyy");
+  };
+
+  return (
+    <div className="flex items-center justify-center my-6 px-4">
+      <div 
+        className="text-xs font-normal px-2.5 py-1 rounded-md"
+        style={{ 
+          color: "#94a3b8",
+          opacity: 0.7
+        }}
+      >
+        {formatDate(date)}
+      </div>
+    </div>
+  );
+}
+
+// Helper function to group messages by date
+function groupMessagesByDate(messages: any[]) {
+  const grouped: { date: string; messages: any[] }[] = [];
+  let currentDate: string | null = null;
+
+  messages.forEach((msg) => {
+    const msgDate = format(parseISO(msg.createdAt), "yyyy-MM-dd");
+    
+    if (msgDate !== currentDate) {
+      currentDate = msgDate;
+      grouped.push({ date: msg.createdAt, messages: [msg] });
+    } else {
+      grouped[grouped.length - 1].messages.push(msg);
+    }
+  });
+
+  return grouped;
+}
 
 interface TeamChatSlimProps {
   projects: Project[];
@@ -110,9 +155,133 @@ export default function TeamChatSlim({
   const deleteWorkspaceChatMessage = useDeleteWorkspaceMessage();
   const updateWorkspaceMessage = useUpdateWorkspaceMessage();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   // Fetch workspace projects for header dropdown when in workspace mode
   const { data: workspaceProjects = [] } = useProjects(workspaceId || "");
+
+  // Track last viewed message counts to determine if there are unread messages
+  const getLastViewedKey = (projectId: string | null, workspaceIdParam: string | null) => {
+    if (projectId) return `last_viewed_project_${projectId}`;
+    if (workspaceIdParam) return `last_viewed_workspace_${workspaceIdParam}`;
+    return null;
+  };
+
+  // Mark chat as viewed when messages are loaded
+  useEffect(() => {
+    if (selectedProject?.id && rawProjectMessages.length > 0) {
+      const key = getLastViewedKey(selectedProject.id, null);
+      if (key) {
+        localStorage.setItem(key, rawProjectMessages.length.toString());
+      }
+    }
+  }, [selectedProject?.id, rawProjectMessages.length]);
+
+  useEffect(() => {
+    if (isWorkspaceChat && workspaceId && rawWorkspaceMessages.length > 0) {
+      const key = getLastViewedKey(null, workspaceId);
+      if (key) {
+        localStorage.setItem(key, rawWorkspaceMessages.length.toString());
+      }
+    }
+  }, [isWorkspaceChat, workspaceId, rawWorkspaceMessages.length]);
+
+  // Check if workspace has unread messages
+  const hasWorkspaceMessages = useMemo(() => {
+    if (!workspaceId || rawWorkspaceMessages.length === 0) return false;
+    const key = getLastViewedKey(null, workspaceId);
+    if (!key) return false;
+    const lastViewed = parseInt(localStorage.getItem(key) || '0', 10);
+    return rawWorkspaceMessages.length > lastViewed;
+  }, [workspaceId, rawWorkspaceMessages.length]);
+
+  // Check if a project has unread messages
+  const hasUnreadProjectMessages = (projectId: string, messageCount: number) => {
+    if (messageCount === 0) return false;
+    const key = getLastViewedKey(projectId, null);
+    if (!key) return false;
+    const lastViewed = parseInt(localStorage.getItem(key) || '0', 10);
+    return messageCount > lastViewed;
+  };
+
+  // Fetch latest message timestamp for each project
+  const { data: projectLatestMessages = [] } = useQuery({
+    queryKey: ['project-latest-messages', workspaceId],
+    queryFn: async () => {
+      if (!workspaceId) return [];
+      
+      const { data: projectsData } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('workspace_id', workspaceId)
+        .is('deleted_at', null);
+      
+      if (!projectsData) return [];
+      
+      const messagesPromises = projectsData.map(async (project) => {
+        const { data: latestMsg } = await supabase
+          .from('project_chat_messages')
+          .select('created_at')
+          .eq('project_id', project.id)
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        return {
+          projectId: project.id,
+          latestMessageAt: latestMsg?.created_at || null,
+        };
+      });
+      
+      return Promise.all(messagesPromises);
+    },
+    enabled: !!workspaceId,
+  });
+
+  // Set up realtime subscription for instant notification updates
+  useEffect(() => {
+    if (!workspaceId) return;
+
+    const channel = supabase
+      .channel('all-project-messages-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'project_chat_messages',
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['project-latest-messages', workspaceId] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [workspaceId, queryClient]);
+
+  // Filter and sort projects with chat messages, limit to 5
+  const recentProjectsWithChats = useMemo(() => {
+    const projectsWithMessages = projects
+      .map((project) => {
+        const latestData = projectLatestMessages.find((p) => p.projectId === project.id);
+        return {
+          ...project,
+          latestMessageAt: latestData?.latestMessageAt,
+        };
+      })
+      .filter((p) => p.latestMessageAt !== null && p.latestMessageAt !== undefined)
+      .sort((a, b) => {
+        if (!a.latestMessageAt || !b.latestMessageAt) return 0;
+        return new Date(b.latestMessageAt).getTime() - new Date(a.latestMessageAt).getTime();
+      })
+      .slice(0, 5);
+    
+    return projectsWithMessages;
+  }, [projects, projectLatestMessages]);
 
   // Use appropriate messages based on mode
   const rawMessages = isWorkspaceChat ? rawWorkspaceMessages : rawProjectMessages;
@@ -419,21 +588,29 @@ export default function TeamChatSlim({
     return (
       <div className="flex h-full w-full">
         {/* Side Panel */}
-        {showSidePanel && !isSidePanelCollapsed && (
-          <ChatSidePanel
-            projects={projects}
-            selectedProject={selectedProject}
-            onProjectSelect={(project) => {
-              onProjectSelect(project as any);
-              setIsWorkspaceChat(false);
+        {showSidePanel && (
+          <div
+            className="transition-all duration-300 ease-out overflow-hidden"
+            style={{
+              width: isSidePanelCollapsed ? 0 : "256px",
+              opacity: isSidePanelCollapsed ? 0 : 1,
             }}
-            workspaceId={workspaceId}
-            isWorkspaceChat={isWorkspaceChat}
-            onWorkspaceChatSelect={() => {
-              onProjectSelect(null);
-              setIsWorkspaceChat(true);
-            }}
-          />
+          >
+            <ChatSidePanel
+              projects={projects}
+              selectedProject={selectedProject}
+              onProjectSelect={(project) => {
+                onProjectSelect(project as any);
+                setIsWorkspaceChat(false);
+              }}
+              workspaceId={workspaceId}
+              isWorkspaceChat={isWorkspaceChat}
+              onWorkspaceChatSelect={() => {
+                onProjectSelect(null);
+                setIsWorkspaceChat(true);
+              }}
+            />
+          </div>
         )}
 
         {/* Main Files Area - Full Width */}
@@ -561,21 +738,29 @@ export default function TeamChatSlim({
   return (
     <div className="flex h-full w-full overflow-hidden">
       {/* Side Panel */}
-      {showSidePanel && !isSidePanelCollapsed && (
-        <ChatSidePanel
-          projects={projects}
-          selectedProject={selectedProject}
-          onProjectSelect={(project) => {
-            onProjectSelect(project as any);
-            setIsWorkspaceChat(false);
+      {showSidePanel && (
+        <div
+          className="transition-all duration-300 ease-out overflow-hidden"
+          style={{
+            width: isSidePanelCollapsed ? 0 : "256px",
+            opacity: isSidePanelCollapsed ? 0 : 1,
           }}
-          workspaceId={workspaceId}
-          isWorkspaceChat={isWorkspaceChat}
-          onWorkspaceChatSelect={() => {
-            onProjectSelect(null);
-            setIsWorkspaceChat(true);
-          }}
-        />
+        >
+          <ChatSidePanel
+            projects={projects}
+            selectedProject={selectedProject}
+            onProjectSelect={(project) => {
+              onProjectSelect(project as any);
+              setIsWorkspaceChat(false);
+            }}
+            workspaceId={workspaceId}
+            isWorkspaceChat={isWorkspaceChat}
+            onWorkspaceChatSelect={() => {
+              onProjectSelect(null);
+              setIsWorkspaceChat(true);
+            }}
+          />
+        </div>
       )}
 
       {/* Main Chat Area */}
@@ -718,10 +903,10 @@ export default function TeamChatSlim({
             <div className="flex flex-col items-center justify-start pt-32">
               <div className="text-center max-w-md">
                 <h2 className="text-2xl font-semibold mb-3" style={{ color: THEME.text }}>
-                  Welcome to your workspace
+                  Welcome to Chat
                 </h2>
-                <p className="text-base mb-6" style={{ color: THEME.textSecondary }}>
-                  Select a project to start chatting.
+                <p className="text-lg mb-6" style={{ color: THEME.textSecondary }}>
+                  Pick a project to chat, or use Workspace chat for everyone.
                 </p>
 
                 <div className="flex flex-col gap-2 mt-8">
@@ -731,7 +916,7 @@ export default function TeamChatSlim({
                       onProjectSelect(null);
                       setIsWorkspaceChat(true);
                     }}
-                    className="w-full text-left px-4 py-3 rounded-xl border transition-colors mb-4"
+                    className="w-full text-left px-4 py-3 rounded-xl border transition-colors mb-4 relative"
                     style={{
                       borderColor: THEME.border,
                       background: THEME.card,
@@ -739,91 +924,119 @@ export default function TeamChatSlim({
                     onMouseEnter={(e) => (e.currentTarget.style.background = THEME.hover)}
                     onMouseLeave={(e) => (e.currentTarget.style.background = THEME.card)}
                   >
-                    <div className="flex items-center gap-3">
-                      <svg className="h-5 w-5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                        />
-                      </svg>
-                      <div>
-                        <div className="font-medium text-base">Workspace chat</div>
-                        <div className="text-xs mt-0.5" style={{ color: THEME.textSecondary }}>
-                          Chat with your team
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <svg className="h-5 w-5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                          />
+                        </svg>
+                        <div>
+                          <div className="font-medium text-base">Workspace chat</div>
+                          <div className="text-xs mt-0.5" style={{ color: THEME.textSecondary }}>
+                            Chat with your team
+                          </div>
                         </div>
                       </div>
+                      {hasWorkspaceMessages && (
+                        <div 
+                          className="w-2 h-2 rounded-full flex-shrink-0 self-center"
+                          style={{ backgroundColor: '#e93d82' }}
+                        />
+                      )}
                     </div>
                   </button>
 
-                  <div className="text-xs font-semibold opacity-60 mb-2 text-left">
-                    RECENT PROJECTS
-                  </div>
-                  {projects.slice(0, 4).map((project) => (
-                    <button
-                      key={project.id}
-                      onClick={() => onProjectSelect(project)}
-                      className="w-full text-left px-4 py-3 rounded-xl border transition-colors"
-                      style={{
-                        borderColor: THEME.border,
-                        background: THEME.card,
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = THEME.hover)}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = THEME.card)}
-                    >
-                      <div className="font-medium text-base">{project.name}</div>
-                    </button>
-                  ))}
+                  {recentProjectsWithChats.length > 0 && (
+                    <>
+                      <div className="text-xs font-semibold opacity-60 mb-2 text-left">
+                        RECENT PROJECTS
+                      </div>
+                      {recentProjectsWithChats.map((project) => {
+                        const hasUnread = hasUnreadProjectMessages(project.id, project.unreadChatCount || 0);
+                        return (
+                          <button
+                            key={project.id}
+                            onClick={() => onProjectSelect(project)}
+                            className="w-full text-left px-4 py-3 rounded-xl border transition-colors relative"
+                            style={{
+                              borderColor: THEME.border,
+                              background: THEME.card,
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.background = THEME.hover)}
+                            onMouseLeave={(e) => (e.currentTarget.style.background = THEME.card)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="font-medium text-base">{project.name}</div>
+                              {hasUnread && (
+                                <div 
+                                  className="w-2 h-2 rounded-full flex-shrink-0"
+                                  style={{ backgroundColor: '#e93d82' }}
+                                />
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </>
+                  )}
                 </div>
               </div>
             </div>
           ) : (
-            messages.map((msg: any) => {
-              if (isWorkspaceChat) {
-                return (
-                  <WorkspaceChatMessage
-                    key={msg.id}
-                    message={{
-                      id: msg.id,
-                      workspaceId: workspaceId || '',
-                      userId: msg.userId,
-                      content: msg.content,
-                      replyToMessageId: msg.replyTo?.messageId,
-                      referencedFiles: msg.fileDetails?.map((f: any) => f.id) || [],
-                      referencedTasks: [],
-                      createdAt: msg.createdAt,
-                      updatedAt: msg.createdAt,
-                      user: msg.user,
-                      fileDetails: msg.fileDetails,
-                      replyTo: msg.replyTo ? {
-                        id: msg.replyTo.messageId,
-                        content: '',
-                        user: {
-                          id: '',
-                          name: msg.replyTo.userName
-                        }
-                      } : null
-                    }}
-                    onDelete={handleDeleteMessage}
-                    onReply={handleReply}
-                    onEdit={handleEditMessage}
-                    onCopy={handleCopyMessage}
-                    currentUserId={user?.id}
-                  />
-                );
-              } else {
-                return (
-                  <MessageBlock
-                    key={msg.id}
-                    msg={msg}
-                    currentUserId={user?.id}
-                    onReply={handleReply}
-                    onScrollToMessage={handleScrollToMessage}
-                  />
-                );
-              }
-            })
+            groupMessagesByDate(messages).map((group, groupIndex) => (
+              <React.Fragment key={group.date}>
+                <DateDivider date={group.date} />
+                {group.messages.map((msg: any) => {
+                  if (isWorkspaceChat) {
+                    return (
+                      <WorkspaceChatMessage
+                        key={msg.id}
+                        message={{
+                          id: msg.id,
+                          workspaceId: workspaceId || '',
+                          userId: msg.userId,
+                          content: msg.content,
+                          replyToMessageId: msg.replyTo?.messageId,
+                          referencedFiles: msg.fileDetails?.map((f: any) => f.id) || [],
+                          referencedTasks: [],
+                          createdAt: msg.createdAt,
+                          updatedAt: msg.createdAt,
+                          user: msg.user,
+                          fileDetails: msg.fileDetails,
+                          replyTo: msg.replyTo ? {
+                            id: msg.replyTo.messageId,
+                            content: '',
+                            user: {
+                              id: '',
+                              name: msg.replyTo.userName
+                            }
+                          } : null
+                        }}
+                        onDelete={handleDeleteMessage}
+                        onReply={handleReply}
+                        onEdit={handleEditMessage}
+                        onCopy={handleCopyMessage}
+                        currentUserId={user?.id}
+                      />
+                    );
+                  } else {
+                    return (
+                      <MessageBlock
+                        key={msg.id}
+                        msg={msg}
+                        currentUserId={user?.id}
+                        onReply={handleReply}
+                        onScrollToMessage={handleScrollToMessage}
+                      />
+                    );
+                  }
+                })}
+              </React.Fragment>
+            ))
           )}
         </div>
       </ScrollArea>

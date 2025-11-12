@@ -34,6 +34,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/contexts/UserContext";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { useCreateProject } from "@/lib/api/hooks/useProjects";
+import { useWorkspaceMessages } from "@/lib/api/hooks/useWorkspaceChat";
 import { CreateProjectModal } from "@/components/CreateProjectModal";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -116,6 +117,7 @@ interface RailItemProps {
   menuEnabled?: boolean;
   onCreateProject?: (input: any) => void;
   currentWorkspaceId?: string;
+  hasNotification?: boolean;
 }
 
 interface TopHeaderProps {
@@ -211,6 +213,42 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const createProjectMutation = useCreateProject(currentWorkspaceId || "");
+
+  // Fetch workspace messages to check for unread
+  const { data: workspaceMessages = [] } = useWorkspaceMessages(currentWorkspaceId || "");
+
+  // Set up realtime subscription for instant notification updates
+  useEffect(() => {
+    if (!currentWorkspaceId) return;
+
+    const channel = supabase
+      .channel('dashboard-workspace-messages-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'workspace_chat_messages',
+          filter: `workspace_id=eq.${currentWorkspaceId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['workspace-chat', currentWorkspaceId] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentWorkspaceId, queryClient]);
+
+  // Check if workspace has unread messages
+  const hasUnreadWorkspaceMessages = useMemo(() => {
+    if (!currentWorkspaceId || workspaceMessages.length === 0) return false;
+    const key = `last_viewed_workspace_${currentWorkspaceId}`;
+    const lastViewed = parseInt(localStorage.getItem(key) || '0', 10);
+    return workspaceMessages.length > lastViewed;
+  }, [currentWorkspaceId, workspaceMessages.length]);
 
   // Sync active state with URL
   useEffect(() => {
@@ -406,6 +444,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
             menuEnabled={tab === "projects"}
             onCreateProject={tab === "projects" ? handleCreateProject : undefined}
             currentWorkspaceId={currentWorkspaceId}
+            hasNotification={tab === "chat" ? hasUnreadWorkspaceMessages : false}
           />
         ))}
 
@@ -515,11 +554,28 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
                     </DrawingErrorBoundary>
                   ) : selectedFile ? (
                     <TeamFileViewer file={selectedFile} />
-                  ) : (
+                  ) : !selected?.item ? (
+                    // Empty state: No project selected
                     <div className="h-full flex items-center justify-center">
-                      <div className="text-center text-slate-600">
-                        <p className="text-sm font-medium">No file or whiteboard selected</p>
-                        <p className="text-xs mt-1">Select from the panel to preview</p>
+                      <div className="text-center max-w-md px-6">
+                        <h2 className="text-2xl font-semibold mb-3 text-slate-900">
+                          Select a project to start
+                        </h2>
+                        <p className="text-lg text-slate-600">
+                          Hover Projects to choose a project. Then preview PDFs, images, whiteboards, and project info here.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    // Empty state: Project selected but no item chosen
+                    <div className="h-full flex items-center justify-center">
+                      <div className="text-center max-w-md px-6">
+                        <h2 className="text-2xl font-semibold mb-3 text-slate-900">
+                          Select an item to preview
+                        </h2>
+                        <p className="text-lg text-slate-600">
+                          Pick a file, whiteboard, or project info from the panel to view it here.
+                        </p>
                       </div>
                     </div>
                   )}
@@ -599,6 +655,7 @@ const RailItem = memo(function RailItem({
   menuEnabled = false,
   onCreateProject,
   currentWorkspaceId,
+  hasNotification = false,
 }: RailItemProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const showTimer = useRef<number | null>(null);
@@ -782,6 +839,13 @@ const RailItem = memo(function RailItem({
         <span className="pointer-events-none transform transition duration-300 group-hover:-translate-y-px group-hover:translate-x-[1px] group-hover:scale-110 group-hover:rotate-[2deg] group-hover:drop-shadow-[0_6px_14px_rgba(255,255,255,0.35)] active:scale-95">
           <IconComponent className="h-5 w-5" />
         </span>
+
+        {hasNotification && (
+          <span 
+            className="absolute top-0 right-0 w-2 h-2 rounded-full"
+            style={{ backgroundColor: '#e93d82' }}
+          />
+        )}
 
         <span className="pointer-events-none absolute left-12 px-1.5 py-1 rounded-md text-[11px] text-slate-700 bg-white/90 backdrop-blur-sm border border-slate-200 opacity-0 -translate-x-[6px] group-hover:opacity-100 group-hover:translate-x-0 transition">
           {label}

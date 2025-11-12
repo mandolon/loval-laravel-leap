@@ -44,44 +44,29 @@ export default function ProjectsPage() {
 
       {/* Main content area with panel */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Main project view */}
-        <div className="flex-1 p-6 overflow-auto">
+        {/* Main project view - Center Preview Canvas */}
+        <div className="flex-1 flex items-center justify-center overflow-auto">
           {isLoading ? (
             <div className="text-slate-600 text-sm">Loading projects...</div>
-          ) : projects?.length === 0 ? (
-            <div className="text-slate-600 text-sm">No projects found</div>
+          ) : !selectedProjectId ? (
+            // Empty state: No project selected
+            <div className="flex flex-col items-center justify-center text-center max-w-md px-6">
+              <h2 className="text-2xl font-semibold mb-3 text-slate-900">
+                Select a project to start
+              </h2>
+              <p className="text-lg text-slate-600">
+                Hover Projects to choose a project. Then preview PDFs, images, whiteboards, and project info here.
+              </p>
+            </div>
           ) : (
-            <div className="space-y-4">
-              {/* Project selector */}
-              <div className="flex flex-wrap gap-2">
-                {projects?.map((project) => (
-                  <button
-                    key={project.id}
-                    onClick={() => setSelectedProjectId(project.id)}
-                    className={`px-4 py-2 rounded-lg border transition-colors text-sm ${
-                      selectedProjectId === project.id
-                        ? 'border-blue-400 bg-blue-50 text-blue-900'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-700'
-                    }`}
-                  >
-                    {project.name}
-                  </button>
-                ))}
-              </div>
-
-              {/* Project details */}
-              {selectedProject && (
-                <div className="mt-6 p-4 border border-slate-200 rounded-lg bg-slate-50/50">
-                  <h2 className="text-sm font-semibold mb-2 text-slate-900">{selectedProject.name}</h2>
-                  <div className="text-xs text-slate-600 space-y-1">
-                    <div>Status: <span className="font-medium">{selectedProject.status}</span></div>
-                    <div>Phase: <span className="font-medium">{selectedProject.phase}</span></div>
-                    {selectedProject.description && (
-                      <div className="mt-2 text-slate-500">{selectedProject.description}</div>
-                    )}
-                  </div>
-                </div>
-              )}
+            // Empty state: Project selected but no item chosen
+            <div className="flex flex-col items-center justify-center text-center max-w-md px-6">
+              <h2 className="text-2xl font-semibold mb-3 text-slate-900">
+                Select an item to preview
+              </h2>
+              <p className="text-lg text-slate-600">
+                Pick a file, whiteboard, or project info from the panel to view it here.
+              </p>
             </div>
           )}
         </div>
