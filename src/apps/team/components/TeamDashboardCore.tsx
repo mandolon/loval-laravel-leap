@@ -78,6 +78,7 @@ import { TasksTable } from './TasksTable';
 import TaskDrawer from '@/components/TaskDrawer';
 import { TeamDetailLibraryView } from './TeamDetailLibraryView';
 import { useWorkspaceChatUnreadCount } from '@/lib/api/hooks/useChatReadReceipts';
+import { Calendar } from '@/components/ui/calendar';
 
 // ----------------------------------
 // Theme & constants
@@ -1746,6 +1747,9 @@ const ChatView = memo(function ChatView({ resetTrigger }: ChatViewProps) {
 const HomeView = memo(function HomeView() {
   const VIEW_TABS = ["Overview", "To Do", "Calendar", "Activity"];
   const [viewTab, setViewTab] = useState("Overview");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const { currentWorkspace } = useWorkspaces();
+  const { data: tasks = [] } = useWorkspaceTasks(currentWorkspace?.id || '');
 
   const icon = (t: string) =>
     t === "Overview" ? (
@@ -1781,14 +1785,121 @@ const HomeView = memo(function HomeView() {
 
   const tabs = VIEW_TABS.map((t) => ({ key: t, label: t, icon: icon(t) }));
 
+  // Get tasks with due dates
+  const tasksWithDates = useMemo(() => {
+    return tasks.filter(task => task.dueDate);
+  }, [tasks]);
+
+  // Get dates that have tasks
+  const datesWithTasks = useMemo(() => {
+    return tasksWithDates.map(task => new Date(task.dueDate!).toDateString());
+  }, [tasksWithDates]);
+
+  // Get tasks for selected date
+  const tasksForSelectedDate = useMemo(() => {
+    if (!selectedDate) return [];
+    const selectedDateString = selectedDate.toDateString();
+    return tasksWithDates.filter(task =>
+      new Date(task.dueDate!).toDateString() === selectedDateString
+    );
+  }, [selectedDate, tasksWithDates]);
+
+  // Render calendar view
+  const renderCalendarView = () => (
+    <div className="flex gap-6">
+      <div className="flex-shrink-0">
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={setSelectedDate}
+          className="rounded-md border"
+          modifiers={{
+            hasTask: (date) => datesWithTasks.includes(date.toDateString())
+          }}
+          modifiersStyles={{
+            hasTask: {
+              fontWeight: 'bold',
+              textDecoration: 'underline',
+              textDecorationColor: 'hsl(222.2 47.4% 11.2%)',
+              textUnderlineOffset: '3px'
+            }
+          }}
+        />
+      </div>
+      <div className="flex-1">
+        <h3 className="text-sm font-semibold mb-3">
+          {selectedDate ? selectedDate.toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }) : 'Select a date'}
+        </h3>
+        {tasksForSelectedDate.length > 0 ? (
+          <div className="space-y-2">
+            {tasksForSelectedDate.map(task => (
+              <div
+                key={task.id}
+                className="p-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h4 className="text-sm font-medium text-slate-900">{task.title}</h4>
+                    {task.description && (
+                      <p className="text-xs text-slate-600 mt-1">{task.description}</p>
+                    )}
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    task.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                    task.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                    task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-slate-100 text-slate-800'
+                  }`}>
+                    {task.priority}
+                  </span>
+                </div>
+                <div className="mt-2 flex items-center gap-3 text-xs text-slate-500">
+                  <span className={`px-2 py-0.5 rounded ${
+                    task.status === 'done_completed' ? 'bg-green-100 text-green-800' :
+                    task.status === 'progress_update' ? 'bg-blue-100 text-blue-800' :
+                    'bg-slate-100 text-slate-800'
+                  }`}>
+                    {task.status === 'done_completed' ? 'Completed' :
+                     task.status === 'progress_update' ? 'In Progress' :
+                     'Redline'}
+                  </span>
+                  {task.assignees.length > 0 && (
+                    <span>{task.assignees.length} assignee{task.assignees.length > 1 ? 's' : ''}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">No tasks scheduled for this date.</p>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="px-6 pt-1 pb-12">
       <div className="mt-1 mb-3">
         <TabsRow tabs={tabs} active={viewTab} onChange={setViewTab} />
       </div>
 
-      {/* Simple placeholder body */}
-      <div className="mt-3 text-sm text-slate-600">Home content placeholder</div>
+      <div className="mt-3">
+        {viewTab === "Overview" && (
+          <div className="text-sm text-slate-600">Home content placeholder</div>
+        )}
+        {viewTab === "To Do" && (
+          <div className="text-sm text-slate-600">To Do content placeholder</div>
+        )}
+        {viewTab === "Calendar" && renderCalendarView()}
+        {viewTab === "Activity" && (
+          <div className="text-sm text-slate-600">Activity content placeholder</div>
+        )}
+      </div>
     </div>
   );
 });
