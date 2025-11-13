@@ -72,6 +72,15 @@ const SoftSquare = forwardRef(function SoftSquare(
   );
 });
 
+// Model icon glyph for 3D Models tab
+const ModelGlyph = ({ style }: { style?: React.CSSProperties }) => (
+  <svg viewBox="0 0 24 24" style={style} fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M12 2 4 6v8l8 4 8-4V6z" />
+    <path d="M12 2v8l8 4" />
+    <path d="M4 6l8 4" />
+  </svg>
+);
+
 // ------- Minimal helpers -------
 const filterSections = (q: string, sections: any[], lists: any) => {
   const qq = String(q || "").trim().toLowerCase();
@@ -391,12 +400,26 @@ export default function ProjectPanel({
   initialWhiteboardPageId?: string | null;
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialTab = (searchParams.get('projectTab') as 'files' | 'whiteboards' | 'settings' | 'info') || 'files';
-  const [tab, setTab] = useState<'files' | 'whiteboards' | 'settings' | 'info'>(initialTab);
+  const initialTab = (searchParams.get('projectTab') as 'files' | 'whiteboards' | '3dmodels' | 'settings' | 'info') || 'files';
+  const [tab, setTab] = useState<'files' | 'whiteboards' | '3dmodels' | 'settings' | 'info'>(initialTab);
   const [query, setQuery] = useState("");
   const [wbQuery, setWbQuery] = useState("");
   const [selectedWB, setSelectedWB] = useState<any>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  
+  // 3D Models tab state
+  const [selectedModelVersion, setSelectedModelVersion] = useState("v5");
+  const [modelBackground, setModelBackground] = useState<"light" | "dark">("light");
+  const [showGrid, setShowGrid] = useState(true);
+  const [showAxes, setShowAxes] = useState(true);
+  const [layers, setLayers] = useState({
+    structure: true,
+    walls: true,
+    roof: true,
+    floor: true,
+    windows: true,
+  });
+  const [versionNotes, setVersionNotes] = useState("");
 
   const { currentWorkspaceId } = useWorkspaces();
   const navigate = useNavigate();
@@ -1425,27 +1448,27 @@ export default function ProjectPanel({
             width: '28px',
             height: '28px',
             borderRadius: radius.md,
-            border: tab === "whiteboards" ? `1px solid ${theme.whiteboards}` : '1px solid rgba(229, 231, 235, 0.5)',
-            backgroundColor: tab === "whiteboards" ? theme.whiteboards : 'transparent',
+            border: tab === "3dmodels" ? `1px solid ${theme.models}` : '1px solid rgba(229, 231, 235, 0.5)',
+            backgroundColor: tab === "3dmodels" ? theme.models : 'transparent',
             display: 'grid',
             placeItems: 'center',
             transition: 'all 0.2s',
             cursor: 'pointer',
           }}
           onMouseEnter={(e) => {
-            if (tab !== "whiteboards") e.currentTarget.style.backgroundColor = `${theme.whiteboards}15`;
+            if (tab !== "3dmodels") e.currentTarget.style.backgroundColor = `${theme.models}15`;
           }}
           onMouseLeave={(e) => {
-            if (tab !== "whiteboards") e.currentTarget.style.backgroundColor = 'transparent';
+            if (tab !== "3dmodels") e.currentTarget.style.backgroundColor = 'transparent';
           }}
-          aria-label="Whiteboards"
-          title="Whiteboards"
-          onClick={() => handleTabChange("whiteboards")}
+          aria-label="3D Models"
+          title="3D Models"
+          onClick={() => handleTabChange("3dmodels")}
         >
-          <BookOpen style={{
+          <ModelGlyph style={{
             width: '16px',
             height: '16px',
-            color: tab === "whiteboards" ? '#FFFFFF' : 'rgba(167, 139, 250, 0.5)',
+            color: tab === "3dmodels" ? '#FFFFFF' : 'rgba(139, 92, 246, 0.5)',
           }} />
         </button>
         <button
@@ -2039,6 +2062,162 @@ export default function ProjectPanel({
               </div>
             )}
           </>
+        )}
+
+        {/* 3D Models tab */}
+        {tab === "3dmodels" && (
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <HiddenScrollCSS />
+            
+            {/* Version Selector Header */}
+            <div className="px-2.5 pt-2 pb-1.5">
+              <div className="text-[10px] font-semibold text-slate-500 tracking-[0.08em] mb-1.5">
+                VERSION
+              </div>
+              <div className="flex gap-1.5">
+                <select
+                  value={selectedModelVersion}
+                  onChange={(e) => setSelectedModelVersion(e.target.value)}
+                  className="flex-1 h-7 rounded-[4px] border border-slate-300 bg-white px-2 text-[11px] text-slate-900 focus:outline-none focus:border-slate-500"
+                >
+                  <option value="v5">Version 5 (Current)</option>
+                  <option value="v4">Version 4</option>
+                  <option value="v3">Version 3</option>
+                </select>
+                <button
+                  type="button"
+                  className="h-7 w-7 rounded-md border border-slate-300 bg-white hover:bg-slate-50 grid place-items-center text-slate-600"
+                  aria-label="Reload model"
+                  title="Reload model"
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Settings & Layers (scrollable) */}
+            <div className="flex-1 overflow-auto px-2.5 py-2 space-y-4 no-scrollbar">
+              
+              {/* DISPLAY Section */}
+              <div>
+                <div className="text-[10px] font-semibold text-slate-500 tracking-[0.08em] mb-1">
+                  DISPLAY
+                </div>
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="text-[11px] text-slate-700">Background</span>
+                  <div className="inline-flex rounded-md border border-slate-200 bg-white overflow-hidden text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() => setModelBackground("light")}
+                      className={`px-2 h-6 flex items-center justify-center ${
+                        modelBackground === "light" ? "bg-slate-900 text-white" : "text-slate-700"
+                      }`}
+                    >
+                      Light
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModelBackground("dark")}
+                      className={`px-2 h-6 flex items-center justify-center border-l border-slate-200 ${
+                        modelBackground === "dark" ? "bg-slate-900 text-white" : "text-slate-700"
+                      }`}
+                    >
+                      Dark
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="flex items-center gap-2 text-[11px] text-slate-800">
+                    <input
+                      type="checkbox"
+                      className="h-3 w-3 rounded border-slate-300"
+                      checked={showGrid}
+                      onChange={(e) => setShowGrid(e.target.checked)}
+                    />
+                    <span>Grid</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-[11px] text-slate-800">
+                    <input
+                      type="checkbox"
+                      className="h-3 w-3 rounded border-slate-300"
+                      checked={showAxes}
+                      onChange={(e) => setShowAxes(e.target.checked)}
+                    />
+                    <span>Axes</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* LAYERS Section */}
+              <div>
+                <div className="text-[10px] font-semibold text-slate-500 tracking-[0.08em] mb-1">
+                  LAYERS
+                </div>
+                <div className="space-y-1 max-h-32 overflow-auto pr-1">
+                  <label className="flex items-center gap-2 text-[11px] text-slate-800">
+                    <input
+                      type="checkbox"
+                      className="h-3 w-3 rounded border-slate-300"
+                      checked={layers.structure}
+                      onChange={(e) => setLayers({...layers, structure: e.target.checked})}
+                    />
+                    <span>Structure</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-[11px] text-slate-800">
+                    <input
+                      type="checkbox"
+                      className="h-3 w-3 rounded border-slate-300"
+                      checked={layers.walls}
+                      onChange={(e) => setLayers({...layers, walls: e.target.checked})}
+                    />
+                    <span>Walls</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-[11px] text-slate-800">
+                    <input
+                      type="checkbox"
+                      className="h-3 w-3 rounded border-slate-300"
+                      checked={layers.roof}
+                      onChange={(e) => setLayers({...layers, roof: e.target.checked})}
+                    />
+                    <span>Roof</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-[11px] text-slate-800">
+                    <input
+                      type="checkbox"
+                      className="h-3 w-3 rounded border-slate-300"
+                      checked={layers.floor}
+                      onChange={(e) => setLayers({...layers, floor: e.target.checked})}
+                    />
+                    <span>Floor</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-[11px] text-slate-800">
+                    <input
+                      type="checkbox"
+                      className="h-3 w-3 rounded border-slate-300"
+                      checked={layers.windows}
+                      onChange={(e) => setLayers({...layers, windows: e.target.checked})}
+                    />
+                    <span>Windows & Doors</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* VERSION NOTES Section */}
+              <div>
+                <div className="text-[10px] font-semibold text-slate-500 tracking-[0.08em] mb-1">
+                  VERSION NOTES
+                </div>
+                <textarea
+                  value={versionNotes}
+                  onChange={(e) => setVersionNotes(e.target.value)}
+                  placeholder="Add notes about this version..."
+                  className="w-full h-20 px-2 py-1.5 text-[11px] rounded-md border border-slate-200 bg-white resize-none focus:outline-none focus:border-slate-400"
+                />
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Settings tab */}
