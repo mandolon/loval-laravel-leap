@@ -15,6 +15,7 @@ interface ThemeColors {
   // Tab colors
   files: string;
   whiteboards: string;
+  models: string;
   info: string;
   settings: string;
   
@@ -58,6 +59,7 @@ interface ThemeColors {
 const vibrantTheme: ThemeColors = {
   files: '#3B82F6',
   whiteboards: '#7C3AED',
+  models: '#8B5CF6',
   info: '#F59E0B',
   settings: '#10B981',
   
@@ -93,6 +95,7 @@ const vibrantTheme: ThemeColors = {
 const oceanTheme: ThemeColors = {
   files: '#0891B2',
   whiteboards: '#6366F1',
+  models: '#EC4899',
   info: '#14B8A6',
   settings: '#8B5CF6',
   
@@ -128,6 +131,7 @@ const oceanTheme: ThemeColors = {
 const sunsetTheme: ThemeColors = {
   files: '#F97316',
   whiteboards: '#EC4899',
+  models: '#14B8A6',
   info: '#8B5CF6',
   settings: '#EF4444',
   
@@ -163,6 +167,7 @@ const sunsetTheme: ThemeColors = {
 const forestTheme: ThemeColors = {
   files: '#059669',
   whiteboards: '#84CC16',
+  models: '#F59E0B',
   info: '#0891B2',
   settings: '#64748B',
   
@@ -198,6 +203,7 @@ const forestTheme: ThemeColors = {
 const monochromeTheme: ThemeColors = {
   files: '#18181B',
   whiteboards: '#3F3F46',
+  models: '#52525B',
   info: '#52525B',
   settings: '#71717A',
   
@@ -323,7 +329,7 @@ export const SOFT_SQUARE = 11;
 // HELPER FUNCTIONS
 // ============================================================================
 
-export function getTabColor(tab: 'files' | 'whiteboards' | 'info' | 'settings'): string {
+export function getTabColor(tab: 'files' | 'whiteboards' | 'models' | 'info' | 'settings'): string {
   return theme[tab];
 }
 
