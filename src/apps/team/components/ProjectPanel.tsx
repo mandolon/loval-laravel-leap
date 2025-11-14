@@ -378,6 +378,7 @@ export default function ProjectPanel({
   onBreadcrumb,
   onFileSelect,
   onWhiteboardSelect,
+  onModelSelect,
   showArrowStats,
   onToggleArrowStats,
   currentScale,
@@ -393,6 +394,7 @@ export default function ProjectPanel({
   onBreadcrumb?: (breadcrumb: string) => void;
   onFileSelect?: (file: ProjectFile | null) => void;
   onWhiteboardSelect?: (whiteboard: { pageId: string; pageName: string; versionTitle: string } | null) => void;
+  onModelSelect?: (model: { versionId: string; versionNumber: string; modelFile: any; settings: any } | null) => void;
   showArrowStats?: boolean;
   onToggleArrowStats?: () => void;
   currentScale?: ScalePreset;
@@ -506,13 +508,7 @@ export default function ProjectPanel({
     return filtered;
   }, [rawFiles]);
 
-  // Auto-select first model version if none selected
-  useEffect(() => {
-    if (modelVersions.length > 0 && !selectedModelVersion) {
-      const currentVersion = modelVersions.find((v: any) => v.is_current) as any;
-      setSelectedModelVersion(currentVersion?.id || (modelVersions[0] as any)?.id);
-    }
-  }, [modelVersions, selectedModelVersion]);
+  // No auto-selection - user must explicitly choose a version
 
   // Load settings when version changes
   useEffect(() => {
@@ -532,6 +528,49 @@ export default function ProjectPanel({
       setDraftVersionNotes(settings.notes || '');
     }
   }, [modelSettings]);
+
+  // Notify parent when model version selected and data is ready
+  useEffect(() => {
+    if (!onModelSelect) return;
+    
+    // If no version selected, unmount the viewer
+    if (!selectedModelVersion) {
+      onModelSelect(null);
+      return;
+    }
+    
+    const currentVersion = modelVersions.find((v: any) => v.id === selectedModelVersion) as any;
+    if (!currentVersion) return;
+
+    // Get the first model file for this version
+    const firstModelFile = versionFiles[0];
+    if (!firstModelFile) {
+      console.log('No model files found for version:', selectedModelVersion);
+      onModelSelect(null);
+      return;
+    }
+
+    // Get public URL for the model file
+    const { data: urlData } = supabase.storage
+      .from('project-files')
+      .getPublicUrl(firstModelFile.storage_path);
+
+    console.log('Model file selected:', {
+      filename: firstModelFile.filename,
+      storage_path: firstModelFile.storage_path,
+      public_url: urlData.publicUrl
+    });
+
+    onModelSelect({
+      versionId: selectedModelVersion,
+      versionNumber: currentVersion.version_number || 'Unknown',
+      modelFile: {
+        storage_path: urlData.publicUrl,
+        filename: firstModelFile.filename,
+      },
+      settings: modelSettings || {},
+    });
+  }, [selectedModelVersion, versionFiles]);
 
   // Transform database data to component format
   const sections = useMemo(() => {
@@ -2488,9 +2527,8 @@ export default function ProjectPanel({
                   onChange={(e) => setSelectedModelVersion(e.target.value)}
                   className="flex-1 h-7 rounded-[4px] border border-slate-300 bg-white px-2 text-[11px] text-slate-900 focus:outline-none focus:border-slate-500"
                 >
-                  {modelVersions.length === 0 ? (
-                    <option value="">No versions yet</option>
-                  ) : (
+                  <option value="">Select Version</option>
+                  {modelVersions.length === 0 ? null : (
                     modelVersions.map((version: any) => (
                       <option key={version.id} value={version.id}>
                         {version.version_number}

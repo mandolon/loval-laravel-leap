@@ -67,6 +67,7 @@ import {
 import { WorkspaceMembersTable } from "@/components/workspace/WorkspaceMembersTable";
 import { ExcelExportImport } from "@/components/workspace/ExcelExportImport";
 import TeamFileViewer from "./viewers/TeamFileViewer";
+import Team3DModelViewer from "./viewers/Team3DModelViewer";
 import ExcalidrawCanvas from '@/components/drawings/ExcalidrawCanvas';
 import { DrawingErrorBoundary } from '@/components/drawings/DrawingErrorBoundary';
 import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
@@ -201,6 +202,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
   const [autoCollapsedProjectPanel, setAutoCollapsedProjectPanel] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [selectedWhiteboard, setSelectedWhiteboard] = useState<{ pageId: string; pageName: string; versionTitle: string } | null>(null);
+  const [selectedModel, setSelectedModel] = useState<{ versionId: string; versionNumber: string; modelFile: any; settings: any } | null>(null);
   const [showArrowStats, setShowArrowStats] = useState(true); // Toggle visibility of stats display
   const [currentScale, setCurrentScale] = useState<ScalePreset>("1/4\" = 1'");
   const [arrowStats, setArrowStats] = useState<ArrowCounterStats>({ count: 0, values: [] });
@@ -626,6 +628,12 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
                       workspaceId={currentWorkspaceId || ''}
                       contentType={(searchParams.get('infoSection') || 'project-profile') as any}
                     />
+                  ) : selectedModel ? (
+                    <Team3DModelViewer
+                      modelFile={selectedModel.modelFile}
+                      settings={selectedModel.settings}
+                      versionNumber={selectedModel.versionNumber}
+                    />
                   ) : selectedWhiteboard ? (
                     <DrawingErrorBoundary 
                       onReset={() => {
@@ -709,10 +717,17 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
               onFileSelect={(file) => {
                 setSelectedFile(file);
                 setSelectedWhiteboard(null);
+                setSelectedModel(null);
               }}
               onWhiteboardSelect={(wb) => {
                 setSelectedWhiteboard(wb);
                 setSelectedFile(null);
+                setSelectedModel(null);
+              }}
+              onModelSelect={(model) => {
+                setSelectedModel(model);
+                setSelectedFile(null);
+                setSelectedWhiteboard(null);
               }}
               showArrowStats={showArrowStats}
               onToggleArrowStats={() => setShowArrowStats(!showArrowStats)}

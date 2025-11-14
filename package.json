@@ -10,7 +10,8 @@
     "build:desktop": "vite build --mode production",
     "build:tauri": "cd \"excalidraw-fork 2\" && yarn install --frozen-lockfile && yarn build:packages && cd .. && npm run build:desktop",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postinstall": "node -e \"const fs=require('fs'),path=require('path');const src='node_modules/web-ifc',dst='public/wasm';!fs.existsSync(dst)&&fs.mkdirSync(dst,{recursive:true});fs.readdirSync(src).filter(f=>f.endsWith('.wasm')).forEach(f=>fs.copyFileSync(path.join(src,f),path.join(dst,f)))\""
   },
   "dependencies": {
     "@capacitor/android": "^7.4.3",
@@ -79,7 +80,9 @@
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
+    "three": "^0.135.0",
     "vaul": "^0.9.9",
+    "web-ifc-viewer": "^1.0.218",
     "xlsx": "^0.18.5",
     "zod": "^3.25.76"
   },
