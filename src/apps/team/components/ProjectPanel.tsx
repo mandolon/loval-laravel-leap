@@ -422,6 +422,8 @@ export default function ProjectPanel({
     windows: true,
   });
   const [versionNotes, setVersionNotes] = useState("");
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [draftVersionNotes, setDraftVersionNotes] = useState("");
 
   const { currentWorkspaceId } = useWorkspaces();
   const navigate = useNavigate();
@@ -1107,6 +1109,43 @@ export default function ProjectPanel({
         description: error?.message || 'Failed to save settings',
         variant: 'destructive',
       });
+    }
+  };
+
+  const handleNotesEditToggle = async () => {
+    if (isEditingNotes) {
+      // Save mode - commit changes and save to database
+      setVersionNotes(draftVersionNotes.trim());
+      setIsEditingNotes(false);
+      
+      // Save to database
+      try {
+        await updateModelSettings.mutateAsync({
+          versionId: selectedModelVersion,
+          settings: {
+            background: modelBackground,
+            show_grid: showGrid,
+            show_axes: showAxes,
+            layers: layers,
+            notes: draftVersionNotes.trim(),
+          },
+        });
+
+        toast({
+          title: 'Notes saved',
+          description: 'Version notes updated successfully',
+        });
+      } catch (error: any) {
+        toast({
+          title: 'Error saving notes',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
+    } else {
+      // Edit mode - enter edit mode
+      setDraftVersionNotes(versionNotes);
+      setIsEditingNotes(true);
     }
   };
 
@@ -2338,16 +2377,25 @@ export default function ProjectPanel({
                 <div className="text-[10px] font-semibold text-slate-500 tracking-[0.08em] mb-1">
                   VERSION NOTES
                 </div>
-                <textarea
-                  value={versionNotes}
-                  onChange={(e) => setVersionNotes(e.target.value)}
-                  placeholder="Add notes about this version..."
-                  className="w-full h-20 px-2 py-1.5 text-[11px] rounded-md border border-slate-200 bg-white resize-none focus:outline-none focus:border-slate-400"
-                />
+                {isEditingNotes ? (
+                  <textarea
+                    value={draftVersionNotes}
+                    onChange={(e) => setDraftVersionNotes(e.target.value)}
+                    placeholder="Notes about this model version (scope, changes, assumptions)…"
+                    rows={5}
+                    className="w-full min-h-[140px] rounded-[4px] px-2 py-1.5 text-[11px] bg-slate-50 text-slate-900 resize-none focus:outline-none whitespace-pre-wrap"
+                  />
+                ) : (
+                  <div className="w-full min-h-[140px] rounded-[4px] px-2 py-1.5 text-[11px] text-slate-900 whitespace-pre-wrap bg-slate-50">
+                    {versionNotes || (
+                      <span className="text-slate-400">No notes for this version</span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Footer with Upload + Save buttons */}
+            {/* Footer with New Version + Edit/Save buttons */}
             <div className="px-2.5 pb-2 pt-2 border-t border-slate-200/80">
               <div className="flex gap-1">
                 <button
@@ -2356,22 +2404,20 @@ export default function ProjectPanel({
                   disabled={isUploadingModel}
                   className="h-7 flex-[4] rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-[11px] text-slate-800 flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
-                  </svg>
-                  <span>{isUploadingModel ? 'Uploading...' : 'Upload'}</span>
+                  <span className="text-[13px] leading-none">+</span>
+                  <span>{isUploadingModel ? 'Uploading...' : 'New version'}</span>
                 </button>
                 <button
                   type="button"
-                  onClick={handleSaveModelSettings}
+                  onClick={handleNotesEditToggle}
                   disabled={updateModelSettings.isPending}
                   className={`h-7 flex-[2] rounded-md border text-[11px] flex items-center justify-center transition-colors ${
-                    updateModelSettings.isPending
-                      ? "border-slate-300 bg-slate-100 text-slate-500"
-                      : "border-slate-900 bg-slate-900 text-white hover:bg-slate-800"
+                    isEditingNotes
+                      ? "border-slate-900 bg-slate-900 text-white hover:bg-slate-800"
+                      : "border-slate-300 bg-white text-slate-800 hover:bg-slate-50"
                   }`}
                 >
-                  {updateModelSettings.isPending ? 'Saving...' : 'Save'}
+                  {updateModelSettings.isPending ? 'Saving...' : (isEditingNotes ? 'Save' : 'Edit')}
                 </button>
               </div>
             </div>
