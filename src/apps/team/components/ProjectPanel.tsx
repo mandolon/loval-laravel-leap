@@ -498,13 +498,6 @@ export default function ProjectPanel({
       return hasModelExtension || hasModelMimeType;
     }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     
-    console.log('Model files debug:', {
-      totalFiles: rawFiles.length,
-      allFilenames: rawFiles.map(f => ({ name: f.filename, mime: f.mimetype })),
-      modelFiles: filtered.length,
-      modelFilenames: filtered.map(f => ({ name: f.filename, mime: f.mimetype }))
-    });
-    
     return filtered;
   }, [rawFiles]);
 
@@ -549,7 +542,6 @@ export default function ProjectPanel({
     // Get the first model file for this version
     const firstModelFile = versionFiles[0];
     if (!firstModelFile) {
-      console.log('No model files found for version:', selectedModelVersion);
       if (prevModelVersionRef.current) {
         onModelSelect(null);
       }
@@ -561,12 +553,6 @@ export default function ProjectPanel({
     const { data: urlData } = supabase.storage
       .from('project-files')
       .getPublicUrl(firstModelFile.storage_path);
-
-    console.log('Model file selected:', {
-      filename: firstModelFile.filename,
-      storage_path: firstModelFile.storage_path,
-      public_url: urlData.publicUrl
-    });
 
     prevModelVersionRef.current = selectedModelVersion;
     onModelSelect({
@@ -859,14 +845,6 @@ export default function ProjectPanel({
   const hasRestoredFileRef = useRef(false);
   const restoredWhiteboardIdRef = useRef<string | null>(null);
 
-  // Debug: Log mount/unmount
-  useEffect(() => {
-    console.log('🏗️ ProjectPanel MOUNTED, projectId:', projectId);
-    return () => {
-      console.log('💥 ProjectPanel UNMOUNTED, projectId:', projectId);
-    };
-  }, []);
-
   // Restore file selection from URL (only once)
   useEffect(() => {
     if (!initialFileId || rawFiles.length === 0 || !onFileSelect || hasRestoredFileRef.current) return;
@@ -888,12 +866,6 @@ export default function ProjectPanel({
 
   // Restore whiteboard selection from URL (only once per unique pageId)
   useEffect(() => {
-    console.log('🔄 Whiteboard restoration effect:', { 
-      initialWhiteboardPageId, 
-      hasDrawingVersions: !!drawingVersions, 
-      hasCallback: !!onWhiteboardSelect, 
-      alreadyRestoredId: restoredWhiteboardIdRef.current 
-    });
     // Skip if no pageId, no data, no callback, or we already restored THIS specific pageId
     if (!initialWhiteboardPageId || !drawingVersions || !onWhiteboardSelect || restoredWhiteboardIdRef.current === initialWhiteboardPageId) return;
     
@@ -955,12 +927,10 @@ export default function ProjectPanel({
   const visWB = useMemo(() => filterSections(wbQuery, wbSections, wbPages), [wbQuery, wbSections, wbPages]);
 
   const openWBProps = (versionId: string, versionTitle: string, pageId: string, pageName: string) => {
-    console.log('📋 openWBProps called:', { versionId, versionTitle, pageId, pageName });
     setSelectedWB({ versionId, versionTitle, pageId, pageName });
     setWbSelectedId(pageId);
     if (onBreadcrumb) onBreadcrumb(`Whiteboards › ${versionTitle} › ${pageName}`);
     if (onWhiteboardSelect) {
-      console.log('📤 Calling onWhiteboardSelect');
       onWhiteboardSelect({ pageId, pageName, versionTitle });
     }
   };

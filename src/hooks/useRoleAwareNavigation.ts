@@ -10,13 +10,11 @@ export const useRoleAwareNavigation = (providedWorkspaceId?: string) => {
   const { role } = useWorkspaceRole(workspaceId);
   
   const navigateToWorkspace = (path: string) => {
-    console.log('navigateToWorkspace called:', { path, workspaceId, role });
     if (!workspaceId || !role) {
       console.warn('Navigation blocked - missing workspaceId or role:', { workspaceId, role });
       return;
     }
     const fullPath = `/${role}/workspace/${workspaceId}${path}`;
-    console.log('Navigating to:', fullPath);
     navigate(fullPath);
   };
   
