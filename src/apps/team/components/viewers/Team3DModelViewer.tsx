@@ -410,6 +410,38 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
         return;
       }
 
+      // Escape key - exit current active tool
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        
+        // Exit measurement mode if active
+        if (measurementMode !== 'none' && viewerRef.current?.dimensions) {
+          viewerRef.current.dimensions.active = false;
+          viewerRef.current.dimensions.previewActive = false;
+          viewerRef.current.dimensions.cancelDrawing();
+          setMeasurementMode('none');
+          logger.log('Measurement tool deactivated');
+          return;
+        }
+        
+        // Exit clipping if active
+        if (clippingActive && viewerRef.current?.clipper) {
+          viewerRef.current.clipper.active = false;
+          setClippingActive(false);
+          logger.log('Clipping tool deactivated');
+          return;
+        }
+        
+        // Exit inspect mode if active
+        if (inspectMode) {
+          setInspectMode(false);
+          logger.log('Inspect mode deactivated');
+          return;
+        }
+        
+        return;
+      }
+
       // E key - toggle dimensions
       if (event.key === 'e' || event.key === 'E') {
         event.preventDefault();
@@ -457,7 +489,7 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [measurementMode, clippingActive]);
+  }, [measurementMode, clippingActive, inspectMode]);
 
 
   const handleResetView = () => {
