@@ -4,7 +4,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useProjectFolders, useProjectFiles, useDeleteProjectFile, useDeleteFolder, useMoveProjectFile, useRenameFolder, useRenameProjectFile, useUploadProjectFiles, downloadProjectFile, useCreateFolder, use3DModelsFolder } from '@/lib/api/hooks/useProjectFiles';
 import { useProjectFolderDragDrop } from '@/lib/api/hooks/useProjectFolderDragDrop';
 import { useDrawingVersions, useUpdateDrawingScale, useCreateDrawingPage, useCreateDrawingVersion, useDeleteDrawingVersion, useDeleteDrawingPage, useUpdateDrawingVersion, useUpdateDrawingPageName } from '@/lib/api/hooks/useDrawings';
-import { useUpdateModelSettings } from '@/lib/api/hooks/useModelVersions';
+import { useModelVersions, useModelSettings, useUpdateModelSettings, useDeleteModelVersion } from '@/lib/api/hooks/useModelVersions';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
 import { useHardDeleteProject, useProject } from '@/lib/api/hooks/useProjects';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
@@ -431,6 +433,7 @@ export default function ProjectPanel({
   const hardDeleteProjectMutation = useHardDeleteProject(currentWorkspaceId || "");
   const { data: project } = useProject(projectId);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Database queries for Files tab
   const { data: rawFolders = [], isLoading: foldersLoading } = useProjectFolders(projectId);
@@ -442,8 +445,32 @@ export default function ProjectPanel({
   const renameFolder = useRenameFolder(projectId);
   const renameFile = useRenameProjectFile(projectId);
   const uploadFiles = useUploadProjectFiles(projectId);
+
+  // Database queries for 3D Models tab
+  const { data: modelVersions = [] } = useModelVersions(projectId);
+  const { data: modelSettings } = useModelSettings(selectedModelVersion);
+  const updateModelSettings = useUpdateModelSettings();
+  const deleteModelVersion = useDeleteModelVersion();
   const createFolder = useCreateFolder(projectId);
   const { reorderFoldersMutation, moveFolderAcrossSectionsMutation, batchUpdateFoldersMutation } = useProjectFolderDragDrop(projectId);
+
+  // Query for model version files
+  const { data: versionFiles = [] } = useQuery({
+    queryKey: ['model-files', selectedModelVersion],
+    queryFn: async () => {
+      if (!selectedModelVersion) return [];
+      
+      const { data, error } = await supabase
+        .from('model_files')
+        .select('*')
+        .eq('version_id', selectedModelVersion)
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!selectedModelVersion,
+  });
 
   // Filter uploaded files to get only 3D model files (IFC, GLB, GLTF, etc.)
   const modelFiles = useMemo(() => {
@@ -479,12 +506,32 @@ export default function ProjectPanel({
     return filtered;
   }, [rawFiles]);
 
-  // Auto-select first model file if none selected
+  // Auto-select first model version if none selected
   useEffect(() => {
-    if (modelFiles.length > 0 && !selectedModelVersion) {
-      setSelectedModelVersion(modelFiles[0].id);
+    if (modelVersions.length > 0 && !selectedModelVersion) {
+      const currentVersion = modelVersions.find((v: any) => v.is_current) as any;
+      setSelectedModelVersion(currentVersion?.id || (modelVersions[0] as any)?.id);
     }
-  }, [modelFiles, selectedModelVersion]);
+  }, [modelVersions, selectedModelVersion]);
+
+  // Load settings when version changes
+  useEffect(() => {
+    if (modelSettings) {
+      const settings = modelSettings as any;
+      setModelBackground(settings.background || 'light');
+      setShowGrid(settings.show_grid ?? true);
+      setShowAxes(settings.show_axes ?? true);
+      setLayers(settings.layers || {
+        roof: true,
+        floor: true,
+        walls: true,
+        windows: true,
+        structure: true,
+      });
+      setVersionNotes(settings.notes || '');
+      setDraftVersionNotes(settings.notes || '');
+    }
+  }, [modelSettings]);
 
   // Transform database data to component format
   const sections = useMemo(() => {
@@ -746,7 +793,6 @@ export default function ProjectPanel({
   const deleteDrawingPage = useDeleteDrawingPage();
   const updateDrawingVersion = useUpdateDrawingVersion();
   const updateDrawingPageName = useUpdateDrawingPageName();
-  const updateModelSettings = useUpdateModelSettings();
   
   // Transform to UI format
   const wbSections = useMemo(() => 
@@ -1097,17 +1143,100 @@ export default function ProjectPanel({
 
   const handleModelFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || files.length === 0 || !modelsFolder) return;
+    if (!files || files.length === 0 || !modelsFolder || !project) return;
 
     setIsUploadingModel(true);
     try {
-      await uploadFiles.mutateAsync({
+      // Step 1: Upload files to storage
+      const uploadResult = await uploadFiles.mutateAsync({
         files: Array.from(files),
         folder_id: modelsFolder,
       });
+      
+      // Step 2: Get the latest version number
+      const { data: existingVersions } = await supabase
+        .from('model_versions')
+        .select('version_number')
+        .eq('project_id', projectId)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      // Step 3: Generate new version number
+      const latestVersion = existingVersions?.[0]?.version_number || 'v0.0';
+      const versionMatch = latestVersion.match(/v(\d+)\.(\d+)/);
+      const major = versionMatch ? parseInt(versionMatch[1]) : 0;
+      const minor = versionMatch ? parseInt(versionMatch[2]) : 0;
+      const newVersion = `v${major}.${minor + 1}`;
+      
+      // Step 4: Create new model version
+      const { data: newModelVersion, error: versionError } = await supabase
+        .from('model_versions')
+        .insert({
+          project_id: projectId,
+          version_number: newVersion,
+          is_current: true,
+        })
+        .select()
+        .single();
+      
+      if (versionError) throw versionError;
+      
+      // Step 5: Set all other versions to not current
+      await supabase
+        .from('model_versions')
+        .update({ is_current: false })
+        .eq('project_id', projectId)
+        .neq('id', newModelVersion.id);
+      
+      // Step 6: Link uploaded files to model version
+      const { data: uploadedFiles } = await supabase
+        .from('files')
+        .select('id, filename, mimetype, filesize, storage_path')
+        .eq('folder_id', modelsFolder)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
+        .limit(files.length);
+      
+      if (uploadedFiles) {
+        const modelFilesInserts = uploadedFiles.map(file => ({
+          version_id: newModelVersion.id,
+          file_id: file.id,
+          filename: file.filename,
+          mimetype: file.mimetype,
+          filesize: file.filesize,
+          storage_path: file.storage_path,
+        }));
+        
+        await supabase
+          .from('model_files')
+          .insert(modelFilesInserts);
+      }
+      
+      // Step 7: Create default model settings
+      await supabase
+        .from('model_settings')
+        .insert({
+          version_id: newModelVersion.id,
+          show_grid: true,
+          show_axes: true,
+          background: 'light',
+          layers: {
+            roof: true,
+            floor: true,
+            walls: true,
+            windows: true,
+            structure: true,
+          },
+          notes: '',
+        });
+      
+      // Step 8: Set the new version as selected
+      setSelectedModelVersion(newModelVersion.id);
+      
       toast({
         title: 'Success',
-        description: 'Model files uploaded successfully',
+        description: `Version ${newVersion} created with ${files.length} file(s)`,
       });
     } catch (error) {
       console.error('Model upload error:', error);
@@ -1121,6 +1250,85 @@ export default function ProjectPanel({
       if (modelFileInputRef.current) {
         modelFileInputRef.current.value = '';
       }
+    }
+  };
+
+  // Model version handlers
+  const handleReloadModel = () => {
+    queryClient.invalidateQueries({ queryKey: ['model-versions', projectId] });
+    queryClient.invalidateQueries({ queryKey: ['model-settings', selectedModelVersion] });
+    toast({
+      title: 'Reloaded',
+      description: 'Model data refreshed from server',
+    });
+  };
+
+  const handleRenameVersion = async () => {
+    if (!selectedModelVersion || !modelVersions) return;
+    
+    const currentVersion = modelVersions.find((v: any) => v.id === selectedModelVersion) as any;
+    if (!currentVersion) return;
+    
+    const newName = prompt('Enter new version number:', currentVersion.version_number);
+    if (!newName || newName === currentVersion.version_number) return;
+    
+    try {
+      const { error } = await supabase
+        .from('model_versions')
+        .update({ version_number: newName })
+        .eq('id', selectedModelVersion);
+      
+      if (error) throw error;
+      
+      queryClient.invalidateQueries({ queryKey: ['model-versions', projectId] });
+      toast({
+        title: 'Success',
+        description: `Version renamed to ${newName}`,
+      });
+    } catch (error) {
+      console.error('Rename error:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to rename version',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteVersion = async () => {
+    if (!selectedModelVersion || !modelVersions) return;
+    
+    const currentVersion = modelVersions.find((v: any) => v.id === selectedModelVersion) as any;
+    if (!currentVersion) return;
+    
+    const confirmed = window.confirm(
+      `Delete version ${currentVersion.version_number}? This will also delete associated files.`
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      await deleteModelVersion.mutateAsync(selectedModelVersion);
+      
+      // Select another version if available
+      const remainingVersions = modelVersions.filter((v: any) => v.id !== selectedModelVersion);
+      if (remainingVersions.length > 0) {
+        setSelectedModelVersion((remainingVersions[0] as any).id);
+      } else {
+        setSelectedModelVersion('');
+      }
+      
+      toast({
+        title: 'Success',
+        description: 'Version deleted successfully',
+      });
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete version',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -2279,14 +2487,14 @@ export default function ProjectPanel({
                   value={selectedModelVersion}
                   onChange={(e) => setSelectedModelVersion(e.target.value)}
                   className="flex-1 h-7 rounded-[4px] border border-slate-300 bg-white px-2 text-[11px] text-slate-900 focus:outline-none focus:border-slate-500"
-                  disabled={modelFiles.length === 0}
                 >
-                  {modelFiles.length === 0 ? (
-                    <option value="">No model files uploaded</option>
+                  {modelVersions.length === 0 ? (
+                    <option value="">No versions yet</option>
                   ) : (
-                    modelFiles.map((file, index) => (
-                      <option key={file.id} value={file.id}>
-                        {file.filename} {index === 0 ? '(Latest)' : ''}
+                    modelVersions.map((version: any) => (
+                      <option key={version.id} value={version.id}>
+                        {version.version_number}
+                        {version.is_current ? ' (current)' : ''}
                       </option>
                     ))
                   )}
@@ -2302,15 +2510,15 @@ export default function ProjectPanel({
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-40">
-                    <DropdownMenuItem onClick={() => console.log('Reload model')}>
+                    <DropdownMenuItem onClick={handleReloadModel}>
                       <RefreshCw size={14} className="mr-2" />
                       Reload
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => console.log('Rename version')}>
+                    <DropdownMenuItem onClick={handleRenameVersion}>
                       <Edit size={14} className="mr-2" />
                       Rename
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => console.log('Delete version')} className="text-red-600">
+                    <DropdownMenuItem onClick={handleDeleteVersion} className="text-red-600">
                       <Trash2 size={14} className="mr-2" />
                       Delete
                     </DropdownMenuItem>
