@@ -1525,6 +1525,34 @@ export default function ProjectPanel({
             width: '28px',
             height: '28px',
             borderRadius: radius.md,
+            border: tab === "whiteboards" ? `1px solid ${theme.whiteboards}` : '1px solid rgba(229, 231, 235, 0.5)',
+            backgroundColor: tab === "whiteboards" ? theme.whiteboards : 'transparent',
+            display: 'grid',
+            placeItems: 'center',
+            transition: 'all 0.2s',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            if (tab !== "whiteboards") e.currentTarget.style.backgroundColor = `${theme.whiteboards}15`;
+          }}
+          onMouseLeave={(e) => {
+            if (tab !== "whiteboards") e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+          aria-label="Whiteboards"
+          title="Whiteboards"
+          onClick={() => handleTabChange("whiteboards")}
+        >
+          <BookOpen style={{
+            width: '16px',
+            height: '16px',
+            color: tab === "whiteboards" ? '#FFFFFF' : 'rgba(124, 58, 237, 0.5)',
+          }} />
+        </button>
+        <button
+          style={{
+            width: '28px',
+            height: '28px',
+            borderRadius: radius.md,
             border: tab === "3dmodels" ? `1px solid ${theme.models}` : '1px solid rgba(229, 231, 235, 0.5)',
             backgroundColor: tab === "3dmodels" ? theme.models : 'transparent',
             display: 'grid',
@@ -1545,7 +1573,7 @@ export default function ProjectPanel({
           <ModelGlyph style={{
             width: '16px',
             height: '16px',
-            color: tab === "3dmodels" ? '#FFFFFF' : 'rgba(139, 92, 246, 0.5)',
+            color: tab === "3dmodels" ? '#FFFFFF' : 'rgba(6, 182, 212, 0.5)',
           }} />
         </button>
         <button
