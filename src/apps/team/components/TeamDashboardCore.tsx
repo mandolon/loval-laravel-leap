@@ -1996,6 +1996,32 @@ const TasksView = memo(function TasksView() {
   // Fetch data
   const { data: tasks = [], isLoading: tasksLoading } = useWorkspaceTasks(currentWorkspaceId || '');
   const { data: projects = [] } = useProjects(currentWorkspaceId || '', user?.id, user?.is_admin);
+  
+  // Loading progress state for animated progress bar
+  const [loadingProgress, setLoadingProgress] = useState(0);
+
+  // Animate loading progress while tasks are loading
+  useEffect(() => {
+    if (tasksLoading) {
+      setLoadingProgress(0);
+      
+      // Simulate progress (faster early, slower later)
+      const interval = setInterval(() => {
+        setLoadingProgress(prev => {
+          if (prev >= 90) return prev; // Stop at 90% until actually loaded
+          const increment = prev < 30 ? 15 : prev < 60 ? 10 : 5;
+          return Math.min(prev + increment, 90);
+        });
+      }, 300);
+      
+      return () => {
+        clearInterval(interval);
+      };
+    } else if (tasks.length >= 0) {
+      // Complete progress when loaded
+      setLoadingProgress(100);
+    }
+  }, [tasksLoading, tasks.length]);
 
   // Sync selectedTask with updated task from tasks array
   useEffect(() => {
@@ -2254,8 +2280,15 @@ const TasksView = memo(function TasksView() {
 
   if (tasksLoading) {
     return (
-      <div className="px-6 pt-1 pb-12 h-full flex items-center justify-center">
-        <div className="text-sm text-slate-600">Loading tasks...</div>
+      <div className="relative h-full w-full">
+        <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
+          <div className="text-center">
+            <div className="text-[10px] text-muted-foreground mb-2">Loading tasks...</div>
+            <div className="h-1 w-32 bg-muted rounded-full overflow-hidden">
+              <div className="h-full bg-primary animate-pulse" style={{ width: `${loadingProgress}%` }} />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
