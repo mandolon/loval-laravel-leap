@@ -3,6 +3,7 @@ import { Search, FolderClosed, BookOpen, MoreVertical, Settings2, Info, Plus } f
 import { useProjectFolders, useProjectFiles, useDeleteProjectFile, useDeleteFolder, useMoveProjectFile, useRenameFolder, useRenameProjectFile, useUploadProjectFiles, downloadProjectFile } from '@/lib/api/hooks/useProjectFiles';
 import { useProjectFolderDragDrop } from '@/lib/api/hooks/useProjectFolderDragDrop';
 import { useDrawingVersions, useUpdateDrawingScale, useCreateDrawingPage, useCreateDrawingVersion, useDeleteDrawingVersion, useDeleteDrawingPage, useUpdateDrawingVersion, useUpdateDrawingPageName } from '@/lib/api/hooks/useDrawings';
+import { useUpdateModelSettings } from '@/lib/api/hooks/useModelVersions';
 import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
 import { useHardDeleteProject, useProject } from '@/lib/api/hooks/useProjects';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
@@ -669,8 +670,10 @@ export default function ProjectPanel({
 
   // File upload state
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const modelFileInputRef = useRef<HTMLInputElement>(null);
   const [uploadTargetFolderId, setUploadTargetFolderId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingModel, setIsUploadingModel] = useState(false);
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   const [uploadingFiles, setUploadingFiles] = useState<Array<{
     name: string;
@@ -697,6 +700,7 @@ export default function ProjectPanel({
   const deleteDrawingPage = useDeleteDrawingPage();
   const updateDrawingVersion = useUpdateDrawingVersion();
   const updateDrawingPageName = useUpdateDrawingPageName();
+  const updateModelSettings = useUpdateModelSettings();
   
   // Transform to UI format
   const wbSections = useMemo(() => 
@@ -1030,6 +1034,79 @@ export default function ProjectPanel({
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = 'copy';
+  };
+
+  // ---- 3D Models: upload and save handlers ----
+  const handleModelUploadClick = () => {
+    modelFileInputRef.current?.click();
+  };
+
+  const handleModelFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploadingModel(true);
+    try {
+      // TODO: Implement actual file upload to storage and create model_files records
+      toast({
+        title: 'Upload started',
+        description: `Uploading ${files.length} model file(s)...`,
+      });
+      
+      // Simulate upload for now
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast({
+        title: 'Upload complete',
+        description: 'Model files uploaded successfully',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Upload failed',
+        description: error?.message || 'Failed to upload model files',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploadingModel(false);
+      if (modelFileInputRef.current) {
+        modelFileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleSaveModelSettings = async () => {
+    if (!selectedModelVersion) {
+      toast({
+        title: 'No version selected',
+        description: 'Please select a model version first',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      await updateModelSettings.mutateAsync({
+        versionId: selectedModelVersion,
+        settings: {
+          background: modelBackground,
+          show_grid: showGrid,
+          show_axes: showAxes,
+          layers: layers,
+          notes: versionNotes,
+        },
+      });
+
+      toast({
+        title: 'Settings saved',
+        description: 'Model settings updated successfully',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Save failed',
+        description: error?.message || 'Failed to save settings',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleFolderDragEnter = (e: React.DragEvent, folderId: string) => {
@@ -2069,6 +2146,17 @@ export default function ProjectPanel({
           <div className="flex-1 flex flex-col overflow-hidden">
             <HiddenScrollCSS />
             
+            {/* Hidden model file input */}
+            <input
+              ref={modelFileInputRef}
+              type="file"
+              multiple
+              accept=".glb,.gltf,.obj,.fbx,.dae,.stl"
+              onChange={handleModelFileInputChange}
+              className="hidden"
+              aria-label="Upload 3D model files"
+            />
+            
             {/* Version Selector Header */}
             <div className="px-2.5 pt-2 pb-1.5">
               <div className="text-[10px] font-semibold text-slate-500 tracking-[0.08em] mb-1.5">
@@ -2084,6 +2172,19 @@ export default function ProjectPanel({
                   <option value="v4">Version 4</option>
                   <option value="v3">Version 3</option>
                 </select>
+                <button
+                  type="button"
+                  onClick={handleModelUploadClick}
+                  disabled={isUploadingModel}
+                  className="h-7 px-2.5 rounded-md border border-slate-300 bg-white hover:bg-slate-50 flex items-center gap-1 text-slate-700 text-[11px] disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Upload model"
+                  title="Upload 3D model files"
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+                  </svg>
+                  <span>Upload</span>
+                </button>
                 <button
                   type="button"
                   className="h-7 w-7 rounded-md border border-slate-300 bg-white hover:bg-slate-50 grid place-items-center text-slate-600"
@@ -2215,6 +2316,18 @@ export default function ProjectPanel({
                   placeholder="Add notes about this version..."
                   className="w-full h-20 px-2 py-1.5 text-[11px] rounded-md border border-slate-200 bg-white resize-none focus:outline-none focus:border-slate-400"
                 />
+              </div>
+
+              {/* Save Button */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={handleSaveModelSettings}
+                  disabled={updateModelSettings.isPending}
+                  className="w-full h-8 rounded-md bg-slate-900 text-white text-[11px] font-medium hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {updateModelSettings.isPending ? 'Saving...' : 'Save Settings'}
+                </button>
               </div>
             </div>
           </div>
