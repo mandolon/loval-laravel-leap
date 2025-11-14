@@ -53,6 +53,8 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
   const [measurementMode, setMeasurementMode] = useState<'none' | 'distance' | 'area' | 'volume'>('none');
   const [clippingActive, setClippingActive] = useState(false);
   const [inspectMode, setInspectMode] = useState(false);
+  const [selectedDimension, setSelectedDimension] = useState<any>(null);
+  const [hoveredDimension, setHoveredDimension] = useState<any>(null);
 
   // Custom IFC viewer API for edges and other operations
   const { enableEdges, removeEdges, updateEdgeColor } = useIfcViewerAPI();
@@ -210,7 +212,7 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
             logger.log('Model children:', model.children?.length);
             
             try {
-              logger.log('Scene children count:', viewerRef.current.context?.scene?.children.length);
+            logger.log('Scene children count:', viewerRef.current.context?.scene?.children.length);
             } catch (sceneError) {
               logger.warn('Could not access scene:', sceneError);
             }
@@ -401,6 +403,419 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
     };
   }, [inspectMode, measurementMode, clippingActive]);
 
+  // Handle dimension selection on click
+  useEffect(() => {
+    if (!containerRef.current || !viewerRef.current?.dimensions || !viewerRef.current?.context || !viewerReady) return;
+    
+    const container = containerRef.current;
+    const dimensions = viewerRef.current.dimensions;
+    const context = viewerRef.current.context;
+    
+    const handleClick = (event: MouseEvent) => {
+      // Don't select if user is actively dragging/drawing a new dimension
+      // Check if currently dragging (creating a dimension)
+      const isDragging = (dimensions as any).dragging || false;
+      if (measurementMode === 'distance' && isDragging) {
+        logger.log('Skipping - actively dragging/drawing dimension');
+        return;
+      }
+      
+      // Don't select if clipping is active
+      if (clippingActive) {
+        logger.log('Skipping selection - clipping active');
+        return;
+      }
+      
+      // Get all dimension lines - access directly like delete() method does
+      // The delete() method uses this.dimensions directly (private array)
+      let dimensionLines = (dimensions as any).dimensions || [];
+      logger.log('Dimension lines found in array:', dimensionLines.length);
+      
+      // Log the actual dimensions object structure
+      if (dimensionLines.length === 0) {
+        logger.log('Dimensions object keys:', Object.keys(dimensions));
+        logger.log('Dimensions object:', dimensions);
+        logger.log('Raw dimensions property:', (dimensions as any).dimensions);
+        logger.log('Dimensions enabled?', (dimensions as any).enabled);
+        logger.log('Dimensions active?', dimensions.active);
+      }
+      
+      // Also try the getter method as fallback
+      if (dimensionLines.length === 0 && dimensions.getDimensionsLines) {
+        const getterLines = dimensions.getDimensionsLines || [];
+        logger.log('Getter method returned:', getterLines.length);
+        if (getterLines.length > 0) {
+          dimensionLines = getterLines;
+        }
+      }
+      
+      // If we have dimensions in the array, log their structure
+      if (dimensionLines.length > 0) {
+        logger.log('First dimension structure:', {
+          hasBoundingBox: !!dimensionLines[0].boundingBox,
+          boundingBoxType: dimensionLines[0].boundingBox?.type,
+          hasRoot: !!dimensionLines[0].root,
+          rootType: dimensionLines[0].root?.type
+        });
+      }
+      
+      // If still no dimensions, try to find them in the scene
+      // Dimensions are Groups containing a Line and CSS2DObject (text label)
+      if (dimensionLines.length === 0) {
+        const scene = context.getScene();
+        const foundDimensions: any[] = [];
+        let groupCount = 0;
+        let lineCount = 0;
+        let css2dCount = 0;
+        let meshCount = 0;
+        
+        // Log scene structure for debugging
+        logger.log('Scene children count:', scene.children.length);
+        scene.children.forEach((child: any, idx: number) => {
+          logger.log(`Scene child ${idx}:`, child.type, child.name || 'unnamed', 'children:', child.children?.length || 0);
+        });
+        
+        scene.traverse((obj: any) => {
+          if (obj.type === 'Group') {
+            groupCount++;
+            if (obj.children && obj.children.length > 0) {
+              const hasLine = obj.children.some((child: any) => {
+                if (child.type === 'Line') {
+                  lineCount++;
+                  return true;
+                }
+                return false;
+              });
+              const hasTextLabel = obj.children.some((child: any) => {
+                if (child.type === 'CSS2DObject' || (child.element && child.element.tagName === 'DIV')) {
+                  css2dCount++;
+                  return true;
+                }
+                return false;
+              });
+              
+              // Also check for endpoint meshes (dimensions have multiple meshes for endpoints)
+              const endpointMeshes = obj.children.filter((child: any) => child.type === 'Mesh');
+              meshCount += endpointMeshes.length;
+              
+              // Dimensions are Groups with a Line (and optionally CSS2DObject, but it might be in a separate renderer)
+              // So let's look for Groups with Lines and multiple Meshes (endpoints)
+              if (hasLine && endpointMeshes.length >= 2) {
+                logger.log('Found potential dimension Group with Line and', endpointMeshes.length, 'meshes');
+                
+                // Try to find or create a bounding box
+                let boundingBox = obj.children.find((child: any) => child.type === 'Mesh' && child.geometry?.type === 'BoxGeometry');
+                
+                // If no bounding box exists, use the line itself for raycasting
+                if (!boundingBox) {
+                  const line = obj.children.find((child: any) => child.type === 'Line');
+                  if (line) {
+                    boundingBox = line; // Use line for raycasting
+                    logger.log('Using line as bounding box for dimension');
+                  }
+                }
+                
+                if (boundingBox) {
+                  const dimObj: any = {
+                    root: obj,
+                    boundingBox: boundingBox
+                  };
+                  
+                  // Add a setter for dimensionColor
+                  Object.defineProperty(dimObj, 'dimensionColor', {
+                    set: function(color: Color) {
+                      // Try to set color on line and endpoints
+                      const line = obj.children.find((child: any) => child.type === 'Line');
+                      if (line && line.material) {
+                        line.material.color = color;
+                      }
+                      // Also try to find endpoint meshes
+                      obj.children.forEach((child: any) => {
+                        if (child.type === 'Mesh' && child.material) {
+                          child.material.color = color;
+                        }
+                      });
+                    },
+                    get: function() {
+                      // Return current color from line material
+                      const line = obj.children.find((child: any) => child.type === 'Line');
+                      return line && line.material ? line.material.color : new Color(0x000000);
+                    }
+                  });
+                  
+                  foundDimensions.push(dimObj);
+                }
+              }
+            }
+          }
+        });
+        
+        logger.log(`Scene traversal: ${groupCount} Groups, ${lineCount} Lines, ${css2dCount} CSS2DObjects, ${meshCount} Meshes`);
+        logger.log('Dimensions found in scene by traversal:', foundDimensions.length);
+        
+        if (foundDimensions.length > 0) {
+          dimensionLines = foundDimensions;
+          logger.log('Using dimensions found in scene');
+        }
+      }
+      
+      if (!dimensionLines || dimensionLines.length === 0) {
+        logger.log('No dimensions to select');
+        // Clear selection if clicking on empty space
+        if (selectedDimension) {
+          selectedDimension.dimensionColor = new Color(0x000000);
+          setSelectedDimension(null);
+        }
+        return;
+      }
+      
+      // Get bounding boxes for raycasting - use the same method as delete()
+      // The delete() method calls getBoundingBoxes() which maps dim.boundingBox
+      const boundingBoxes = dimensionLines
+        .map((dim: any) => dim.boundingBox)
+        .filter((box: any) => box !== undefined && box !== null);
+      
+      logger.log('Bounding boxes found:', boundingBoxes.length, 'from', dimensionLines.length, 'dimensions');
+      
+      if (boundingBoxes.length === 0) {
+        logger.log('No bounding boxes available - dimensions may not have bounding boxes created');
+        // Clear selection if clicking on empty space
+        if (selectedDimension) {
+          selectedDimension.dimensionColor = new Color(0x000000);
+          setSelectedDimension(null);
+        }
+        return;
+      }
+      
+      // Cast ray to find clicked dimension - use the same approach as delete() method
+      const intersects = context.castRay(boundingBoxes);
+      logger.log('Raycast result:', intersects?.length || 0, 'intersects');
+      
+      if (intersects && intersects.length > 0) {
+        // Find the dimension that was clicked
+        const clickedDimension = dimensionLines.find((dim: any) => dim.boundingBox === intersects[0].object);
+        logger.log('Clicked dimension found:', !!clickedDimension);
+        
+        if (clickedDimension) {
+          // Clear previous selection
+          if (selectedDimension && selectedDimension !== clickedDimension) {
+            selectedDimension.dimensionColor = new Color(0x000000);
+          }
+          
+          // Clear hover state first
+          if (hoveredDimension) {
+            // Only reset hovered dimension if it's not the one being selected
+            if (hoveredDimension !== clickedDimension) {
+              hoveredDimension.dimensionColor = new Color(0x000000);
+            }
+            setHoveredDimension(null);
+          }
+          
+          // Set selection state and apply color immediately
+          setSelectedDimension(clickedDimension);
+          clickedDimension.dimensionColor = new Color(0x0066ff);
+          
+          logger.log('Dimension selected successfully');
+        } else {
+          logger.log('Dimension not found in array');
+          // Clicked on empty space - clear selection
+          if (selectedDimension) {
+            selectedDimension.dimensionColor = new Color(0x000000);
+            setSelectedDimension(null);
+          }
+        }
+      } else {
+        logger.log('No raycast intersects - clicked on empty space');
+        // Clicked on empty space - clear selection
+        if (selectedDimension) {
+          selectedDimension.dimensionColor = new Color(0x000000);
+          setSelectedDimension(null);
+        }
+      }
+    };
+    
+    // Attach to the canvas element if available, otherwise use container
+    // Use a ref to track the element we attached to
+    let targetElement: HTMLElement | null = null;
+    let timeoutId: NodeJS.Timeout | null = null;
+    
+    const attachHandler = () => {
+      // Don't attach twice
+      if (targetElement) {
+        logger.log('Click handler already attached to:', targetElement);
+        return;
+      }
+      
+      const canvas = container.querySelector('canvas');
+      targetElement = (canvas || container) as HTMLElement;
+      if (targetElement) {
+        targetElement.addEventListener('click', handleClick, true); // Use capture phase
+        logger.log('Click handler attached to:', targetElement.tagName, targetElement === canvas ? 'canvas' : 'container');
+      } else {
+        logger.log('No target element found for click handler');
+      }
+    };
+    
+    // Try immediately
+    attachHandler();
+    
+    // If canvas not found, try again after a delay
+    if (!container.querySelector('canvas')) {
+      timeoutId = setTimeout(() => {
+        logger.log('Retrying click handler attachment after delay');
+        attachHandler();
+      }, 300);
+    }
+    
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      if (targetElement) {
+        targetElement.removeEventListener('click', handleClick, true);
+        targetElement = null;
+      }
+    };
+  }, [measurementMode, clippingActive, selectedDimension, viewerReady]);
+
+  // Handle dimension hover effect
+  useEffect(() => {
+    if (!containerRef.current || !viewerRef.current?.dimensions || !viewerRef.current?.context || !viewerReady) return;
+    
+    const container = containerRef.current;
+    const dimensions = viewerRef.current.dimensions;
+    const context = viewerRef.current.context;
+    
+    const handleMouseMove = (event: MouseEvent) => {
+      // Don't show hover if actively drawing a dimension
+      const isDragging = (dimensions as any).dragging || false;
+      if (measurementMode === 'distance' && isDragging) {
+        if (hoveredDimension) {
+          hoveredDimension.dimensionColor = new Color(0x000000);
+          setHoveredDimension(null);
+        }
+        return;
+      }
+      
+      // Don't show hover if clipping is active
+      if (clippingActive) {
+        if (hoveredDimension) {
+          hoveredDimension.dimensionColor = new Color(0x000000);
+          setHoveredDimension(null);
+        }
+        return;
+      }
+      
+      // Get all dimension lines
+      let dimensionLines = (dimensions as any).dimensions || [];
+      if (dimensionLines.length === 0 && dimensions.getDimensionsLines) {
+        const getterLines = dimensions.getDimensionsLines || [];
+        if (getterLines.length > 0) {
+          dimensionLines = getterLines;
+        }
+      }
+      
+      if (dimensionLines.length === 0) {
+        if (hoveredDimension) {
+          hoveredDimension.dimensionColor = new Color(0x000000);
+          setHoveredDimension(null);
+        }
+        return;
+      }
+      
+      // Get bounding boxes for raycasting
+      const boundingBoxes = dimensionLines
+        .map((dim: any) => dim.boundingBox)
+        .filter((box: any) => box !== undefined && box !== null);
+      
+      if (boundingBoxes.length === 0) {
+        if (hoveredDimension) {
+          hoveredDimension.dimensionColor = new Color(0x000000);
+          setHoveredDimension(null);
+        }
+        return;
+      }
+      
+      // Cast ray to find hovered dimension
+      const intersects = context.castRay(boundingBoxes);
+      
+      if (intersects && intersects.length > 0) {
+        const hoveredDim = dimensionLines.find((dim: any) => dim.boundingBox === intersects[0].object);
+        
+        if (hoveredDim) {
+          // Only show hover if not selected
+          if (hoveredDim !== selectedDimension) {
+            // Remove hover from previous dimension
+            if (hoveredDimension && hoveredDimension !== hoveredDim && hoveredDimension !== selectedDimension) {
+              hoveredDimension.dimensionColor = new Color(0x000000);
+            }
+            
+            // Apply hover effect (lighter blue) - only if not already selected
+            if (hoveredDim !== hoveredDimension && hoveredDim !== selectedDimension) {
+              hoveredDim.dimensionColor = new Color(0x3399ff); // Light blue for hover
+              setHoveredDimension(hoveredDim);
+            }
+          } else {
+            // If hovering over selected dimension, clear hover state but keep selection color
+            if (hoveredDimension && hoveredDimension !== selectedDimension) {
+              hoveredDimension.dimensionColor = new Color(0x000000);
+              setHoveredDimension(null);
+            }
+            // Ensure selected dimension stays selected color (not hover color)
+            if (selectedDimension) {
+              selectedDimension.dimensionColor = new Color(0x0066ff);
+            }
+          }
+        } else {
+          // Not hovering over any dimension
+          if (hoveredDimension && hoveredDimension !== selectedDimension) {
+            hoveredDimension.dimensionColor = new Color(0x000000);
+            setHoveredDimension(null);
+          }
+        }
+      } else {
+        // Not hovering over any dimension
+        if (hoveredDimension && hoveredDimension !== selectedDimension) {
+          hoveredDimension.dimensionColor = new Color(0x000000);
+          setHoveredDimension(null);
+        }
+      }
+    };
+    
+    // Attach to the canvas element if available, otherwise use container
+    let targetElement: HTMLElement | null = null;
+    let timeoutId: NodeJS.Timeout | null = null;
+    
+    const attachHandler = () => {
+      if (targetElement) return;
+      
+      const canvas = container.querySelector('canvas');
+      targetElement = (canvas || container) as HTMLElement;
+      if (targetElement) {
+        targetElement.addEventListener('mousemove', handleMouseMove);
+      }
+    };
+    
+    attachHandler();
+    if (!container.querySelector('canvas')) {
+      timeoutId = setTimeout(attachHandler, 300);
+    }
+    
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      if (targetElement) {
+        targetElement.removeEventListener('mousemove', handleMouseMove);
+        targetElement = null;
+      }
+      // Clean up hover state
+      if (hoveredDimension && hoveredDimension !== selectedDimension) {
+        hoveredDimension.dimensionColor = new Color(0x000000);
+      }
+    };
+  }, [measurementMode, clippingActive, selectedDimension, hoveredDimension, viewerReady]);
+
   // Add keyboard shortcuts for tools
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -452,6 +867,11 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
           viewerRef.current.clipper.active = false;
           setClippingActive(false);
         }
+        // Clear dimension selection when entering measurement mode
+        if (selectedDimension && newMode === 'distance') {
+          selectedDimension.dimensionColor = new Color(0x000000);
+          setSelectedDimension(null);
+        }
         return;
       }
 
@@ -472,6 +892,11 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
           viewerRef.current.dimensions.cancelDrawing();
           setMeasurementMode('none');
         }
+        // Clear dimension selection when entering clipping mode
+        if (selectedDimension) {
+          selectedDimension.dimensionColor = new Color(0x000000);
+          setSelectedDimension(null);
+        }
         logger.log('Clipping plane created (press P to create another)');
         return;
       }
@@ -480,8 +905,52 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
       if ((event.key === 'd' || event.key === 'D') && measurementMode === 'distance' && viewerRef.current?.dimensions?.active) {
         event.preventDefault();
         if (viewerRef.current.dimensions) {
+          const dimCountBefore = (viewerRef.current.dimensions as any).dimensions?.length || 0;
+          logger.log('Creating dimension, count before:', dimCountBefore);
           viewerRef.current.dimensions.create();
           logger.log('Dimension creation started (press D to create)');
+          
+          // Check if dimension was created after a short delay
+          setTimeout(() => {
+            const dimCountAfter = (viewerRef.current.dimensions as any).dimensions?.length || 0;
+            const getterCount = viewerRef.current.dimensions.getDimensionsLines?.length || 0;
+            logger.log('Dimension created, count after:', dimCountAfter, 'getter count:', getterCount);
+            
+            if (dimCountAfter > 0) {
+              const firstDim = (viewerRef.current.dimensions as any).dimensions[0];
+              logger.log('First dimension:', {
+                hasBoundingBox: !!firstDim?.boundingBox,
+                boundingBoxType: firstDim?.boundingBox?.type,
+                hasRoot: !!firstDim?.root,
+                rootType: firstDim?.root?.type,
+                rootChildren: firstDim?.root?.children?.length
+              });
+            }
+          }, 100);
+        }
+        return;
+      }
+
+      // Backspace or Delete key - delete selected dimension
+      if ((event.key === 'Backspace' || event.key === 'Delete') && selectedDimension && viewerRef.current?.dimensions) {
+        event.preventDefault();
+        const dimensions = viewerRef.current.dimensions;
+        const dimensionLines = dimensions.getDimensionsLines || [];
+        const index = dimensionLines.indexOf(selectedDimension);
+        
+        if (index !== -1) {
+          // Remove dimension from scene
+          selectedDimension.removeFromScene();
+          
+          // Remove from dimensions array (accessing private array via the delete method pattern)
+          // We'll use a workaround: call delete() which uses raycasting, but we know which one to delete
+          // Actually, we need to access the private dimensions array. Let's use a different approach.
+          // We can modify the source or use the delete method with proper setup.
+          // For now, let's directly remove it by accessing the internal array
+          (dimensions as any).dimensions.splice(index, 1);
+          
+          logger.log('Dimension deleted');
+          setSelectedDimension(null);
         }
         return;
       }
@@ -489,7 +958,7 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [measurementMode, clippingActive, inspectMode]);
+  }, [measurementMode, clippingActive, inspectMode, selectedDimension]);
 
 
   const handleResetView = () => {
