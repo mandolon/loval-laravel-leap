@@ -4,7 +4,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useProjectFolders, useProjectFiles, useDeleteProjectFile, useDeleteFolder, useMoveProjectFile, useRenameFolder, useRenameProjectFile, useUploadProjectFiles, downloadProjectFile } from '@/lib/api/hooks/useProjectFiles';
 import { useProjectFolderDragDrop } from '@/lib/api/hooks/useProjectFolderDragDrop';
 import { useDrawingVersions, useUpdateDrawingScale, useCreateDrawingPage, useCreateDrawingVersion, useDeleteDrawingVersion, useDeleteDrawingPage, useUpdateDrawingVersion, useUpdateDrawingPageName } from '@/lib/api/hooks/useDrawings';
-import { useUpdateModelSettings } from '@/lib/api/hooks/useModelVersions';
+import { useModelVersions, useModelSettings, useUpdateModelSettings, useDeleteModelVersion, useCreateModelVersion } from '@/lib/api/hooks/useModelVersions';
 import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
 import { useHardDeleteProject, useProject } from '@/lib/api/hooks/useProjects';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
@@ -370,12 +370,13 @@ interface ProjectFile {
   folder_id: string;
 }
 
-export default function ProjectPanel({ 
-  projectId, 
+export default function ProjectPanel({
+  projectId,
   projectName = "Project Files",
   onBreadcrumb,
   onFileSelect,
   onWhiteboardSelect,
+  onModelSelect,
   showArrowStats,
   onToggleArrowStats,
   currentScale,
@@ -385,12 +386,13 @@ export default function ProjectPanel({
   inchesPerSceneUnit,
   initialFileId,
   initialWhiteboardPageId
-}: { 
-  projectId: string; 
-  projectName?: string; 
+}: {
+  projectId: string;
+  projectName?: string;
   onBreadcrumb?: (breadcrumb: string) => void;
   onFileSelect?: (file: ProjectFile | null) => void;
   onWhiteboardSelect?: (whiteboard: { pageId: string; pageName: string; versionTitle: string } | null) => void;
+  onModelSelect?: (model: { versionId: string; versionNumber: string; modelFile: any; settings: any } | null) => void;
   showArrowStats?: boolean;
   onToggleArrowStats?: () => void;
   currentScale?: ScalePreset;
@@ -424,6 +426,9 @@ export default function ProjectPanel({
   const [versionNotes, setVersionNotes] = useState("");
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [draftVersionNotes, setDraftVersionNotes] = useState("");
+  const [isRenamingModelVersion, setIsRenamingModelVersion] = useState(false);
+  const [modelVersionRenameValue, setModelVersionRenameValue] = useState("");
+  const [deleteModelVersionId, setDeleteModelVersionId] = useState<string | null>(null);
 
   const { currentWorkspaceId } = useWorkspaces();
   const navigate = useNavigate();
@@ -703,8 +708,36 @@ export default function ProjectPanel({
   const deleteDrawingPage = useDeleteDrawingPage();
   const updateDrawingVersion = useUpdateDrawingVersion();
   const updateDrawingPageName = useUpdateDrawingPageName();
+
+  // 3D Models data - fetch from database
+  const { data: modelVersions, isLoading: modelsLoading } = useModelVersions(projectId);
+  const { data: currentModelSettings } = useModelSettings(selectedModelVersion);
   const updateModelSettings = useUpdateModelSettings();
-  
+  const deleteModelVersion = useDeleteModelVersion();
+  const createModelVersion = useCreateModelVersion(projectId);
+
+  // Load settings from database when version changes
+  useEffect(() => {
+    if (currentModelSettings) {
+      setModelBackground(currentModelSettings.background || 'light');
+      setShowGrid(currentModelSettings.show_grid ?? true);
+      setShowAxes(currentModelSettings.show_axes ?? true);
+      if (currentModelSettings.layers) {
+        setLayers(currentModelSettings.layers);
+      }
+      setVersionNotes(currentModelSettings.notes || '');
+      setDraftVersionNotes(currentModelSettings.notes || '');
+    }
+  }, [currentModelSettings]);
+
+  // Auto-select first model version when data loads
+  useEffect(() => {
+    if (modelVersions && modelVersions.length > 0 && !selectedModelVersion) {
+      const currentVersion = modelVersions.find(v => v.is_current) || modelVersions[0];
+      setSelectedModelVersion(currentVersion.id);
+    }
+  }, [modelVersions, selectedModelVersion]);
+
   // Transform to UI format
   const wbSections = useMemo(() => 
     drawingVersions?.map(v => ({ id: v.id, title: v.version_number })) || []
@@ -1050,18 +1083,61 @@ export default function ProjectPanel({
 
     setIsUploadingModel(true);
     try {
-      // TODO: Implement actual file upload to storage and create model_files records
       toast({
         title: 'Upload started',
-        description: `Uploading ${files.length} model file(s)...`,
+        description: `Uploading ${files.length} IFC model file(s)...`,
       });
-      
-      // Simulate upload for now
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
+      // Calculate the next version number
+      const nextVersionNumber = modelVersions && modelVersions.length > 0
+        ? `Version ${modelVersions.length + 1}`
+        : 'Version 1';
+
+      // Create a new model version
+      const versionData = {
+        project_id: projectId,
+        version_number: nextVersionNumber,
+        is_current: true, // Mark new version as current
+      };
+
+      const newVersion = await createModelVersion.mutateAsync(versionData);
+
+      // Upload each file to Supabase storage
+      for (const file of Array.from(files)) {
+        const fileName = file.name;
+        const filePath = `models/${projectId}/${newVersion.id}/${fileName}`;
+
+        // Upload file to Supabase storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('project-files')
+          .upload(filePath, file);
+
+        if (uploadError) {
+          throw new Error(`Failed to upload ${fileName}: ${uploadError.message}`);
+        }
+
+        // Create model_files record
+        const { error: fileRecordError } = await supabase
+          .from('model_files')
+          .insert({
+            version_id: newVersion.id,
+            filename: fileName,
+            storage_path: filePath,
+            filesize: file.size,
+            mimetype: file.type || 'application/octet-stream',
+          });
+
+        if (fileRecordError) {
+          throw new Error(`Failed to create file record: ${fileRecordError.message}`);
+        }
+      }
+
+      // Select the new version
+      setSelectedModelVersion(newVersion.id);
+
       toast({
         title: 'Upload complete',
-        description: 'Model files uploaded successfully',
+        description: `${files.length} IFC model file(s) uploaded successfully as ${nextVersionNumber}`,
       });
     } catch (error: any) {
       toast({
@@ -1117,7 +1193,7 @@ export default function ProjectPanel({
       // Save mode - commit changes and save to database
       setVersionNotes(draftVersionNotes.trim());
       setIsEditingNotes(false);
-      
+
       // Save to database
       try {
         await updateModelSettings.mutateAsync({
@@ -1148,6 +1224,89 @@ export default function ProjectPanel({
       setIsEditingNotes(true);
     }
   };
+
+  const handleReloadModel = () => {
+    // Reload the current model by re-triggering the viewer
+    const version = modelVersions?.find(v => v.id === selectedModelVersion);
+    if (version && onModelSelect) {
+      const modelFile = version.model_files?.[0];
+      const settings = version.model_settings;
+
+      if (modelFile) {
+        onModelSelect({
+          versionId: version.id,
+          versionNumber: version.version_number,
+          modelFile: {
+            storage_path: modelFile.storage_path,
+            filename: modelFile.filename,
+          },
+          settings: settings || {},
+        });
+      }
+    }
+
+    toast({
+      title: 'Model reloaded',
+      description: 'The 3D model has been refreshed',
+    });
+  };
+
+  const handleRenameModelVersion = () => {
+    const version = modelVersions?.find(v => v.id === selectedModelVersion);
+    if (version) {
+      setModelVersionRenameValue(version.version_number);
+      setIsRenamingModelVersion(true);
+    }
+  };
+
+  const handleDeleteModelVersion = () => {
+    setDeleteModelVersionId(selectedModelVersion);
+  };
+
+  const confirmDeleteModelVersion = async () => {
+    if (!deleteModelVersionId) return;
+
+    try {
+      await deleteModelVersion.mutateAsync(deleteModelVersionId);
+
+      toast({
+        title: 'Version deleted',
+        description: 'The model version has been deleted successfully',
+      });
+
+      // Select the first available version after deletion
+      const remainingVersions = modelVersions?.filter(v => v.id !== deleteModelVersionId);
+      if (remainingVersions && remainingVersions.length > 0) {
+        setSelectedModelVersion(remainingVersions[0].id);
+      }
+      setDeleteModelVersionId(null);
+    } catch (error: any) {
+      toast({
+        title: 'Error deleting version',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Sync settings changes to database (debounced)
+  const syncModelSettings = useCallback(async (updates: Partial<{ background: string; show_grid: boolean; show_axes: boolean; layers: any }>) => {
+    try {
+      await updateModelSettings.mutateAsync({
+        versionId: selectedModelVersion,
+        settings: {
+          background: modelBackground,
+          show_grid: showGrid,
+          show_axes: showAxes,
+          layers: layers,
+          notes: versionNotes,
+          ...updates,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to sync model settings:', error);
+    }
+  }, [selectedModelVersion, modelBackground, showGrid, showAxes, layers, versionNotes, updateModelSettings]);
 
   const handleFolderDragEnter = (e: React.DragEvent, folderId: string) => {
     // Only track OS file drags (not internal drag operations)
@@ -2219,10 +2378,10 @@ export default function ProjectPanel({
               ref={modelFileInputRef}
               type="file"
               multiple
-              accept=".glb,.gltf,.obj,.fbx,.dae,.stl"
+              accept=".ifc"
               onChange={handleModelFileInputChange}
               className="hidden"
-              aria-label="Upload 3D model files"
+              aria-label="Upload IFC model files"
             />
             
             {/* Version Selector - Sticky Top */}
@@ -2230,12 +2389,43 @@ export default function ProjectPanel({
               <div className="flex gap-1.5">
                 <select
                   value={selectedModelVersion}
-                  onChange={(e) => setSelectedModelVersion(e.target.value)}
+                  onChange={(e) => {
+                    const versionId = e.target.value;
+                    setSelectedModelVersion(versionId);
+
+                    // Find the selected version and trigger viewer update
+                    const version = modelVersions?.find(v => v.id === versionId);
+                    if (version && onModelSelect) {
+                      // Get the first model file for this version
+                      const modelFile = version.model_files?.[0];
+                      const settings = version.model_settings;
+
+                      if (modelFile) {
+                        onModelSelect({
+                          versionId: version.id,
+                          versionNumber: version.version_number,
+                          modelFile: {
+                            storage_path: modelFile.storage_path,
+                            filename: modelFile.filename,
+                          },
+                          settings: settings || {},
+                        });
+                      }
+                    }
+                  }}
                   className="flex-1 h-7 rounded-[4px] border border-slate-300 bg-white px-2 text-[11px] text-slate-900 focus:outline-none focus:border-slate-500"
                 >
-                  <option value="v5">Version 5 (Current)</option>
-                  <option value="v4">Version 4</option>
-                  <option value="v3">Version 3</option>
+                  {modelsLoading ? (
+                    <option>Loading versions...</option>
+                  ) : modelVersions && modelVersions.length > 0 ? (
+                    modelVersions.map(version => (
+                      <option key={version.id} value={version.id}>
+                        {version.version_number} {version.is_current ? '(Current)' : ''}
+                      </option>
+                    ))
+                  ) : (
+                    <option disabled>No versions available</option>
+                  )}
                 </select>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -2248,15 +2438,15 @@ export default function ProjectPanel({
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-40">
-                    <DropdownMenuItem onClick={() => console.log('Reload model')}>
+                    <DropdownMenuItem onClick={handleReloadModel}>
                       <RefreshCw size={14} className="mr-2" />
                       Reload
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => console.log('Rename version')}>
+                    <DropdownMenuItem onClick={handleRenameModelVersion}>
                       <Edit size={14} className="mr-2" />
                       Rename
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => console.log('Delete version')} className="text-red-600">
+                    <DropdownMenuItem onClick={handleDeleteModelVersion} className="text-red-600">
                       <Trash2 size={14} className="mr-2" />
                       Delete
                     </DropdownMenuItem>
@@ -2278,7 +2468,10 @@ export default function ProjectPanel({
                   <div className="inline-flex rounded-md border border-slate-200 bg-white overflow-hidden text-[11px]">
                     <button
                       type="button"
-                      onClick={() => setModelBackground("light")}
+                      onClick={() => {
+                        setModelBackground("light");
+                        syncModelSettings({ background: "light" });
+                      }}
                       className={`px-2 h-6 flex items-center justify-center ${
                         modelBackground === "light" ? "bg-slate-900 text-white" : "text-slate-700"
                       }`}
@@ -2287,7 +2480,10 @@ export default function ProjectPanel({
                     </button>
                     <button
                       type="button"
-                      onClick={() => setModelBackground("dark")}
+                      onClick={() => {
+                        setModelBackground("dark");
+                        syncModelSettings({ background: "dark" });
+                      }}
                       className={`px-2 h-6 flex items-center justify-center border-l border-slate-200 ${
                         modelBackground === "dark" ? "bg-slate-900 text-white" : "text-slate-700"
                       }`}
@@ -2302,7 +2498,10 @@ export default function ProjectPanel({
                       type="checkbox"
                       className="h-3 w-3 rounded border-slate-300"
                       checked={showGrid}
-                      onChange={(e) => setShowGrid(e.target.checked)}
+                      onChange={(e) => {
+                        setShowGrid(e.target.checked);
+                        syncModelSettings({ show_grid: e.target.checked });
+                      }}
                     />
                     <span>Grid</span>
                   </label>
@@ -2311,7 +2510,10 @@ export default function ProjectPanel({
                       type="checkbox"
                       className="h-3 w-3 rounded border-slate-300"
                       checked={showAxes}
-                      onChange={(e) => setShowAxes(e.target.checked)}
+                      onChange={(e) => {
+                        setShowAxes(e.target.checked);
+                        syncModelSettings({ show_axes: e.target.checked });
+                      }}
                     />
                     <span>Axes</span>
                   </label>
@@ -2329,7 +2531,11 @@ export default function ProjectPanel({
                       type="checkbox"
                       className="h-3 w-3 rounded border-slate-300"
                       checked={layers.structure}
-                      onChange={(e) => setLayers({...layers, structure: e.target.checked})}
+                      onChange={(e) => {
+                        const newLayers = {...layers, structure: e.target.checked};
+                        setLayers(newLayers);
+                        syncModelSettings({ layers: newLayers });
+                      }}
                     />
                     <span>Structure</span>
                   </label>
@@ -2338,7 +2544,11 @@ export default function ProjectPanel({
                       type="checkbox"
                       className="h-3 w-3 rounded border-slate-300"
                       checked={layers.walls}
-                      onChange={(e) => setLayers({...layers, walls: e.target.checked})}
+                      onChange={(e) => {
+                        const newLayers = {...layers, walls: e.target.checked};
+                        setLayers(newLayers);
+                        syncModelSettings({ layers: newLayers });
+                      }}
                     />
                     <span>Walls</span>
                   </label>
@@ -2347,7 +2557,11 @@ export default function ProjectPanel({
                       type="checkbox"
                       className="h-3 w-3 rounded border-slate-300"
                       checked={layers.roof}
-                      onChange={(e) => setLayers({...layers, roof: e.target.checked})}
+                      onChange={(e) => {
+                        const newLayers = {...layers, roof: e.target.checked};
+                        setLayers(newLayers);
+                        syncModelSettings({ layers: newLayers });
+                      }}
                     />
                     <span>Roof</span>
                   </label>
@@ -2356,7 +2570,11 @@ export default function ProjectPanel({
                       type="checkbox"
                       className="h-3 w-3 rounded border-slate-300"
                       checked={layers.floor}
-                      onChange={(e) => setLayers({...layers, floor: e.target.checked})}
+                      onChange={(e) => {
+                        const newLayers = {...layers, floor: e.target.checked};
+                        setLayers(newLayers);
+                        syncModelSettings({ layers: newLayers });
+                      }}
                     />
                     <span>Floor</span>
                   </label>
@@ -2365,7 +2583,11 @@ export default function ProjectPanel({
                       type="checkbox"
                       className="h-3 w-3 rounded border-slate-300"
                       checked={layers.windows}
-                      onChange={(e) => setLayers({...layers, windows: e.target.checked})}
+                      onChange={(e) => {
+                        const newLayers = {...layers, windows: e.target.checked};
+                        setLayers(newLayers);
+                        syncModelSettings({ layers: newLayers });
+                      }}
                     />
                     <span>Windows & Doors</span>
                   </label>
@@ -2486,6 +2708,71 @@ export default function ProjectPanel({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Delete Model Version Confirmation Dialog */}
+      <AlertDialog open={deleteModelVersionId !== null} onOpenChange={(open) => !open && setDeleteModelVersionId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Model Version?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will soft-delete the model version. You can recover it later if needed. All associated files and settings will be preserved.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteModelVersion}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete Version
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Rename Model Version Dialog */}
+      <Dialog open={isRenamingModelVersion} onOpenChange={setIsRenamingModelVersion}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Model Version</DialogTitle>
+            <DialogDescription>
+              Enter a new name for this model version
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              value={modelVersionRenameValue}
+              onChange={(e) => setModelVersionRenameValue(e.target.value)}
+              placeholder="Version name"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  // TODO: Implement rename mutation
+                  setIsRenamingModelVersion(false);
+                  toast({
+                    title: 'Version renamed',
+                    description: 'The model version has been renamed successfully',
+                  });
+                }
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRenamingModelVersion(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => {
+              // TODO: Implement rename mutation
+              setIsRenamingModelVersion(false);
+              toast({
+                title: 'Version renamed',
+                description: 'The model version has been renamed successfully',
+              });
+            }}>
+              Rename
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Upload Progress Bar */}
       {uploadingFiles.length > 0 && (
