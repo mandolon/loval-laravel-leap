@@ -2185,11 +2185,8 @@ export default function ProjectPanel({
               aria-label="Upload 3D model files"
             />
             
-            {/* Version Selector Header */}
-            <div className="px-2.5 pt-2 pb-1.5">
-              <div className="text-[10px] font-semibold text-slate-500 tracking-[0.08em] mb-1.5">
-                VERSION
-              </div>
+            {/* Version Selector - Sticky Top */}
+            <div className="sticky top-0 z-10 bg-white border-b border-slate-200/80 px-2.5 pt-2 pb-1.5">
               <div className="flex gap-1.5">
                 <select
                   value={selectedModelVersion}
@@ -2200,19 +2197,6 @@ export default function ProjectPanel({
                   <option value="v4">Version 4</option>
                   <option value="v3">Version 3</option>
                 </select>
-                <button
-                  type="button"
-                  onClick={handleModelUploadClick}
-                  disabled={isUploadingModel}
-                  className="h-7 px-2.5 rounded-md border border-slate-300 bg-white hover:bg-slate-50 flex items-center gap-1 text-slate-700 text-[11px] disabled:opacity-50 disabled:cursor-not-allowed"
-                  aria-label="Upload model"
-                  title="Upload 3D model files"
-                >
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
-                  </svg>
-                  <span>Upload</span>
-                </button>
                 <button
                   type="button"
                   className="h-7 w-7 rounded-md border border-slate-300 bg-white hover:bg-slate-50 grid place-items-center text-slate-600"
@@ -2345,16 +2329,33 @@ export default function ProjectPanel({
                   className="w-full h-20 px-2 py-1.5 text-[11px] rounded-md border border-slate-200 bg-white resize-none focus:outline-none focus:border-slate-400"
                 />
               </div>
+            </div>
 
-              {/* Save Button */}
-              <div className="pt-2">
+            {/* Footer with Upload + Save buttons */}
+            <div className="px-2.5 pb-2 pt-2 border-t border-slate-200/80">
+              <div className="flex gap-1">
+                <button
+                  type="button"
+                  onClick={handleModelUploadClick}
+                  disabled={isUploadingModel}
+                  className="h-7 flex-[4] rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-[11px] text-slate-800 flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+                  </svg>
+                  <span>{isUploadingModel ? 'Uploading...' : 'Upload'}</span>
+                </button>
                 <button
                   type="button"
                   onClick={handleSaveModelSettings}
                   disabled={updateModelSettings.isPending}
-                  className="w-full h-8 rounded-md bg-slate-900 text-white text-[11px] font-medium hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`h-7 flex-[2] rounded-md border text-[11px] flex items-center justify-center transition-colors ${
+                    updateModelSettings.isPending
+                      ? "border-slate-300 bg-slate-100 text-slate-500"
+                      : "border-slate-900 bg-slate-900 text-white hover:bg-slate-800"
+                  }`}
                 >
-                  {updateModelSettings.isPending ? 'Saving...' : 'Save Settings'}
+                  {updateModelSettings.isPending ? 'Saving...' : 'Save'}
                 </button>
               </div>
             </div>
