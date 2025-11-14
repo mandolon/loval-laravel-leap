@@ -59,7 +59,7 @@ interface ThemeColors {
 const vibrantTheme: ThemeColors = {
   files: '#3B82F6',
   whiteboards: '#7C3AED',
-  models: '#8B5CF6',
+  models: '#06B6D4',
   info: '#F59E0B',
   settings: '#10B981',
   
