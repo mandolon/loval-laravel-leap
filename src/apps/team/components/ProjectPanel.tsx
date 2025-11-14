@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef, forwardRef, useCallback } from "react";
 import { Search, FolderClosed, BookOpen, MoreVertical, Settings2, Info, Plus, RefreshCw, Edit, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useProjectFolders, useProjectFiles, useDeleteProjectFile, useDeleteFolder, useMoveProjectFile, useRenameFolder, useRenameProjectFile, useUploadProjectFiles, downloadProjectFile } from '@/lib/api/hooks/useProjectFiles';
+import { useProjectFolders, useProjectFiles, useDeleteProjectFile, useDeleteFolder, useMoveProjectFile, useRenameFolder, useRenameProjectFile, useUploadProjectFiles, downloadProjectFile, useCreateFolder, use3DModelsFolder } from '@/lib/api/hooks/useProjectFiles';
 import { useProjectFolderDragDrop } from '@/lib/api/hooks/useProjectFolderDragDrop';
 import { useDrawingVersions, useUpdateDrawingScale, useCreateDrawingPage, useCreateDrawingVersion, useDeleteDrawingVersion, useDeleteDrawingPage, useUpdateDrawingVersion, useUpdateDrawingPageName } from '@/lib/api/hooks/useDrawings';
 import { useUpdateModelSettings } from '@/lib/api/hooks/useModelVersions';
@@ -410,7 +410,7 @@ export default function ProjectPanel({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   
   // 3D Models tab state
-  const [selectedModelVersion, setSelectedModelVersion] = useState("v5");
+  const [selectedModelVersion, setSelectedModelVersion] = useState("");
   const [modelBackground, setModelBackground] = useState<"light" | "dark">("light");
   const [showGrid, setShowGrid] = useState(true);
   const [showAxes, setShowAxes] = useState(true);
@@ -435,13 +435,56 @@ export default function ProjectPanel({
   // Database queries for Files tab
   const { data: rawFolders = [], isLoading: foldersLoading } = useProjectFolders(projectId);
   const { data: rawFiles = [], isLoading: filesLoading } = useProjectFiles(projectId);
+  const { data: modelsFolder } = use3DModelsFolder(projectId);
   const deleteFile = useDeleteProjectFile(projectId);
   const deleteFolder = useDeleteFolder(projectId);
   const moveFile = useMoveProjectFile(projectId);
   const renameFolder = useRenameFolder(projectId);
   const renameFile = useRenameProjectFile(projectId);
   const uploadFiles = useUploadProjectFiles(projectId);
+  const createFolder = useCreateFolder(projectId);
   const { reorderFoldersMutation, moveFolderAcrossSectionsMutation, batchUpdateFoldersMutation } = useProjectFolderDragDrop(projectId);
+
+  // Filter uploaded files to get only 3D model files (IFC, GLB, GLTF, etc.)
+  const modelFiles = useMemo(() => {
+    const modelExtensions = ['.ifc', '.glb', '.gltf', '.obj', '.fbx', '.dae', '.stl'];
+    const modelMimeTypes = [
+      'application/x-step', // IFC files
+      'application/octet-stream', // Generic binary (often used for IFC)
+      'model/gltf-binary',
+      'model/gltf+json',
+      'model/obj',
+      'model/fbx',
+      'model/stl',
+    ];
+    
+    const filtered = rawFiles.filter(file => {
+      const hasModelExtension = modelExtensions.some(ext => 
+        file.filename.toLowerCase().endsWith(ext)
+      );
+      const hasModelMimeType = file.mimetype && modelMimeTypes.some(mime => 
+        file.mimetype?.toLowerCase().includes(mime.toLowerCase())
+      );
+      
+      return hasModelExtension || hasModelMimeType;
+    }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    
+    console.log('Model files debug:', {
+      totalFiles: rawFiles.length,
+      allFilenames: rawFiles.map(f => ({ name: f.filename, mime: f.mimetype })),
+      modelFiles: filtered.length,
+      modelFilenames: filtered.map(f => ({ name: f.filename, mime: f.mimetype }))
+    });
+    
+    return filtered;
+  }, [rawFiles]);
+
+  // Auto-select first model file if none selected
+  useEffect(() => {
+    if (modelFiles.length > 0 && !selectedModelVersion) {
+      setSelectedModelVersion(modelFiles[0].id);
+    }
+  }, [modelFiles, selectedModelVersion]);
 
   // Transform database data to component format
   const sections = useMemo(() => {
@@ -1041,32 +1084,36 @@ export default function ProjectPanel({
 
   // ---- 3D Models: upload and save handlers ----
   const handleModelUploadClick = () => {
+    if (!modelsFolder) {
+      toast({
+        title: 'Error',
+        description: '3D Models folder not found. Please contact support.',
+        variant: 'destructive',
+      });
+      return;
+    }
     modelFileInputRef.current?.click();
   };
 
   const handleModelFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0 || !modelsFolder) return;
 
     setIsUploadingModel(true);
     try {
-      // TODO: Implement actual file upload to storage and create model_files records
-      toast({
-        title: 'Upload started',
-        description: `Uploading ${files.length} model file(s)...`,
+      await uploadFiles.mutateAsync({
+        files: Array.from(files),
+        folder_id: modelsFolder,
       });
-      
-      // Simulate upload for now
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
       toast({
-        title: 'Upload complete',
+        title: 'Success',
         description: 'Model files uploaded successfully',
       });
-    } catch (error: any) {
+    } catch (error) {
+      console.error('Model upload error:', error);
       toast({
-        title: 'Upload failed',
-        description: error?.message || 'Failed to upload model files',
+        title: 'Error',
+        description: 'Failed to upload model files',
         variant: 'destructive',
       });
     } finally {
@@ -2219,7 +2266,7 @@ export default function ProjectPanel({
               ref={modelFileInputRef}
               type="file"
               multiple
-              accept=".glb,.gltf,.obj,.fbx,.dae,.stl"
+              accept=".ifc,.glb,.gltf,.obj,.fbx,.dae,.stl"
               onChange={handleModelFileInputChange}
               className="hidden"
               aria-label="Upload 3D model files"
@@ -2232,10 +2279,17 @@ export default function ProjectPanel({
                   value={selectedModelVersion}
                   onChange={(e) => setSelectedModelVersion(e.target.value)}
                   className="flex-1 h-7 rounded-[4px] border border-slate-300 bg-white px-2 text-[11px] text-slate-900 focus:outline-none focus:border-slate-500"
+                  disabled={modelFiles.length === 0}
                 >
-                  <option value="v5">Version 5 (Current)</option>
-                  <option value="v4">Version 4</option>
-                  <option value="v3">Version 3</option>
+                  {modelFiles.length === 0 ? (
+                    <option value="">No model files uploaded</option>
+                  ) : (
+                    modelFiles.map((file, index) => (
+                      <option key={file.id} value={file.id}>
+                        {file.filename} {index === 0 ? '(Latest)' : ''}
+                      </option>
+                    ))
+                  )}
                 </select>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

@@ -344,6 +344,31 @@ export const useAttachmentsFolder = (projectId: string) => {
   })
 }
 
+// Get 3D Models folder for project
+export const use3DModelsFolder = (projectId: string) => {
+  return useQuery({
+    queryKey: [...projectFilesKeys.folders(projectId), '3d-models'],
+    enabled: !!projectId,
+    queryFn: async (): Promise<string | null> => {
+      const { data, error } = await supabase
+        .from('folders')
+        .select('id')
+        .eq('project_id', projectId)
+        .eq('name', '3D Models')
+        .eq('is_system_folder', true)
+        .is('deleted_at', null)
+        .maybeSingle()
+
+      if (error) {
+        console.error('Error fetching 3D Models folder:', error)
+        return null
+      }
+      
+      return data?.id || null
+    },
+  })
+}
+
 // Upload files to Attachments folder (for chat)
 export const useUploadChatFiles = (projectId: string) => {
   const queryClient = useQueryClient()
