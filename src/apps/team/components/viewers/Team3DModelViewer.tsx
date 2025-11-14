@@ -8,11 +8,14 @@ import {
   Box,
   Cuboid,
   Scissors,
-  X
+  X,
+  MousePointer2
 } from 'lucide-react';
 import { IfcViewerAPI } from 'web-ifc-viewer';
+import * as THREE from 'three';
 import { Color } from 'three';
 import { logger } from '@/utils/logger';
+import { useIfcViewerAPI } from '../../hooks/useIfcViewerAPI';
 
 interface ModelSettings {
   background?: string;
@@ -49,6 +52,10 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
   // Measurement and clipping state
   const [measurementMode, setMeasurementMode] = useState<'none' | 'distance' | 'area' | 'volume'>('none');
   const [clippingActive, setClippingActive] = useState(false);
+  const [inspectMode, setInspectMode] = useState(false);
+
+  // Custom IFC viewer API for edges and other operations
+  const { enableEdges, removeEdges, updateEdgeColor } = useIfcViewerAPI();
 
   // Initialize IFC viewer
   useEffect(() => {
@@ -75,19 +82,9 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
         logger.log('WASM path set to:', wasmPath);
         logger.log('Loader WASM path:', viewer.IFC.loader.ifcManager.state.wasmPath);
 
-        // Set up the grid and axes
-        viewer.grid.setGrid();
-        viewer.axes.setAxes();
-
-        // Configure grid visibility
-        if (viewer.grid && viewer.grid.grid) {
-          viewer.grid.grid.visible = showGrid;
-        }
-
-        // Configure axes visibility
-        if (viewer.axes && viewer.axes.axes) {
-          viewer.axes.axes.visible = showAxes;
-        }
+        // Don't set up grid and axes - keep viewer clean
+        // viewer.grid.setGrid();
+        // viewer.axes.setAxes();
 
         viewerRef.current = viewer;
         
@@ -160,6 +157,11 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
         setLoading(true);
         setError(null);
 
+        // Remove any existing edges before loading new model
+        if (viewerRef.current) {
+          removeEdges(viewerRef.current);
+        }
+
         logger.log('Loading model from:', modelFile.storage_path);
 
         // Fetch the file from the public URL
@@ -199,14 +201,81 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
               throw new Error('loadIfcUrl returned null - file may not be a valid IFC file or WASM failed to load');
             }
             
+            // Get modelID from the loaded model
+            const modelID = (model as any).modelID || (viewerRef.current.IFC.loader.ifcManager as any).models?.[0];
+            
             logger.log('IFC model loaded, model object:', model);
             logger.log('Model type:', model.type);
+            logger.log('Model ID:', modelID);
             logger.log('Model children:', model.children?.length);
-            logger.log('Scene children count:', viewerRef.current.context?.scene?.children.length);
+            
+            try {
+              logger.log('Scene children count:', viewerRef.current.context?.scene?.children.length);
+            } catch (sceneError) {
+              logger.warn('Could not access scene:', sceneError);
+            }
             
             // Ensure model is visible
             model.visible = true;
             logger.log('Model visibility set to true');
+            
+            // Add edges to the IFC model itself
+            let edgeCount = 0;
+            logger.log('Checking model for geometry...', {
+              hasGeometry: !!(model as any).geometry,
+              isMesh: (model as any).isMesh,
+              type: (model as any).type,
+              geometryType: (model as any).geometry?.type
+            });
+            
+            try {
+              // IFC models are often flat meshes, so add edges to the model directly
+              if ((model as any).geometry) {
+                logger.log('Adding edges to model geometry, vertices:', (model as any).geometry.attributes.position?.count);
+                const edges = new THREE.EdgesGeometry((model as any).geometry, 30); // 30 degree threshold
+                logger.log('Edges created, edge count:', edges.attributes.position.count / 2);
+                
+                const lineMaterial = new THREE.LineBasicMaterial({ 
+                  color: 0x000000,
+                  transparent: false,
+                  opacity: 1,
+                  depthTest: true,
+                  depthWrite: true
+                });
+                const line = new THREE.LineSegments(edges, lineMaterial);
+                line.renderOrder = 1; // Render edges after the mesh
+                line.raycast = () => {}; // Make edges non-raycastable for better performance
+                (line as any).isEdge = true; // Mark as edge for identification
+                model.add(line);
+                edgeCount++;
+                logger.log('Edge LineSegments added to model');
+              }
+              
+              // Also traverse children in case model has hierarchy
+              model.traverse((child: any) => {
+                if (child.isMesh && child.geometry && child !== model) {
+                  try {
+                    const edges = new THREE.EdgesGeometry(child.geometry, 30);
+                    const lineMaterial = new THREE.LineBasicMaterial({ 
+                      color: 0x000000,
+                      transparent: false,
+                      opacity: 1
+                    });
+                    const line = new THREE.LineSegments(edges, lineMaterial);
+                    line.renderOrder = 1;
+                    line.raycast = () => {}; // Make edges non-raycastable
+                    (line as any).isEdge = true; // Mark as edge
+                    child.add(line);
+                    edgeCount++;
+                  } catch (edgeError) {
+                    logger.warn('Could not add edges to child mesh:', edgeError);
+                  }
+                }
+              });
+            } catch (edgeError) {
+              logger.error('Could not add edges to model:', edgeError);
+            }
+            logger.log(`Black edges added to ${edgeCount} mesh(es)`);
 
             // Fit model to frame with more aggressive camera positioning
             if (viewerRef.current.context?.fitToFrame) {
@@ -225,6 +294,37 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
             
             // Tools are initialized automatically by IfcViewerAPI
             logger.log('IFC model loaded, tools ready');
+
+            // Enable black edges by default using custom API
+            // Use the same approach as the working ifcviewer app - traverse model and add edges to scene
+            if (viewerRef.current) {
+              // Wait for next frame, then create edges (multiple attempts to catch async loading)
+              requestAnimationFrame(() => {
+                setTimeout(() => {
+                  if (viewerRef.current) {
+                    logger.log('Creating black edges - attempt 1');
+                    // Try API first, then fallback to manual (which matches working ifcviewer approach)
+                    enableEdges(viewerRef.current, 0x000000, modelID, model);
+                    
+                    // Second attempt after longer delay in case meshes load asynchronously
+                    setTimeout(() => {
+                      if (viewerRef.current) {
+                        logger.log('Creating black edges - attempt 2');
+                        enableEdges(viewerRef.current, 0x000000, modelID, model);
+                      }
+                    }, 500);
+                    
+                    // Third attempt for safety
+                    setTimeout(() => {
+                      if (viewerRef.current) {
+                        logger.log('Creating black edges - attempt 3');
+                        enableEdges(viewerRef.current, 0x000000, modelID, model);
+                      }
+                    }, 1000);
+                  }
+                }, 200);
+              });
+            }
 
             setLoading(false);
             logger.log('IFC model loaded successfully');
@@ -288,8 +388,8 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
     const selector = viewerRef.current.IFC.selector;
     
     const handleMouseMove = () => {
-      // Only pre-pick when no tools are active
-      if (measurementMode === 'none' && !clippingActive) {
+      // Only pre-pick when inspect mode is active and no tools are active
+      if (inspectMode && measurementMode === 'none' && !clippingActive) {
         selector.prePickIfcItem();
       }
     };
@@ -299,7 +399,7 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
     return () => {
       container.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [measurementMode, clippingActive]);
+  }, [inspectMode, measurementMode, clippingActive]);
 
   // Add keyboard shortcuts for tools
   useEffect(() => {
@@ -461,6 +561,17 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
           )}
         </div>
         <div className="flex items-center gap-1 text-foreground">
+          {/* Inspect Mode */}
+          <button
+            onClick={() => setInspectMode(!inspectMode)}
+            className={`h-7 w-7 flex items-center justify-center rounded hover:bg-muted ${inspectMode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}
+            title="Inspect Mode (Hover to Highlight)"
+          >
+            <MousePointer2 className="h-4 w-4" />
+          </button>
+          
+          <div className="w-px h-5 bg-border mx-1" />
+          
           {/* Measurement Tools */}
           <button
             onClick={handleMeasureDistance}
@@ -513,23 +624,6 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
             title="Reset View"
           >
             <Home className="h-4 w-4" />
-          </button>
-          
-          <div className="w-px h-5 bg-border mx-1" />
-          
-          <button
-            onClick={handleToggleGrid}
-            className={`h-7 w-7 flex items-center justify-center rounded hover:bg-muted text-muted-foreground ${showGrid ? 'bg-accent' : ''}`}
-            title="Toggle Grid"
-          >
-            {showGrid ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-          </button>
-          <button
-            onClick={handleToggleAxes}
-            className={`h-7 w-7 flex items-center justify-center rounded hover:bg-muted text-muted-foreground ${showAxes ? 'bg-accent' : ''}`}
-            title="Toggle Axes"
-          >
-            <RotateCw className="h-4 w-4" />
           </button>
         </div>
       </div>

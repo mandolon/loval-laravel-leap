@@ -9,6 +9,8 @@
     "build:dev": "vite build --mode development",
     "build:desktop": "vite build --mode production",
     "build:tauri": "cd \"excalidraw-fork 2\" && yarn install --frozen-lockfile && yarn build:packages && cd .. && npm run build:desktop",
+    "build:web-ifc-viewer": "cd web-ifc-viewer-source/viewer && npm run build",
+    "watch:web-ifc-viewer": "cd web-ifc-viewer-source/viewer && npm run watch",
     "lint": "eslint .",
     "preview": "vite preview",
     "postinstall": "node -e \"const fs=require('fs'),path=require('path');const src='node_modules/web-ifc',dst='public/wasm';!fs.existsSync(dst)&&fs.mkdirSync(dst,{recursive:true});fs.readdirSync(src).filter(f=>f.endsWith('.wasm')).forEach(f=>fs.copyFileSync(path.join(src,f),path.join(dst,f)))\""

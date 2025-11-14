@@ -201,7 +201,11 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
   const [projectPanelCollapsed, setProjectPanelCollapsed] = useState(false);
   const [autoCollapsedProjectPanel, setAutoCollapsedProjectPanel] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
-  const [selectedWhiteboard, setSelectedWhiteboard] = useState<{ pageId: string; pageName: string; versionTitle: string } | null>(null);
+  const [selectedWhiteboard, _setSelectedWhiteboard] = useState<{ pageId: string; pageName: string; versionTitle: string } | null>(null);
+  const setSelectedWhiteboard = (value: any) => {
+    console.log('🔧 setSelectedWhiteboard called with:', value, 'from:', new Error().stack?.split('\n')[2]);
+    _setSelectedWhiteboard(value);
+  };
   const [selectedModel, setSelectedModel] = useState<{ versionId: string; versionNumber: string; modelFile: any; settings: any } | null>(null);
   const [showArrowStats, setShowArrowStats] = useState(true); // Toggle visibility of stats display
   const [currentScale, setCurrentScale] = useState<ScalePreset>("1/4\" = 1'");
@@ -421,13 +425,15 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
     
     const project = userProjects.find((p: any) => p.name === selected.item);
     if (project && urlProjectId !== project.id) {
+      console.log('🔄 Project URL update effect running:', { projectId: project.id, urlProjectId, selectedWhiteboard: !!selectedWhiteboard });
       setSearchParams(prev => {
         const newParams = new URLSearchParams(prev);
         newParams.set('projectId', project.id);
+        console.log('📝 New params after project update:', newParams.toString());
         return newParams;
       }, { replace: true });
     }
-  }, [selected?.item, userProjects, active, urlProjectId, setSearchParams, projectPanelTab]);
+  }, [selected?.item, userProjects, active, urlProjectId, setSearchParams, projectPanelTab, selectedWhiteboard]);
 
   // Update URL when file selection changes
   useEffect(() => {
@@ -447,12 +453,14 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
   useEffect(() => {
     if (!selectedWhiteboard || active !== 'projects') return;
     
+    console.log('🔄 Whiteboard URL update effect running:', { pageId: selectedWhiteboard.pageId });
     setSearchParams(prev => {
       const newParams = new URLSearchParams(prev);
       if (selectedWhiteboard.pageId) {
         newParams.set('whiteboardPageId', selectedWhiteboard.pageId);
         newParams.delete('fileId');
       }
+      console.log('📝 New params after whiteboard update:', newParams.toString());
       return newParams;
     }, { replace: true });
   }, [selectedWhiteboard, active, setSearchParams]);
@@ -622,6 +630,16 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
               <div className="h-full flex flex-col">
                 {/* File/Whiteboard Viewer Area */}
                 <div className="flex-1 min-h-0 h-full">
+                  {(() => {
+                    console.log('🔍 Render check:', { 
+                      isInfoTabActive, 
+                      selectedModel: !!selectedModel, 
+                      selectedWhiteboard: !!selectedWhiteboard, 
+                      selectedWhiteboardData: selectedWhiteboard,
+                      selectedFile: !!selectedFile 
+                    });
+                    return null;
+                  })()}
                   {isInfoTabActive ? (
                     <ProjectInfoContent
                       projectId={userProjects.find((p: any) => p.name === selected?.item)?.id || ''}
@@ -720,6 +738,8 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
                 setSelectedModel(null);
               }}
               onWhiteboardSelect={(wb) => {
+                console.log('🎨 Whiteboard selected:', JSON.stringify(wb));
+                console.log('📍 Setting selectedWhiteboard state to:', wb);
                 setSelectedWhiteboard(wb);
                 setSelectedFile(null);
                 setSelectedModel(null);

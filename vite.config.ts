@@ -18,11 +18,20 @@ export default defineConfig(({ mode }) => {
     ? fs.existsSync(forkEntryPath)
     : fs.existsSync(forkEntryPath) && fs.existsSync(forkCSSPath);
   
+  // Check if web-ifc-viewer source exists (for local development/forking)
+  const webIfcViewerSourcePath = path.resolve(__dirname, "./web-ifc-viewer-source/viewer/src/index.ts");
+  const hasWebIfcViewerFork = fs.existsSync(webIfcViewerSourcePath);
+  
   console.log('🔍 Excalidraw fork detection:', {
     mode,
     hasFork,
     forkEntryExists: fs.existsSync(forkEntryPath),
     forkCSSExists: fs.existsSync(forkCSSPath)
+  });
+  
+  console.log('🔍 web-ifc-viewer fork detection:', {
+    hasWebIfcViewerFork,
+    sourcePath: webIfcViewerSourcePath
   });
   
   // Base aliases (always applied)
@@ -103,6 +112,21 @@ export default defineConfig(({ mode }) => {
         replacement: path.resolve(__dirname, "./excalidraw-fork 2/packages/utils/src/$1"),
       },
     );
+  }
+  
+  // Add web-ifc-viewer fork alias if source exists
+  if (hasWebIfcViewerFork) {
+    alias.push(
+      {
+        find: /^web-ifc-viewer$/,
+        replacement: path.resolve(__dirname, "./web-ifc-viewer-source/viewer/src/index.ts"),
+      },
+      {
+        find: /^web-ifc-viewer\/(.*)$/,
+        replacement: path.resolve(__dirname, "./web-ifc-viewer-source/viewer/src/$1"),
+      },
+    );
+    console.log('✅ Using local web-ifc-viewer source from:', path.resolve(__dirname, "./web-ifc-viewer-source/viewer/src"));
   }
   
   return {

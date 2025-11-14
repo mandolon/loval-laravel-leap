@@ -530,12 +530,16 @@ export default function ProjectPanel({
   }, [modelSettings]);
 
   // Notify parent when model version selected and data is ready
+  const prevModelVersionRef = useRef<string | null>(null);
   useEffect(() => {
     if (!onModelSelect) return;
     
-    // If no version selected, unmount the viewer
+    // If no version selected, unmount the viewer (only if we HAD a selection before)
     if (!selectedModelVersion) {
-      onModelSelect(null);
+      if (prevModelVersionRef.current) {
+        onModelSelect(null);
+        prevModelVersionRef.current = null;
+      }
       return;
     }
     
@@ -546,7 +550,10 @@ export default function ProjectPanel({
     const firstModelFile = versionFiles[0];
     if (!firstModelFile) {
       console.log('No model files found for version:', selectedModelVersion);
-      onModelSelect(null);
+      if (prevModelVersionRef.current) {
+        onModelSelect(null);
+      }
+      prevModelVersionRef.current = null;
       return;
     }
 
@@ -561,6 +568,7 @@ export default function ProjectPanel({
       public_url: urlData.publicUrl
     });
 
+    prevModelVersionRef.current = selectedModelVersion;
     onModelSelect({
       versionId: selectedModelVersion,
       versionNumber: currentVersion.version_number || 'Unknown',
@@ -570,6 +578,7 @@ export default function ProjectPanel({
       },
       settings: modelSettings || {},
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedModelVersion, versionFiles]);
 
   // Transform database data to component format
@@ -848,7 +857,15 @@ export default function ProjectPanel({
   
   // Track if initial restoration has been done to prevent infinite loops
   const hasRestoredFileRef = useRef(false);
-  const hasRestoredWhiteboardRef = useRef(false);
+  const restoredWhiteboardIdRef = useRef<string | null>(null);
+
+  // Debug: Log mount/unmount
+  useEffect(() => {
+    console.log('🏗️ ProjectPanel MOUNTED, projectId:', projectId);
+    return () => {
+      console.log('💥 ProjectPanel UNMOUNTED, projectId:', projectId);
+    };
+  }, []);
 
   // Restore file selection from URL (only once)
   useEffect(() => {
@@ -869,15 +886,22 @@ export default function ProjectPanel({
     }
   }, [initialFileId, rawFiles, onFileSelect]);
 
-  // Restore whiteboard selection from URL (only once)
+  // Restore whiteboard selection from URL (only once per unique pageId)
   useEffect(() => {
-    if (!initialWhiteboardPageId || !drawingVersions || !onWhiteboardSelect || hasRestoredWhiteboardRef.current) return;
+    console.log('🔄 Whiteboard restoration effect:', { 
+      initialWhiteboardPageId, 
+      hasDrawingVersions: !!drawingVersions, 
+      hasCallback: !!onWhiteboardSelect, 
+      alreadyRestoredId: restoredWhiteboardIdRef.current 
+    });
+    // Skip if no pageId, no data, no callback, or we already restored THIS specific pageId
+    if (!initialWhiteboardPageId || !drawingVersions || !onWhiteboardSelect || restoredWhiteboardIdRef.current === initialWhiteboardPageId) return;
     
     // Search through all versions to find the page
     for (const version of drawingVersions) {
       const page = version.drawing_pages?.find((p: any) => p.id === initialWhiteboardPageId);
       if (page) {
-        hasRestoredWhiteboardRef.current = true;
+        restoredWhiteboardIdRef.current = initialWhiteboardPageId;
         onWhiteboardSelect({
           pageId: page.id,
           pageName: page.name || 'Untitled',
@@ -886,7 +910,8 @@ export default function ProjectPanel({
         return;
       }
     }
-  }, [initialWhiteboardPageId, drawingVersions, onWhiteboardSelect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialWhiteboardPageId, drawingVersions]);
   
   // Remove local measurement state - now controlled by parent
 
@@ -930,10 +955,12 @@ export default function ProjectPanel({
   const visWB = useMemo(() => filterSections(wbQuery, wbSections, wbPages), [wbQuery, wbSections, wbPages]);
 
   const openWBProps = (versionId: string, versionTitle: string, pageId: string, pageName: string) => {
+    console.log('📋 openWBProps called:', { versionId, versionTitle, pageId, pageName });
     setSelectedWB({ versionId, versionTitle, pageId, pageName });
     setWbSelectedId(pageId);
     if (onBreadcrumb) onBreadcrumb(`Whiteboards › ${versionTitle} › ${pageName}`);
     if (onWhiteboardSelect) {
+      console.log('📤 Calling onWhiteboardSelect');
       onWhiteboardSelect({ pageId, pageName, versionTitle });
     }
   };
