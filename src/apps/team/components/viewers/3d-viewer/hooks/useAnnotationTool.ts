@@ -12,6 +12,7 @@ interface UseAnnotationToolProps {
   viewerReady: boolean;
   annotationMode: boolean;
   clippingActive: boolean;
+  hoveredAnnotationId?: string | null;
 }
 
 export const useAnnotationTool = ({
@@ -20,6 +21,7 @@ export const useAnnotationTool = ({
   viewerReady,
   annotationMode,
   clippingActive,
+  hoveredAnnotationId,
 }: UseAnnotationToolProps) => {
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [editingAnnotationId, setEditingAnnotationId] = useState<string | null>(null);
@@ -174,7 +176,7 @@ export const useAnnotationTool = ({
         sphere.visible = false;
       }
     };
-  }, [annotationMode, clippingActive, viewerReady, editingAnnotationId, hoverSphereRef]);
+  }, [annotationMode, clippingActive, viewerReady, editingAnnotationId, hoverSphereRef, hoveredAnnotationId]);
 
   // Create annotation marker in scene
   const createAnnotationMarker = useCallback((annotation: Annotation): Group => {
@@ -492,80 +494,8 @@ export const useAnnotationTool = ({
     };
   }, [annotationMode, viewerReady, clippingActive, editingAnnotationId, addAnnotationToScene]);
 
-  // Handle clicking on existing annotations to edit
-  useEffect(() => {
-    if (!containerRef.current || !viewerRef.current?.context || !viewerReady) return;
-    if (annotationMode) return; // In annotation mode, clicks place new annotations
-    
-    const container = containerRef.current;
-    const context = viewerRef.current.context;
-    
-    const handleClick = (event: MouseEvent) => {
-      if (clippingActive) return;
-      if (editingAnnotationId) return; // Don't allow clicking other annotations while editing
-
-      // Get all annotation bounding boxes and spheres
-      const clickableObjects: Mesh[] = [];
-      annotationGroupsRef.current.forEach((group) => {
-        group.traverse((child: any) => {
-          if (child.userData?.isAnnotationBoundingBox || 
-              (child.type === 'Mesh' && child.name !== 'annotation-hover-sphere')) {
-            clickableObjects.push(child);
-          }
-        });
-      });
-
-      if (clickableObjects.length === 0) return;
-
-      // Cast ray to find clicked annotation
-      const intersects = context.castRay(clickableObjects);
-      
-      if (intersects && intersects.length > 0) {
-        const clickedObject = intersects[0].object as Mesh;
-        let annotationId = clickedObject.userData?.annotationId;
-        
-        // If clicked on sphere or bounding box, get annotation ID from parent group
-        if (!annotationId && clickedObject.parent) {
-          annotationId = clickedObject.parent.userData?.annotationId;
-        }
-        
-        if (annotationId) {
-          event.stopPropagation(); // Prevent event from bubbling to placement handler
-          setEditingAnnotationId(annotationId);
-          logger.log('Annotation clicked for editing:', annotationId);
-          return; // Exit early to prevent any other handlers
-        }
-      }
-    };
-    
-    let targetElement: HTMLElement | null = null;
-    let timeoutId: NodeJS.Timeout | null = null;
-    
-    const attachHandler = () => {
-      if (targetElement) return;
-      
-      const canvas = container.querySelector('canvas');
-      targetElement = (canvas || container) as HTMLElement;
-      if (targetElement) {
-        targetElement.addEventListener('click', handleClick);
-      }
-    };
-    
-    attachHandler();
-    if (!container.querySelector('canvas')) {
-      timeoutId = setTimeout(attachHandler, 300);
-    }
-    
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      if (targetElement) {
-        targetElement.removeEventListener('click', handleClick);
-        targetElement = null;
-      }
-    };
-  }, [viewerReady, annotationMode, clippingActive, editingAnnotationId]);
+  // Note: Click handling for editing annotations is now handled by useAnnotationInteraction hook
+  // This allows for hover effects and selection before editing
 
   // Render all annotations to scene (only when annotations change)
   useEffect(() => {
@@ -667,6 +597,7 @@ export const useAnnotationTool = ({
     }
     // Reset placement flag when deleting
     isPlacingAnnotationRef.current = false;
+    // Note: selectedAnnotationId should be cleared by the parent component
   }, [removeAnnotationFromScene, editingAnnotationId]);
 
   return {

@@ -11,6 +11,7 @@ import { useInspectMode } from './3d-viewer/hooks/useInspectMode';
 import { useAnnotationTool } from './3d-viewer/hooks/useAnnotationTool';
 import { useAnnotationInputPosition } from './3d-viewer/hooks/useAnnotationInputPosition';
 import { AnnotationInput } from './3d-viewer/components/AnnotationInput';
+import { useAnnotationInteraction } from './3d-viewer/hooks/useAnnotationInteraction';
 
 interface ModelSettings {
   background?: string;
@@ -82,6 +83,9 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
     clippingActive,
   });
 
+  // Create a ref to share hoveredAnnotationId between hooks
+  const hoveredAnnotationIdRef = useRef<string | null>(null);
+  
   // Annotation tool
   const {
     annotations,
@@ -96,7 +100,23 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
     viewerReady,
     annotationMode,
     clippingActive,
+    hoveredAnnotationId: hoveredAnnotationIdRef.current,
   });
+
+  // Annotation interaction (hover and selection)
+  const { selectedAnnotationId, setSelectedAnnotationId, hoveredAnnotationId } = useAnnotationInteraction({
+    containerRef,
+    viewerRef,
+    viewerReady,
+    annotationMode,
+    clippingActive,
+    annotationGroupsRef,
+    setEditingAnnotationId,
+    setAnnotationMode,
+  });
+  
+  // Update the ref so useAnnotationTool can access it
+  hoveredAnnotationIdRef.current = hoveredAnnotationId;
 
   const editingAnnotation = annotations.find(ann => ann.id === editingAnnotationId) || null;
   const inputPosition = useAnnotationInputPosition({
@@ -119,6 +139,9 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
     setAnnotationMode,
     selectedDimension,
     setSelectedDimension,
+    selectedAnnotationId,
+    setSelectedAnnotationId,
+    deleteAnnotation,
   });
 
   // Helper function to deactivate all tools

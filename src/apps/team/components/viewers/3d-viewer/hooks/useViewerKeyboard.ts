@@ -15,6 +15,9 @@ interface UseViewerKeyboardProps {
   setAnnotationMode: (active: boolean) => void;
   selectedDimension: any;
   setSelectedDimension: (dim: any) => void;
+  selectedAnnotationId: string | null;
+  setSelectedAnnotationId: (id: string | null) => void;
+  deleteAnnotation: (id: string) => void;
 }
 
 export const useViewerKeyboard = ({
@@ -29,6 +32,9 @@ export const useViewerKeyboard = ({
   setAnnotationMode,
   selectedDimension,
   setSelectedDimension,
+  selectedAnnotationId,
+  setSelectedAnnotationId,
+  deleteAnnotation,
 }: UseViewerKeyboardProps) => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -166,29 +172,41 @@ export const useViewerKeyboard = ({
         return;
       }
 
-      // Backspace or Delete key - delete selected dimension
-      if ((event.key === 'Backspace' || event.key === 'Delete') && selectedDimension && viewerRef.current?.dimensions) {
-        event.preventDefault();
-        const dimensions = viewerRef.current.dimensions;
-        const dimensionLines = dimensions.getDimensionsLines || [];
-        const index = dimensionLines.indexOf(selectedDimension);
-        
-        if (index !== -1) {
-          // Remove dimension from scene
-          selectedDimension.removeFromScene();
-          
-          // Remove from dimensions array
-          (dimensions as any).dimensions.splice(index, 1);
-          
-          logger.log('Dimension deleted');
-          setSelectedDimension(null);
+      // Backspace or Delete key - delete selected dimension or annotation
+      if (event.key === 'Backspace' || event.key === 'Delete') {
+        // Delete selected annotation if one is selected
+        if (selectedAnnotationId) {
+          event.preventDefault();
+          deleteAnnotation(selectedAnnotationId);
+          setSelectedAnnotationId(null);
+          logger.log('Annotation deleted');
+          return;
         }
-        return;
+        
+        // Delete selected dimension if one is selected
+        if (selectedDimension && viewerRef.current?.dimensions) {
+          event.preventDefault();
+          const dimensions = viewerRef.current.dimensions;
+          const dimensionLines = dimensions.getDimensionsLines || [];
+          const index = dimensionLines.indexOf(selectedDimension);
+          
+          if (index !== -1) {
+            // Remove dimension from scene
+            selectedDimension.removeFromScene();
+            
+            // Remove from dimensions array
+            (dimensions as any).dimensions.splice(index, 1);
+            
+            logger.log('Dimension deleted');
+            setSelectedDimension(null);
+          }
+          return;
+        }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [measurementMode, clippingActive, inspectMode, annotationMode, selectedDimension, viewerRef, setMeasurementMode, setClippingActive, setInspectMode, setAnnotationMode, setSelectedDimension]);
+  }, [measurementMode, clippingActive, inspectMode, annotationMode, selectedDimension, selectedAnnotationId, viewerRef, setMeasurementMode, setClippingActive, setInspectMode, setAnnotationMode, setSelectedDimension, setSelectedAnnotationId, deleteAnnotation]);
 };
 
