@@ -482,6 +482,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
     return () => window.removeEventListener('resize', handleResize);
   }, []); // Empty dependency array
 
+
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
       {/* Soft background */}

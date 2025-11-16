@@ -25,8 +25,7 @@ export const useAnnotationInputPosition = ({
     }
 
     const updatePosition = () => {
-      const group = annotationGroupsRef.current.get(editingAnnotation.id);
-      if (!group || !viewerRef.current?.context) {
+      if (!viewerRef.current?.context) {
         setInputPosition(null);
         return;
       }
@@ -40,7 +39,8 @@ export const useAnnotationInputPosition = ({
         return;
       }
 
-      // Get the annotation position (sphere position)
+      // Get the annotation position directly from the annotation object
+      // Don't require the group to be in the scene - use the annotation's position
       const annotationPosition = editingAnnotation.position.clone();
       // Offset upward to account for label position (label is at position.y + 0.1)
       annotationPosition.y += 0.1;

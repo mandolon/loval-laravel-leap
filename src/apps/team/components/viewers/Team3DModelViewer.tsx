@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { logger } from '@/utils/logger';
 import { ViewerToolbar } from './3d-viewer/ViewerToolbar';
 import { useViewerInitialization } from './3d-viewer/hooks/useViewerInitialization';
@@ -121,31 +121,15 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
     setSelectedDimension,
   });
 
-  // Tool handlers
-  const handleMeasureDistance = () => {
+  // Helper function to deactivate all tools
+  const deactivateAllTools = useCallback(() => {
+    // Deactivate clipping
     if (clippingActive && viewerRef.current?.clipper) {
       viewerRef.current.clipper.active = false;
       setClippingActive(false);
     }
-    const newMode = measurementMode === 'distance' ? 'none' : 'distance';
-    setMeasurementMode(newMode);
-  };
-
-  const handleMeasureArea = () => {
-    const newMode = measurementMode === 'area' ? 'none' : 'area';
-    setMeasurementMode(newMode);
-    logger.log('Area measurement tool toggled (not yet implemented)');
-  };
-
-  const handleMeasureVolume = () => {
-    const newMode = measurementMode === 'volume' ? 'none' : 'volume';
-    setMeasurementMode(newMode);
-    logger.log('Volume measurement tool toggled (not yet implemented)');
-  };
-
-  const handleToggleClipping = () => {
-    if (!viewerRef.current?.clipper) return;
     
+    // Deactivate measurement
     if (measurementMode !== 'none' && viewerRef.current?.dimensions) {
       viewerRef.current.dimensions.active = false;
       viewerRef.current.dimensions.previewActive = false;
@@ -153,15 +137,76 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
       setMeasurementMode('none');
     }
     
+    // Deactivate annotation
+    if (annotationMode) {
+      setAnnotationMode(false);
+      if (editingAnnotationId) {
+        setEditingAnnotationId(null);
+      }
+    }
+  }, [clippingActive, measurementMode, annotationMode, editingAnnotationId, setClippingActive, setMeasurementMode, setAnnotationMode, setEditingAnnotationId]);
+
+  // Tool handlers
+  const handleMeasureDistance = () => {
+    const newMode = measurementMode === 'distance' ? 'none' : 'distance';
+    
+    if (newMode === 'distance') {
+      // Activating measurement - deactivate all other tools
+      deactivateAllTools();
+      setMeasurementMode('distance');
+    } else {
+      // Deactivating measurement
+      if (viewerRef.current?.dimensions) {
+        viewerRef.current.dimensions.active = false;
+        viewerRef.current.dimensions.previewActive = false;
+        viewerRef.current.dimensions.cancelDrawing();
+      }
+      setMeasurementMode('none');
+    }
+  };
+
+  const handleMeasureArea = () => {
+    const newMode = measurementMode === 'area' ? 'none' : 'area';
+    
+    if (newMode === 'area') {
+      // Activating area measurement - deactivate all other tools
+      deactivateAllTools();
+      setMeasurementMode('area');
+    } else {
+      setMeasurementMode('none');
+    }
+    logger.log('Area measurement tool toggled (not yet implemented)');
+  };
+
+  const handleMeasureVolume = () => {
+    const newMode = measurementMode === 'volume' ? 'none' : 'volume';
+    
+    if (newMode === 'volume') {
+      // Activating volume measurement - deactivate all other tools
+      deactivateAllTools();
+      setMeasurementMode('volume');
+    } else {
+      setMeasurementMode('none');
+    }
+    logger.log('Volume measurement tool toggled (not yet implemented)');
+  };
+
+  const handleToggleClipping = () => {
+    if (!viewerRef.current?.clipper) return;
+    
     const newState = !clippingActive;
-    setClippingActive(newState);
     
     if (newState) {
+      // Activating clipping - deactivate all other tools
+      deactivateAllTools();
+      setClippingActive(true);
       viewerRef.current.clipper.active = true;
       viewerRef.current.clipper.createPlane();
       logger.log('Clipper tool activated - clipping plane created (press P to create another)');
     } else {
+      // Deactivating clipping
       viewerRef.current.clipper.active = false;
+      setClippingActive(false);
       logger.log('Clipper tool deactivated');
     }
   };
@@ -174,20 +219,18 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
   };
 
   const handleToggleAnnotation = () => {
-    if (clippingActive && viewerRef.current?.clipper) {
-      viewerRef.current.clipper.active = false;
-      setClippingActive(false);
-    }
-    if (measurementMode !== 'none' && viewerRef.current?.dimensions) {
-      viewerRef.current.dimensions.active = false;
-      viewerRef.current.dimensions.previewActive = false;
-      viewerRef.current.dimensions.cancelDrawing();
-      setMeasurementMode('none');
-    }
     const newMode = !annotationMode;
-    setAnnotationMode(newMode);
-    if (!newMode && editingAnnotationId) {
-      setEditingAnnotationId(null);
+    
+    if (newMode) {
+      // Activating annotation - deactivate all other tools
+      deactivateAllTools();
+      setAnnotationMode(true);
+    } else {
+      // Deactivating annotation
+      setAnnotationMode(false);
+      if (editingAnnotationId) {
+        setEditingAnnotationId(null);
+      }
     }
   };
 
@@ -211,26 +254,23 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
 
   return (
     <div className="flex flex-col bg-background h-full">
-      {/* Toolbar */}
-      <ViewerToolbar
-        filename={modelFile.filename}
-        versionNumber={versionNumber}
-        inspectMode={inspectMode}
-        onToggleInspect={() => setInspectMode(!inspectMode)}
-        measurementMode={measurementMode}
-        onMeasureDistance={handleMeasureDistance}
-        onMeasureArea={handleMeasureArea}
-        onMeasureVolume={handleMeasureVolume}
-        onClearMeasurements={handleClearMeasurements}
-        clippingActive={clippingActive}
-        onToggleClipping={handleToggleClipping}
-        annotationMode={annotationMode}
-        onToggleAnnotation={handleToggleAnnotation}
-        onResetView={handleResetView}
-      />
-
       {/* 3D Viewer Content */}
       <div className="flex-1 overflow-hidden relative bg-background">
+        {/* Floating Toolbar */}
+        <ViewerToolbar
+          inspectMode={inspectMode}
+          onToggleInspect={() => setInspectMode(!inspectMode)}
+          measurementMode={measurementMode}
+          onMeasureDistance={handleMeasureDistance}
+          onMeasureArea={handleMeasureArea}
+          onMeasureVolume={handleMeasureVolume}
+          onClearMeasurements={handleClearMeasurements}
+          clippingActive={clippingActive}
+          onToggleClipping={handleToggleClipping}
+          annotationMode={annotationMode}
+          onToggleAnnotation={handleToggleAnnotation}
+          onResetView={handleResetView}
+        />
         {/* Measurement Mode Indicator */}
         {measurementMode !== 'none' && (
           <div className="absolute top-2 left-2 z-20 bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-[10px] font-medium shadow-lg">
@@ -288,8 +328,8 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
 
         <div
           ref={containerRef}
-          className="w-full h-full"
-          style={{ position: 'relative' }}
+          className="w-full h-full absolute inset-0"
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
         />
       </div>
     </div>

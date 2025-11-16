@@ -2565,6 +2565,15 @@ export default function ProjectPanel({
             {/* Settings & Layers (scrollable) */}
             <div className="flex-1 overflow-auto px-2.5 py-2 space-y-4 no-scrollbar">
               
+              {/* Model File Name */}
+              {versionFiles && versionFiles.length > 0 && (
+                <div className="mb-3">
+                  <div className="text-[11px] font-medium text-slate-900 truncate">
+                    {versionFiles[0].filename}
+                  </div>
+                </div>
+              )}
+              
               {/* DISPLAY Section */}
               <div>
                 <div className="text-[10px] font-semibold text-slate-500 tracking-[0.08em] mb-1">

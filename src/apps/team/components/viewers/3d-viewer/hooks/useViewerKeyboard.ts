@@ -81,14 +81,29 @@ export const useViewerKeyboard = ({
       if (event.key === 'e' || event.key === 'E') {
         event.preventDefault();
         const newMode = measurementMode === 'distance' ? 'none' : 'distance';
-        setMeasurementMode(newMode);
-        // Deactivate other tools
-        if (clippingActive && viewerRef.current?.clipper) {
-          viewerRef.current.clipper.active = false;
-          setClippingActive(false);
+        
+        if (newMode === 'distance') {
+          // Activating measurement - deactivate all other tools
+          if (clippingActive && viewerRef.current?.clipper) {
+            viewerRef.current.clipper.active = false;
+            setClippingActive(false);
+          }
+          if (annotationMode) {
+            setAnnotationMode(false);
+          }
+          setMeasurementMode('distance');
+        } else {
+          // Deactivating measurement
+          if (viewerRef.current?.dimensions) {
+            viewerRef.current.dimensions.active = false;
+            viewerRef.current.dimensions.previewActive = false;
+            viewerRef.current.dimensions.cancelDrawing();
+          }
+          setMeasurementMode('none');
         }
-        // Clear dimension selection when entering measurement mode
-        if (selectedDimension && newMode === 'distance') {
+        
+        // Clear dimension selection when toggling measurement mode
+        if (selectedDimension) {
           selectedDimension.dimensionColor = new Color(0x000000);
           setSelectedDimension(null);
         }
@@ -100,24 +115,35 @@ export const useViewerKeyboard = ({
         event.preventDefault();
         if (!viewerRef.current?.clipper) return;
         
-        // Always create a new plane when P is pressed
-        viewerRef.current.clipper.active = true;
-        viewerRef.current.clipper.createPlane();
-        setClippingActive(true);
+        const newState = !clippingActive;
         
-        // Deactivate other tools
-        if (measurementMode !== 'none' && viewerRef.current?.dimensions) {
-          viewerRef.current.dimensions.active = false;
-          viewerRef.current.dimensions.previewActive = false;
-          viewerRef.current.dimensions.cancelDrawing();
-          setMeasurementMode('none');
+        if (newState) {
+          // Activating clipping - deactivate all other tools
+          if (measurementMode !== 'none' && viewerRef.current?.dimensions) {
+            viewerRef.current.dimensions.active = false;
+            viewerRef.current.dimensions.previewActive = false;
+            viewerRef.current.dimensions.cancelDrawing();
+            setMeasurementMode('none');
+          }
+          if (annotationMode) {
+            setAnnotationMode(false);
+          }
+          
+          viewerRef.current.clipper.active = true;
+          viewerRef.current.clipper.createPlane();
+          setClippingActive(true);
+          
+          // Clear dimension selection when entering clipping mode
+          if (selectedDimension) {
+            selectedDimension.dimensionColor = new Color(0x000000);
+            setSelectedDimension(null);
+          }
+          logger.log('Clipping plane created (press P to create another)');
+        } else {
+          // Deactivating clipping
+          viewerRef.current.clipper.active = false;
+          setClippingActive(false);
         }
-        // Clear dimension selection when entering clipping mode
-        if (selectedDimension) {
-          selectedDimension.dimensionColor = new Color(0x000000);
-          setSelectedDimension(null);
-        }
-        logger.log('Clipping plane created (press P to create another)');
         return;
       }
 
@@ -163,6 +189,6 @@ export const useViewerKeyboard = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [measurementMode, clippingActive, inspectMode, annotationMode, selectedDimension, setMeasurementMode, setClippingActive, setInspectMode, setAnnotationMode, setSelectedDimension]);
+  }, [measurementMode, clippingActive, inspectMode, annotationMode, selectedDimension, viewerRef, setMeasurementMode, setClippingActive, setInspectMode, setAnnotationMode, setSelectedDimension]);
 };
 

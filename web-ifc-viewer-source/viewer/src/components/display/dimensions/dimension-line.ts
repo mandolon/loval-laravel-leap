@@ -208,6 +208,22 @@ export class IfcDimensionLine {
     const htmlText = document.createElement('div');
     htmlText.className = this.labelClassName;
     htmlText.textContent = this.getTextContent();
+    // Style dimension label to match annotation notes but with white background
+    htmlText.style.cssText = `
+      background: rgba(255, 255, 255, 0.95);
+      color: #1f2937;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: system-ui, -apple-system, sans-serif;
+      white-space: nowrap;
+      pointer-events: none;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      display: block;
+    `;
     const label = new CSS2DObject(htmlText);
     label.position.set(this.center.x, this.center.y, this.center.z);
     this.root.add(label);

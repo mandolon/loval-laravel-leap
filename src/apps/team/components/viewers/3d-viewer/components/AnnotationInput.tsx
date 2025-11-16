@@ -44,20 +44,39 @@ export const AnnotationInput = ({
       handleSave();
     } else if (e.key === 'Escape') {
       e.preventDefault();
+      // If text is empty, delete the annotation; otherwise just close
+      if (!text.trim()) {
+        onDelete(annotation.id);
+      }
       onClose();
     }
   };
 
-  const handleBlur = () => {
-    // Small delay to allow click events to fire first
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    // Small delay to allow click events to fire first (e.g., delete button click)
     setTimeout(() => {
-      handleSave();
+      // Check if input still exists (wasn't deleted by button click)
+      // Also check if the new focus target is not within our component
+      const relatedTarget = e.relatedTarget as HTMLElement;
+      const currentText = inputRef.current?.value || text;
+      
+      if (inputRef.current && !relatedTarget?.closest('.annotation-input-container')) {
+        // If text is empty, delete the annotation immediately
+        if (!currentText.trim()) {
+          onDelete(annotation.id);
+          onClose();
+        } else {
+          // Only save if there's actual text
+          onSave(annotation.id, currentText.trim());
+          onClose();
+        }
+      }
     }, 200);
   };
 
   return (
     <div
-      className="fixed z-50 bg-card border border-border rounded-md shadow-lg p-2"
+      className="annotation-input-container fixed z-50 bg-card border border-border rounded-md shadow-lg p-2"
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,

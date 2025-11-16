@@ -26,6 +26,9 @@ export const useAnnotationTool = ({
   const [hoverSphereRef, setHoverSphereRef] = useState<THREE.Mesh | null>(null);
   const annotationGroupsRef = useRef<Map<string, Group>>(new Map());
   const annotationInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
+  const isPlacingAnnotationRef = useRef<boolean>(false);
+  const mouseDownPositionRef = useRef<{ x: number; y: number } | null>(null);
+  const dragThreshold = 5; // pixels - if mouse moves more than this, it's a drag
 
   // Create hover sphere for annotation placement
   useEffect(() => {
@@ -65,6 +68,14 @@ export const useAnnotationTool = ({
     };
   }, [viewerReady]);
 
+  // Reset placement flag when editing state changes
+  useEffect(() => {
+    // If we're not editing, reset the flag to allow new placements
+    if (!editingAnnotationId) {
+      isPlacingAnnotationRef.current = false;
+    }
+  }, [editingAnnotationId]);
+
   // Hide hover sphere and close editing when annotation mode is off
   useEffect(() => {
     if (!hoverSphereRef) return;
@@ -75,6 +86,8 @@ export const useAnnotationTool = ({
       if (editingAnnotationId) {
         setEditingAnnotationId(null);
       }
+      // Reset placement flag
+      isPlacingAnnotationRef.current = false;
     }
   }, [annotationMode, hoverSphereRef, editingAnnotationId]);
 
@@ -320,7 +333,7 @@ export const useAnnotationTool = ({
     }
   }, [addAnnotationToScene]);
 
-  // Handle click to place annotation
+  // Handle click to place annotation (only on click, not drag)
   useEffect(() => {
     if (!containerRef.current || !viewerRef.current?.context || !viewerReady || !annotationMode) return;
     if (editingAnnotationId) return; // Don't place new annotation while editing
@@ -328,9 +341,60 @@ export const useAnnotationTool = ({
     const container = containerRef.current;
     const context = viewerRef.current.context;
     
-    const handleClick = (event: MouseEvent) => {
-      if (clippingActive) return;
-      if (editingAnnotationId) return; // Don't place while editing
+    const handleMouseDown = (event: MouseEvent) => {
+      // Only track left mouse button
+      if (event.button !== 0) return;
+      
+      // Store mouse down position
+      mouseDownPositionRef.current = {
+        x: event.clientX,
+        y: event.clientY
+      };
+    };
+    
+    const handleMouseUp = (event: MouseEvent) => {
+      // Only handle left mouse button
+      if (event.button !== 0) return;
+      
+      // Check if this was a drag (mouse moved significantly)
+      if (mouseDownPositionRef.current) {
+        const dx = event.clientX - mouseDownPositionRef.current.x;
+        const dy = event.clientY - mouseDownPositionRef.current.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // If mouse moved more than threshold, it's a drag - don't place annotation
+        if (distance > dragThreshold) {
+          mouseDownPositionRef.current = null;
+          return;
+        }
+      }
+      
+      // Prevent multiple annotations from a single click
+      if (isPlacingAnnotationRef.current) {
+        event.preventDefault();
+        event.stopPropagation();
+        mouseDownPositionRef.current = null;
+        return;
+      }
+      
+      if (clippingActive) {
+        mouseDownPositionRef.current = null;
+        return;
+      }
+      if (editingAnnotationId) {
+        mouseDownPositionRef.current = null;
+        return; // Don't place while editing
+      }
+
+      // Prevent default and stop propagation to avoid multiple triggers
+      event.preventDefault();
+      event.stopPropagation();
+
+      // Set flag to prevent duplicate placements
+      isPlacingAnnotationRef.current = true;
+      
+      // Clear mouse down position
+      mouseDownPositionRef.current = null;
 
       // First check if we clicked on an existing annotation - if so, don't place a new one
       const clickableObjects: Mesh[] = [];
@@ -347,6 +411,7 @@ export const useAnnotationTool = ({
         const intersects = context.castRay(clickableObjects);
         if (intersects && intersects.length > 0) {
           // Clicked on an existing annotation, don't place a new one
+          isPlacingAnnotationRef.current = false;
           return;
         }
       }
@@ -367,7 +432,7 @@ export const useAnnotationTool = ({
         }
         
         if (intersection && intersection.point) {
-          // Create new annotation
+          // Create new annotation (but don't add to scene yet - wait until text is entered)
           const newAnnotation: Annotation = {
             id: `annotation-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             position: intersection.point.clone(),
@@ -376,14 +441,22 @@ export const useAnnotationTool = ({
             updatedAt: new Date(),
           };
           
+          // Add to state but don't render to scene yet
           setAnnotations(prev => [...prev, newAnnotation]);
-          addAnnotationToScene(newAnnotation);
+          // Don't call addAnnotationToScene here - wait until text is saved
           setEditingAnnotationId(newAnnotation.id);
           
           logger.log('Annotation placed at:', intersection.point);
+          
+          // Reset flag after annotation is created and editing starts
+          // The flag will prevent new placements until editing is done
+          // It gets reset when editingAnnotationId changes or annotation mode is turned off
+        } else {
+          isPlacingAnnotationRef.current = false;
         }
       } catch (error) {
         logger.error('Error placing annotation:', error);
+        isPlacingAnnotationRef.current = false;
       }
     };
     
@@ -396,7 +469,8 @@ export const useAnnotationTool = ({
       const canvas = container.querySelector('canvas');
       targetElement = (canvas || container) as HTMLElement;
       if (targetElement) {
-        targetElement.addEventListener('click', handleClick);
+        targetElement.addEventListener('mousedown', handleMouseDown);
+        targetElement.addEventListener('mouseup', handleMouseUp);
       }
     };
     
@@ -410,9 +484,11 @@ export const useAnnotationTool = ({
         clearTimeout(timeoutId);
       }
       if (targetElement) {
-        targetElement.removeEventListener('click', handleClick);
+        targetElement.removeEventListener('mousedown', handleMouseDown);
+        targetElement.removeEventListener('mouseup', handleMouseUp);
         targetElement = null;
       }
+      mouseDownPositionRef.current = null;
     };
   }, [annotationMode, viewerReady, clippingActive, editingAnnotationId, addAnnotationToScene]);
 
@@ -514,10 +590,11 @@ export const useAnnotationTool = ({
       }
     });
     
-    // Add new annotations only (updates are handled separately via updateAnnotationInScene)
+    // Add new annotations only if they have text (empty annotations should not be rendered)
     annotations.forEach(annotation => {
-      if (!annotationGroupsRef.current.has(annotation.id)) {
-        // New annotation - add it
+      // Only add to scene if annotation has text and is not already in scene
+      if (!annotationGroupsRef.current.has(annotation.id) && annotation.text && annotation.text.trim()) {
+        // New annotation with text - add it
         addAnnotationToScene(annotation);
       }
       // Note: We don't update existing annotations here to avoid rerenders
@@ -542,13 +619,34 @@ export const useAnnotationTool = ({
   }, []);
 
   const saveAnnotation = useCallback((id: string, text: string) => {
+    // Don't save if text is empty - should be deleted instead
+    if (!text || !text.trim()) {
+      // Delete the annotation if text is empty
+      removeAnnotationFromScene(id);
+      setAnnotations(prev => prev.filter(ann => ann.id !== id));
+      if (editingAnnotationId === id) {
+        setEditingAnnotationId(null);
+      }
+      isPlacingAnnotationRef.current = false;
+      return;
+    }
+    
     // Find the current annotation to update
     setAnnotations(prev => {
       const updated = prev.map(ann => {
         if (ann.id === id) {
           const updatedAnn = { ...ann, text, updatedAt: new Date() };
-          // Update scene immediately - don't wait for state update
-          updateAnnotationInScene(updatedAnn);
+          
+          // Check if annotation is already in scene
+          const existingGroup = annotationGroupsRef.current.get(id);
+          if (existingGroup) {
+            // Update existing annotation in scene
+            updateAnnotationInScene(updatedAnn);
+          } else {
+            // First time saving - add to scene now that we have text
+            addAnnotationToScene(updatedAnn);
+          }
+          
           return updatedAnn;
         }
         return ann;
@@ -557,7 +655,9 @@ export const useAnnotationTool = ({
     });
     
     setEditingAnnotationId(null);
-  }, [updateAnnotationInScene]);
+    // Reset placement flag when saving (editing is done)
+    isPlacingAnnotationRef.current = false;
+  }, [updateAnnotationInScene, removeAnnotationFromScene, addAnnotationToScene, editingAnnotationId]);
 
   const deleteAnnotation = useCallback((id: string) => {
     removeAnnotationFromScene(id);
@@ -565,7 +665,9 @@ export const useAnnotationTool = ({
     if (editingAnnotationId === id) {
       setEditingAnnotationId(null);
     }
-  }, [removeAnnotationFromScene]);
+    // Reset placement flag when deleting
+    isPlacingAnnotationRef.current = false;
+  }, [removeAnnotationFromScene, editingAnnotationId]);
 
   return {
     annotations,
