@@ -4,7 +4,8 @@ import {
   Box,
   Cuboid,
   Scissors,
-  MousePointer2
+  MousePointer2,
+  Tag
 } from 'lucide-react';
 
 interface ViewerToolbarProps {
@@ -19,6 +20,8 @@ interface ViewerToolbarProps {
   onClearMeasurements: () => void;
   clippingActive: boolean;
   onToggleClipping: () => void;
+  annotationMode: boolean;
+  onToggleAnnotation: () => void;
   onResetView: () => void;
 }
 
@@ -34,6 +37,8 @@ export const ViewerToolbar = ({
   onClearMeasurements,
   clippingActive,
   onToggleClipping,
+  annotationMode,
+  onToggleAnnotation,
   onResetView,
 }: ViewerToolbarProps) => {
   return (
@@ -91,6 +96,17 @@ export const ViewerToolbar = ({
             Clear
           </button>
         )}
+        
+        <div className="w-px h-5 bg-border mx-1" />
+        
+        {/* Annotation Tool */}
+        <button
+          onClick={onToggleAnnotation}
+          className={`h-7 w-7 flex items-center justify-center rounded hover:bg-muted ${annotationMode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}
+          title="Annotate (Tag Notes)"
+        >
+          <Tag className="h-4 w-4" />
+        </button>
         
         <div className="w-px h-5 bg-border mx-1" />
         

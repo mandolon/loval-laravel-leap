@@ -11,6 +11,8 @@ interface UseViewerKeyboardProps {
   setClippingActive: (active: boolean) => void;
   inspectMode: boolean;
   setInspectMode: (active: boolean) => void;
+  annotationMode: boolean;
+  setAnnotationMode: (active: boolean) => void;
   selectedDimension: any;
   setSelectedDimension: (dim: any) => void;
 }
@@ -23,6 +25,8 @@ export const useViewerKeyboard = ({
   setClippingActive,
   inspectMode,
   setInspectMode,
+  annotationMode,
+  setAnnotationMode,
   selectedDimension,
   setSelectedDimension,
 }: UseViewerKeyboardProps) => {
@@ -60,6 +64,13 @@ export const useViewerKeyboard = ({
         if (inspectMode) {
           setInspectMode(false);
           logger.log('Inspect mode deactivated');
+          return;
+        }
+        
+        // Exit annotation mode if active
+        if (annotationMode) {
+          setAnnotationMode(false);
+          logger.log('Annotation mode deactivated');
           return;
         }
         
@@ -152,6 +163,6 @@ export const useViewerKeyboard = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [measurementMode, clippingActive, inspectMode, selectedDimension, setMeasurementMode, setClippingActive, setInspectMode, setSelectedDimension]);
+  }, [measurementMode, clippingActive, inspectMode, annotationMode, selectedDimension, setMeasurementMode, setClippingActive, setInspectMode, setAnnotationMode, setSelectedDimension]);
 };
 

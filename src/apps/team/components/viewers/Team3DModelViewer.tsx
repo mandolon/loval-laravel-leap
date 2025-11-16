@@ -8,6 +8,9 @@ import { useMeasurementHover } from './3d-viewer/hooks/useMeasurementHover';
 import { useViewerKeyboard } from './3d-viewer/hooks/useViewerKeyboard';
 import { useDimensionTool } from './3d-viewer/hooks/useDimensionTool';
 import { useInspectMode } from './3d-viewer/hooks/useInspectMode';
+import { useAnnotationTool } from './3d-viewer/hooks/useAnnotationTool';
+import { useAnnotationInputPosition } from './3d-viewer/hooks/useAnnotationInputPosition';
+import { AnnotationInput } from './3d-viewer/components/AnnotationInput';
 
 interface ModelSettings {
   background?: string;
@@ -44,6 +47,7 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
   const [measurementMode, setMeasurementMode] = useState<'none' | 'distance' | 'area' | 'volume'>('none');
   const [clippingActive, setClippingActive] = useState(false);
   const [inspectMode, setInspectMode] = useState(false);
+  const [annotationMode, setAnnotationMode] = useState(false);
 
   // Dimension interaction (selection and hover)
   const { selectedDimension, setSelectedDimension } = useDimensionInteraction({
@@ -78,6 +82,30 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
     clippingActive,
   });
 
+  // Annotation tool
+  const {
+    annotations,
+    editingAnnotationId,
+    setEditingAnnotationId,
+    saveAnnotation,
+    deleteAnnotation,
+    annotationGroupsRef,
+  } = useAnnotationTool({
+    containerRef,
+    viewerRef,
+    viewerReady,
+    annotationMode,
+    clippingActive,
+  });
+
+  const editingAnnotation = annotations.find(ann => ann.id === editingAnnotationId) || null;
+  const inputPosition = useAnnotationInputPosition({
+    viewerRef,
+    viewerReady,
+    editingAnnotation,
+    annotationGroupsRef,
+  });
+
   // Keyboard shortcuts
   useViewerKeyboard({
     viewerRef,
@@ -87,6 +115,8 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
     setClippingActive,
     inspectMode,
     setInspectMode,
+    annotationMode,
+    setAnnotationMode,
     selectedDimension,
     setSelectedDimension,
   });
@@ -143,6 +173,24 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
     }
   };
 
+  const handleToggleAnnotation = () => {
+    if (clippingActive && viewerRef.current?.clipper) {
+      viewerRef.current.clipper.active = false;
+      setClippingActive(false);
+    }
+    if (measurementMode !== 'none' && viewerRef.current?.dimensions) {
+      viewerRef.current.dimensions.active = false;
+      viewerRef.current.dimensions.previewActive = false;
+      viewerRef.current.dimensions.cancelDrawing();
+      setMeasurementMode('none');
+    }
+    const newMode = !annotationMode;
+    setAnnotationMode(newMode);
+    if (!newMode && editingAnnotationId) {
+      setEditingAnnotationId(null);
+    }
+  };
+
   const handleResetView = () => {
     if (viewerRef.current?.context) {
       viewerRef.current.context.fitToFrame();
@@ -176,6 +224,8 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
         onClearMeasurements={handleClearMeasurements}
         clippingActive={clippingActive}
         onToggleClipping={handleToggleClipping}
+        annotationMode={annotationMode}
+        onToggleAnnotation={handleToggleAnnotation}
         onResetView={handleResetView}
       />
 
@@ -195,6 +245,24 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
           <div className="absolute top-2 left-2 z-20 bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-[10px] font-medium shadow-lg">
             ✂️ Clipping plane active (Press P to create another plane)
           </div>
+        )}
+        
+        {/* Annotation Mode Indicator */}
+        {annotationMode && (
+          <div className="absolute top-2 left-2 z-20 bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-[10px] font-medium shadow-lg">
+            🏷️ Click on the model to place an annotation
+          </div>
+        )}
+        
+        {/* Annotation Input */}
+        {editingAnnotation && inputPosition && (
+          <AnnotationInput
+            annotation={editingAnnotation}
+            onSave={saveAnnotation}
+            onDelete={deleteAnnotation}
+            onClose={() => setEditingAnnotationId(null)}
+            position={inputPosition}
+          />
         )}
         
         {loading && (
