@@ -6,6 +6,10 @@ import { logger } from '@/utils/logger';
 // Based on web-ifc-viewer source: edges.create(name, modelID, lineMaterial, material?)
 // edges.toggle(name, active?)
 
+// Global ref to track all edges created anywhere in the app
+// This allows edges created in useModelLoading to be accessible to toggleEdges
+const globalEdgesRef: { current: LineSegments[] } = { current: [] };
+
 export function useIfcViewerAPI() {
   const edgesRef = useRef<LineSegments[]>([]);
 
@@ -134,6 +138,8 @@ export function useIfcViewerAPI() {
     });
 
     edgesRef.current = edges;
+    // Also add to global ref
+    globalEdgesRef.current = [...globalEdgesRef.current, ...edges];
     logger.log(`Created ${edges.length} black edge objects from ${meshCount} meshes (matching working ifcviewer approach)`);
     
     if (edges.length === 0 && meshCount > 0) {
@@ -177,6 +183,19 @@ export function useIfcViewerAPI() {
       edge.material.dispose();
     });
     edgesRef.current = [];
+    
+    // Also clear global edges ref
+    globalEdgesRef.current.forEach(edge => {
+      if (edge.parent) {
+        edge.parent.remove(edge);
+      } else if (scene) {
+        scene.remove(edge);
+      }
+      if (edge.geometry) edge.geometry.dispose();
+      if (edge.material) edge.material.dispose();
+    });
+    globalEdgesRef.current = [];
+    
     logger.log('All edges removed');
   }, []);
 
@@ -194,12 +213,134 @@ export function useIfcViewerAPI() {
 
   /**
    * Toggle edges visibility
+   * Toggles both edges in the ref and edges added directly to the model
    */
   const toggleEdges = useCallback((viewer: IfcViewerAPI, visible: boolean) => {
+    let toggledCount = 0;
+    
+    // First, try using web-ifc-viewer's edges API if available
+    // This handles edges created via viewer.edges.create()
+    if (viewer?.edges) {
+      try {
+        const allEdgeNames = viewer.edges.getAll();
+        allEdgeNames.forEach((edgeName: string) => {
+          viewer.edges.toggle(edgeName, visible);
+          toggledCount++;
+        });
+        if (allEdgeNames.length > 0) {
+          logger.log(`Toggled ${allEdgeNames.length} edges via web-ifc-viewer API`);
+        }
+      } catch (err) {
+        logger.warn('Error toggling edges via web-ifc-viewer API:', err);
+      }
+    }
+    
+    // Helper function to check if an object is an edge
+    const isEdgeObject = (obj: any): boolean => {
+      if (!obj) return false;
+      // Must be a LineSegments
+      if (obj.type !== 'LineSegments' && !obj.isLineSegments) return false;
+      
+      // Check multiple ways the edge might be marked
+      return (obj as any).isEdge || 
+             obj.userData?.isEdge || 
+             obj.name === 'edge' ||
+             // Check if it has LineBasicMaterial and EdgesGeometry (characteristic of our custom edges)
+             (obj.material && obj.material.type === 'LineBasicMaterial' && 
+              obj.geometry && (obj.geometry.type === 'EdgesGeometry' || obj.geometry.constructor?.name === 'EdgesGeometry'));
+    };
+    
+    // Toggle edges stored in ref (from enableEdges API)
     edgesRef.current.forEach(edge => {
-      edge.visible = visible;
+      if (edge) {
+        edge.visible = visible;
+        toggledCount++;
+      }
     });
-    logger.log(`Edges visibility: ${visible}`);
+    
+    // Also toggle edges in global ref (includes edges created directly in useModelLoading)
+    globalEdgesRef.current.forEach(edge => {
+      if (edge && !edgesRef.current.includes(edge)) {
+        edge.visible = visible;
+        toggledCount++;
+      }
+    });
+    
+    // Also toggle edges added directly to the model (marked with isEdge = true)
+    if (viewer?.context?.scene) {
+      const scene = viewer.context.scene;
+      
+      // Traverse the entire scene to find all edges (including nested ones)
+      // Check if scene has traverse method (it should be a Three.js Scene or Object3D)
+      if (scene && typeof scene.traverse === 'function') {
+        scene.traverse((child: any) => {
+          if (isEdgeObject(child)) {
+            child.visible = visible;
+            toggledCount++;
+          }
+        });
+      }
+      
+      // Also check IFC models directly (edges are added as children of the model/meshes)
+      if (viewer.context?.items?.ifcModels) {
+        viewer.context.items.ifcModels.forEach((model: any) => {
+          if (model && typeof model.traverse === 'function') {
+            // Traverse the model to find edges that are children of meshes
+            model.traverse((child: any) => {
+              if (isEdgeObject(child)) {
+                child.visible = visible;
+                toggledCount++;
+              }
+            });
+          }
+        });
+      }
+      
+      // Also check if the model itself is in the scene and traverse it
+      // Check if scene has children array
+      if (scene && Array.isArray(scene.children)) {
+        scene.children.forEach((child: any) => {
+          // Check if this is the IFC model (usually a Mesh or Group) and has traverse
+          if (child && typeof child.traverse === 'function' && 
+              (child.type === 'Mesh' || child.type === 'Group')) {
+            child.traverse((grandchild: any) => {
+              if (isEdgeObject(grandchild)) {
+                grandchild.visible = visible;
+                toggledCount++;
+              }
+            });
+          }
+        });
+      }
+    }
+    
+    if (toggledCount === 0) {
+      logger.warn('No edges found to toggle. Checking scene structure...');
+      if (viewer?.context?.scene) {
+        const scene = viewer.context.scene;
+        let lineSegmentsCount = 0;
+        if (scene && typeof scene.traverse === 'function') {
+          scene.traverse((child: any) => {
+            if (child.type === 'LineSegments' || child.isLineSegments) {
+              lineSegmentsCount++;
+              logger.log('Found LineSegments:', {
+                type: child.type,
+                isEdge: (child as any).isEdge,
+                userDataIsEdge: child.userData?.isEdge,
+                name: child.name,
+                materialType: child.material?.type,
+                geometryType: child.geometry?.type,
+                visible: child.visible,
+                parent: child.parent?.type
+              });
+            }
+          });
+        }
+        logger.log(`Total LineSegments found in scene: ${lineSegmentsCount}, edgesRef: ${edgesRef.current.length}, globalEdgesRef: ${globalEdgesRef.current.length}`);
+      }
+    } else {
+      logger.log(`Edges visibility set to ${visible}, toggled ${toggledCount} edge objects (refs: ${edgesRef.current.length}, global: ${globalEdgesRef.current.length})`);
+    }
   }, []);
 
   /**
@@ -252,6 +393,15 @@ export function useIfcViewerAPI() {
     return meshes;
   }, []);
 
+  /**
+   * Register edges created outside of enableEdges (e.g., in useModelLoading)
+   * This allows toggleEdges to find and control them
+   */
+  const registerEdges = useCallback((edges: LineSegments[]) => {
+    globalEdgesRef.current = [...globalEdgesRef.current, ...edges];
+    logger.log(`Registered ${edges.length} edges for toggling`);
+  }, []);
+
   return {
     edgesRef,
     enableEdges,
@@ -259,7 +409,8 @@ export function useIfcViewerAPI() {
     updateEdgeColor,
     toggleEdges,
     getElementProperties,
-    findMeshesByExpressID
+    findMeshesByExpressID,
+    registerEdges
   };
 }
 

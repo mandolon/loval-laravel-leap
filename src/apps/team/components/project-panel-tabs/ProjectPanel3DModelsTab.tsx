@@ -29,6 +29,7 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
   // 3D Models tab state
   const [selectedModelVersion, setSelectedModelVersion] = useState("");
   const [modelBackground, setModelBackground] = useState<"light" | "dark">("light");
+  const [showEdges, setShowEdges] = useState(true);
   const [showGrid, setShowGrid] = useState(true);
   const [showAxes, setShowAxes] = useState(true);
   const [layers, setLayers] = useState({
@@ -83,6 +84,7 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
     if (modelSettings) {
       const settings = modelSettings as any;
       setModelBackground(settings.background || 'light');
+      setShowEdges(settings.show_edges ?? true);
       setShowGrid(settings.show_grid ?? true);
       setShowAxes(settings.show_axes ?? true);
       setLayers(settings.layers || {
@@ -98,6 +100,7 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
     } else if (selectedModelVersion) {
       // Reset to defaults if no settings found
       setModelBackground('light');
+      setShowEdges(true);
       setShowGrid(true);
       setShowAxes(true);
       setLayers({
@@ -145,6 +148,7 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
     // Create settings object and stringify for comparison
     const settings = {
       background: modelBackground,
+      show_edges: showEdges,
       show_grid: showGrid,
       show_axes: showAxes,
       layers,
@@ -177,7 +181,7 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
       settings,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedModelVersion, versionFiles, modelVersions, modelBackground, showGrid, showAxes, layers, onModelSelect]);
+  }, [selectedModelVersion, versionFiles, modelVersions, modelBackground, showEdges, showGrid, showAxes, layers, onModelSelect]);
 
   // ---- 3D Models: upload and save handlers ----
   const handleModelUploadClick = () => {
@@ -271,6 +275,7 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
           version_id: newModelVersion.id,
           show_grid: true,
           show_axes: true,
+          show_edges: true,
           background: 'light',
           layers: {
             roof: true,
@@ -378,6 +383,7 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
           settings: {
             notes: draftVersionNotes,
             background: modelBackground,
+            show_edges: showEdges,
             show_grid: showGrid,
             show_axes: showAxes,
             layers,
@@ -412,6 +418,7 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
         versionId: selectedModelVersion,
         settings: {
           background: modelBackground,
+          show_edges: showEdges,
           show_grid: showGrid,
           show_axes: showAxes,
           layers,
@@ -513,30 +520,25 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
           <div className="text-[10px] font-semibold text-slate-500 tracking-[0.08em] mb-1">
             DISPLAY
           </div>
-          <div className="mb-2 flex items-center gap-2">
-            <span className="text-[11px] text-slate-700">Background</span>
-            <div className="inline-flex rounded-md border border-slate-200 bg-white overflow-hidden text-[11px]">
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-[11px] text-slate-800">
+              <span>Show Edges</span>
               <button
                 type="button"
-                onClick={() => setModelBackground("light")}
-                className={`px-2 h-6 flex items-center justify-center ${
-                  modelBackground === "light" ? "bg-slate-900 text-white" : "text-slate-700"
+                onClick={() => setShowEdges(!showEdges)}
+                className={`relative inline-flex h-3.5 w-6 items-center rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-slate-500 focus:ring-offset-1 ${
+                  showEdges ? 'bg-slate-900' : 'bg-slate-300'
                 }`}
+                role="switch"
+                aria-checked={showEdges}
               >
-                Light
-              </button>
-              <button
-                type="button"
-                onClick={() => setModelBackground("dark")}
-                className={`px-2 h-6 flex items-center justify-center border-l border-slate-200 ${
-                  modelBackground === "dark" ? "bg-slate-900 text-white" : "text-slate-700"
-                }`}
-              >
-                Dark
+                <span
+                  className={`inline-block h-2.5 w-2.5 transform rounded-full bg-white transition-transform ${
+                    showEdges ? 'translate-x-3' : 'translate-x-0.5'
+                  }`}
+                />
               </button>
             </div>
-          </div>
-          <div className="space-y-1">
             <label className="flex items-center gap-2 text-[11px] text-slate-800">
               <input
                 type="checkbox"

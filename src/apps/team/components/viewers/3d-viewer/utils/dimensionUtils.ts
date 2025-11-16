@@ -1,6 +1,83 @@
 import { Color } from 'three';
 
 /**
+ * Restore visibility of all created dimensions
+ * Used when deactivating the measurement tool to keep dimensions visible (like annotations)
+ */
+export const restoreDimensionsVisibility = (dimensions: any, immediate: boolean = true) => {
+  if (!dimensions) return 0;
+  
+  const restore = () => {
+    // Get all existing dimensions
+    const existingDimensions = (dimensions as any).dimensions || [];
+    const dimensionLines = dimensions.getDimensionsLines || [];
+    const allDimensions = existingDimensions.length > 0 ? existingDimensions : dimensionLines;
+    
+    // Restore visibility of all created dimensions
+    allDimensions.forEach((dim: any) => {
+      if (dim) {
+        // Try the visibility setter first (preferred method)
+        if (typeof dim.visibility !== 'undefined') {
+          dim.visibility = true;
+        }
+        
+        // Also set visibility directly on the root object (more reliable)
+        if (dim.root) {
+          dim.root.visible = true;
+          // Make sure all children are visible too, but ALWAYS keep bounding boxes hidden
+          dim.root.traverse((child: any) => {
+            // Bounding boxes are BoxGeometry meshes that should always be invisible
+            // They're used for click detection only - identify by geometry type
+            if (child.geometry?.type === 'BoxGeometry' && child.type === 'Mesh') {
+              // This is a bounding box - always keep it invisible
+              child.visible = false;
+              // Also ensure material is transparent/invisible if it has one
+              if (child.material) {
+                child.material.transparent = true;
+                child.material.opacity = 0;
+                child.material.visible = false;
+              }
+              return;
+            }
+            // For all other children (line, endpoints, text label), make visible
+            child.visible = true;
+          });
+        }
+        
+        // Also explicitly hide the bounding box if it's accessible via the dimension object
+        if (dim.boundingBox || dim.boundingMesh) {
+          const boundingBox = dim.boundingBox || dim.boundingMesh;
+          if (boundingBox) {
+            boundingBox.visible = false;
+            if (boundingBox.material) {
+              boundingBox.material.transparent = true;
+              boundingBox.material.opacity = 0;
+              boundingBox.material.visible = false;
+            }
+          }
+        }
+        
+        // Ensure text label is visible
+        if (dim.textLabel) {
+          dim.textLabel.visible = true;
+        }
+      }
+    });
+    
+    return allDimensions.length;
+  };
+  
+  if (immediate) {
+    return restore();
+  } else {
+    // Use setTimeout to ensure restoration happens after library's setter completes
+    setTimeout(restore, 0);
+    // Also try immediately in case setTimeout isn't needed
+    return restore();
+  }
+};
+
+/**
  * Helper function to add dimensionColor setter/getter to dimension objects.
  * This clones materials to avoid affecting all dimensions (they share materials by default).
  */

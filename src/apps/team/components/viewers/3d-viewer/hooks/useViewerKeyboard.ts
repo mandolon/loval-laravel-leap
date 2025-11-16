@@ -49,12 +49,36 @@ export const useViewerKeyboard = ({
         event.preventDefault();
         
         // Exit measurement mode if active
-        if (measurementMode !== 'none' && viewerRef.current?.dimensions) {
-          viewerRef.current.dimensions.active = false;
-          viewerRef.current.dimensions.previewActive = false;
-          viewerRef.current.dimensions.cancelDrawing();
+        if (measurementMode !== 'none') {
+          // First update the state to exit measurement mode
+          // This will trigger useDimensionTool to deactivate properly
           setMeasurementMode('none');
-          logger.log('Measurement tool deactivated');
+          
+          // Then deactivate dimensions tool and restore visibility
+          if (viewerRef.current?.dimensions) {
+            const dimensions = viewerRef.current.dimensions;
+            
+            // Get all dimensions before deactivating
+            const existingDimensions = (dimensions as any).dimensions || [];
+            const dimensionLines = dimensions.getDimensionsLines || [];
+            const allDimensions = existingDimensions.length > 0 ? existingDimensions : dimensionLines;
+            
+            // Deactivate the tool
+            dimensions.active = false;
+            dimensions.previewActive = false;
+            dimensions.cancelDrawing();
+            
+            // Restore visibility immediately and also after delays
+            restoreDimensionsVisibility(dimensions, true);
+            setTimeout(() => {
+              restoreDimensionsVisibility(dimensions, true);
+            }, 10);
+            setTimeout(() => {
+              restoreDimensionsVisibility(dimensions, true);
+            }, 50);
+            
+            logger.log(`Measurement tool deactivated via Escape - ${allDimensions.length} dimensions remain visible`);
+          }
           return;
         }
         
@@ -101,9 +125,13 @@ export const useViewerKeyboard = ({
         } else {
           // Deactivating measurement
           if (viewerRef.current?.dimensions) {
-            viewerRef.current.dimensions.active = false;
-            viewerRef.current.dimensions.previewActive = false;
-            viewerRef.current.dimensions.cancelDrawing();
+            const dimensions = viewerRef.current.dimensions;
+            dimensions.active = false;
+            dimensions.previewActive = false;
+            dimensions.cancelDrawing();
+            // Restore visibility of all created dimensions
+            const count = restoreDimensionsVisibility(dimensions);
+            logger.log(`Measurement deactivated - ${count} dimensions remain visible`);
           }
           setMeasurementMode('none');
         }
@@ -116,39 +144,26 @@ export const useViewerKeyboard = ({
         return;
       }
 
-      // P key - create clipping plane
+      // P key - create clipping plane (only works when clipping mode is already active)
       if (event.key === 'p' || event.key === 'P') {
         event.preventDefault();
         if (!viewerRef.current?.clipper) return;
         
-        const newState = !clippingActive;
+        // Only allow P key when clipping is already active
+        if (!clippingActive) {
+          // Clipping is not active, so P key does nothing
+          return;
+        }
         
-        if (newState) {
-          // Activating clipping - deactivate all other tools
-          if (measurementMode !== 'none' && viewerRef.current?.dimensions) {
-            viewerRef.current.dimensions.active = false;
-            viewerRef.current.dimensions.previewActive = false;
-            viewerRef.current.dimensions.cancelDrawing();
-            setMeasurementMode('none');
-          }
-          if (annotationMode) {
-            setAnnotationMode(false);
-          }
-          
+        // Ensure clipper is enabled before creating plane
+        if (!viewerRef.current.clipper.active) {
           viewerRef.current.clipper.active = true;
+        }
+        
+        // Clipping is active - create a new clipping plane
+        if (viewerRef.current.clipper.createPlane) {
           viewerRef.current.clipper.createPlane();
-          setClippingActive(true);
-          
-          // Clear dimension selection when entering clipping mode
-          if (selectedDimension) {
-            selectedDimension.dimensionColor = new Color(0x000000);
-            setSelectedDimension(null);
-          }
-          logger.log('Clipping plane created (press P to create another)');
-        } else {
-          // Deactivating clipping
-          viewerRef.current.clipper.active = false;
-          setClippingActive(false);
+          logger.log('New clipping plane created (press P to create another)');
         }
         return;
       }

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { IfcViewerAPI } from 'web-ifc-viewer';
 import * as THREE from 'three';
+import { LineSegments } from 'three';
 import { logger } from '@/utils/logger';
 import { useIfcViewerAPI } from '../../../../hooks/useIfcViewerAPI';
 
@@ -9,21 +10,36 @@ interface ModelFile {
   filename: string;
 }
 
+interface ModelSettings {
+  show_edges?: boolean;
+}
+
 export const useModelLoading = (
   viewerRef: React.RefObject<IfcViewerAPI | null>,
   viewerReady: boolean,
-  modelFile: ModelFile | null
+  modelFile: ModelFile | null,
+  settings?: ModelSettings
 ) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { enableEdges, removeEdges } = useIfcViewerAPI();
+  const { enableEdges, removeEdges, registerEdges } = useIfcViewerAPI();
+  // Store edges created directly so they can be toggled
+  const directEdgesRef = useRef<LineSegments[]>([]);
+  // Track the last loaded model file to prevent unnecessary reloads
+  const lastModelFileRef = useRef<string | null>(null);
 
   useEffect(() => {
+    // Check if modelFile actually changed (by comparing storage_path)
+    const currentModelPath = modelFile?.storage_path || null;
+    const modelFileChanged = lastModelFileRef.current !== currentModelPath;
+    
     logger.log('Model loading effect triggered', {
       hasViewer: !!viewerRef.current,
       viewerReady,
       hasModelFile: !!modelFile,
-      modelFile
+      modelFileChanged,
+      currentPath: currentModelPath,
+      lastPath: lastModelFileRef.current
     });
     
     if (!viewerReady || !viewerRef.current || !modelFile) {
@@ -31,6 +47,12 @@ export const useModelLoading = (
         logger.log('Waiting for viewer to be ready...');
       }
       setLoading(false);
+      return;
+    }
+    
+    // If modelFile hasn't changed, don't reload - only settings changed
+    if (!modelFileChanged && lastModelFileRef.current !== null) {
+      logger.log('Model file unchanged, skipping reload (only settings changed)');
       return;
     }
 
@@ -43,6 +65,11 @@ export const useModelLoading = (
         if (viewerRef.current) {
           removeEdges(viewerRef.current);
         }
+        // Clear direct edges ref for new model
+        directEdgesRef.current = [];
+        
+        // Update the last loaded model file reference
+        lastModelFileRef.current = currentModelPath;
 
         logger.log('Loading model from:', modelFile.storage_path);
 
@@ -117,12 +144,15 @@ export const useModelLoading = (
             logger.log('Model visibility set to true');
             
             // Add edges to the IFC model itself
+            // Check if edges should be shown (default true)
+            const showEdges = settings?.show_edges ?? true;
             let edgeCount = 0;
             logger.log('Checking model for geometry...', {
               hasGeometry: !!(model as any).geometry,
               isMesh: (model as any).isMesh,
               type: (model as any).type,
-              geometryType: (model as any).geometry?.type
+              geometryType: (model as any).geometry?.type,
+              showEdges
             });
             
             try {
@@ -143,7 +173,9 @@ export const useModelLoading = (
                 line.renderOrder = 1; // Render edges after the mesh
                 line.raycast = () => {}; // Make edges non-raycastable for better performance
                 (line as any).isEdge = true; // Mark as edge for identification
+                line.visible = showEdges; // Set visibility based on settings
                 model.add(line);
+                directEdgesRef.current.push(line); // Store for toggling
                 edgeCount++;
                 logger.log('Edge LineSegments added to model');
               }
@@ -162,7 +194,9 @@ export const useModelLoading = (
                     line.renderOrder = 1;
                     line.raycast = () => {}; // Make edges non-raycastable
                     (line as any).isEdge = true; // Mark as edge
+                    line.visible = showEdges; // Set visibility based on settings
                     child.add(line);
+                    directEdgesRef.current.push(line); // Store for toggling
                     edgeCount++;
                   } catch (edgeError) {
                     logger.warn('Could not add edges to child mesh:', edgeError);
@@ -172,7 +206,12 @@ export const useModelLoading = (
             } catch (edgeError) {
               logger.error('Could not add edges to model:', edgeError);
             }
-            logger.log(`Black edges added to ${edgeCount} mesh(es)`);
+            logger.log(`Black edges added to ${edgeCount} mesh(es), visible: ${showEdges}`);
+            
+            // Register the edges so toggleEdges can find them
+            if (directEdgesRef.current.length > 0) {
+              registerEdges(directEdgesRef.current);
+            }
 
             // Fit model to frame with more aggressive camera positioning
             if (viewerRef.current.context?.fitToFrame) {
@@ -207,16 +246,34 @@ export const useModelLoading = (
               
               // Single attempt after a short delay to ensure everything is initialized
               // The direct edge creation above is the primary method, this is just a backup
-              setTimeout(() => {
-                if (viewerRef.current) {
-                  const retryModelID = getModelIDWithRetry();
-                  // Only log if modelID is actually available (0 is valid)
-                  if (retryModelID !== undefined && retryModelID !== null) {
-                    logger.log('Creating black edges via API (backup method)', { modelID: retryModelID });
-                    enableEdges(viewerRef.current, 0x000000, retryModelID, model);
+              // Only create backup edges if show_edges is true (default true)
+              const showEdges = settings?.show_edges ?? true;
+              if (showEdges) {
+                setTimeout(() => {
+                  if (viewerRef.current) {
+                    const retryModelID = getModelIDWithRetry();
+                    // Only log if modelID is actually available (0 is valid)
+                    if (retryModelID !== undefined && retryModelID !== null) {
+                      logger.log('Creating black edges via API (backup method)', { modelID: retryModelID });
+                      enableEdges(viewerRef.current, 0x000000, retryModelID, model);
+                      // After creating backup edges, toggle them to match the current setting
+                      // This ensures they respect the show_edges setting
+                      setTimeout(() => {
+                        if (viewerRef.current?.edges) {
+                          try {
+                            const allEdgeNames = viewerRef.current.edges.getAll();
+                            allEdgeNames.forEach((edgeName: string) => {
+                              viewerRef.current?.edges?.toggle(edgeName, showEdges);
+                            });
+                          } catch (err) {
+                            logger.warn('Error toggling backup edges:', err);
+                          }
+                        }
+                      }, 50);
+                    }
                   }
-                }
-              }, 300);
+                }, 300);
+              }
             }
 
             setLoading(false);
@@ -237,7 +294,7 @@ export const useModelLoading = (
     };
 
     loadModel();
-  }, [modelFile, viewerReady, enableEdges, removeEdges]);
+  }, [modelFile, viewerReady, enableEdges, removeEdges, settings?.show_edges]);
 
   return { loading, error };
 };

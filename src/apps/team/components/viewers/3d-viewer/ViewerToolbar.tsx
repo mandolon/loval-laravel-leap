@@ -18,6 +18,7 @@ interface ViewerToolbarProps {
   onClearMeasurements: () => void;
   clippingActive: boolean;
   onToggleClipping: () => void;
+  onClearClipping: () => void;
   annotationMode: boolean;
   onToggleAnnotation: () => void;
   onResetView: () => void;
@@ -33,6 +34,7 @@ export const ViewerToolbar = ({
   onClearMeasurements,
   clippingActive,
   onToggleClipping,
+  onClearClipping,
   annotationMode,
   onToggleAnnotation,
   onResetView,
@@ -105,6 +107,15 @@ export const ViewerToolbar = ({
           >
             <Scissors className="h-4 w-4" />
           </button>
+          {clippingActive && (
+            <button
+              onClick={onClearClipping}
+              className="h-7 px-2 flex items-center justify-center rounded hover:bg-muted text-muted-foreground text-[10px]"
+              title="Clear All Clipping Planes"
+            >
+              Clear
+            </button>
+          )}
           
           <div className="w-px h-5 bg-border" />
           

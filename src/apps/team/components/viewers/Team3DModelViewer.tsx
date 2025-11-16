@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { logger } from '@/utils/logger';
+import { restoreDimensionsVisibility } from './3d-viewer/utils/dimensionUtils';
 import { ViewerToolbar } from './3d-viewer/ViewerToolbar';
 import { useViewerInitialization } from './3d-viewer/hooks/useViewerInitialization';
 import { useModelLoading } from './3d-viewer/hooks/useModelLoading';
@@ -12,9 +13,11 @@ import { useAnnotationTool } from './3d-viewer/hooks/useAnnotationTool';
 import { useAnnotationInputPosition } from './3d-viewer/hooks/useAnnotationInputPosition';
 import { AnnotationInput } from './3d-viewer/components/AnnotationInput';
 import { useAnnotationInteraction } from './3d-viewer/hooks/useAnnotationInteraction';
+import { useIfcViewerAPI } from '../../hooks/useIfcViewerAPI';
 
 interface ModelSettings {
   background?: string;
+  show_edges?: boolean;
   show_grid?: boolean;
   show_axes?: boolean;
   layers?: {
@@ -42,7 +45,22 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
   const { viewerRef, viewerReady } = useViewerInitialization(containerRef, settings);
   
   // Load model
-  const { loading, error } = useModelLoading(viewerRef, viewerReady, modelFile);
+  const { loading, error } = useModelLoading(viewerRef, viewerReady, modelFile, settings);
+  
+  // Edge toggle functionality
+  const { toggleEdges } = useIfcViewerAPI();
+  
+  // Toggle edges visibility when settings change - real-time toggle
+  useEffect(() => {
+    if (!viewerRef.current || !viewerReady || loading) return;
+    
+    const showEdges = settings?.show_edges ?? true;
+    try {
+      toggleEdges(viewerRef.current, showEdges);
+    } catch (error) {
+      logger.warn('Error toggling edges:', error);
+    }
+  }, [settings?.show_edges, viewerReady, loading, toggleEdges]);
   
   // Tool state
   const [measurementMode, setMeasurementMode] = useState<'none' | 'distance' | 'area' | 'volume'>('none');
@@ -154,9 +172,13 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
     
     // Deactivate measurement
     if (measurementMode !== 'none' && viewerRef.current?.dimensions) {
-      viewerRef.current.dimensions.active = false;
-      viewerRef.current.dimensions.previewActive = false;
-      viewerRef.current.dimensions.cancelDrawing();
+      const dimensions = viewerRef.current.dimensions;
+      dimensions.active = false;
+      dimensions.previewActive = false;
+      dimensions.cancelDrawing();
+      // Restore visibility of all created dimensions
+      const count = restoreDimensionsVisibility(dimensions);
+      logger.log(`Measurement deactivated for clipping - ${count} dimensions remain visible`);
       setMeasurementMode('none');
     }
     
@@ -180,9 +202,13 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
     } else {
       // Deactivating measurement
       if (viewerRef.current?.dimensions) {
-        viewerRef.current.dimensions.active = false;
-        viewerRef.current.dimensions.previewActive = false;
-        viewerRef.current.dimensions.cancelDrawing();
+        const dimensions = viewerRef.current.dimensions;
+        dimensions.active = false;
+        dimensions.previewActive = false;
+        dimensions.cancelDrawing();
+        // Restore visibility of all created dimensions
+        const count = restoreDimensionsVisibility(dimensions);
+        logger.log(`Measurement deactivated - ${count} dimensions remain visible`);
       }
       setMeasurementMode('none');
     }
@@ -223,14 +249,60 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
       // Activating clipping - deactivate all other tools
       deactivateAllTools();
       setClippingActive(true);
-      viewerRef.current.clipper.active = true;
-      viewerRef.current.clipper.createPlane();
-      logger.log('Clipper tool activated - clipping plane created (press P to create another)');
+      
+      // If there are no planes yet, create one
+      if (viewerRef.current.clipper.planes.length === 0) {
+        viewerRef.current.clipper.active = true;
+        viewerRef.current.clipper.createPlane();
+        logger.log('Clipper tool activated - clipping plane created (press P to create another)');
+      } else {
+        // Reactivating - show controls for existing planes
+        viewerRef.current.clipper.active = true;
+        // Make sure all planes are visible (controls/arrows) and reattach controls
+        viewerRef.current.clipper.planes.forEach((plane: any) => {
+          if (!plane.isPlan) {
+            plane.visible = true;
+            plane.active = true; // Keep clipping active
+            // Reattach controls to enable interaction
+            if (plane.controls && plane.controls.attach && plane.helper) {
+              plane.controls.attach(plane.helper);
+            }
+          }
+        });
+        logger.log('Clipper tool reactivated - controls visible and enabled');
+      }
     } else {
-      // Deactivating clipping
-      viewerRef.current.clipper.active = false;
+      // Deactivating clipping mode - hide controls but keep clipping active
+      // Keep planes active so clipping continues, but hide the visual controls and disable interaction
+      viewerRef.current.clipper.planes.forEach((plane: any) => {
+        if (!plane.isPlan) {
+          plane.visible = false; // Hide controls/arrows
+          // Detach controls to disable interaction
+          if (plane.controls && plane.controls.detach) {
+            plane.controls.detach();
+          }
+          // Keep plane.active = true so clipping continues
+        }
+      });
+      // Set clipper.enabled to false to prevent creating new planes
+      // But we need to access the private enabled property, so we'll use a workaround
+      // by setting active to false temporarily, then restoring plane.active
+      const wasActive = viewerRef.current.clipper.active;
+      if (wasActive) {
+        // Manually set enabled to false without affecting plane.active
+        (viewerRef.current.clipper as any).enabled = false;
+      }
       setClippingActive(false);
-      logger.log('Clipper tool deactivated');
+      logger.log('Clipper tool deactivated - clipping remains active, controls hidden and disabled');
+    }
+  };
+
+  const handleClearClipping = () => {
+    if (!viewerRef.current?.clipper) return;
+    
+    if (viewerRef.current.clipper.deleteAllPlanes) {
+      viewerRef.current.clipper.deleteAllPlanes();
+      logger.log('All clipping planes cleared');
     }
   };
 
@@ -290,6 +362,7 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
           onClearMeasurements={handleClearMeasurements}
           clippingActive={clippingActive}
           onToggleClipping={handleToggleClipping}
+          onClearClipping={handleClearClipping}
           annotationMode={annotationMode}
           onToggleAnnotation={handleToggleAnnotation}
           onResetView={handleResetView}
