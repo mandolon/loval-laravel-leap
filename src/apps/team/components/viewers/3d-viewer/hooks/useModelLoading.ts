@@ -83,8 +83,20 @@ export const useModelLoading = (
               throw new Error('loadIfcUrl returned null - file may not be a valid IFC file or WASM failed to load');
             }
             
-            // Get modelID from the loaded model
-            const modelID = (model as any).modelID || (viewerRef.current.IFC.loader.ifcManager as any).models?.[0];
+            // Get modelID from the loaded model - try multiple methods
+            let modelID: number | undefined;
+            // Method 1: From the model object itself
+            if ((model as any).modelID !== undefined) {
+              modelID = (model as any).modelID;
+            }
+            // Method 2: From context.items.ifcModels
+            if (!modelID && viewerRef.current.context?.items?.ifcModels?.[0]?.modelID !== undefined) {
+              modelID = viewerRef.current.context.items.ifcModels[0].modelID;
+            }
+            // Method 3: From ifcManager.models array (first model ID)
+            if (!modelID && viewerRef.current.IFC.loader.ifcManager?.models?.[0] !== undefined) {
+              modelID = viewerRef.current.IFC.loader.ifcManager.models[0];
+            }
             
             logger.log('IFC model loaded, model object:', model);
             logger.log('Model type:', model.type);
@@ -92,7 +104,10 @@ export const useModelLoading = (
             logger.log('Model children:', model.children?.length);
             
             try {
-              logger.log('Scene children count:', viewerRef.current.context?.scene?.children.length);
+              const scene = viewerRef.current.context?.scene;
+              if (scene && Array.isArray(scene.children)) {
+                logger.log('Scene children count:', scene.children.length);
+              }
             } catch (sceneError) {
               logger.warn('Could not access scene:', sceneError);
             }
@@ -165,47 +180,43 @@ export const useModelLoading = (
               logger.log('Camera fitted to frame');
             }
             
-            // Force a render
-            if (viewerRef.current.context?.renderer) {
-              viewerRef.current.context.renderer.render(
-                viewerRef.current.context.scene,
-                viewerRef.current.context.camera
-              );
-              logger.log('Forced render');
-            }
+            // Don't force render - the viewer handles rendering automatically
+            // Forcing render can cause errors if the scene isn't fully initialized
+            // The viewer's animation loop will handle rendering
             
             // Tools are initialized automatically by IfcViewerAPI
             logger.log('IFC model loaded, tools ready');
 
             // Enable black edges by default using custom API
-            // Use the same approach as the working ifcviewer app - traverse model and add edges to scene
+            // Edges are already added directly to the model geometry above (lines 107-160)
+            // The enableEdges function is a fallback that uses the web-ifc-viewer API
+            // We only need one attempt since edges are already created directly
             if (viewerRef.current) {
-              // Wait for next frame, then create edges (multiple attempts to catch async loading)
-              requestAnimationFrame(() => {
-                setTimeout(() => {
-                  if (viewerRef.current) {
-                    logger.log('Creating black edges - attempt 1');
-                    // Try API first, then fallback to manual (which matches working ifcviewer approach)
-                    enableEdges(viewerRef.current, 0x000000, modelID, model);
-                    
-                    // Second attempt after longer delay in case meshes load asynchronously
-                    setTimeout(() => {
-                      if (viewerRef.current) {
-                        logger.log('Creating black edges - attempt 2');
-                        enableEdges(viewerRef.current, 0x000000, modelID, model);
-                      }
-                    }, 500);
-                    
-                    // Third attempt for safety
-                    setTimeout(() => {
-                      if (viewerRef.current) {
-                        logger.log('Creating black edges - attempt 3');
-                        enableEdges(viewerRef.current, 0x000000, modelID, model);
-                      }
-                    }, 1000);
+              // Helper function to get modelID with retry
+              const getModelIDWithRetry = (): number | undefined => {
+                if (!viewerRef.current) return undefined;
+                // Try multiple methods to get modelID
+                if (viewerRef.current.context?.items?.ifcModels?.[0]?.modelID !== undefined) {
+                  return viewerRef.current.context.items.ifcModels[0].modelID;
+                }
+                if (viewerRef.current.IFC.loader.ifcManager?.models?.[0] !== undefined) {
+                  return viewerRef.current.IFC.loader.ifcManager.models[0];
+                }
+                return modelID; // Fallback to original (0 is valid)
+              };
+              
+              // Single attempt after a short delay to ensure everything is initialized
+              // The direct edge creation above is the primary method, this is just a backup
+              setTimeout(() => {
+                if (viewerRef.current) {
+                  const retryModelID = getModelIDWithRetry();
+                  // Only log if modelID is actually available (0 is valid)
+                  if (retryModelID !== undefined && retryModelID !== null) {
+                    logger.log('Creating black edges via API (backup method)', { modelID: retryModelID });
+                    enableEdges(viewerRef.current, 0x000000, retryModelID, model);
                   }
-                }, 200);
-              });
+                }
+              }, 300);
             }
 
             setLoading(false);

@@ -19,13 +19,14 @@ export function useIfcViewerAPI() {
     if (viewer?.edges) {
       try {
         // Get modelID if not provided - use the first loaded model
+        // Note: modelID 0 is valid, so we check for undefined/null explicitly
         let targetModelID = modelID;
-        if (!targetModelID && viewer.context?.items?.ifcModels?.length > 0) {
+        if ((targetModelID === undefined || targetModelID === null) && viewer.context?.items?.ifcModels?.length > 0) {
           targetModelID = viewer.context.items.ifcModels[0].modelID;
           logger.log(`Using modelID: ${targetModelID} for edges`);
         }
 
-        if (!targetModelID) {
+        if (targetModelID === undefined || targetModelID === null) {
           logger.warn('No model ID available for creating edges');
           // Fall through to manual creation
         } else {
