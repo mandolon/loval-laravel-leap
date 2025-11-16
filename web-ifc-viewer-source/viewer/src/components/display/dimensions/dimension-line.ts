@@ -45,7 +45,7 @@ export class IfcDimensionLine {
 
   // Bounding box
   private boundingMesh?: Mesh;
-  private readonly boundingSize = 0.05;
+  private readonly boundingSize = 0.02; // Reduced from 0.05 to make hover area tighter
 
   constructor(
     context: IfcContext,

@@ -1,3 +1,13 @@
+/**
+ * REFACTORED VERSION - This demonstrates the new structure
+ * 
+ * This is a cleaner, more maintainable version of Team3DModelViewer
+ * that uses extracted hooks and components.
+ * 
+ * To use this version, rename it to Team3DModelViewer.tsx
+ * (after backing up the original)
+ */
+
 import { useState, useRef } from 'react';
 import { logger } from '@/utils/logger';
 import { ViewerToolbar } from './3d-viewer/ViewerToolbar';
@@ -229,3 +239,4 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
 };
 
 export default Team3DModelViewer;
+
