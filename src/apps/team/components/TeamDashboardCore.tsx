@@ -2057,7 +2057,12 @@ const TasksView = memo(function TasksView() {
         .eq('workspace_id', currentWorkspaceId)
         .is('deleted_at', null);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching workspace members:', error);
+        throw error;
+      }
+      
+      console.log('Workspace members query result:', data);
       const members = data.map((wm: any) => ({
         id: wm.users.id,
         shortId: wm.users.short_id,
