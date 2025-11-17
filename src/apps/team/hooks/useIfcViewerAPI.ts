@@ -268,7 +268,7 @@ export function useIfcViewerAPI() {
     
     // Also toggle edges added directly to the model (marked with isEdge = true)
     if (viewer?.context?.scene) {
-      const scene = viewer.context.scene;
+      const scene = viewer.context.scene as any;
       
       // Traverse the entire scene to find all edges (including nested ones)
       // Check if scene has traverse method (it should be a Three.js Scene or Object3D)
@@ -298,10 +298,10 @@ export function useIfcViewerAPI() {
       
       // Also check if the model itself is in the scene and traverse it
       // Check if scene has children array
-      if (scene && Array.isArray(scene.children)) {
+      if (Array.isArray(scene.children)) {
         scene.children.forEach((child: any) => {
           // Check if this is the IFC model (usually a Mesh or Group) and has traverse
-          if (child && typeof child.traverse === 'function' && 
+          if (child && typeof child.traverse === 'function' &&
               (child.type === 'Mesh' || child.type === 'Group')) {
             child.traverse((grandchild: any) => {
               if (isEdgeObject(grandchild)) {
@@ -317,9 +317,9 @@ export function useIfcViewerAPI() {
     if (toggledCount === 0) {
       logger.warn('No edges found to toggle. Checking scene structure...');
       if (viewer?.context?.scene) {
-        const scene = viewer.context.scene;
+        const scene = viewer.context.scene as any;
         let lineSegmentsCount = 0;
-        if (scene && typeof scene.traverse === 'function') {
+        if (typeof scene.traverse === 'function') {
           scene.traverse((child: any) => {
             if (child.type === 'LineSegments' || child.isLineSegments) {
               lineSegmentsCount++;
@@ -353,7 +353,7 @@ export function useIfcViewerAPI() {
     }
 
     try {
-      const modelID = viewer.IFC.loader.ifcManager.models[0];
+      const modelID = viewer.context?.items?.ifcModels?.[0]?.modelID ?? 0;
       const props = await viewer.IFC.loader.ifcManager.getItemProperties(modelID, expressID);
       return props;
     } catch (err) {
@@ -369,7 +369,7 @@ export function useIfcViewerAPI() {
     if (!viewer?.context?.scene) return [];
 
     const meshes: any[] = [];
-    const scene = viewer.context.scene;
+    const scene = viewer.context.scene as any;
     const loader = viewer.IFC?.loader;
 
     scene.traverse((child: any) => {

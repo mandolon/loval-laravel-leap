@@ -35,7 +35,7 @@ export const useViewerInitialization = (
         // Configure IFC.js to use local WASM files from public folder
         // This avoids CORS issues with CDN
         const wasmPath = '/wasm/';
-        viewer.IFC.loader.ifcManager.state.api.wasmPath = wasmPath;
+        viewer.IFC.loader.ifcManager.state.api.SetWasmPath(wasmPath);
         viewer.IFC.loader.ifcManager.state.wasmPath = wasmPath;
         
         logger.log('WASM path set to:', wasmPath);
@@ -161,7 +161,7 @@ export const useViewerInitialization = (
       const bgColor = new Color(
         settings?.background === 'dark' ? 0x1a1a1a : 0xf5f5f5
       );
-      viewerRef.current.context.scene.background = bgColor;
+      (viewerRef.current.context.scene as any).background = bgColor;
     }
   }, [settings?.background]);
 
