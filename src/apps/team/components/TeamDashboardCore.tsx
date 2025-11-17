@@ -2078,6 +2078,12 @@ const TasksView = memo(function TasksView() {
         deletedBy: wm.users.deleted_by,
       }));
       
+      console.log('✅ Workspace members loaded:', {
+        count: members.length,
+        ids: members.map((m: User) => m.id),
+        names: members.map((m: User) => m.name)
+      });
+      
       // Ensure current user is always included if they exist
       if (user && !members.find((m: User) => m.id === user.id)) {
         members.push({
@@ -2101,12 +2107,33 @@ const TasksView = memo(function TasksView() {
     enabled: !!currentWorkspaceId,
   });
   
+  // Warn about orphaned references
+  useEffect(() => {
+    tasks.forEach(task => {
+      if (!task.createdBy) {
+        console.warn(`⚠️ Task "${task.title}" has NULL created_by`);
+      }
+      const assignees = Array.isArray(task.assignees) ? task.assignees : [];
+      assignees.forEach(assigneeId => {
+        if (!workspaceMembers.find((m: User) => m.id === assigneeId)) {
+          console.warn(`⚠️ Task "${task.title}" has orphaned assignee: ${assigneeId}`);
+        }
+      });
+    });
+  }, [tasks, workspaceMembers]);
+  
   // Fetch unique creator IDs from tasks that aren't in workspaceMembers
   const creatorIds = useMemo(() => {
     const memberIds = new Set(workspaceMembers.map((m: User) => m.id));
     const taskCreatorIds = tasks
       .map((t) => t.createdBy)
       .filter((id) => !memberIds.has(id));
+    
+    console.log('🔍 Creator IDs to fetch:', {
+      creatorIds: [...new Set(taskCreatorIds)],
+      fromTasks: tasks.map(t => ({ title: t.title, createdBy: t.createdBy }))
+    });
+    
     return [...new Set(taskCreatorIds)];
   }, [tasks, workspaceMembers]);
   
@@ -2116,6 +2143,15 @@ const TasksView = memo(function TasksView() {
     const taskAssigneeIds = tasks
       .flatMap((t) => Array.isArray(t.assignees) ? t.assignees : [])
       .filter((id) => !memberIds.has(id));
+    
+    console.log('🔍 Assignee IDs to fetch:', {
+      assigneeIds: [...new Set(taskAssigneeIds)],
+      fromTasks: tasks.map(t => ({ 
+        title: t.title, 
+        assignees: Array.isArray(t.assignees) ? t.assignees : [] 
+      }))
+    });
+    
     return [...new Set(taskAssigneeIds)];
   }, [tasks, workspaceMembers]);
   
@@ -2135,7 +2171,7 @@ const TasksView = memo(function TasksView() {
         return [];
       }
       
-      return (data || []).map((u: any) => ({
+      const creators = (data || []).map((u: any) => ({
         id: u.id,
         authId: u.auth_id,
         name: u.name,
@@ -2151,6 +2187,13 @@ const TasksView = memo(function TasksView() {
         deletedAt: u.deleted_at,
         deletedBy: u.deleted_by,
       }));
+      
+      console.log('📥 Missing creators fetched:', {
+        count: creators.length,
+        users: creators.map((u: User) => ({ id: u.id, name: u.name }))
+      });
+      
+      return creators;
     },
     enabled: creatorIds.length > 0,
   });
@@ -2171,7 +2214,7 @@ const TasksView = memo(function TasksView() {
         return [];
       }
       
-      return (data || []).map((u: any) => ({
+      const assignees = (data || []).map((u: any) => ({
         id: u.id,
         authId: u.auth_id,
         name: u.name,
@@ -2187,13 +2230,34 @@ const TasksView = memo(function TasksView() {
         deletedAt: u.deleted_at,
         deletedBy: u.deleted_by,
       }));
+      
+      console.log('📥 Missing assignees fetched:', {
+        requested: assigneeIds,
+        received: assignees.length,
+        users: assignees.map((u: User) => ({ id: u.id, name: u.name })),
+        missing: assigneeIds.filter(id => !assignees.find((u: User) => u.id === id))
+      });
+      
+      return assignees;
     },
     enabled: assigneeIds.length > 0,
   });
   
   // Combine workspaceMembers with missing creators and assignees
   const allUsers = useMemo(() => {
-    return [...workspaceMembers, ...missingCreators, ...missingAssignees];
+    const combined = [...workspaceMembers, ...missingCreators, ...missingAssignees];
+    
+    console.log('👥 Final allUsers array:', {
+      total: combined.length,
+      sources: {
+        workspaceMembers: workspaceMembers.length,
+        missingCreators: missingCreators.length,
+        missingAssignees: missingAssignees.length
+      },
+      users: combined.map((u: User) => ({ id: u.id, name: u.name }))
+    });
+    
+    return combined;
   }, [workspaceMembers, missingCreators, missingAssignees]);
 
   // Mutations
