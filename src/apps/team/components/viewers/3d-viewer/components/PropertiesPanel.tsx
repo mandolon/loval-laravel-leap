@@ -263,11 +263,17 @@ export const PropertiesPanel = ({ objectName, objectType, objectDimensions, elem
                 {/* Stair-specific fields */}
                 {isStair && (
                   <>
+                    {(metrics as any).stairRunDisplay && (
+                      <div>Run: {(metrics as any).stairRunDisplay}</div>
+                    )}
                     {(metrics as any).numberOfRisers !== undefined && (
                       <div>Number of Risers: {(metrics as any).numberOfRisers}</div>
                     )}
                     {(metrics as any).numberOfTreads !== undefined && (
                       <div>Number of Treads: {(metrics as any).numberOfTreads}</div>
+                    )}
+                    {(metrics as any).treadDepthCalculatedInches && (
+                      <div>Tread Depth: {(metrics as any).treadDepthCalculatedInches}</div>
                     )}
                     {(metrics as any).riserHeightDisplay && (
                       <div>Riser Height: {(metrics as any).riserHeightDisplay}</div>
@@ -277,9 +283,6 @@ export const PropertiesPanel = ({ objectName, objectType, objectDimensions, elem
                     )}
                     {(metrics as any).stairWidthDisplay && (
                       <div>Width: {(metrics as any).stairWidthDisplay}</div>
-                    )}
-                    {(metrics as any).stairRunDisplay && (
-                      <div>Run: {(metrics as any).stairRunDisplay}</div>
                     )}
                     {(metrics as any).stairRiseDisplay && (
                       <div>Rise: {(metrics as any).stairRiseDisplay}</div>

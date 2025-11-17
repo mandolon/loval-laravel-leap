@@ -350,6 +350,7 @@ export interface StandardizedStairMetrics extends StandardizedElementBase {
   riserHeightDisplay?: string;    // e.g., "7 1/2\""
   treadDepthFt?: number;           // individual tread depth
   treadDepthDisplay?: string;      // e.g., "10\""
+  treadDepthCalculatedInches?: string; // calculated from run / numberOfTreads, in inches (e.g., "11\"")
   stairWidthFt?: number;           // overall width of stair
   stairWidthDisplay?: string;     // e.g., "3' 0\""
   stairRunFt?: number;             // total horizontal run
@@ -1509,6 +1510,65 @@ export async function extractQuantityValue(
     return null;
   } catch (err) {
     logger.warn(`Error extracting quantity ${quantityName}:`, err);
+    return null;
+  }
+}
+
+/**
+ * Extract property value from property sets by name
+ * Helper function for all extractors
+ */
+export async function extractPropertyValueFromPsets(
+  ifcManager: any,
+  modelID: number,
+  props: any,
+  propertyName: string,
+  propertySetName?: string
+): Promise<any | null> {
+  try {
+    if (!props || !props.psets) return null;
+    
+    const propNameLower = propertyName.toLowerCase();
+    const psetNameLower = propertySetName?.toLowerCase() || '';
+    
+    for (const pset of Object.values(props.psets) as any[]) {
+      if (!pset || !pset.HasProperties) continue;
+      
+      const currentPsetName = (pset.Name?.value || pset.Name || '').toLowerCase();
+      
+      // If propertySetName specified, only check that set
+      if (propertySetName && !currentPsetName.includes(psetNameLower)) {
+        continue;
+      }
+      
+      for (let prop of pset.HasProperties || []) {
+        prop = await resolvePropertyReference(ifcManager, modelID, prop);
+        if (!prop) continue;
+        
+        const currentPropName = extractPropertyName(prop).toLowerCase();
+        
+        if (currentPropName === propNameLower || currentPropName.includes(propNameLower)) {
+          const propValue = extractPropertyValue(prop);
+          
+          // Handle numeric values (integers, floats)
+          if (typeof propValue === 'number' && !isNaN(propValue)) {
+            return propValue;
+          }
+          
+          // Handle string representations of numbers
+          if (typeof propValue === 'string') {
+            const numValue = parseFloat(propValue);
+            if (!isNaN(numValue)) {
+              return numValue;
+            }
+          }
+        }
+      }
+    }
+    
+    return null;
+  } catch (err) {
+    logger.warn(`Error extracting property ${propertyName}:`, err);
     return null;
   }
 }
@@ -2818,16 +2878,56 @@ export async function extractStandardizedStairMetrics(
   expressID: number
 ): Promise<StandardizedStairMetrics> {
   try {
-    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, 'IfcStair');
+    // Get base properties to determine actual IFC class (IfcStair or IfcStairFlight)
+    const baseProps = await ifcAPI.getProperties(modelID, expressID, false, false);
+    const typeNumber = baseProps?.type;
+    let ifcClass: string = 'IfcStair';
+    
+    if (typeNumber) {
+      try {
+        const typeName = ifcManager.ifcAPI?.GetNameFromTypeCode?.(typeNumber);
+        if (typeName && !typeName.includes('unknown')) {
+          let normalized = typeName.toUpperCase();
+          if (normalized.startsWith('IFC')) {
+            normalized = normalized.substring(3);
+          }
+          if (normalized === 'STAIRFLIGHT') {
+            ifcClass = 'IfcStairFlight';
+          } else if (normalized === 'STAIR') {
+            ifcClass = 'IfcStair';
+          }
+        }
+      } catch (err) {
+        // Fallback: try typesMap
+        if (ifcManager.typesMap && ifcManager.typesMap[typeNumber]) {
+          const typeName = ifcManager.typesMap[typeNumber];
+          let normalized = typeName.toUpperCase();
+          if (normalized.startsWith('IFC')) {
+            normalized = normalized.substring(3);
+          }
+          if (normalized === 'STAIRFLIGHT') {
+            ifcClass = 'IfcStairFlight';
+          } else if (normalized === 'STAIR') {
+            ifcClass = 'IfcStair';
+          }
+        }
+      }
+    }
+    
+    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, ifcClass);
     const props = await ifcAPI.getProperties(modelID, expressID, true, false);
     
-    const metrics: StandardizedStairMetrics = { ...identity, ifcClass: 'IfcStair', expressID };
+    const metrics: StandardizedStairMetrics = { ...identity, ifcClass, expressID };
     
     // Try Qto_StairFlightBaseQuantities first (for IfcStairFlight)
     let numberOfRisers = await extractQuantityValue(ifcManager, modelID, props, 'NumberOfRisers', 'Qto_StairFlightBaseQuantities');
     let numberOfTreads = await extractQuantityValue(ifcManager, modelID, props, 'NumberOfTreads', 'Qto_StairFlightBaseQuantities');
     let riserHeight = await extractQuantityValue(ifcManager, modelID, props, 'RiserHeight', 'Qto_StairFlightBaseQuantities');
     let treadLength = await extractQuantityValue(ifcManager, modelID, props, 'TreadLength', 'Qto_StairFlightBaseQuantities');
+    // Fallback: try TreadDepth if TreadLength not found (some models use different property names)
+    if (treadLength === null) {
+      treadLength = await extractQuantityValue(ifcManager, modelID, props, 'TreadDepth', 'Qto_StairFlightBaseQuantities');
+    }
     let width = await extractQuantityValue(ifcManager, modelID, props, 'Width', 'Qto_StairFlightBaseQuantities');
     let length = await extractQuantityValue(ifcManager, modelID, props, 'Length', 'Qto_StairFlightBaseQuantities');
     let height = await extractQuantityValue(ifcManager, modelID, props, 'Height', 'Qto_StairFlightBaseQuantities');
@@ -2838,6 +2938,13 @@ export async function extractStandardizedStairMetrics(
     }
     if (numberOfTreads === null) {
       numberOfTreads = await extractQuantityValue(ifcManager, modelID, props, 'NumberOfTreads', 'Qto_StairBaseQuantities');
+    }
+    if (treadLength === null) {
+      treadLength = await extractQuantityValue(ifcManager, modelID, props, 'TreadLength', 'Qto_StairBaseQuantities');
+      // Fallback: try TreadDepth if TreadLength not found
+      if (treadLength === null) {
+        treadLength = await extractQuantityValue(ifcManager, modelID, props, 'TreadDepth', 'Qto_StairBaseQuantities');
+      }
     }
     if (width === null) {
       width = await extractQuantityValue(ifcManager, modelID, props, 'Width', 'Qto_StairBaseQuantities');
@@ -2851,6 +2958,29 @@ export async function extractStandardizedStairMetrics(
     
     // Then try BaseQuantities Pset as fallback / supplement
     const baseQ = await extractBaseQuantitiesFromPsets(ifcManager, modelID, props.psets);
+    
+    // Also try property sets for NumberOfRisers and NumberOfTreads (if not found in quantity sets)
+    if (numberOfRisers === null) {
+      numberOfRisers = await extractPropertyValueFromPsets(ifcManager, modelID, props, 'NumberOfRisers', 'Pset_StairCommon');
+      if (numberOfRisers === null) {
+        numberOfRisers = await extractPropertyValueFromPsets(ifcManager, modelID, props, 'NumberOfRisers', 'Pset_Rehome_StairAdapter');
+      }
+      // Try without specifying property set name (search all)
+      if (numberOfRisers === null) {
+        numberOfRisers = await extractPropertyValueFromPsets(ifcManager, modelID, props, 'NumberOfRisers');
+      }
+    }
+    
+    if (numberOfTreads === null) {
+      numberOfTreads = await extractPropertyValueFromPsets(ifcManager, modelID, props, 'NumberOfTreads', 'Pset_StairCommon');
+      if (numberOfTreads === null) {
+        numberOfTreads = await extractPropertyValueFromPsets(ifcManager, modelID, props, 'NumberOfTreads', 'Pset_Rehome_StairAdapter');
+      }
+      // Try without specifying property set name (search all)
+      if (numberOfTreads === null) {
+        numberOfTreads = await extractPropertyValueFromPsets(ifcManager, modelID, props, 'NumberOfTreads');
+      }
+    }
     
     // Combine quantity set and Pset values (quantity sets take precedence)
     const widthIfc = width ?? baseQ?.width ?? undefined;
@@ -2901,6 +3031,12 @@ export async function extractStandardizedStairMetrics(
     if (metrics.stairWidthFt && metrics.stairRunFt) {
       metrics.areaSqFt = metrics.stairWidthFt * metrics.stairRunFt;
       metrics.areaDisplay = `${formatSquareFeet(metrics.areaSqFt)} SF`;
+    }
+    
+    // Calculate tread depth from run / number of treads (in inches)
+    if (metrics.stairRunFt && metrics.numberOfTreads && metrics.numberOfTreads > 0) {
+      const treadDepthInFeet = metrics.stairRunFt / metrics.numberOfTreads;
+      metrics.treadDepthCalculatedInches = formatInchesFraction(treadDepthInFeet);
     }
     
     // Dev logging
@@ -3099,6 +3235,8 @@ export async function extractStandardizedElementMetrics(
             'COLUMN': 'Column',
             'BEAM': 'Beam',
             'WALLSTANDARDCASE': 'WallStandardCase',
+            'STAIR': 'Stair',
+            'STAIRFLIGHT': 'StairFlight',
           };
           
           if (knownMappings[normalized]) {
@@ -3110,6 +3248,8 @@ export async function extractStandardizedElementMetrics(
             // Try to detect word boundaries in all-caps strings
             if (normalized === 'WALLSTANDARDCASE') {
               camelCase = 'WallStandardCase';
+            } else if (normalized === 'STAIRFLIGHT') {
+              camelCase = 'StairFlight';
             } else if (normalized.length > 0) {
               // Simple conversion: first letter uppercase, rest lowercase
               camelCase = normalized.charAt(0) + normalized.slice(1).toLowerCase();
@@ -3137,12 +3277,19 @@ export async function extractStandardizedElementMetrics(
             'COLUMN': 'Column',
             'BEAM': 'Beam',
             'WALLSTANDARDCASE': 'WallStandardCase',
+            'STAIR': 'Stair',
+            'STAIRFLIGHT': 'StairFlight',
           };
           
           if (knownMappings[normalized]) {
             ifcClass = `Ifc${knownMappings[normalized]}`;
           } else {
-            let camelCase = normalized.charAt(0) + normalized.slice(1).toLowerCase();
+            let camelCase = normalized;
+            if (normalized === 'STAIRFLIGHT') {
+              camelCase = 'StairFlight';
+            } else {
+              camelCase = normalized.charAt(0) + normalized.slice(1).toLowerCase();
+            }
             ifcClass = `Ifc${camelCase}`;
           }
         }
