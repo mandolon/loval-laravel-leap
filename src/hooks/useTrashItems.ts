@@ -76,11 +76,12 @@ export const useTrashItems = (workspaceId: string | undefined) => {
       if (!workspaceId) return [];
 
       const items: TrashItem[] = [];
+      const allDeletedByIds = new Set<string>();
 
       // Fetch ALL projects in workspace (both deleted and active) for filtering
       const { data: allProjects } = await supabase
         .from('projects')
-        .select('id, short_id, name, status, deleted_at, deleted_by, users!projects_new_deleted_by_fkey(name)')
+        .select('id, short_id, name, status, deleted_at, deleted_by')
         .eq('workspace_id', workspaceId)
         .order('deleted_at', { ascending: false });
 
@@ -89,8 +90,9 @@ export const useTrashItems = (workspaceId: string | undefined) => {
       const workspaceProjectIds = allProjects?.map(p => p.id) || [];
 
       if (deletedProjects.length > 0) {
-        items.push(
-          ...deletedProjects.map((p) => ({
+        deletedProjects.forEach(p => {
+          if (p.deleted_by) allDeletedByIds.add(p.deleted_by);
+          items.push({
             id: p.id,
             short_id: p.short_id,
             name: p.name,
@@ -99,23 +101,24 @@ export const useTrashItems = (workspaceId: string | undefined) => {
             location: getLocation('project'),
             projectName: '—',
             deleted_at: p.deleted_at!,
-            deleted_by_name: (p.users as any)?.name || 'Unknown',
+            deleted_by_name: '', // Will be filled later
             status: p.status,
-          }))
-        );
+          });
+        });
       }
 
       // Fetch deleted AI chat threads
       const { data: threads } = await supabase
         .from('ai_chat_threads')
-        .select('id, short_id, title, deleted_at, deleted_by, users!ai_chat_threads_deleted_by_fkey(name)')
+        .select('id, short_id, title, deleted_at, deleted_by')
         .eq('workspace_id', workspaceId)
         .not('deleted_at', 'is', null)
         .order('deleted_at', { ascending: false });
 
       if (threads) {
-        items.push(
-          ...threads.map((t) => ({
+        threads.forEach(t => {
+          if (t.deleted_by) allDeletedByIds.add(t.deleted_by);
+          items.push({
             id: t.id,
             short_id: t.short_id,
             name: t.title,
@@ -124,23 +127,23 @@ export const useTrashItems = (workspaceId: string | undefined) => {
             location: getLocation('ai_chat_thread'),
             projectName: '—',
             deleted_at: t.deleted_at!,
-            deleted_by_name: (t.users as any)?.name || 'Unknown',
-          }))
-        );
+            deleted_by_name: '', // Will be filled later
+          });
+        });
       }
 
       // Fetch deleted tasks (with project names)
       const { data: tasks } = await supabase
         .from('tasks')
-        .select('id, short_id, title, project_id, deleted_at, deleted_by, users!tasks_new_deleted_by_fkey(name), projects(name)')
+        .select('id, short_id, title, project_id, deleted_at, deleted_by, projects(name)')
         .not('deleted_at', 'is', null)
         .order('deleted_at', { ascending: false });
 
       if (tasks) {
         const filteredTasks = tasks.filter(t => workspaceProjectIds.includes(t.project_id));
-        
-        items.push(
-          ...filteredTasks.map((t) => ({
+        filteredTasks.forEach(t => {
+          if (t.deleted_by) allDeletedByIds.add(t.deleted_by);
+          items.push({
             id: t.id,
             short_id: t.short_id,
             name: t.title,
@@ -149,24 +152,24 @@ export const useTrashItems = (workspaceId: string | undefined) => {
             location: getLocation('task'),
             projectName: (t.projects as any)?.name || '—',
             deleted_at: t.deleted_at!,
-            deleted_by_name: (t.users as any)?.name || 'Unknown',
+            deleted_by_name: '', // Will be filled later
             project_id: t.project_id,
-          }))
-        );
+          });
+        });
       }
 
       // Fetch deleted files
       const { data: files } = await supabase
         .from('files')
-        .select('id, short_id, filename, project_id, deleted_at, deleted_by, users!files_new_deleted_by_fkey(name), projects(name)')
+        .select('id, short_id, filename, project_id, deleted_at, deleted_by, projects(name)')
         .not('deleted_at', 'is', null)
         .order('deleted_at', { ascending: false });
 
       if (files) {
         const filteredFiles = files.filter(f => workspaceProjectIds.includes(f.project_id));
-        
-        items.push(
-          ...filteredFiles.map((f) => ({
+        filteredFiles.forEach(f => {
+          if (f.deleted_by) allDeletedByIds.add(f.deleted_by);
+          items.push({
             id: f.id,
             short_id: f.short_id,
             name: f.filename,
@@ -175,24 +178,24 @@ export const useTrashItems = (workspaceId: string | undefined) => {
             location: getLocation('file'),
             projectName: (f.projects as any)?.name || '—',
             deleted_at: f.deleted_at!,
-            deleted_by_name: (f.users as any)?.name || 'Unknown',
+            deleted_by_name: '', // Will be filled later
             project_id: f.project_id,
-          }))
-        );
+          });
+        });
       }
 
       // Fetch deleted folders
       const { data: folders } = await supabase
         .from('folders')
-        .select('id, short_id, name, project_id, deleted_at, deleted_by, users!folders_new_deleted_by_fkey(name), projects(name)')
+        .select('id, short_id, name, project_id, deleted_at, deleted_by, projects(name)')
         .not('deleted_at', 'is', null)
         .order('deleted_at', { ascending: false });
 
       if (folders) {
         const filteredFolders = folders.filter(f => workspaceProjectIds.includes(f.project_id));
-        
-        items.push(
-          ...filteredFolders.map((f) => ({
+        filteredFolders.forEach(f => {
+          if (f.deleted_by) allDeletedByIds.add(f.deleted_by);
+          items.push({
             id: f.id,
             short_id: f.short_id,
             name: f.name,
@@ -201,24 +204,50 @@ export const useTrashItems = (workspaceId: string | undefined) => {
             location: getLocation('folder'),
             projectName: (f.projects as any)?.name || '—',
             deleted_at: f.deleted_at!,
-            deleted_by_name: (f.users as any)?.name || 'Unknown',
+            deleted_by_name: '', // Will be filled later
             project_id: f.project_id,
-          }))
-        );
+          });
+        });
+      }
+
+      // Fetch deleted notes
+      const { data: notes } = await supabase
+        .from('notes')
+        .select('id, short_id, title, project_id, deleted_at, deleted_by, projects(name)')
+        .not('deleted_at', 'is', null)
+        .order('deleted_at', { ascending: false });
+
+      if (notes) {
+        const filteredNotes = notes.filter(n => workspaceProjectIds.includes(n.project_id));
+        filteredNotes.forEach(n => {
+          if (n.deleted_by) allDeletedByIds.add(n.deleted_by);
+          items.push({
+            id: n.id,
+            short_id: n.short_id,
+            name: n.title,
+            type: 'note' as const,
+            typeLabel: getTypeLabel('note'),
+            location: getLocation('note'),
+            projectName: (n.projects as any)?.name || '—',
+            deleted_at: n.deleted_at!,
+            deleted_by_name: '', // Will be filled later
+            project_id: n.project_id,
+          });
+        });
       }
 
       // Fetch deleted links
       const { data: links } = await supabase
         .from('links')
-        .select('id, short_id, title, project_id, deleted_at, deleted_by, users!links_deleted_by_fkey(name), projects(name)')
+        .select('id, short_id, title, project_id, deleted_at, deleted_by, projects(name)')
         .not('deleted_at', 'is', null)
         .order('deleted_at', { ascending: false });
 
       if (links) {
         const filteredLinks = links.filter(l => workspaceProjectIds.includes(l.project_id));
-        
-        items.push(
-          ...filteredLinks.map((l) => ({
+        filteredLinks.forEach(l => {
+          if (l.deleted_by) allDeletedByIds.add(l.deleted_by);
+          items.push({
             id: l.id,
             short_id: l.short_id,
             name: l.title,
@@ -227,24 +256,24 @@ export const useTrashItems = (workspaceId: string | undefined) => {
             location: getLocation('link'),
             projectName: (l.projects as any)?.name || '—',
             deleted_at: l.deleted_at!,
-            deleted_by_name: (l.users as any)?.name || 'Unknown',
+            deleted_by_name: '', // Will be filled later
             project_id: l.project_id,
-          }))
-        );
+          });
+        });
       }
 
       // Fetch deleted drawings
       const { data: drawings } = await supabase
         .from('drawings')
-        .select('id, short_id, name, project_id, deleted_at, deleted_by, users!drawings_deleted_by_fkey(name), projects(name)')
+        .select('id, short_id, name, project_id, deleted_at, deleted_by, projects(name)')
         .not('deleted_at', 'is', null)
         .order('deleted_at', { ascending: false });
 
       if (drawings) {
         const filteredDrawings = drawings.filter(d => workspaceProjectIds.includes(d.project_id));
-        
-        items.push(
-          ...filteredDrawings.map((d) => ({
+        filteredDrawings.forEach(d => {
+          if (d.deleted_by) allDeletedByIds.add(d.deleted_by);
+          items.push({
             id: d.id,
             short_id: d.short_id,
             name: d.name,
@@ -253,16 +282,16 @@ export const useTrashItems = (workspaceId: string | undefined) => {
             location: getLocation('drawing'),
             projectName: (d.projects as any)?.name || '—',
             deleted_at: d.deleted_at!,
-            deleted_by_name: (d.users as any)?.name || 'Unknown',
+            deleted_by_name: '', // Will be filled later
             project_id: d.project_id,
-          }))
-        );
+          });
+        });
       }
 
       // Fetch deleted drawing pages
       const { data: drawingPages } = await supabase
         .from('drawing_pages')
-        .select('id, short_id, name, drawing_id, deleted_at, deleted_by, users!drawing_pages_deleted_by_fkey(name), drawings(name, project_id, projects(name))')
+        .select('id, short_id, name, drawing_id, deleted_at, deleted_by, drawings(name, project_id, projects(name))')
         .not('deleted_at', 'is', null)
         .order('deleted_at', { ascending: false });
 
@@ -271,9 +300,9 @@ export const useTrashItems = (workspaceId: string | undefined) => {
           const projectId = (dp.drawings as any)?.project_id;
           return projectId && workspaceProjectIds.includes(projectId);
         });
-        
-        items.push(
-          ...filteredPages.map((dp) => ({
+        filteredPages.forEach(dp => {
+          if (dp.deleted_by) allDeletedByIds.add(dp.deleted_by);
+          items.push({
             id: dp.id,
             short_id: dp.short_id,
             name: dp.name,
@@ -282,70 +311,82 @@ export const useTrashItems = (workspaceId: string | undefined) => {
             location: getLocation('drawing_page'),
             projectName: (dp.drawings as any)?.projects?.name || '—',
             deleted_at: dp.deleted_at!,
-            deleted_by_name: (dp.users as any)?.name || 'Unknown',
+            deleted_by_name: '', // Will be filled later
             project_id: (dp.drawings as any)?.project_id,
-          }))
-        );
+          });
+        });
       }
 
       // Fetch deleted model versions
       const { data: modelVersions } = await supabase
         .from('model_versions')
-        .select('id, short_id, version_number, project_id, deleted_at, deleted_by, users!model_versions_deleted_by_fkey(name), projects(name)')
+        .select('id, short_id, version_number, project_id, deleted_at, deleted_by, projects(name)')
         .not('deleted_at', 'is', null)
         .order('deleted_at', { ascending: false });
 
       if (modelVersions) {
         const filteredVersions = modelVersions.filter(mv => workspaceProjectIds.includes(mv.project_id));
-        
-        // Check if foreign key join worked - if not, do manual lookup
-        const needsManualLookup = filteredVersions.some(mv => !(mv.users as any)?.name && mv.deleted_by);
-        let userNamesMap: Record<string, string> = {};
-        
-        if (needsManualLookup) {
-          const deletedByUserIds = filteredVersions
-            .map(mv => mv.deleted_by)
-            .filter((id): id is string => id !== null && id !== undefined);
-          
-          const uniqueUserIds = [...new Set(deletedByUserIds)];
-          
-          if (uniqueUserIds.length > 0) {
-            const { data: users } = await supabase
-              .from('users')
-              .select('id, name')
-              .in('id', uniqueUserIds);
-            
-            if (users) {
-              users.forEach(u => {
-                if (u.id && u.name) {
-                  userNamesMap[u.id] = u.name;
-                }
-              });
-            }
-          }
-        }
-        
-        items.push(
-          ...filteredVersions.map((mv) => {
-            // Try foreign key join first, fallback to manual lookup
-            const userNameFromJoin = (mv.users as any)?.name;
-            const userNameFromMap = mv.deleted_by ? userNamesMap[mv.deleted_by] : undefined;
-            
-            return {
-              id: mv.id,
-              short_id: mv.short_id,
-              name: mv.version_number,
-              type: 'model_version' as const,
-              typeLabel: getTypeLabel('model_version'),
-              location: getLocation('model_version'),
-              projectName: (mv.projects as any)?.name || '—',
-              deleted_at: mv.deleted_at!,
-              deleted_by_name: userNameFromJoin || userNameFromMap || (mv.deleted_by ? 'Unknown' : 'Unknown'),
-              project_id: mv.project_id,
-            };
-          })
-        );
+        filteredVersions.forEach(mv => {
+          if (mv.deleted_by) allDeletedByIds.add(mv.deleted_by);
+          items.push({
+            id: mv.id,
+            short_id: mv.short_id,
+            name: mv.version_number,
+            type: 'model_version' as const,
+            typeLabel: getTypeLabel('model_version'),
+            location: getLocation('model_version'),
+            projectName: (mv.projects as any)?.name || '—',
+            deleted_at: mv.deleted_at!,
+            deleted_by_name: '', // Will be filled later
+            project_id: mv.project_id,
+          });
+        });
       }
+
+      // Fetch all deleted_by users in one query
+      const userNamesMap: Record<string, string> = {};
+      if (allDeletedByIds.size > 0) {
+        const { data: users } = await supabase
+          .from('users')
+          .select('id, name')
+          .in('id', Array.from(allDeletedByIds));
+
+        if (users) {
+          users.forEach(u => {
+            if (u.id && u.name) {
+              userNamesMap[u.id] = u.name;
+            }
+          });
+        }
+      }
+
+      // Map user names to items
+      items.forEach(item => {
+        const projectData = deletedProjects.find(p => p.id === item.id);
+        const threadData = threads?.find(t => t.id === item.id);
+        const taskData = tasks?.find(t => t.id === item.id);
+        const fileData = files?.find(f => f.id === item.id);
+        const folderData = folders?.find(f => f.id === item.id);
+        const noteData = notes?.find(n => n.id === item.id);
+        const linkData = links?.find(l => l.id === item.id);
+        const drawingData = drawings?.find(d => d.id === item.id);
+        const pageData = drawingPages?.find(dp => dp.id === item.id);
+        const versionData = modelVersions?.find(mv => mv.id === item.id);
+
+        const deleted_by = 
+          projectData?.deleted_by || 
+          threadData?.deleted_by || 
+          taskData?.deleted_by || 
+          fileData?.deleted_by || 
+          folderData?.deleted_by || 
+          noteData?.deleted_by || 
+          linkData?.deleted_by || 
+          drawingData?.deleted_by || 
+          pageData?.deleted_by || 
+          versionData?.deleted_by;
+
+        item.deleted_by_name = deleted_by ? (userNamesMap[deleted_by] || 'Unknown') : 'Unknown';
+      });
 
       // Sort all items by deleted_at descending
       items.sort((a, b) => new Date(b.deleted_at).getTime() - new Date(a.deleted_at).getTime());
