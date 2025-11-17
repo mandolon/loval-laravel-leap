@@ -193,7 +193,7 @@ export function NewChatInput({
           ref={textareaRef}
           value={message}
           onChange={(event) => setMessage(event.target.value)}
-          placeholder="Message AI Piner for assistance..."
+          placeholder="Message your MyHome AI for assistance..."
           rows={1}
           className="w-full max-h-40 resize-none bg-transparent text-[15px] leading-[1.5] outline-none px-2 my-1"
           style={{ fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif', color: 'hsl(var(--foreground))' }}
@@ -312,7 +312,7 @@ export function NewChatInput({
                 {summaryAction}
               </div>
             )}
-            <span>Piner 1.0</span>
+            <span>Google Gemini 2.5 Flash</span>
             <button
               type="button"
               onClick={onSubmit}

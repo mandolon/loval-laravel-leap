@@ -12,7 +12,7 @@ export function ChatFooter({ chatOpened }: ChatFooterProps) {
       }`}
     >
       <p className="text-[11px] text-muted-foreground">
-        AI Assistant only supports project management inside this workspace.
+        MyHome AI Assistant only supports project management inside this workspace.
       </p>
     </div>
   )
