@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { IfcViewerAPI } from 'web-ifc-viewer';
 import { Color } from 'three';
 import { Mesh } from 'three';
@@ -27,6 +27,32 @@ export const useAnnotationInteraction = ({
 }: UseAnnotationInteractionProps) => {
   const [selectedAnnotationId, setSelectedAnnotationId] = useState<string | null>(null);
   const [hoveredAnnotationId, setHoveredAnnotationId] = useState<string | null>(null);
+  
+  // Performance optimization: Cache clickable objects list to avoid rebuilding on every mousemove
+  const clickableObjectsRef = useRef<Mesh[]>([]);
+  const rafIdRef = useRef<number | null>(null);
+
+  // Performance optimization: Rebuild clickable objects cache when annotations change
+  // We track the size of the annotation groups map to detect changes
+  const lastCacheSizeRef = useRef<number>(0);
+  
+  useEffect(() => {
+    const currentSize = annotationGroupsRef.current.size;
+    // Rebuild cache if the number of annotation groups changed
+    if (currentSize !== lastCacheSizeRef.current) {
+      const clickableObjects: Mesh[] = [];
+      annotationGroupsRef.current.forEach((group) => {
+        group.traverse((child: any) => {
+          if (child.userData?.isAnnotationBoundingBox || 
+              (child.type === 'Mesh' && child.userData?.annotationId && child.name !== 'annotation-hover-sphere')) {
+            clickableObjects.push(child);
+          }
+        });
+      });
+      clickableObjectsRef.current = clickableObjects;
+      lastCacheSizeRef.current = currentSize;
+    }
+  }); // Run on every render to check for changes (lightweight check)
 
   // Handle annotation selection on click
   useEffect(() => {
@@ -42,16 +68,8 @@ export const useAnnotationInteraction = ({
         return;
       }
       
-      // Get all annotation bounding boxes and spheres
-      const clickableObjects: Mesh[] = [];
-      annotationGroupsRef.current.forEach((group) => {
-        group.traverse((child: any) => {
-          if (child.userData?.isAnnotationBoundingBox || 
-              (child.type === 'Mesh' && child.userData?.annotationId && child.name !== 'annotation-hover-sphere')) {
-            clickableObjects.push(child);
-          }
-        });
-      });
+      // Use cached clickable objects list
+      const clickableObjects = clickableObjectsRef.current;
 
       if (clickableObjects.length === 0) {
         // Clear selection if clicking on empty space
@@ -110,16 +128,8 @@ export const useAnnotationInteraction = ({
         return;
       }
       
-      // Get all annotation bounding boxes and spheres
-      const clickableObjects: Mesh[] = [];
-      annotationGroupsRef.current.forEach((group) => {
-        group.traverse((child: any) => {
-          if (child.userData?.isAnnotationBoundingBox || 
-              (child.type === 'Mesh' && child.userData?.annotationId && child.name !== 'annotation-hover-sphere')) {
-            clickableObjects.push(child);
-          }
-        });
-      });
+      // Use cached clickable objects list
+      const clickableObjects = clickableObjectsRef.current;
 
       if (clickableObjects.length === 0) {
         return;
@@ -192,83 +202,85 @@ export const useAnnotationInteraction = ({
     const container = containerRef.current;
     const context = viewerRef.current.context;
     
+    // Performance optimization: Throttle raycasting using requestAnimationFrame
     const handleMouseMove = (event: MouseEvent) => {
       const container = containerRef.current;
       if (!container) return;
       
-      // Get canvas element for cursor styling
-      const canvas = container.querySelector('canvas') as HTMLCanvasElement;
+      // Skip if there's already a pending frame
+      if (rafIdRef.current !== null) return;
       
-      // Don't show hover if clipping is active
-      if (clippingActive) {
-        if (hoveredAnnotationId) {
-          setHoveredAnnotationId(null);
-        }
-        if (canvas) {
-          canvas.style.cursor = annotationMode ? 'crosshair' : 'default';
-        }
-        return;
-      }
-      
-      // Get all annotation bounding boxes and spheres
-      const clickableObjects: Mesh[] = [];
-      annotationGroupsRef.current.forEach((group) => {
-        group.traverse((child: any) => {
-          if (child.userData?.isAnnotationBoundingBox || 
-              (child.type === 'Mesh' && child.userData?.annotationId && child.name !== 'annotation-hover-sphere')) {
-            clickableObjects.push(child);
-          }
-        });
-      });
-      
-      if (clickableObjects.length === 0) {
-        if (hoveredAnnotationId) {
-          setHoveredAnnotationId(null);
-        }
-        if (canvas) {
-          canvas.style.cursor = annotationMode ? 'crosshair' : 'default';
-        }
-        return;
-      }
-      
-      // Cast ray to find hovered annotation - only use the FIRST/closest intersection
-      const intersects = context.castRay(clickableObjects);
-      
-      if (intersects && intersects.length > 0) {
-        const closestIntersect = intersects[0];
-        let annotationId = closestIntersect.object.userData?.annotationId;
+      // Schedule raycast for next frame
+      rafIdRef.current = requestAnimationFrame(() => {
+        rafIdRef.current = null;
         
-        // If clicked on sphere or bounding box, get annotation ID from parent group
-        if (!annotationId && closestIntersect.object.parent) {
-          annotationId = closestIntersect.object.parent.userData?.annotationId;
-        }
+        // Get canvas element for cursor styling
+        const canvas = container.querySelector('canvas') as HTMLCanvasElement;
         
-        if (annotationId) {
-          // Set cursor to pointer when hovering over annotation
-          if (canvas) {
-            canvas.style.cursor = 'pointer';
-          }
-          
-          // Only show hover if not selected
-          if (annotationId !== selectedAnnotationId) {
-            setHoveredAnnotationId(annotationId);
-          } else {
-            // If hovering over selected annotation, clear hover state
+        // Don't show hover if clipping is active
+        if (clippingActive) {
+          if (hoveredAnnotationId) {
             setHoveredAnnotationId(null);
           }
+          if (canvas) {
+            canvas.style.cursor = annotationMode ? 'crosshair' : 'default';
+          }
+          return;
+        }
+        
+        // Use cached clickable objects list (performance optimization)
+        const clickableObjects = clickableObjectsRef.current;
+        
+        // Early exit if no clickable objects (already implemented)
+        if (clickableObjects.length === 0) {
+          if (hoveredAnnotationId) {
+            setHoveredAnnotationId(null);
+          }
+          if (canvas) {
+            canvas.style.cursor = annotationMode ? 'crosshair' : 'default';
+          }
+          return;
+        }
+        
+        // Cast ray to find hovered annotation - only use the FIRST/closest intersection
+        const intersects = context.castRay(clickableObjects);
+        
+        if (intersects && intersects.length > 0) {
+          const closestIntersect = intersects[0];
+          let annotationId = closestIntersect.object.userData?.annotationId;
+          
+          // If clicked on sphere or bounding box, get annotation ID from parent group
+          if (!annotationId && closestIntersect.object.parent) {
+            annotationId = closestIntersect.object.parent.userData?.annotationId;
+          }
+          
+          if (annotationId) {
+            // Set cursor to pointer when hovering over annotation
+            if (canvas) {
+              canvas.style.cursor = 'pointer';
+            }
+            
+            // Only show hover if not selected
+            if (annotationId !== selectedAnnotationId) {
+              setHoveredAnnotationId(annotationId);
+            } else {
+              // If hovering over selected annotation, clear hover state
+              setHoveredAnnotationId(null);
+            }
+          } else {
+            setHoveredAnnotationId(null);
+            if (canvas) {
+              canvas.style.cursor = annotationMode ? 'crosshair' : 'default';
+            }
+          }
         } else {
+          // Not hovering over any annotation
           setHoveredAnnotationId(null);
           if (canvas) {
             canvas.style.cursor = annotationMode ? 'crosshair' : 'default';
           }
         }
-      } else {
-        // Not hovering over any annotation
-        setHoveredAnnotationId(null);
-        if (canvas) {
-          canvas.style.cursor = annotationMode ? 'crosshair' : 'default';
-        }
-      }
+      });
     };
     
     // Attach to the canvas element if available, otherwise use container
@@ -291,6 +303,11 @@ export const useAnnotationInteraction = ({
     }
     
     return () => {
+      // Cancel pending animation frame
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
@@ -299,7 +316,7 @@ export const useAnnotationInteraction = ({
         targetElement = null;
       }
     };
-  }, [annotationMode, clippingActive, viewerReady, selectedAnnotationId, hoveredAnnotationId, annotationGroupsRef, containerRef]);
+  }, [annotationMode, clippingActive, viewerReady, selectedAnnotationId, hoveredAnnotationId, containerRef]);
 
   // Apply hover and selection colors to annotations (both sphere and text label)
   useEffect(() => {

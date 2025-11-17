@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { IfcViewerAPI } from 'web-ifc-viewer';
 import { logger } from '@/utils/logger';
 import { extractStandardizedElementMetrics, StandardizedElementMetrics } from '../utils/ifcPropertyAdapter';
@@ -29,6 +29,10 @@ export const useInspectMode = ({
   const [selectedObjectType, setSelectedObjectType] = useState<string | null>(null);
   const [selectedObjectDimensions, setSelectedObjectDimensions] = useState<any | null>(null);
   const [selectedElementMetrics, setSelectedElementMetrics] = useState<StandardizedElementMetrics | null>(null);
+  
+  // Performance optimization: Debounce rapid clicks on same object
+  const lastClickRef = useRef<{ expressID: number; modelID: number; timestamp: number } | null>(null);
+  const DEBOUNCE_MS = 100; // Skip if same object clicked within 100ms
 
   // Handle hover highlighting
   useEffect(() => {
@@ -88,6 +92,23 @@ export const useInspectMode = ({
         const result = await viewer.IFC.selector.pickIfcItem(false);
         
         if (result && result.modelID !== null && result.id !== null) {
+          // Performance optimization: Debounce rapid clicks on same object
+          const now = Date.now();
+          if (lastClickRef.current && 
+              lastClickRef.current.expressID === result.id &&
+              lastClickRef.current.modelID === result.modelID &&
+              now - lastClickRef.current.timestamp < DEBOUNCE_MS) {
+            if (process.env.NODE_ENV === 'development') {
+              logger.log('[Performance] Skipping duplicate click on same object (debounced)');
+            }
+            return; // Skip if clicked same object within debounce window
+          }
+          
+          lastClickRef.current = {
+            expressID: result.id,
+            modelID: result.modelID,
+            timestamp: now,
+          };
           // First get base properties to extract the type number (before indirect overwrites it)
           const baseProps = await viewer.IFC.getProperties(result.modelID, result.id, false, false);
           

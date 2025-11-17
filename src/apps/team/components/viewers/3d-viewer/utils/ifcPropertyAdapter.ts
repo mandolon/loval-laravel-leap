@@ -1302,40 +1302,44 @@ function classifyElementCategory(
  * Extract common identity fields from IFC element properties
  * Used by all element type extractors
  * Enhanced to capture PredefinedType, familyName, categoryName, and improved levelName lookup
+ * Performance: Accepts optional baseProps and props to avoid redundant getProperties() calls
  */
 export async function extractElementIdentity(
   ifcAPI: any,
   ifcManager: any,
   modelID: number,
   expressID: number,
-  ifcClass: string
+  ifcClass: string,
+  baseProps?: any,
+  props?: any
 ): Promise<Partial<StandardizedElementBase>> {
   try {
-    const baseProps = await ifcAPI.getProperties(modelID, expressID, false, false);
-    const props = await ifcAPI.getProperties(modelID, expressID, true, false);
+    // Performance optimization: Use provided props if available, otherwise fetch
+    const finalBaseProps = baseProps ?? await ifcAPI.getProperties(modelID, expressID, false, false);
+    const finalProps = props ?? await ifcAPI.getProperties(modelID, expressID, true, false);
     
     const identity: Partial<StandardizedElementBase> = {
       ifcClass,
       expressID,
-      globalId: baseProps?.GlobalId?.value || baseProps?.globalId || baseProps?.GlobalId,
-      name: props?.Name?.value || props?.Name || props?.name || baseProps?.Name?.value || baseProps?.Name,
+      globalId: finalBaseProps?.GlobalId?.value || finalBaseProps?.globalId || finalBaseProps?.GlobalId,
+      name: finalProps?.Name?.value || finalProps?.Name || finalProps?.name || finalBaseProps?.Name?.value || finalBaseProps?.Name,
     };
     
     // Extract PredefinedType from baseProps or props
-    if (baseProps?.PredefinedType?.value !== undefined) {
-      identity.ifcPredefinedType = String(baseProps.PredefinedType.value);
-    } else if (baseProps?.PredefinedType !== undefined && typeof baseProps.PredefinedType === 'string') {
-      identity.ifcPredefinedType = baseProps.PredefinedType;
-    } else if (props?.PredefinedType?.value !== undefined) {
-      identity.ifcPredefinedType = String(props.PredefinedType.value);
-    } else if (props?.PredefinedType !== undefined && typeof props.PredefinedType === 'string') {
-      identity.ifcPredefinedType = props.PredefinedType;
+    if (finalBaseProps?.PredefinedType?.value !== undefined) {
+      identity.ifcPredefinedType = String(finalBaseProps.PredefinedType.value);
+    } else if (finalBaseProps?.PredefinedType !== undefined && typeof finalBaseProps.PredefinedType === 'string') {
+      identity.ifcPredefinedType = finalBaseProps.PredefinedType;
+    } else if (finalProps?.PredefinedType?.value !== undefined) {
+      identity.ifcPredefinedType = String(finalProps.PredefinedType.value);
+    } else if (finalProps?.PredefinedType !== undefined && typeof finalProps.PredefinedType === 'string') {
+      identity.ifcPredefinedType = finalProps.PredefinedType;
     }
     
     // Extract type name from type object or property sets
-    if (props?.type) {
+    if (finalProps?.type) {
       try {
-        const typeProps = await ifcManager.getItemProperties(modelID, props.type, false);
+        const typeProps = await ifcManager.getItemProperties(modelID, finalProps.type, false);
         identity.typeName = typeProps?.Name?.value || typeProps?.Name || typeProps?.name;
       } catch (err) {
         // Type lookup failed, continue
@@ -1343,8 +1347,8 @@ export async function extractElementIdentity(
     }
     
     // Extract from property sets
-    if (props?.psets) {
-      for (const pset of Object.values(props.psets) as any[]) {
+    if (finalProps?.psets) {
+      for (const pset of Object.values(finalProps.psets) as any[]) {
         if (!pset || !pset.HasProperties) continue;
         
         const psetName = (pset.Name?.value || pset.Name || '').toLowerCase();
@@ -1600,14 +1604,14 @@ export async function extractStandardizedRoofProperties(
   ifcAPI: any,
   ifcManager: any,
   modelID: number,
-  expressID: number
+  expressID: number,
+  baseProps?: any,
+  props?: any
 ): Promise<StandardizedRoofProperties> {
   try {
-    // Get base properties (without indirect to preserve type)
-    const baseProps = await ifcAPI.getProperties(modelID, expressID, false, false);
-    
-    // Get full properties (with indirect for property sets)
-    const props = await ifcAPI.getProperties(modelID, expressID, true, false);
+    // Performance optimization: Use provided props if available, otherwise fetch
+    const finalBaseProps = baseProps ?? await ifcAPI.getProperties(modelID, expressID, false, false);
+    const finalProps = props ?? await ifcAPI.getProperties(modelID, expressID, true, false);
     
     // Initialize debug tracking
     const debugInfo: { propertySetsFound: string[]; quantitySetsFound: string[]; sources: any } = {
@@ -1617,13 +1621,13 @@ export async function extractStandardizedRoofProperties(
     };
     
     // Extract from property sets (includes Rehome_RoofAdapter)
-    const propsFromSets = await extractRoofProperties(ifcManager, modelID, props, debugInfo);
+    const propsFromSets = await extractRoofProperties(ifcManager, modelID, finalProps, debugInfo);
     
     // Extract from quantity sets (pass debugInfo for quantity set tracking)
     const propsFromQuantities = await extractRoofPropertiesFromQuantities(
       ifcManager, 
       modelID, 
-      props, 
+      finalProps, 
       debugInfo.sources,
       debugInfo
     );
@@ -1708,26 +1712,31 @@ export async function extractStandardizedSlabMetrics(
   ifcAPI: any,
   ifcManager: any,
   modelID: number,
-  expressID: number
+  expressID: number,
+  baseProps?: any,
+  props?: any
 ): Promise<StandardizedSlabMetrics> {
   try {
-    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, 'IfcSlab');
-    const props = await ifcAPI.getProperties(modelID, expressID, true, false);
+    // Performance optimization: Use provided props if available, otherwise fetch
+    const finalBaseProps = baseProps ?? await ifcAPI.getProperties(modelID, expressID, false, false);
+    const finalProps = props ?? await ifcAPI.getProperties(modelID, expressID, true, false);
+    
+    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, 'IfcSlab', finalBaseProps, finalProps);
     
     const metrics: StandardizedSlabMetrics = { ...identity, ifcClass: 'IfcSlab', expressID };
     
-    // First, try true quantity sets (Qto_SlabBaseQuantities)
-    const qGrossArea = await extractQuantityValue(ifcManager, modelID, props, 'GrossArea', 'Qto_SlabBaseQuantities');
-    const qNetArea = await extractQuantityValue(ifcManager, modelID, props, 'NetArea', 'Qto_SlabBaseQuantities');
-    const qPerimeter = await extractQuantityValue(ifcManager, modelID, props, 'Perimeter', 'Qto_SlabBaseQuantities');
-    const qWidth = await extractQuantityValue(ifcManager, modelID, props, 'Width', 'Qto_SlabBaseQuantities');
-    const qLength = await extractQuantityValue(ifcManager, modelID, props, 'Length', 'Qto_SlabBaseQuantities');
-    const qGrossVolume = await extractQuantityValue(ifcManager, modelID, props, 'GrossVolume', 'Qto_SlabBaseQuantities');
-    const qNetVolume = await extractQuantityValue(ifcManager, modelID, props, 'NetVolume', 'Qto_SlabBaseQuantities');
-    
-    // Then try BaseQuantities Pset as fallback / supplement
-    const baseQ = await extractBaseQuantitiesFromPsets(ifcManager, modelID, props.psets);
-    const floorAdapter = extractRehomeFloorAdapter(props.psets);
+    // Performance optimization: Parallelize quantity set extractions
+    const [qGrossArea, qNetArea, qPerimeter, qWidth, qLength, qGrossVolume, qNetVolume, baseQ] = await Promise.all([
+      extractQuantityValue(ifcManager, modelID, finalProps, 'GrossArea', 'Qto_SlabBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'NetArea', 'Qto_SlabBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Perimeter', 'Qto_SlabBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Width', 'Qto_SlabBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Length', 'Qto_SlabBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'GrossVolume', 'Qto_SlabBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'NetVolume', 'Qto_SlabBaseQuantities'),
+      extractBaseQuantitiesFromPsets(ifcManager, modelID, finalProps.psets)
+    ]);
+    const floorAdapter = extractRehomeFloorAdapter(finalProps.psets);
     
     // Extract length and width for size calculation (if available)
     // Note: qWidth from Qto_SlabBaseQuantities is thickness, not width, so don't use it for size
@@ -1878,25 +1887,30 @@ export async function extractStandardizedWallMetrics(
   ifcAPI: any,
   ifcManager: any,
   modelID: number,
-  expressID: number
+  expressID: number,
+  baseProps?: any,
+  props?: any
 ): Promise<StandardizedWallMetrics> {
   try {
-    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, 'IfcWall');
-    const props = await ifcAPI.getProperties(modelID, expressID, true, false);
+    // Performance optimization: Use provided props if available, otherwise fetch
+    const finalBaseProps = baseProps ?? await ifcAPI.getProperties(modelID, expressID, false, false);
+    const finalProps = props ?? await ifcAPI.getProperties(modelID, expressID, true, false);
+    
+    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, 'IfcWall', finalBaseProps, finalProps);
     
     const metrics: StandardizedWallMetrics = { ...identity, ifcClass: 'IfcWall', expressID };
     
-    // First, try true quantity sets (Qto_WallBaseQuantities)
-    const qLength = await extractQuantityValue(ifcManager, modelID, props, 'Length', 'Qto_WallBaseQuantities');
-    const qHeight = await extractQuantityValue(ifcManager, modelID, props, 'Height', 'Qto_WallBaseQuantities');
-    const qWidth = await extractQuantityValue(ifcManager, modelID, props, 'Width', 'Qto_WallBaseQuantities');
-    const qGrossArea = await extractQuantityValue(ifcManager, modelID, props, 'GrossArea', 'Qto_WallBaseQuantities');
-    const qNetArea = await extractQuantityValue(ifcManager, modelID, props, 'NetArea', 'Qto_WallBaseQuantities');
-    const qGrossVolume = await extractQuantityValue(ifcManager, modelID, props, 'GrossVolume', 'Qto_WallBaseQuantities');
-    const qNetVolume = await extractQuantityValue(ifcManager, modelID, props, 'NetVolume', 'Qto_WallBaseQuantities');
-    
-    // Then try BaseQuantities Pset as fallback / supplement
-    const baseQ = await extractBaseQuantitiesFromPsets(ifcManager, modelID, props.psets);
+    // Performance optimization: Parallelize quantity set extractions
+    const [qLength, qHeight, qWidth, qGrossArea, qNetArea, qGrossVolume, qNetVolume, baseQ] = await Promise.all([
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Length', 'Qto_WallBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Height', 'Qto_WallBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Width', 'Qto_WallBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'GrossArea', 'Qto_WallBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'NetArea', 'Qto_WallBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'GrossVolume', 'Qto_WallBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'NetVolume', 'Qto_WallBaseQuantities'),
+      extractBaseQuantitiesFromPsets(ifcManager, modelID, finalProps.psets)
+    ]);
     
     // Combine quantity set and Pset values (quantity sets take precedence)
     const lengthIfc = qLength ?? baseQ?.length ?? undefined;
@@ -1985,21 +1999,26 @@ export async function extractStandardizedDoorMetrics(
   ifcAPI: any,
   ifcManager: any,
   modelID: number,
-  expressID: number
+  expressID: number,
+  baseProps?: any,
+  props?: any
 ): Promise<StandardizedDoorMetrics> {
   try {
-    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, 'IfcDoor');
-    const props = await ifcAPI.getProperties(modelID, expressID, true, false);
+    // Performance optimization: Use provided props if available, otherwise fetch
+    const finalBaseProps = baseProps ?? await ifcAPI.getProperties(modelID, expressID, false, false);
+    const finalProps = props ?? await ifcAPI.getProperties(modelID, expressID, true, false);
+    
+    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, 'IfcDoor', finalBaseProps, finalProps);
     
     const metrics: StandardizedDoorMetrics = { ...identity, ifcClass: 'IfcDoor', expressID };
     
-    // First, try true quantity sets (Qto_DoorBaseQuantities)
-    const qWidth = await extractQuantityValue(ifcManager, modelID, props, 'Width', 'Qto_DoorBaseQuantities');
-    const qHeight = await extractQuantityValue(ifcManager, modelID, props, 'Height', 'Qto_DoorBaseQuantities');
-    const qArea = await extractQuantityValue(ifcManager, modelID, props, 'Area', 'Qto_DoorBaseQuantities');
-    
-    // Then try BaseQuantities Pset as fallback / supplement
-    const baseQ = await extractBaseQuantitiesFromPsets(ifcManager, modelID, props.psets);
+    // Performance optimization: Parallelize quantity set extractions
+    const [qWidth, qHeight, qArea, baseQ] = await Promise.all([
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Width', 'Qto_DoorBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Height', 'Qto_DoorBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Area', 'Qto_DoorBaseQuantities'),
+      extractBaseQuantitiesFromPsets(ifcManager, modelID, finalProps.psets)
+    ]);
     
     // Combine quantity set and Pset values (quantity sets take precedence)
     const widthIfc = qWidth ?? baseQ?.width ?? undefined;
@@ -2146,21 +2165,26 @@ export async function extractStandardizedWindowMetrics(
   ifcAPI: any,
   ifcManager: any,
   modelID: number,
-  expressID: number
+  expressID: number,
+  baseProps?: any,
+  props?: any
 ): Promise<StandardizedWindowMetrics> {
   try {
-    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, 'IfcWindow');
-    const props = await ifcAPI.getProperties(modelID, expressID, true, false);
+    // Performance optimization: Use provided props if available, otherwise fetch
+    const finalBaseProps = baseProps ?? await ifcAPI.getProperties(modelID, expressID, false, false);
+    const finalProps = props ?? await ifcAPI.getProperties(modelID, expressID, true, false);
+    
+    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, 'IfcWindow', finalBaseProps, finalProps);
     
     const metrics: StandardizedWindowMetrics = { ...identity, ifcClass: 'IfcWindow', expressID };
     
-    // First, try true quantity sets (Qto_WindowBaseQuantities)
-    const qWidth = await extractQuantityValue(ifcManager, modelID, props, 'Width', 'Qto_WindowBaseQuantities');
-    const qHeight = await extractQuantityValue(ifcManager, modelID, props, 'Height', 'Qto_WindowBaseQuantities');
-    const qArea = await extractQuantityValue(ifcManager, modelID, props, 'Area', 'Qto_WindowBaseQuantities');
-    
-    // Then try BaseQuantities Pset as fallback / supplement
-    const baseQ = await extractBaseQuantitiesFromPsets(ifcManager, modelID, props.psets);
+    // Performance optimization: Parallelize quantity set extractions
+    const [qWidth, qHeight, qArea, baseQ] = await Promise.all([
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Width', 'Qto_WindowBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Height', 'Qto_WindowBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Area', 'Qto_WindowBaseQuantities'),
+      extractBaseQuantitiesFromPsets(ifcManager, modelID, finalProps.psets)
+    ]);
     
     // Combine quantity set and Pset values (quantity sets take precedence)
     const widthIfc = qWidth ?? baseQ?.width ?? undefined;
@@ -2307,19 +2331,24 @@ export async function extractStandardizedRailingMetrics(
   ifcAPI: any,
   ifcManager: any,
   modelID: number,
-  expressID: number
+  expressID: number,
+  baseProps?: any,
+  props?: any
 ): Promise<StandardizedRailingMetrics> {
   try {
-    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, 'IfcRailing');
-    const props = await ifcAPI.getProperties(modelID, expressID, true, false);
+    // Performance optimization: Use provided props if available, otherwise fetch
+    const finalBaseProps = baseProps ?? await ifcAPI.getProperties(modelID, expressID, false, false);
+    const finalProps = props ?? await ifcAPI.getProperties(modelID, expressID, true, false);
+    
+    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, 'IfcRailing', finalBaseProps, finalProps);
     
     const metrics: StandardizedRailingMetrics = { ...identity, ifcClass: 'IfcRailing', expressID };
     
-    // First, try true quantity sets (Qto_RailingBaseQuantities)
-    const qLength = await extractQuantityValue(ifcManager, modelID, props, 'Length', 'Qto_RailingBaseQuantities');
-    
-    // Then try BaseQuantities Pset as fallback / supplement
-    const baseQ = await extractBaseQuantitiesFromPsets(ifcManager, modelID, props.psets);
+    // Performance optimization: Parallelize quantity set extractions
+    const [qLength, baseQ] = await Promise.all([
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Length', 'Qto_RailingBaseQuantities'),
+      extractBaseQuantitiesFromPsets(ifcManager, modelID, finalProps.psets)
+    ]);
     
     // Combine quantity set and Pset values (quantity sets take precedence)
     const lengthIfc = qLength ?? baseQ?.length ?? undefined;
@@ -2366,23 +2395,28 @@ export async function extractStandardizedFootingMetrics(
   ifcAPI: any,
   ifcManager: any,
   modelID: number,
-  expressID: number
+  expressID: number,
+  baseProps?: any,
+  props?: any
 ): Promise<StandardizedFootingMetrics> {
   try {
-    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, 'IfcFooting');
-    const props = await ifcAPI.getProperties(modelID, expressID, true, false);
+    // Performance optimization: Use provided props if available, otherwise fetch
+    const finalBaseProps = baseProps ?? await ifcAPI.getProperties(modelID, expressID, false, false);
+    const finalProps = props ?? await ifcAPI.getProperties(modelID, expressID, true, false);
+    
+    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, 'IfcFooting', finalBaseProps, finalProps);
     
     const metrics: StandardizedFootingMetrics = { ...identity, ifcClass: 'IfcFooting', expressID };
     
-    // First, try true quantity sets (Qto_FootingBaseQuantities)
-    const qLength = await extractQuantityValue(ifcManager, modelID, props, 'Length', 'Qto_FootingBaseQuantities');
-    const qWidth = await extractQuantityValue(ifcManager, modelID, props, 'Width', 'Qto_FootingBaseQuantities');
-    const qHeight = await extractQuantityValue(ifcManager, modelID, props, 'Height', 'Qto_FootingBaseQuantities');
-    const qGrossVolume = await extractQuantityValue(ifcManager, modelID, props, 'GrossVolume', 'Qto_FootingBaseQuantities');
-    const qNetVolume = await extractQuantityValue(ifcManager, modelID, props, 'NetVolume', 'Qto_FootingBaseQuantities');
-    
-    // Then try BaseQuantities Pset as fallback / supplement
-    const baseQ = await extractBaseQuantitiesFromPsets(ifcManager, modelID, props.psets);
+    // Performance optimization: Parallelize quantity set extractions
+    const [qLength, qWidth, qHeight, qGrossVolume, qNetVolume, baseQ] = await Promise.all([
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Length', 'Qto_FootingBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Width', 'Qto_FootingBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Height', 'Qto_FootingBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'GrossVolume', 'Qto_FootingBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'NetVolume', 'Qto_FootingBaseQuantities'),
+      extractBaseQuantitiesFromPsets(ifcManager, modelID, finalProps.psets)
+    ]);
     
     // Combine quantity set and Pset values (quantity sets take precedence)
     const lengthIfc = qLength ?? baseQ?.length ?? undefined;
@@ -2471,21 +2505,26 @@ export async function extractStandardizedColumnMetrics(
   ifcAPI: any,
   ifcManager: any,
   modelID: number,
-  expressID: number
+  expressID: number,
+  baseProps?: any,
+  props?: any
 ): Promise<StandardizedColumnMetrics> {
   try {
-    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, 'IfcColumn');
-    const props = await ifcAPI.getProperties(modelID, expressID, true, false);
+    // Performance optimization: Use provided props if available, otherwise fetch
+    const finalBaseProps = baseProps ?? await ifcAPI.getProperties(modelID, expressID, false, false);
+    const finalProps = props ?? await ifcAPI.getProperties(modelID, expressID, true, false);
+    
+    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, 'IfcColumn', finalBaseProps, finalProps);
     
     const metrics: StandardizedColumnMetrics = { ...identity, ifcClass: 'IfcColumn', expressID };
     
-    // First, try true quantity sets (Qto_ColumnBaseQuantities)
-    const qHeight = await extractQuantityValue(ifcManager, modelID, props, 'Height', 'Qto_ColumnBaseQuantities');
-    const qLength = await extractQuantityValue(ifcManager, modelID, props, 'Length', 'Qto_ColumnBaseQuantities');
-    const qCrossSectionArea = await extractQuantityValue(ifcManager, modelID, props, 'CrossSectionArea', 'Qto_ColumnBaseQuantities');
-    
-    // Then try BaseQuantities Pset as fallback / supplement
-    const baseQ = await extractBaseQuantitiesFromPsets(ifcManager, modelID, props.psets);
+    // Performance optimization: Parallelize quantity set extractions
+    const [qHeight, qLength, qCrossSectionArea, baseQ] = await Promise.all([
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Height', 'Qto_ColumnBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Length', 'Qto_ColumnBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'CrossSectionArea', 'Qto_ColumnBaseQuantities'),
+      extractBaseQuantitiesFromPsets(ifcManager, modelID, finalProps.psets)
+    ]);
     
     // Combine quantity set and Pset values (quantity sets take precedence)
     const lengthIfc = qHeight ?? qLength ?? baseQ?.height ?? baseQ?.length ?? undefined;
@@ -2651,20 +2690,25 @@ export async function extractStandardizedBeamMetrics(
   ifcAPI: any,
   ifcManager: any,
   modelID: number,
-  expressID: number
+  expressID: number,
+  baseProps?: any,
+  props?: any
 ): Promise<StandardizedBeamMetrics> {
   try {
-    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, 'IfcBeam');
-    const props = await ifcAPI.getProperties(modelID, expressID, true, false);
+    // Performance optimization: Use provided props if available, otherwise fetch
+    const finalBaseProps = baseProps ?? await ifcAPI.getProperties(modelID, expressID, false, false);
+    const finalProps = props ?? await ifcAPI.getProperties(modelID, expressID, true, false);
+    
+    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, 'IfcBeam', finalBaseProps, finalProps);
     
     const metrics: StandardizedBeamMetrics = { ...identity, ifcClass: 'IfcBeam', expressID };
     
-    // First, try true quantity sets (Qto_BeamBaseQuantities)
-    const qLength = await extractQuantityValue(ifcManager, modelID, props, 'Length', 'Qto_BeamBaseQuantities');
-    const qCrossSectionArea = await extractQuantityValue(ifcManager, modelID, props, 'CrossSectionArea', 'Qto_BeamBaseQuantities');
-    
-    // Then try BaseQuantities Pset as fallback / supplement
-    const baseQ = await extractBaseQuantitiesFromPsets(ifcManager, modelID, props.psets);
+    // Performance optimization: Parallelize quantity set extractions
+    const [qLength, qCrossSectionArea, baseQ] = await Promise.all([
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Length', 'Qto_BeamBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'CrossSectionArea', 'Qto_BeamBaseQuantities'),
+      extractBaseQuantitiesFromPsets(ifcManager, modelID, finalProps.psets)
+    ]);
     
     // Combine quantity set and Pset values (quantity sets take precedence)
     const lengthIfc = qLength ?? baseQ?.length ?? undefined;
@@ -2802,22 +2846,27 @@ export async function extractStandardizedMassMetrics(
   ifcAPI: any,
   ifcManager: any,
   modelID: number,
-  expressID: number
+  expressID: number,
+  baseProps?: any,
+  props?: any
 ): Promise<StandardizedMassMetrics> {
   try {
-    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, 'IfcBuildingElementProxy');
-    const props = await ifcAPI.getProperties(modelID, expressID, true, false);
+    // Performance optimization: Use provided props if available, otherwise fetch
+    const finalBaseProps = baseProps ?? await ifcAPI.getProperties(modelID, expressID, false, false);
+    const finalProps = props ?? await ifcAPI.getProperties(modelID, expressID, true, false);
+    
+    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, 'IfcBuildingElementProxy', finalBaseProps, finalProps);
     
     const metrics: StandardizedMassMetrics = { ...identity, ifcClass: 'IfcBuildingElementProxy', expressID };
     
-    // First, try true quantity sets (Qto_BuildingElementProxyBaseQuantities)
-    const qGrossVolume = await extractQuantityValue(ifcManager, modelID, props, 'GrossVolume', 'Qto_BuildingElementProxyBaseQuantities');
-    const qNetVolume = await extractQuantityValue(ifcManager, modelID, props, 'NetVolume', 'Qto_BuildingElementProxyBaseQuantities');
-    const qGrossArea = await extractQuantityValue(ifcManager, modelID, props, 'GrossArea', 'Qto_BuildingElementProxyBaseQuantities');
-    const qNetArea = await extractQuantityValue(ifcManager, modelID, props, 'NetArea', 'Qto_BuildingElementProxyBaseQuantities');
-    
-    // Then try BaseQuantities Pset as fallback / supplement
-    const baseQ = await extractBaseQuantitiesFromPsets(ifcManager, modelID, props.psets);
+    // Performance optimization: Parallelize quantity set extractions
+    const [qGrossVolume, qNetVolume, qGrossArea, qNetArea, baseQ] = await Promise.all([
+      extractQuantityValue(ifcManager, modelID, finalProps, 'GrossVolume', 'Qto_BuildingElementProxyBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'NetVolume', 'Qto_BuildingElementProxyBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'GrossArea', 'Qto_BuildingElementProxyBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'NetArea', 'Qto_BuildingElementProxyBaseQuantities'),
+      extractBaseQuantitiesFromPsets(ifcManager, modelID, finalProps.psets)
+    ]);
     
     // Combine quantity set and Pset values (quantity sets take precedence)
     const volumeIfc = qGrossVolume ?? qNetVolume ?? baseQ?.grossVolume ?? baseQ?.netVolume ?? baseQ?.volume ?? undefined;
@@ -2885,12 +2934,16 @@ export async function extractStandardizedStairMetrics(
   ifcAPI: any,
   ifcManager: any,
   modelID: number,
-  expressID: number
+  expressID: number,
+  baseProps?: any,
+  props?: any
 ): Promise<StandardizedStairMetrics> {
   try {
-    // Get base properties to determine actual IFC class (IfcStair or IfcStairFlight)
-    const baseProps = await ifcAPI.getProperties(modelID, expressID, false, false);
-    const typeNumber = baseProps?.type;
+    // Performance optimization: Use provided props if available, otherwise fetch
+    const finalBaseProps = baseProps ?? await ifcAPI.getProperties(modelID, expressID, false, false);
+    const finalProps = props ?? await ifcAPI.getProperties(modelID, expressID, true, false);
+    
+    const typeNumber = finalBaseProps?.type;
     let ifcClass: string = 'IfcStair';
     
     if (typeNumber) {
@@ -2924,77 +2977,126 @@ export async function extractStandardizedStairMetrics(
       }
     }
     
-    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, ifcClass);
-    const props = await ifcAPI.getProperties(modelID, expressID, true, false);
+    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, ifcClass, finalBaseProps, finalProps);
     
     const metrics: StandardizedStairMetrics = { ...identity, ifcClass, expressID };
     
+    // Performance optimization: Parallelize quantity set extractions
     // Try Qto_StairFlightBaseQuantities first (for IfcStairFlight)
-    let numberOfRisers = await extractQuantityValue(ifcManager, modelID, props, 'NumberOfRisers', 'Qto_StairFlightBaseQuantities');
-    let numberOfTreads = await extractQuantityValue(ifcManager, modelID, props, 'NumberOfTreads', 'Qto_StairFlightBaseQuantities');
-    let riserHeight = await extractQuantityValue(ifcManager, modelID, props, 'RiserHeight', 'Qto_StairFlightBaseQuantities');
-    let treadLength = await extractQuantityValue(ifcManager, modelID, props, 'TreadLength', 'Qto_StairFlightBaseQuantities');
+    const [
+      numberOfRisersFlight,
+      numberOfTreadsFlight,
+      riserHeightFlight,
+      treadLengthFlight,
+      widthFlight,
+      lengthFlight,
+      heightFlight,
+      riseFlight
+    ] = await Promise.all([
+      extractQuantityValue(ifcManager, modelID, finalProps, 'NumberOfRisers', 'Qto_StairFlightBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'NumberOfTreads', 'Qto_StairFlightBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'RiserHeight', 'Qto_StairFlightBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'TreadLength', 'Qto_StairFlightBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Width', 'Qto_StairFlightBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Length', 'Qto_StairFlightBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Height', 'Qto_StairFlightBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Rise', 'Qto_StairFlightBaseQuantities')
+    ]);
+    
+    let numberOfRisers = numberOfRisersFlight;
+    let numberOfTreads = numberOfTreadsFlight;
+    let riserHeight = riserHeightFlight;
+    let treadLength = treadLengthFlight;
     // Fallback: try TreadDepth if TreadLength not found (some models use different property names)
     if (treadLength === null) {
-      treadLength = await extractQuantityValue(ifcManager, modelID, props, 'TreadDepth', 'Qto_StairFlightBaseQuantities');
+      treadLength = await extractQuantityValue(ifcManager, modelID, finalProps, 'TreadDepth', 'Qto_StairFlightBaseQuantities');
     }
-    let width = await extractQuantityValue(ifcManager, modelID, props, 'Width', 'Qto_StairFlightBaseQuantities');
-    let length = await extractQuantityValue(ifcManager, modelID, props, 'Length', 'Qto_StairFlightBaseQuantities');
-    let height = await extractQuantityValue(ifcManager, modelID, props, 'Height', 'Qto_StairFlightBaseQuantities');
-    // Also try "Rise" as it might be more accurate than "Height" for stair flights
-    let rise = await extractQuantityValue(ifcManager, modelID, props, 'Rise', 'Qto_StairFlightBaseQuantities');
+    let width = widthFlight;
+    let length = lengthFlight;
+    let height = heightFlight;
+    let rise = riseFlight;
     
-    // If not found, try Qto_StairBaseQuantities (for IfcStair)
-    if (numberOfRisers === null) {
-      numberOfRisers = await extractQuantityValue(ifcManager, modelID, props, 'NumberOfRisers', 'Qto_StairBaseQuantities');
-    }
-    if (numberOfTreads === null) {
-      numberOfTreads = await extractQuantityValue(ifcManager, modelID, props, 'NumberOfTreads', 'Qto_StairBaseQuantities');
-    }
-    if (treadLength === null) {
-      treadLength = await extractQuantityValue(ifcManager, modelID, props, 'TreadLength', 'Qto_StairBaseQuantities');
-      // Fallback: try TreadDepth if TreadLength not found
+    // If not found, try Qto_StairBaseQuantities (for IfcStair) - parallelize these too
+    if (numberOfRisers === null || numberOfTreads === null || treadLength === null || 
+        width === null || length === null || height === null || rise === null) {
+      const [
+        numberOfRisersStair,
+        numberOfTreadsStair,
+        treadLengthStair,
+        widthStair,
+        lengthStair,
+        heightStair,
+        riseStair
+      ] = await Promise.all([
+        numberOfRisers === null ? extractQuantityValue(ifcManager, modelID, finalProps, 'NumberOfRisers', 'Qto_StairBaseQuantities') : Promise.resolve(null),
+        numberOfTreads === null ? extractQuantityValue(ifcManager, modelID, finalProps, 'NumberOfTreads', 'Qto_StairBaseQuantities') : Promise.resolve(null),
+        treadLength === null ? extractQuantityValue(ifcManager, modelID, finalProps, 'TreadLength', 'Qto_StairBaseQuantities') : Promise.resolve(null),
+        width === null ? extractQuantityValue(ifcManager, modelID, finalProps, 'Width', 'Qto_StairBaseQuantities') : Promise.resolve(null),
+        length === null ? extractQuantityValue(ifcManager, modelID, finalProps, 'Length', 'Qto_StairBaseQuantities') : Promise.resolve(null),
+        height === null ? extractQuantityValue(ifcManager, modelID, finalProps, 'Height', 'Qto_StairBaseQuantities') : Promise.resolve(null),
+        rise === null ? extractQuantityValue(ifcManager, modelID, finalProps, 'Rise', 'Qto_StairBaseQuantities') : Promise.resolve(null)
+      ]);
+      
+      numberOfRisers = numberOfRisers ?? numberOfRisersStair;
+      numberOfTreads = numberOfTreads ?? numberOfTreadsStair;
+      width = width ?? widthStair;
+      length = length ?? lengthStair;
+      height = height ?? heightStair;
+      rise = rise ?? riseStair;
+      
       if (treadLength === null) {
-        treadLength = await extractQuantityValue(ifcManager, modelID, props, 'TreadDepth', 'Qto_StairBaseQuantities');
+        treadLength = treadLengthStair;
+        // Fallback: try TreadDepth if TreadLength not found
+        if (treadLength === null) {
+          treadLength = await extractQuantityValue(ifcManager, modelID, finalProps, 'TreadDepth', 'Qto_StairBaseQuantities');
+        }
       }
     }
-    if (width === null) {
-      width = await extractQuantityValue(ifcManager, modelID, props, 'Width', 'Qto_StairBaseQuantities');
-    }
-    if (length === null) {
-      length = await extractQuantityValue(ifcManager, modelID, props, 'Length', 'Qto_StairBaseQuantities');
-    }
-    if (height === null) {
-      height = await extractQuantityValue(ifcManager, modelID, props, 'Height', 'Qto_StairBaseQuantities');
-    }
-    if (rise === null) {
-      rise = await extractQuantityValue(ifcManager, modelID, props, 'Rise', 'Qto_StairBaseQuantities');
-    }
     
-    // Then try BaseQuantities Pset as fallback / supplement
-    const baseQ = await extractBaseQuantitiesFromPsets(ifcManager, modelID, props.psets);
+    // Then try BaseQuantities Pset as fallback / supplement (can run in parallel with property set extractions)
+    const baseQ = await extractBaseQuantitiesFromPsets(ifcManager, modelID, finalProps.psets);
     
+    // Performance optimization: Parallelize property set extractions
     // Also try property sets for NumberOfRisers and NumberOfTreads (if not found in quantity sets)
+    const propertyExtractions: Promise<any>[] = [];
+    
     if (numberOfRisers === null) {
-      numberOfRisers = await extractPropertyValueFromPsets(ifcManager, modelID, props, 'NumberOfRisers', 'Pset_StairCommon');
-      if (numberOfRisers === null) {
-        numberOfRisers = await extractPropertyValueFromPsets(ifcManager, modelID, props, 'NumberOfRisers', 'Pset_Rehome_StairAdapter');
-      }
-      // Try without specifying property set name (search all)
-      if (numberOfRisers === null) {
-        numberOfRisers = await extractPropertyValueFromPsets(ifcManager, modelID, props, 'NumberOfRisers');
-      }
+      propertyExtractions.push(
+        extractPropertyValueFromPsets(ifcManager, modelID, finalProps, 'NumberOfRisers', 'Pset_StairCommon')
+          .then(val => { if (val !== null) numberOfRisers = val; return val; })
+          .then(val => val === null ? extractPropertyValueFromPsets(ifcManager, modelID, finalProps, 'NumberOfRisers', 'Pset_Rehome_StairAdapter') : Promise.resolve(null))
+          .then(val => { if (val !== null) numberOfRisers = val; return val; })
+          .then(val => val === null ? extractPropertyValueFromPsets(ifcManager, modelID, finalProps, 'NumberOfRisers') : Promise.resolve(null))
+          .then(val => { if (val !== null) numberOfRisers = val; })
+      );
     }
     
     if (numberOfTreads === null) {
-      numberOfTreads = await extractPropertyValueFromPsets(ifcManager, modelID, props, 'NumberOfTreads', 'Pset_StairCommon');
-      if (numberOfTreads === null) {
-        numberOfTreads = await extractPropertyValueFromPsets(ifcManager, modelID, props, 'NumberOfTreads', 'Pset_Rehome_StairAdapter');
-      }
-      // Try without specifying property set name (search all)
-      if (numberOfTreads === null) {
-        numberOfTreads = await extractPropertyValueFromPsets(ifcManager, modelID, props, 'NumberOfTreads');
-      }
+      propertyExtractions.push(
+        extractPropertyValueFromPsets(ifcManager, modelID, finalProps, 'NumberOfTreads', 'Pset_StairCommon')
+          .then(val => { if (val !== null) numberOfTreads = val; return val; })
+          .then(val => val === null ? extractPropertyValueFromPsets(ifcManager, modelID, finalProps, 'NumberOfTreads', 'Pset_Rehome_StairAdapter') : Promise.resolve(null))
+          .then(val => { if (val !== null) numberOfTreads = val; return val; })
+          .then(val => val === null ? extractPropertyValueFromPsets(ifcManager, modelID, finalProps, 'NumberOfTreads') : Promise.resolve(null))
+          .then(val => { if (val !== null) numberOfTreads = val; })
+      );
+    }
+    
+    // Riser height - also try property sets if not found in quantity sets
+    if (riserHeight === null) {
+      propertyExtractions.push(
+        extractPropertyValueFromPsets(ifcManager, modelID, finalProps, 'RiserHeight', 'Pset_StairCommon')
+          .then(val => { if (val !== null) riserHeight = val; return val; })
+          .then(val => val === null ? extractPropertyValueFromPsets(ifcManager, modelID, finalProps, 'RiserHeight', 'Pset_Rehome_StairAdapter') : Promise.resolve(null))
+          .then(val => { if (val !== null) riserHeight = val; return val; })
+          .then(val => val === null ? extractPropertyValueFromPsets(ifcManager, modelID, finalProps, 'RiserHeight') : Promise.resolve(null))
+          .then(val => { if (val !== null) riserHeight = val; })
+      );
+    }
+    
+    // Wait for all property extractions to complete
+    if (propertyExtractions.length > 0) {
+      await Promise.all(propertyExtractions);
     }
     
     // Combine quantity set and Pset values (quantity sets take precedence)
@@ -3011,18 +3113,6 @@ export async function extractStandardizedStairMetrics(
     // Number of treads
     if (numberOfTreads !== null) {
       metrics.numberOfTreads = Math.round(numberOfTreads);
-    }
-    
-    // Riser height - also try property sets if not found in quantity sets
-    if (riserHeight === null) {
-      riserHeight = await extractPropertyValueFromPsets(ifcManager, modelID, props, 'RiserHeight', 'Pset_StairCommon');
-      if (riserHeight === null) {
-        riserHeight = await extractPropertyValueFromPsets(ifcManager, modelID, props, 'RiserHeight', 'Pset_Rehome_StairAdapter');
-      }
-      // Try without specifying property set name (search all)
-      if (riserHeight === null) {
-        riserHeight = await extractPropertyValueFromPsets(ifcManager, modelID, props, 'RiserHeight');
-      }
     }
     
     if (riserHeight !== null) {
@@ -3144,25 +3234,30 @@ export async function extractStandardizedCaseworkMetrics(
   ifcAPI: any,
   ifcManager: any,
   modelID: number,
-  expressID: number
+  expressID: number,
+  baseProps?: any,
+  props?: any
 ): Promise<StandardizedCaseworkMetrics> {
   try {
-    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, 'IfcFurniture');
-    const props = await ifcAPI.getProperties(modelID, expressID, true, false);
+    // Performance optimization: Use provided props if available, otherwise fetch
+    const finalBaseProps = baseProps ?? await ifcAPI.getProperties(modelID, expressID, false, false);
+    const finalProps = props ?? await ifcAPI.getProperties(modelID, expressID, true, false);
+    
+    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, 'IfcFurniture', finalBaseProps, finalProps);
     
     const metrics: StandardizedCaseworkMetrics = { ...identity, ifcClass: 'IfcFurniture', expressID };
     
-    // First, try true quantity sets (Qto_FurnitureBaseQuantities)
-    const qWidth = await extractQuantityValue(ifcManager, modelID, props, 'Width', 'Qto_FurnitureBaseQuantities');
-    const qDepth = await extractQuantityValue(ifcManager, modelID, props, 'Depth', 'Qto_FurnitureBaseQuantities');
-    const qHeight = await extractQuantityValue(ifcManager, modelID, props, 'Height', 'Qto_FurnitureBaseQuantities');
-    const qGrossArea = await extractQuantityValue(ifcManager, modelID, props, 'GrossArea', 'Qto_FurnitureBaseQuantities');
-    const qNetArea = await extractQuantityValue(ifcManager, modelID, props, 'NetArea', 'Qto_FurnitureBaseQuantities');
-    const qGrossVolume = await extractQuantityValue(ifcManager, modelID, props, 'GrossVolume', 'Qto_FurnitureBaseQuantities');
-    const qNetVolume = await extractQuantityValue(ifcManager, modelID, props, 'NetVolume', 'Qto_FurnitureBaseQuantities');
-    
-    // Then try BaseQuantities Pset as fallback / supplement
-    const baseQ = await extractBaseQuantitiesFromPsets(ifcManager, modelID, props.psets);
+    // Performance optimization: Parallelize quantity set extractions
+    const [qWidth, qDepth, qHeight, qGrossArea, qNetArea, qGrossVolume, qNetVolume, baseQ] = await Promise.all([
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Width', 'Qto_FurnitureBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Depth', 'Qto_FurnitureBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'Height', 'Qto_FurnitureBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'GrossArea', 'Qto_FurnitureBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'NetArea', 'Qto_FurnitureBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'GrossVolume', 'Qto_FurnitureBaseQuantities'),
+      extractQuantityValue(ifcManager, modelID, finalProps, 'NetVolume', 'Qto_FurnitureBaseQuantities'),
+      extractBaseQuantitiesFromPsets(ifcManager, modelID, finalProps.psets)
+    ]);
     
     // Combine quantity set and Pset values (quantity sets take precedence)
     const widthIfc = qWidth ?? baseQ?.width ?? undefined;
@@ -3255,8 +3350,41 @@ export async function extractStandardizedCaseworkMetrics(
 }
 
 /**
+ * Performance optimization: Cache for extracted metrics
+ * Key format: `${modelID}-${expressID}`
+ * Limits cache size to prevent memory issues
+ */
+const metricsCache = new Map<string, StandardizedElementMetrics | null>();
+const MAX_CACHE_SIZE = 200; // Limit cache to prevent excessive memory usage
+let cacheHits = 0;
+let cacheMisses = 0;
+
+/**
+ * Clear the metrics cache (useful for testing or when model changes)
+ */
+export function clearMetricsCache(): void {
+  metricsCache.clear();
+  cacheHits = 0;
+  cacheMisses = 0;
+}
+
+/**
+ * Get cache statistics (for performance monitoring)
+ */
+export function getCacheStats(): { hits: number; misses: number; size: number; hitRate: number } {
+  const total = cacheHits + cacheMisses;
+  return {
+    hits: cacheHits,
+    misses: cacheMisses,
+    size: metricsCache.size,
+    hitRate: total > 0 ? cacheHits / total : 0,
+  };
+}
+
+/**
  * Main router function to extract standardized metrics for any element type
  * Detects the IFC class and routes to the appropriate extractor
+ * Performance: Results are cached to avoid redundant extractions
  */
 export async function extractStandardizedElementMetrics(
   ifcAPI: any,
@@ -3264,6 +3392,21 @@ export async function extractStandardizedElementMetrics(
   modelID: number,
   expressID: number
 ): Promise<StandardizedElementMetrics | null> {
+  // Performance optimization: Check cache first
+  const cacheKey = `${modelID}-${expressID}`;
+  if (metricsCache.has(cacheKey)) {
+    cacheHits++;
+    if (process.env.NODE_ENV === 'development') {
+      logger.log('[Cache HIT] Metrics for', expressID, 'retrieved from cache');
+    }
+    return metricsCache.get(cacheKey) || null;
+  }
+  
+  cacheMisses++;
+  
+  // Performance monitoring
+  const startTime = performance.now();
+  
   try {
     // Get base properties to determine IFC class
     const baseProps = await ifcAPI.getProperties(modelID, expressID, false, false);
@@ -3358,60 +3501,106 @@ export async function extractStandardizedElementMetrics(
       }
     }
     
-    // Get identity first to determine elementCategory
-    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, ifcClass);
+    // Performance optimization: Fetch props once and pass to extractors
+    const props = await ifcAPI.getProperties(modelID, expressID, true, false);
+    
+    // Get identity first to determine elementCategory (pass baseProps and props to avoid re-fetching)
+    const identity = await extractElementIdentity(ifcAPI, ifcManager, modelID, expressID, ifcClass, baseProps, props);
     const elementCategory = identity.elementCategory;
     
     // Route to appropriate extractor based on elementCategory (from REHOME_IFC_CLASS_MAPPING)
     // This follows the exportlayers-ifc-IAI.txt mapping
+    let result: StandardizedElementMetrics | null = null;
+    
     switch (elementCategory) {
       case 'roof':
-        const roofProps = await extractStandardizedRoofProperties(ifcAPI, ifcManager, modelID, expressID);
-        return { ...identity, ...roofProps } as StandardizedRoofMetrics;
+        const roofProps = await extractStandardizedRoofProperties(ifcAPI, ifcManager, modelID, expressID, baseProps, props);
+        result = { ...identity, ...roofProps } as StandardizedRoofMetrics;
+        break;
         
       case 'slab':
       case 'floor':
       case 'deck':
-        return await extractStandardizedSlabMetrics(ifcAPI, ifcManager, modelID, expressID);
+        result = await extractStandardizedSlabMetrics(ifcAPI, ifcManager, modelID, expressID, baseProps, props);
+        break;
         
       case 'footing':
-        return await extractStandardizedFootingMetrics(ifcAPI, ifcManager, modelID, expressID);
+        result = await extractStandardizedFootingMetrics(ifcAPI, ifcManager, modelID, expressID, baseProps, props);
+        break;
         
       case 'wall':
-        return await extractStandardizedWallMetrics(ifcAPI, ifcManager, modelID, expressID);
+        result = await extractStandardizedWallMetrics(ifcAPI, ifcManager, modelID, expressID, baseProps, props);
+        break;
         
       case 'door':
-        return await extractStandardizedDoorMetrics(ifcAPI, ifcManager, modelID, expressID);
+        result = await extractStandardizedDoorMetrics(ifcAPI, ifcManager, modelID, expressID, baseProps, props);
+        break;
         
       case 'window':
-        return await extractStandardizedWindowMetrics(ifcAPI, ifcManager, modelID, expressID);
+        result = await extractStandardizedWindowMetrics(ifcAPI, ifcManager, modelID, expressID, baseProps, props);
+        break;
         
       case 'column':
-        return await extractStandardizedColumnMetrics(ifcAPI, ifcManager, modelID, expressID);
+        result = await extractStandardizedColumnMetrics(ifcAPI, ifcManager, modelID, expressID, baseProps, props);
+        break;
         
       case 'beam':
-        return await extractStandardizedBeamMetrics(ifcAPI, ifcManager, modelID, expressID);
+        result = await extractStandardizedBeamMetrics(ifcAPI, ifcManager, modelID, expressID, baseProps, props);
+        break;
         
       case 'railing':
-        return await extractStandardizedRailingMetrics(ifcAPI, ifcManager, modelID, expressID);
+        result = await extractStandardizedRailingMetrics(ifcAPI, ifcManager, modelID, expressID, baseProps, props);
+        break;
         
       case 'stair':
-        return await extractStandardizedStairMetrics(ifcAPI, ifcManager, modelID, expressID);
+        result = await extractStandardizedStairMetrics(ifcAPI, ifcManager, modelID, expressID, baseProps, props);
+        break;
         
       case 'mass':
-        return await extractStandardizedMassMetrics(ifcAPI, ifcManager, modelID, expressID);
+        result = await extractStandardizedMassMetrics(ifcAPI, ifcManager, modelID, expressID, baseProps, props);
+        break;
         
       case 'casework':
-        return await extractStandardizedCaseworkMetrics(ifcAPI, ifcManager, modelID, expressID);
+        result = await extractStandardizedCaseworkMetrics(ifcAPI, ifcManager, modelID, expressID, baseProps, props);
+        break;
         
       case 'other':
       default:
         // For "other" or unknown categories, log warning
         logger.warn(`No extractor available for elementCategory: ${elementCategory}, IFC class: ${ifcClass}`);
-        return null;
+        result = null;
+        break;
     }
+    
+    // Cache the result (including null results to avoid re-trying)
+    if (metricsCache.size < MAX_CACHE_SIZE) {
+      metricsCache.set(cacheKey, result);
+    } else if (metricsCache.size >= MAX_CACHE_SIZE && result !== null) {
+      // If cache is full, remove oldest entry (simple FIFO - remove first)
+      const firstKey = metricsCache.keys().next().value;
+      if (firstKey) {
+        metricsCache.delete(firstKey);
+        metricsCache.set(cacheKey, result);
+      }
+    }
+    
+    // Performance logging
+    const duration = performance.now() - startTime;
+    if (process.env.NODE_ENV === 'development') {
+      if (duration > 200) {
+        logger.warn(`[Performance] Slow extraction: ${duration.toFixed(2)}ms for expressID ${expressID} (${ifcClass})`);
+      } else {
+        logger.log(`[Performance] Extraction: ${duration.toFixed(2)}ms for expressID ${expressID} (${ifcClass})`);
+      }
+    }
+    
+    return result;
   } catch (err) {
     logger.error('Error extracting standardized element metrics:', err);
+    // Cache null result on error to avoid retrying failed extractions
+    if (metricsCache.size < MAX_CACHE_SIZE) {
+      metricsCache.set(cacheKey, null);
+    }
     return null;
   }
 }
