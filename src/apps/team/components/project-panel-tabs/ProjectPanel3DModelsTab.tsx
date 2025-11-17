@@ -443,7 +443,7 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
   // Settings are saved manually via handleSaveSettings or when notes are saved
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="h-full flex flex-col relative">
       <HiddenScrollCSS />
       
       {/* Hidden model file input */}
@@ -458,7 +458,7 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
       />
       
       {/* Version Selector - Sticky Top */}
-      <div className="sticky top-0 z-10 bg-white border-b border-slate-200/80 px-2.5 pt-2 pb-1.5">
+      <div className="sticky top-0 z-10 bg-white border-b border-slate-200/80 px-2.5 pt-2 pb-1.5 flex-shrink-0">
         <div className="flex gap-1.5">
           <select
             value={selectedModelVersion}
@@ -504,13 +504,13 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
       </div>
 
       {/* Settings & Layers (scrollable) */}
-      <div className="flex-1 overflow-auto px-2.5 py-2 space-y-4 no-scrollbar">
+      <div className="flex-1 overflow-auto px-2.5 py-2 space-y-4 no-scrollbar min-h-0 pb-20">
         
         {/* Model File Name */}
         {versionFiles && versionFiles.length > 0 && (
           <div className="mb-3">
             <div className="text-[11px] font-medium text-slate-900 truncate">
-              {versionFiles[0].filename}
+              {versionFiles[0].filename.replace(/\.ifc$/i, '')}
             </div>
           </div>
         )}
@@ -539,78 +539,6 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
                 />
               </button>
             </div>
-            <label className="flex items-center gap-2 text-[11px] text-slate-800">
-              <input
-                type="checkbox"
-                className="h-3 w-3 rounded border-slate-300"
-                checked={showGrid}
-                onChange={(e) => setShowGrid(e.target.checked)}
-              />
-              <span>Grid</span>
-            </label>
-            <label className="flex items-center gap-2 text-[11px] text-slate-800">
-              <input
-                type="checkbox"
-                className="h-3 w-3 rounded border-slate-300"
-                checked={showAxes}
-                onChange={(e) => setShowAxes(e.target.checked)}
-              />
-              <span>Axes</span>
-            </label>
-          </div>
-        </div>
-
-        {/* LAYERS Section */}
-        <div>
-          <div className="text-[10px] font-semibold text-slate-500 tracking-[0.08em] mb-1">
-            LAYERS
-          </div>
-          <div className="space-y-1 max-h-32 overflow-auto pr-1">
-            <label className="flex items-center gap-2 text-[11px] text-slate-800">
-              <input
-                type="checkbox"
-                className="h-3 w-3 rounded border-slate-300"
-                checked={layers.structure}
-                onChange={(e) => setLayers({...layers, structure: e.target.checked})}
-              />
-              <span>Structure</span>
-            </label>
-            <label className="flex items-center gap-2 text-[11px] text-slate-800">
-              <input
-                type="checkbox"
-                className="h-3 w-3 rounded border-slate-300"
-                checked={layers.walls}
-                onChange={(e) => setLayers({...layers, walls: e.target.checked})}
-              />
-              <span>Walls</span>
-            </label>
-            <label className="flex items-center gap-2 text-[11px] text-slate-800">
-              <input
-                type="checkbox"
-                className="h-3 w-3 rounded border-slate-300"
-                checked={layers.roof}
-                onChange={(e) => setLayers({...layers, roof: e.target.checked})}
-              />
-              <span>Roof</span>
-            </label>
-            <label className="flex items-center gap-2 text-[11px] text-slate-800">
-              <input
-                type="checkbox"
-                className="h-3 w-3 rounded border-slate-300"
-                checked={layers.floor}
-                onChange={(e) => setLayers({...layers, floor: e.target.checked})}
-              />
-              <span>Floor</span>
-            </label>
-            <label className="flex items-center gap-2 text-[11px] text-slate-800">
-              <input
-                type="checkbox"
-                className="h-3 w-3 rounded border-slate-300"
-                checked={layers.windows}
-                onChange={(e) => setLayers({...layers, windows: e.target.checked})}
-              />
-              <span>Windows & Doors</span>
-            </label>
           </div>
         </div>
 
@@ -638,7 +566,7 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
       </div>
 
       {/* Footer with New Version + Edit/Save buttons */}
-      <div className="px-2.5 pb-2 pt-2 border-t border-slate-200/80">
+      <div className="absolute bottom-0 left-0 right-0 px-2.5 pb-2 pt-2 border-t border-slate-200/80 bg-white z-10">
         <div className="flex gap-1">
           <button
             type="button"
