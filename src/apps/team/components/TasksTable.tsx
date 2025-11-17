@@ -770,6 +770,15 @@ const TasksSection: React.FC<TasksSectionProps> = ({
                   const assignees = Array.isArray(task.assignees) ? task.assignees : [];
                   return assignees.includes(u.id);
                 });
+                
+                console.log(`🔎 Task "${task.title}":`, {
+                  createdBy: task.createdBy,
+                  creator: creator ? { id: creator.id, name: creator.name } : '❌ NOT FOUND',
+                  assignees: Array.isArray(task.assignees) ? task.assignees : [],
+                  assignedUsers: assignedUsers.map(u => ({ id: u.id, name: u.name })),
+                  missingAssignees: (Array.isArray(task.assignees) ? task.assignees : [])
+                    .filter(id => !users.find(u => u.id === id))
+                });
 
                 return (
                   <TaskRow
@@ -855,6 +864,12 @@ interface TasksTableProps {
 }
 
 export function TasksTable({ tasks, projects, users, onTaskClick, onProjectClick, onStatusToggle, onQuickAdd, onUpdateTaskAssignees, showClosedOnly = false }: TasksTableProps) {
+  console.log('📋 TasksTable received:', {
+    taskCount: tasks.length,
+    userCount: users.length,
+    users: users.map(u => ({ id: u.id, name: u.name }))
+  });
+  
   const [collapsed, setCollapsed] = useState<Record<TaskStatus, boolean>>({
     task_redline: false,
     progress_update: false,

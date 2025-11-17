@@ -2045,42 +2045,68 @@ const TasksView = memo(function TasksView() {
   }, [tasks, selectedTask?.id]);
   
   // Fetch all workspace members for assignee selection
-  const { data: workspaceMembers = [] } = useQuery({
+  const { data: workspaceMembers = [] } = useQuery<User[]>({
     queryKey: ['workspace-members', currentWorkspaceId],
-    queryFn: async () => {
-      const { data, error } = await supabase
+    queryFn: async (): Promise<User[]> => {
+      // First get workspace members
+      const { data: members, error: membersError } = await supabase
         .from('workspace_members')
-        .select(`
-          user_id,
-          users!inner(*)
-        `)
+        .select('*')
         .eq('workspace_id', currentWorkspaceId)
         .is('deleted_at', null);
       
-      if (error) {
-        console.error('Error fetching workspace members:', error);
-        throw error;
+      if (membersError) {
+        console.error('Error fetching workspace members:', membersError);
+        throw membersError;
       }
       
-      console.log('Workspace members query result:', data);
-      const members = data.map((wm: any) => ({
-        id: wm.users.id,
-        shortId: wm.users.short_id,
-        authId: wm.users.auth_id,
-        name: wm.users.name,
-        email: wm.users.email,
-        phone: wm.users.phone,
-        avatarUrl: wm.users.avatar_url,
-        lastActiveAt: wm.users.last_active_at,
-        createdAt: wm.users.created_at,
-        updatedAt: wm.users.updated_at,
-        deletedAt: wm.users.deleted_at,
-        deletedBy: wm.users.deleted_by,
-      }));
+      if (!members || members.length === 0) return [];
+      
+      // Get all user IDs
+      const userIds = members.map(m => m.user_id);
+      
+      // Fetch user details
+      const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('*')
+        .in('id', userIds);
+      
+      if (usersError) {
+        console.error('Error fetching users:', usersError);
+        throw usersError;
+      }
+      
+      // Create a map of user data
+      const userMap = new Map(users?.map(u => [u.id, u]) || []);
+      
+      // Combine the data
+      const result = members.map(member => {
+        const user = userMap.get(member.user_id);
+        return {
+          id: user?.id || member.user_id,
+          shortId: user?.short_id || '',
+          authId: user?.auth_id || null,
+          name: user?.name || 'Unknown User',
+          email: user?.email || '',
+          phone: user?.phone || null,
+          avatarUrl: user?.avatar_url || null,
+          lastActiveAt: user?.last_active_at || null,
+          createdAt: user?.created_at || null,
+          updatedAt: user?.updated_at || null,
+          deletedAt: user?.deleted_at || null,
+          deletedBy: user?.deleted_by || null,
+        };
+      });
+      
+      console.log('✅ Workspace members loaded:', {
+        count: result.length,
+        ids: result.map(m => m.id),
+        names: result.map(m => m.name)
+      });
       
       // Ensure current user is always included if they exist
-      if (user && !members.find((m: User) => m.id === user.id)) {
-        members.push({
+      if (user && !result.find(m => m.id === user.id)) {
+        result.push({
           id: user.id,
           shortId: user.short_id,
           authId: user.auth_id || '',
@@ -2096,26 +2122,58 @@ const TasksView = memo(function TasksView() {
         });
       }
       
-      return members;
+      return result;
     },
     enabled: !!currentWorkspaceId,
   });
   
+  // Warn about orphaned references
+  useEffect(() => {
+    tasks.forEach(task => {
+      if (!task.createdBy) {
+        console.warn(`⚠️ Task "${task.title}" has NULL created_by`);
+      }
+      const assignees = Array.isArray(task.assignees) ? task.assignees : [];
+      assignees.forEach(assigneeId => {
+        if (!workspaceMembers.find(m => m.id === assigneeId)) {
+          console.warn(`⚠️ Task "${task.title}" has orphaned assignee: ${assigneeId}`);
+        }
+      });
+    });
+  }, [tasks, workspaceMembers]);
+  
   // Fetch unique creator IDs from tasks that aren't in workspaceMembers
   const creatorIds = useMemo(() => {
-    const memberIds = new Set(workspaceMembers.map((m: User) => m.id));
+    const memberIds = new Set(workspaceMembers.map(m => m.id));
     const taskCreatorIds = tasks
       .map((t) => t.createdBy)
+      .filter(Boolean) // Filter out null/undefined
       .filter((id) => !memberIds.has(id));
+    
+    console.log('🔍 Creator IDs to fetch:', {
+      creatorIds: [...new Set(taskCreatorIds)],
+      fromTasks: tasks.map(t => ({ title: t.title, createdBy: t.createdBy }))
+    });
+    
     return [...new Set(taskCreatorIds)];
   }, [tasks, workspaceMembers]);
   
   // Extract assignee IDs that aren't in workspaceMembers
   const assigneeIds = useMemo(() => {
-    const memberIds = new Set(workspaceMembers.map((m: User) => m.id));
+    const memberIds = new Set(workspaceMembers.map(m => m.id));
     const taskAssigneeIds = tasks
       .flatMap((t) => Array.isArray(t.assignees) ? t.assignees : [])
+      .filter(Boolean) // Filter out null/undefined
       .filter((id) => !memberIds.has(id));
+    
+    console.log('🔍 Assignee IDs to fetch:', {
+      assigneeIds: [...new Set(taskAssigneeIds)],
+      fromTasks: tasks.map(t => ({ 
+        title: t.title, 
+        assignees: Array.isArray(t.assignees) ? t.assignees : [] 
+      }))
+    });
+    
     return [...new Set(taskAssigneeIds)];
   }, [tasks, workspaceMembers]);
   
@@ -2135,7 +2193,7 @@ const TasksView = memo(function TasksView() {
         return [];
       }
       
-      return (data || []).map((u: any) => ({
+      const creators = (data || []).map((u: any) => ({
         id: u.id,
         authId: u.auth_id,
         name: u.name,
@@ -2151,6 +2209,13 @@ const TasksView = memo(function TasksView() {
         deletedAt: u.deleted_at,
         deletedBy: u.deleted_by,
       }));
+      
+      console.log('📥 Missing creators fetched:', {
+        count: creators.length,
+        users: creators.map((u: User) => ({ id: u.id, name: u.name }))
+      });
+      
+      return creators;
     },
     enabled: creatorIds.length > 0,
   });
@@ -2171,7 +2236,7 @@ const TasksView = memo(function TasksView() {
         return [];
       }
       
-      return (data || []).map((u: any) => ({
+      const assignees = (data || []).map((u: any) => ({
         id: u.id,
         authId: u.auth_id,
         name: u.name,
@@ -2187,13 +2252,34 @@ const TasksView = memo(function TasksView() {
         deletedAt: u.deleted_at,
         deletedBy: u.deleted_by,
       }));
+      
+      console.log('📥 Missing assignees fetched:', {
+        requested: assigneeIds,
+        received: assignees.length,
+        users: assignees.map((u: User) => ({ id: u.id, name: u.name })),
+        missing: assigneeIds.filter(id => !assignees.find((u: User) => u.id === id))
+      });
+      
+      return assignees;
     },
     enabled: assigneeIds.length > 0,
   });
   
   // Combine workspaceMembers with missing creators and assignees
   const allUsers = useMemo(() => {
-    return [...workspaceMembers, ...missingCreators, ...missingAssignees];
+    const combined = [...workspaceMembers, ...missingCreators, ...missingAssignees];
+    
+    console.log('👥 Final allUsers array:', {
+      total: combined.length,
+      sources: {
+        workspaceMembers: workspaceMembers.length,
+        missingCreators: missingCreators.length,
+        missingAssignees: missingAssignees.length
+      },
+      users: combined.map(u => ({ id: u.id, name: u.name }))
+    });
+    
+    return combined;
   }, [workspaceMembers, missingCreators, missingAssignees]);
 
   // Mutations
