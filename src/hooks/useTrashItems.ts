@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-export type TrashItemType = 'project' | 'ai_chat_thread' | 'task' | 'file' | 'folder' | 'note' | 'link' | 'drawing' | 'drawing_page';
+export type TrashItemType = 'project' | 'ai_chat_thread' | 'task' | 'file' | 'folder' | 'note' | 'link' | 'drawing' | 'drawing_page' | 'model_version';
 
 export type TrashItem = {
   id: string;
@@ -29,6 +29,7 @@ const getTableName = (type: TrashItemType): string => {
     link: 'links',
     drawing: 'drawings',
     drawing_page: 'drawing_pages',
+    model_version: 'model_versions',
   };
   return tableMap[type];
 };
@@ -44,6 +45,7 @@ const getTypeLabel = (type: TrashItemType): string => {
     link: 'Link',
     drawing: 'Drawing',
     drawing_page: 'Drawing Page',
+    model_version: '3D Model',
   };
   return labelMap[type];
 };
@@ -59,6 +61,7 @@ const getLocation = (type: TrashItemType): string => {
     link: 'Projects',
     drawing: 'Projects',
     drawing_page: 'Projects',
+    model_version: 'Projects',
   };
   return locationMap[type];
 };
@@ -282,6 +285,65 @@ export const useTrashItems = (workspaceId: string | undefined) => {
             deleted_by_name: (dp.users as any)?.name || 'Unknown',
             project_id: (dp.drawings as any)?.project_id,
           }))
+        );
+      }
+
+      // Fetch deleted model versions
+      const { data: modelVersions } = await supabase
+        .from('model_versions')
+        .select('id, short_id, version_number, project_id, deleted_at, deleted_by, users!model_versions_deleted_by_fkey(name), projects(name)')
+        .not('deleted_at', 'is', null)
+        .order('deleted_at', { ascending: false });
+
+      if (modelVersions) {
+        const filteredVersions = modelVersions.filter(mv => workspaceProjectIds.includes(mv.project_id));
+        
+        // Check if foreign key join worked - if not, do manual lookup
+        const needsManualLookup = filteredVersions.some(mv => !(mv.users as any)?.name && mv.deleted_by);
+        let userNamesMap: Record<string, string> = {};
+        
+        if (needsManualLookup) {
+          const deletedByUserIds = filteredVersions
+            .map(mv => mv.deleted_by)
+            .filter((id): id is string => id !== null && id !== undefined);
+          
+          const uniqueUserIds = [...new Set(deletedByUserIds)];
+          
+          if (uniqueUserIds.length > 0) {
+            const { data: users } = await supabase
+              .from('users')
+              .select('id, name')
+              .in('id', uniqueUserIds);
+            
+            if (users) {
+              users.forEach(u => {
+                if (u.id && u.name) {
+                  userNamesMap[u.id] = u.name;
+                }
+              });
+            }
+          }
+        }
+        
+        items.push(
+          ...filteredVersions.map((mv) => {
+            // Try foreign key join first, fallback to manual lookup
+            const userNameFromJoin = (mv.users as any)?.name;
+            const userNameFromMap = mv.deleted_by ? userNamesMap[mv.deleted_by] : undefined;
+            
+            return {
+              id: mv.id,
+              short_id: mv.short_id,
+              name: mv.version_number,
+              type: 'model_version' as const,
+              typeLabel: getTypeLabel('model_version'),
+              location: getLocation('model_version'),
+              projectName: (mv.projects as any)?.name || '—',
+              deleted_at: mv.deleted_at!,
+              deleted_by_name: userNameFromJoin || userNameFromMap || (mv.deleted_by ? 'Unknown' : 'Unknown'),
+              project_id: mv.project_id,
+            };
+          })
         );
       }
 

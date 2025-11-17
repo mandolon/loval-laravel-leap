@@ -137,9 +137,24 @@ export function useDeleteModelVersion() {
 
   return useMutation({
     mutationFn: async (versionId: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      // Get the public.users record that matches this auth user
+      const { data: publicUser, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', user.id)
+        .single();
+
+      if (userError || !publicUser) throw new Error('User not found in database');
+
       const { error } = await supabase
         .from('model_versions' as any)
-        .update({ deleted_at: new Date().toISOString() })
+        .update({ 
+          deleted_at: new Date().toISOString(),
+          deleted_by: publicUser.id
+        })
         .eq('id', versionId);
 
       if (error) throw error;
