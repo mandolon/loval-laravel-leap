@@ -122,6 +122,9 @@ export const useViewerKeyboard = ({
           if (annotationMode) {
             setAnnotationMode(false);
           }
+          if (inspectMode) {
+            setInspectMode(false);
+          }
           setMeasurementMode('distance');
         } else {
           // Deactivating measurement

@@ -94,7 +94,12 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
   });
 
   // Inspect mode
-  const { selectedObjectName, selectedObjectType, selectedObjectDimensions, selectedElementMetrics } = useInspectMode({
+  const {
+    selectedObjectName,
+    selectedObjectType,
+    selectedObjectDimensions,
+    selectedElementMetrics,
+  } = useInspectMode({
     containerRef,
     viewerRef,
     viewerReady,
@@ -181,7 +186,7 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
       dimensions.cancelDrawing();
       // Restore visibility of all created dimensions
       const count = restoreDimensionsVisibility(dimensions);
-      logger.log(`Measurement deactivated for clipping - ${count} dimensions remain visible`);
+      logger.log(`Measurement deactivated - ${count} dimensions remain visible`);
       setMeasurementMode('none');
     }
     
@@ -192,7 +197,12 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
         setEditingAnnotationId(null);
       }
     }
-  }, [clippingActive, measurementMode, annotationMode, editingAnnotationId, setClippingActive, setMeasurementMode, setAnnotationMode, setEditingAnnotationId]);
+    
+    // Deactivate inspect mode
+    if (inspectMode) {
+      setInspectMode(false);
+    }
+  }, [clippingActive, measurementMode, annotationMode, inspectMode, editingAnnotationId, setClippingActive, setMeasurementMode, setAnnotationMode, setInspectMode, setEditingAnnotationId]);
 
   // Tool handlers
   const handleMeasureDistance = () => {
@@ -217,31 +227,6 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
     }
   };
 
-  const handleMeasureArea = () => {
-    const newMode = measurementMode === 'area' ? 'none' : 'area';
-    
-    if (newMode === 'area') {
-      // Activating area measurement - deactivate all other tools
-      deactivateAllTools();
-      setMeasurementMode('area');
-    } else {
-      setMeasurementMode('none');
-    }
-    logger.log('Area measurement tool toggled (not yet implemented)');
-  };
-
-  const handleMeasureVolume = () => {
-    const newMode = measurementMode === 'volume' ? 'none' : 'volume';
-    
-    if (newMode === 'volume') {
-      // Activating volume measurement - deactivate all other tools
-      deactivateAllTools();
-      setMeasurementMode('volume');
-    } else {
-      setMeasurementMode('none');
-    }
-    logger.log('Volume measurement tool toggled (not yet implemented)');
-  };
 
   const handleToggleClipping = () => {
     if (!viewerRef.current?.clipper) return;
@@ -260,7 +245,9 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
         logger.log('Clipper tool activated - clipping plane created (press P to create another)');
       } else {
         // Reactivating - show controls for existing planes
-        // First, set clipper active which will make planes visible
+        // First, ensure enabled is set to true (this is critical for deleteAllPlanes to work)
+        (viewerRef.current.clipper as any).enabled = true;
+        // Then set clipper active which will make planes visible
         viewerRef.current.clipper.active = true;
         
         // Then ensure all planes have their controls visible and attached
@@ -314,12 +301,125 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
   };
 
   const handleClearClipping = () => {
-    if (!viewerRef.current?.clipper) return;
+    if (!viewerRef.current?.clipper || !viewerRef.current?.context) return;
     
-    if (viewerRef.current.clipper.deleteAllPlanes) {
-      viewerRef.current.clipper.deleteAllPlanes();
-      logger.log('All clipping planes cleared');
+    const clipper = viewerRef.current.clipper;
+    const context = viewerRef.current.context;
+    
+    // CRITICAL: Always ensure enabled is true before deleting planes
+    // This is the key issue - when toggled off/on, enabled might not be properly restored
+    (clipper as any).enabled = true;
+    clipper.active = true;
+    
+    // Delete all planes - this removes them from scene, context, and materials
+    // deleteAllPlanes calls deletePlane which passes planes directly, so it should work
+    // but we ensure enabled is true just in case
+    if (clipper.deleteAllPlanes) {
+      clipper.deleteAllPlanes();
     }
+    
+    // Double-check: manually clear any remaining planes
+    // This ensures a complete reset even if deleteAllPlanes missed something
+    if (clipper.planes && clipper.planes.length > 0) {
+      logger.warn(`deleteAllPlanes left ${clipper.planes.length} planes, manually removing...`);
+      // Force remove any remaining planes
+      const planesCopy = [...clipper.planes];
+      planesCopy.forEach((plane: any) => {
+        try {
+          if (plane.removeFromScene) {
+            plane.removeFromScene();
+          }
+          if (plane.dispose) {
+            plane.dispose();
+          }
+          // Remove from context clipping planes
+          if (plane.plane) {
+            context.removeClippingPlane(plane.plane);
+          }
+        } catch (e) {
+          logger.warn('Error removing plane:', e);
+        }
+      });
+      clipper.planes.length = 0;
+    }
+    
+    // CRITICAL: Clear the context's clipping planes array completely
+    // This ensures no clipping planes remain in the context
+    const clippingPlanes = context.getClippingPlanes();
+    if (clippingPlanes && clippingPlanes.length > 0) {
+      logger.warn(`Context still has ${clippingPlanes.length} clipping planes, clearing...`);
+      // Clear the array by removing all planes
+      while (clippingPlanes.length > 0) {
+        clippingPlanes.pop();
+      }
+    }
+    
+    // Update all materials to remove clipping planes
+    // This is critical to remove the visual clipping effect
+    if (context.items && context.items.ifcModels) {
+      context.items.ifcModels.forEach((model: any) => {
+        if (Array.isArray(model.material)) {
+          model.material.forEach((mat: any) => {
+            if (mat) {
+              mat.clippingPlanes = [];
+            }
+          });
+        } else if (model.material) {
+          model.material.clippingPlanes = [];
+        }
+      });
+    }
+    
+    // Also update subsets
+    if (viewerRef.current?.IFC?.loader?.ifcManager?.subsets) {
+      const subsets = viewerRef.current.IFC.loader.ifcManager.subsets.getAllSubsets();
+      Object.values(subsets).forEach((subset: any) => {
+        const mesh = subset.mesh;
+        if (mesh) {
+          if (Array.isArray(mesh.material)) {
+            mesh.material.forEach((mat: any) => {
+              if (mat) {
+                mat.clippingPlanes = [];
+              }
+            });
+          } else if (mesh.material) {
+            mesh.material.clippingPlanes = [];
+          }
+          // Also handle wireframe if it exists
+          if (mesh.userData?.wireframe) {
+            const wireframe = mesh.userData.wireframe;
+            if (Array.isArray(wireframe.material)) {
+              wireframe.material.forEach((mat: any) => {
+                if (mat) {
+                  mat.clippingPlanes = [];
+                }
+              });
+            } else if (wireframe.material) {
+              wireframe.material.clippingPlanes = [];
+            }
+          }
+        }
+      });
+    }
+    
+    // Update materials using clipper's updateMaterials if available
+    if ((clipper as any).updateMaterials) {
+      (clipper as any).updateMaterials();
+    }
+    
+    // Update post production
+    if (context.renderer?.postProduction) {
+      context.renderer.postProduction.update();
+    }
+    
+    // Deactivate the clipper completely after clearing
+    clipper.active = false;
+    (clipper as any).enabled = false;
+    
+    // Update clippingActive state to reflect that no planes exist
+    setClippingActive(false);
+    
+    logger.log('All clipping planes cleared - complete reset (planes, context, and materials)');
   };
 
   const handleClearMeasurements = () => {
@@ -342,6 +442,19 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
       if (editingAnnotationId) {
         setEditingAnnotationId(null);
       }
+    }
+  };
+
+  const handleToggleInspect = () => {
+    const newMode = !inspectMode;
+    
+    if (newMode) {
+      // Activating inspect mode - deactivate all other tools
+      deactivateAllTools();
+      setInspectMode(true);
+    } else {
+      // Deactivating inspect mode
+      setInspectMode(false);
     }
   };
 
@@ -370,11 +483,9 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
         {/* Floating Toolbar */}
         <ViewerToolbar
           inspectMode={inspectMode}
-          onToggleInspect={() => setInspectMode(!inspectMode)}
+          onToggleInspect={handleToggleInspect}
           measurementMode={measurementMode}
           onMeasureDistance={handleMeasureDistance}
-          onMeasureArea={handleMeasureArea}
-          onMeasureVolume={handleMeasureVolume}
           onClearMeasurements={handleClearMeasurements}
           clippingActive={clippingActive}
           onToggleClipping={handleToggleClipping}
@@ -383,28 +494,14 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
           onToggleAnnotation={handleToggleAnnotation}
           onResetView={handleResetView}
         />
-        {/* Measurement Mode Indicator */}
-        {measurementMode !== 'none' && (
-          <div className="absolute top-2 left-2 z-20 bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-[10px] font-medium shadow-lg">
-            {measurementMode === 'distance' && '📏 Left-click on elements to start dimensioning, then press D to create dimension'}
-            {measurementMode === 'area' && '⬜ Area measurement (not yet implemented)'}
-            {measurementMode === 'volume' && '📦 Volume measurement (not yet implemented)'}
-          </div>
-        )}
         
-        {/* Clipping Mode Indicator */}
-        {clippingActive && (
-          <div className="absolute top-2 left-2 z-20 bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-[10px] font-medium shadow-lg">
-            ✂️ Clipping plane active (Press P to create another plane)
-          </div>
-        )}
-        
-        {/* Annotation Mode Indicator */}
-        {annotationMode && (
-          <div className="absolute top-2 left-2 z-20 bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-[10px] font-medium shadow-lg">
-            🏷️ Click on the model to place an annotation
-          </div>
-        )}
+        {/* Properties Panel */}
+        <PropertiesPanel
+          objectName={selectedObjectName || undefined}
+          objectType={selectedObjectType || undefined}
+          objectDimensions={selectedObjectDimensions || undefined}
+          elementMetrics={selectedElementMetrics || undefined}
+        />
         
         {/* Annotation Input */}
         {editingAnnotation && inputPosition && (
@@ -416,14 +513,6 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
             position={inputPosition}
           />
         )}
-
-        {/* Properties Panel */}
-        <PropertiesPanel
-          objectName={selectedObjectName}
-          objectType={selectedObjectType}
-          objectDimensions={selectedObjectDimensions}
-          elementMetrics={selectedElementMetrics}
-        />
         
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
