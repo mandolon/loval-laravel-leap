@@ -504,8 +504,22 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
       {/* Settings & Layers (scrollable) */}
       <div className="flex-1 overflow-auto px-2.5 py-2 space-y-4 no-scrollbar min-h-0 pb-20">
         
+        {/* Empty state message when no version is selected */}
+        {!selectedModelVersion && (
+          <div className="flex items-center justify-center h-full min-h-[200px]">
+            <div className="text-center px-4">
+              <p className="text-[11px] text-slate-500 mb-1">
+                Select a model version from the dropdown above
+              </p>
+              <p className="text-[11px] text-slate-400">
+                or upload a new version using the button below
+              </p>
+            </div>
+          </div>
+        )}
+        
         {/* Model File Name */}
-        {versionFiles && versionFiles.length > 0 && (
+        {selectedModelVersion && versionFiles && versionFiles.length > 0 && (
           <div className="mb-3">
             <div className="text-[11px] font-medium text-slate-900 truncate">
               {versionFiles[0].filename.replace(/\.ifc$/i, '')}
@@ -513,54 +527,58 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
           </div>
         )}
         
-        {/* DISPLAY Section */}
-        <div>
-          <div className="text-[10px] font-semibold text-slate-500 tracking-[0.08em] mb-1">
-            DISPLAY
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-[11px] text-slate-800">
-              <span>Show Edges</span>
-              <button
-                type="button"
-                onClick={() => setShowEdges(!showEdges)}
-                className={`relative inline-flex h-3.5 w-6 items-center rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-slate-500 focus:ring-offset-1 ${
-                  showEdges ? 'bg-slate-900' : 'bg-slate-300'
-                }`}
-                role="switch"
-                aria-checked={showEdges}
-              >
-                <span
-                  className={`inline-block h-2.5 w-2.5 transform rounded-full bg-white transition-transform ${
-                    showEdges ? 'translate-x-3' : 'translate-x-0.5'
+        {/* DISPLAY Section - Only show when version is selected */}
+        {selectedModelVersion && (
+          <div>
+            <div className="text-[10px] font-semibold text-slate-500 tracking-[0.08em] mb-1">
+              DISPLAY
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-[11px] text-slate-800">
+                <span>Show Edges</span>
+                <button
+                  type="button"
+                  onClick={() => setShowEdges(!showEdges)}
+                  className={`relative inline-flex h-3.5 w-6 items-center rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-slate-500 focus:ring-offset-1 ${
+                    showEdges ? 'bg-slate-900' : 'bg-slate-300'
                   }`}
-                />
-              </button>
+                  role="switch"
+                  aria-checked={showEdges}
+                >
+                  <span
+                    className={`inline-block h-2.5 w-2.5 transform rounded-full bg-white transition-transform ${
+                      showEdges ? 'translate-x-3' : 'translate-x-0.5'
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* VERSION NOTES Section */}
-        <div>
-          <div className="text-[10px] font-semibold text-slate-500 tracking-[0.08em] mb-1">
-            VERSION NOTES
-          </div>
-          {isEditingNotes ? (
-            <textarea
-              value={draftVersionNotes}
-              onChange={(e) => setDraftVersionNotes(e.target.value)}
-              placeholder="Notes about this model version (scope, changes, assumptions)…"
-              rows={5}
-              className="w-full min-h-[140px] rounded-[4px] px-2 py-1.5 text-[11px] bg-slate-50 text-slate-900 resize-none focus:outline-none whitespace-pre-wrap"
-            />
-          ) : (
-            <div className="w-full min-h-[140px] rounded-[4px] px-2 py-1.5 text-[11px] text-slate-900 whitespace-pre-wrap bg-slate-50">
-              {versionNotes || (
-                <span className="text-slate-400">No notes for this version</span>
-              )}
+        {/* VERSION NOTES Section - Only show when version is selected */}
+        {selectedModelVersion && (
+          <div>
+            <div className="text-[10px] font-semibold text-slate-500 tracking-[0.08em] mb-1">
+              VERSION NOTES
             </div>
-          )}
-        </div>
+            {isEditingNotes ? (
+              <textarea
+                value={draftVersionNotes}
+                onChange={(e) => setDraftVersionNotes(e.target.value)}
+                placeholder="Notes about this model version (scope, changes, assumptions)…"
+                rows={5}
+                className="w-full min-h-[140px] rounded-[4px] px-2 py-1.5 text-[11px] bg-slate-50 text-slate-900 resize-none focus:outline-none whitespace-pre-wrap"
+              />
+            ) : (
+              <div className="w-full min-h-[140px] rounded-[4px] px-2 py-1.5 text-[11px] text-slate-900 whitespace-pre-wrap">
+                {versionNotes || (
+                  <span className="text-slate-400">No notes for this version</span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Footer with New Version + Edit/Save buttons */}
@@ -575,18 +593,20 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
             <span className="text-[13px] leading-none">+</span>
             <span>{isUploadingModel ? 'Uploading...' : 'New version'}</span>
           </button>
-          <button
-            type="button"
-            onClick={handleNotesEditToggle}
-            disabled={updateModelSettings.isPending}
-            className={`h-7 flex-[2] rounded-md border text-[11px] flex items-center justify-center transition-colors ${
-              isEditingNotes
-                ? "border-slate-900 bg-slate-900 text-white hover:bg-slate-800"
-                : "border-slate-300 bg-white text-slate-800 hover:bg-slate-50"
-            }`}
-          >
-            {updateModelSettings.isPending ? 'Saving...' : (isEditingNotes ? 'Save' : 'Edit')}
-          </button>
+          {selectedModelVersion && (
+            <button
+              type="button"
+              onClick={handleNotesEditToggle}
+              disabled={updateModelSettings.isPending}
+              className={`h-7 flex-[2] rounded-md border text-[11px] flex items-center justify-center transition-colors ${
+                isEditingNotes
+                  ? "border-slate-900 bg-slate-900 text-white hover:bg-slate-800"
+                  : "border-slate-300 bg-white text-slate-800 hover:bg-slate-50"
+              }`}
+            >
+              {updateModelSettings.isPending ? 'Saving...' : (isEditingNotes ? 'Save' : 'Edit')}
+            </button>
+          )}
         </div>
       </div>
     </div>

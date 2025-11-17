@@ -54,14 +54,42 @@ export function useUpdateModelSettings() {
       versionId: string; 
       settings: any 
     }) => {
-      const { data, error } = await supabase
+      // First check if settings exist for this version
+      const { data: existing, error: checkError } = await supabase
         .from('model_settings' as any)
-        .upsert({
-          version_id: versionId,
-          ...settings,
-        })
-        .select()
-        .single();
+        .select('id')
+        .eq('version_id', versionId)
+        .maybeSingle();
+
+      // If there's an error other than "not found", throw it
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError;
+      }
+
+      let data, error;
+      
+      if (existing) {
+        // Update existing record
+        ({ data, error } = await supabase
+          .from('model_settings' as any)
+          .update({
+            ...settings,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('version_id', versionId)
+          .select()
+          .single());
+      } else {
+        // Insert new record
+        ({ data, error } = await supabase
+          .from('model_settings' as any)
+          .insert({
+            version_id: versionId,
+            ...settings,
+          })
+          .select()
+          .single());
+      }
 
       if (error) throw error;
       return data;
