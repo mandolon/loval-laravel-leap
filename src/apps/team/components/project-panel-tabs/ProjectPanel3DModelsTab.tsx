@@ -383,7 +383,6 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
           settings: {
             notes: draftVersionNotes,
             background: modelBackground,
-            show_edges: showEdges,
             show_grid: showGrid,
             show_axes: showAxes,
             layers,
@@ -418,7 +417,6 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
         versionId: selectedModelVersion,
         settings: {
           background: modelBackground,
-          show_edges: showEdges,
           show_grid: showGrid,
           show_axes: showAxes,
           layers,
