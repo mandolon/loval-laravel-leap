@@ -176,7 +176,7 @@ export const useInspectMode = ({
                 
                 // Fallback: try typesMap if API failed or is not available
                 if (!typeName) {
-                  const typesMap = ifcManager?.typesMap;
+                  const typesMap = (ifcManager as any)?.typesMap;
                   if (typesMap && typesMap[typeNumber]) {
                     typeName = typesMap[typeNumber];
                     if (typeName && typeof typeName === 'string' && typeName.startsWith('IFC')) {

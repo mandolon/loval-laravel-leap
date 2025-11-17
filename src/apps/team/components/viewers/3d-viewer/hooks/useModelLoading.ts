@@ -120,9 +120,9 @@ export const useModelLoading = (
             if (!modelID && viewerRef.current.context?.items?.ifcModels?.[0]?.modelID !== undefined) {
               modelID = viewerRef.current.context.items.ifcModels[0].modelID;
             }
-            // Method 3: From ifcManager.models array (first model ID)
-            if (!modelID && viewerRef.current.IFC.loader.ifcManager?.models?.[0] !== undefined) {
-              modelID = viewerRef.current.IFC.loader.ifcManager.models[0];
+            // Method 3: From context ifcModels array (first model ID)
+            if (!modelID && viewerRef.current.context?.items?.ifcModels?.[0] !== undefined) {
+              modelID = viewerRef.current.context.items.ifcModels[0].modelID;
             }
             
             logger.log('IFC model loaded, model object:', model);
@@ -132,8 +132,8 @@ export const useModelLoading = (
             
             try {
               const scene = viewerRef.current.context?.scene;
-              if (scene && Array.isArray(scene.children)) {
-                logger.log('Scene children count:', scene.children.length);
+              if (scene && Array.isArray((scene as any).children)) {
+                logger.log('Scene children count:', (scene as any).children.length);
               }
             } catch (sceneError) {
               logger.warn('Could not access scene:', sceneError);
@@ -237,9 +237,6 @@ export const useModelLoading = (
                 // Try multiple methods to get modelID
                 if (viewerRef.current.context?.items?.ifcModels?.[0]?.modelID !== undefined) {
                   return viewerRef.current.context.items.ifcModels[0].modelID;
-                }
-                if (viewerRef.current.IFC.loader.ifcManager?.models?.[0] !== undefined) {
-                  return viewerRef.current.IFC.loader.ifcManager.models[0];
                 }
                 return modelID; // Fallback to original (0 is valid)
               };

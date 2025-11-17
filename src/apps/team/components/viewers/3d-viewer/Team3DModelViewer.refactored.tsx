@@ -10,14 +10,14 @@
 
 import { useState, useRef } from 'react';
 import { logger } from '@/utils/logger';
-import { ViewerToolbar } from './3d-viewer/ViewerToolbar';
-import { useViewerInitialization } from './3d-viewer/hooks/useViewerInitialization';
-import { useModelLoading } from './3d-viewer/hooks/useModelLoading';
-import { useDimensionInteraction } from './3d-viewer/hooks/useDimensionInteraction';
-import { useMeasurementHover } from './3d-viewer/hooks/useMeasurementHover';
-import { useViewerKeyboard } from './3d-viewer/hooks/useViewerKeyboard';
-import { useDimensionTool } from './3d-viewer/hooks/useDimensionTool';
-import { useInspectMode } from './3d-viewer/hooks/useInspectMode';
+import { ViewerToolbar } from './ViewerToolbar';
+import { useViewerInitialization } from './hooks/useViewerInitialization';
+import { useModelLoading } from './hooks/useModelLoading';
+import { useDimensionInteraction } from './hooks/useDimensionInteraction';
+import { useMeasurementHover } from './hooks/useMeasurementHover';
+import { useViewerKeyboard } from './hooks/useViewerKeyboard';
+import { useDimensionTool } from './hooks/useDimensionTool';
+import { useInspectMode } from './hooks/useInspectMode';
 
 interface ModelSettings {
   background?: string;
@@ -54,6 +54,8 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
   const [measurementMode, setMeasurementMode] = useState<'none' | 'distance' | 'area' | 'volume'>('none');
   const [clippingActive, setClippingActive] = useState(false);
   const [inspectMode, setInspectMode] = useState(false);
+  const [annotationMode, setAnnotationMode] = useState(false);
+  const [selectedAnnotationId, setSelectedAnnotationId] = useState<string | null>(null);
 
   // Dimension interaction (selection and hover)
   const { selectedDimension, setSelectedDimension } = useDimensionInteraction({
@@ -83,9 +85,11 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
   useInspectMode({
     containerRef,
     viewerRef,
+    viewerReady,
     inspectMode,
     measurementMode,
     clippingActive,
+    annotationMode,
   });
 
   // Keyboard shortcuts
@@ -97,8 +101,16 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
     setClippingActive,
     inspectMode,
     setInspectMode,
+    annotationMode,
+    setAnnotationMode,
     selectedDimension,
     setSelectedDimension,
+    selectedAnnotationId,
+    setSelectedAnnotationId,
+    deleteAnnotation: (id: string) => {
+      logger.log('Delete annotation:', id);
+      // Implement annotation deletion logic here
+    },
   });
 
   // Tool handlers
@@ -146,6 +158,21 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
     }
   };
 
+  const handleClearClipping = () => {
+    if (viewerRef.current?.clipper) {
+      viewerRef.current.clipper.deleteAllPlanes();
+      logger.log('All clipping planes cleared');
+    }
+  };
+
+  const handleToggleInspect = () => {
+    setInspectMode(!inspectMode);
+  };
+
+  const handleToggleAnnotation = () => {
+    setAnnotationMode(!annotationMode);
+  };
+
   const handleClearMeasurements = () => {
     if (viewerRef.current?.dimensions) {
       viewerRef.current.dimensions.deleteAll();
@@ -175,17 +202,16 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
     <div className="flex flex-col bg-background h-full">
       {/* Toolbar */}
       <ViewerToolbar
-        filename={modelFile.filename}
-        versionNumber={versionNumber}
         inspectMode={inspectMode}
-        onToggleInspect={() => setInspectMode(!inspectMode)}
+        onToggleInspect={handleToggleInspect}
         measurementMode={measurementMode}
         onMeasureDistance={handleMeasureDistance}
-        onMeasureArea={handleMeasureArea}
-        onMeasureVolume={handleMeasureVolume}
         onClearMeasurements={handleClearMeasurements}
         clippingActive={clippingActive}
         onToggleClipping={handleToggleClipping}
+        onClearClipping={handleClearClipping}
+        annotationMode={annotationMode}
+        onToggleAnnotation={handleToggleAnnotation}
         onResetView={handleResetView}
       />
 
