@@ -1,0 +1,236 @@
+```text
+# ------------------------------------------------------------
+# Rehome IFC User-Defined Property Sets
+# Save as: Rehome_Identity_Psets.txt (or similar)
+# Load this file in Revit IFC Export > Property Sets > Export user defined property sets
+# Lines starting with # are comments and ignored by Revit.
+#
+# Format (tab-delimited):
+# PropertySet:  <Pset_Name>  I/T  <IFC class list>
+#   <IFC Property Name>  <IFC Data Type>  <Revit Parameter Name>
+# ------------------------------------------------------------
+
+
+# ============================================================
+# GLOBAL IDENTITY (applies to most elements)
+# ============================================================
+
+PropertySet:	Pset_Rehome_Identity	I	IfcElement, IfcElementType
+	CategoryName	Text	Category
+	FamilyName	Text	Family Name
+	TypeName	Text	Type Name
+	TypeMark	Text	Type Mark
+	InstanceMark	Text	Mark
+	LevelName	Text	Reference Level
+	PhaseCreated	Text	Phase Created
+	PhaseDemolished	Text	Phase Demolished
+	DesignOption	Text	Design Option
+	WorksetName	Text	Workset
+	Comments	Text	Comments
+
+
+# ============================================================
+# ROOFS (IfcRoof + roof-type slabs)
+# ============================================================
+
+PropertySet:	Pset_Rehome_RoofAdapter	I	IfcRoof, IfcSlab
+	RoofType	Text	Type Name
+	RoofSlope	Text	Slope
+	RoofThickness	Length	Thickness
+	RoofSurfaceArea	Area	Area
+	RoofPerimeter	Length	Perimeter
+	RoofBaseLevel	Text	Reference Level
+	RoofFunction	Text	Function
+	RoofComments	Text	Comments
+
+
+# ============================================================
+# FLOORS / SLABS / DECKS (IfcSlab)
+# ============================================================
+
+PropertySet:	Pset_Rehome_FloorAdapter	I	IfcSlab
+	FloorType	Text	Type Name
+	FloorArea	Area	Area
+	FloorPerimeter	Length	Perimeter
+	FloorThickness	Length	Thickness
+	FloorBaseLevel	Text	Reference Level
+	FloorFunction	Text	Function
+	FloorComments	Text	Comments
+
+
+# ============================================================
+# WALLS (IfcWall, IfcWallStandardCase)
+# ============================================================
+
+PropertySet:	Pset_Rehome_WallAdapter	I	IfcWall, IfcWallStandardCase
+	WallType	Text	Type Name
+	WallLength	Length	Length
+	WallUnconnectedHeight	Length	Unconnected Height
+	WallBaseConstraint	Text	Base Constraint
+	WallTopConstraint	Text	Top Constraint
+	WallBaseOffset	Length	Base Offset
+	WallTopOffset	Length	Top Offset
+	WallThickness	Length	Width
+	WallAreaOneSide	Area	Area
+	WallFunction	Text	Function
+	WallStructuralUsage	Text	Structural Usage
+	WallComments	Text	Comments
+
+
+# ============================================================
+# STRUCTURAL FRAMING – BEAMS (IfcBeam)
+# ============================================================
+
+PropertySet:	Pset_Rehome_BeamAdapter	I	IfcBeam
+	BeamType	Text	Type Name
+	BeamFamily	Text	Family Name
+	BeamSizeLabel	Text	Size
+	BeamCutLength	Length	Cut Length
+	BeamReferenceLevel	Text	Reference Level
+	BeamStartLevelOffset	Length	Start Level Offset
+	BeamEndLevelOffset	Length	End Level Offset
+	BeamComments	Text	Comments
+
+
+# ============================================================
+# STRUCTURAL COLUMNS / POSTS (IfcColumn)
+# ============================================================
+
+PropertySet:	Pset_Rehome_ColumnAdapter	I	IfcColumn
+	ColumnType	Text	Type Name
+	ColumnFamily	Text	Family Name
+	ColumnSizeLabel	Text	Size
+	ColumnHeight	Length	Unconnected Height
+	ColumnBaseLevel	Text	Base Level
+	ColumnTopLevel	Text	Top Level
+	ColumnBaseOffset	Length	Base Offset
+	ColumnTopOffset	Length	Top Offset
+	ColumnComments	Text	Comments
+
+
+# ============================================================
+# FOOTINGS / FOUNDATIONS (IfcFooting)
+# ============================================================
+
+PropertySet:	Pset_Rehome_FootingAdapter	I	IfcFooting
+	FootingType	Text	Type Name
+	FootingFamily	Text	Family Name
+	FootingLength	Length	Length
+	FootingWidth	Length	Width
+	FootingThickness	Length	Thickness
+	FootingVolume	Volume	Volume
+	FootingLevel	Text	Reference Level
+	FootingComments	Text	Comments
+
+
+# ============================================================
+# DOORS (IfcDoor)
+# ============================================================
+
+PropertySet:	Pset_Rehome_DoorAdapter	I	IfcDoor
+	DoorType	Text	Type Name
+	DoorFamily	Text	Family Name
+	DoorWidth	Length	Width
+	DoorHeight	Length	Height
+	DoorRoughWidth	Length	Rough Width
+	DoorRoughHeight	Length	Rough Height
+	DoorArea	Area	Area
+	DoorSillHeight	Length	Sill Height
+	DoorHeadHeight	Length	Head Height
+	DoorFireRating	Text	Fire Rating
+	DoorFunction	Text	Function
+	DoorComments	Text	Comments
+
+
+# ============================================================
+# WINDOWS (IfcWindow)
+# ============================================================
+
+PropertySet:	Pset_Rehome_WindowAdapter	I	IfcWindow
+	WindowType	Text	Type Name
+	WindowFamily	Text	Family Name
+	WindowWidth	Length	Width
+	WindowHeight	Length	Height
+	WindowArea	Area	Area
+	WindowSillHeight	Length	Sill Height
+	WindowHeadHeight	Length	Head Height
+	WindowFunction	Text	Function
+	WindowComments	Text	Comments
+
+
+# ============================================================
+# CASEWORK / CABINETS (IfcFurniture, IfcBuildingElementProxy)
+# ============================================================
+
+PropertySet:	Pset_Rehome_CaseworkAdapter	I	IfcFurniture, IfcBuildingElementProxy
+	CaseworkType	Text	Type Name
+	CaseworkFamily	Text	Family Name
+	CaseworkWidth	Length	Width
+	CaseworkDepth	Length	Depth
+	CaseworkHeight	Length	Height
+	CaseworkCategoryHint	Text	Category
+	CaseworkComments	Text	Comments
+
+
+# ============================================================
+# STAIRS / STAIR FLIGHTS (IfcStair, IfcStairFlight)
+# ============================================================
+
+PropertySet:	Pset_Rehome_StairAdapter	I	IfcStair, IfcStairFlight
+	StairType	Text	Type Name
+	StairFamily	Text	Family Name
+	NumberOfRisers	Integer	Number of Risers
+	NumberOfTreads	Integer	Number of Treads
+	RiserHeight	Length	Riser Height
+	TreadDepth	Length	Actual Tread Depth
+	StairWidth	Length	Width
+	StairRunLength	Length	Actual Run
+	StairTotalRise	Length	Actual Rise
+	StairBaseLevel	Text	Reference Level
+	StairComments	Text	Comments
+
+
+# ============================================================
+# RAILINGS (IfcRailing)
+# ============================================================
+
+PropertySet:	Pset_Rehome_RailingAdapter	I	IfcRailing
+	RailingType	Text	Type Name
+	RailingFamily	Text	Family Name
+	RailingLength	Length	Length
+	RailingHeight	Length	Height
+	RailingComments	Text	Comments
+
+
+# ============================================================
+# MASS ELEMENTS (proxies used as massing) (IfcBuildingElementProxy)
+# ============================================================
+
+PropertySet:	Pset_Rehome_MassAdapter	I	IfcBuildingElementProxy
+	MassType	Text	Type Name
+	MassFamily	Text	Family Name
+	MassVolume	Volume	Volume
+	MassArea	Area	Area
+	MassCategoryHint	Text	Category
+	MassComments	Text	Comments
+
+
+# ============================================================
+# GENERIC MODEL / CATCH-ALL (IfcElement, IfcBuildingElementProxy)
+# ============================================================
+
+PropertySet:	Pset_Rehome_GenericAdapter	I	IfcElement, IfcBuildingElementProxy
+	GenericType	Text	Type Name
+	GenericFamily	Text	Family Name
+	GenericWidth	Length	Width
+	GenericDepth	Length	Depth
+	GenericHeight	Length	Height
+	GenericArea	Area	Area
+	GenericVolume	Volume	Volume
+	GenericComments	Text	Comments
+
+
+# ------------------------------------------------------------
+# END OF FILE
+# ------------------------------------------------------------
+```

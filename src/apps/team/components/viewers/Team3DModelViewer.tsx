@@ -14,6 +14,7 @@ import { useAnnotationInputPosition } from './3d-viewer/hooks/useAnnotationInput
 import { AnnotationInput } from './3d-viewer/components/AnnotationInput';
 import { useAnnotationInteraction } from './3d-viewer/hooks/useAnnotationInteraction';
 import { useIfcViewerAPI } from '../../hooks/useIfcViewerAPI';
+import { PropertiesPanel } from './3d-viewer/components/PropertiesPanel';
 
 interface ModelSettings {
   background?: string;
@@ -93,12 +94,14 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
   });
 
   // Inspect mode
-  useInspectMode({
+  const { selectedObjectName, selectedObjectType, selectedObjectDimensions, selectedElementMetrics } = useInspectMode({
     containerRef,
     viewerRef,
+    viewerReady,
     inspectMode,
     measurementMode,
     clippingActive,
+    annotationMode,
   });
 
   // Create a ref to share hoveredAnnotationId between hooks
@@ -413,6 +416,14 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
             position={inputPosition}
           />
         )}
+
+        {/* Properties Panel */}
+        <PropertiesPanel
+          objectName={selectedObjectName}
+          objectType={selectedObjectType}
+          objectDimensions={selectedObjectDimensions}
+          elementMetrics={selectedElementMetrics}
+        />
         
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
