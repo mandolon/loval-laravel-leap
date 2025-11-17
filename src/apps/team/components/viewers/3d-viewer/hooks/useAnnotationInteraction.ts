@@ -77,24 +77,30 @@ export const useAnnotationInteraction = ({
           // Clear hover state
           setHoveredAnnotationId(null);
           
-          // Set selection
-          setSelectedAnnotationId(annotationId);
-          
-          // If not in annotation mode, activate annotation mode and open for editing
-          if (!annotationMode && setAnnotationMode) {
-            setAnnotationMode(true);
+          // Check if clicking on already selected annotation
+          if (selectedAnnotationId === annotationId) {
+            // Second click on same annotation - enter edit mode
+            if (!annotationMode && setAnnotationMode) {
+              setAnnotationMode(true);
+            }
             setEditingAnnotationId(annotationId);
-            logger.log('Annotation clicked - activating annotation mode and opening for editing:', annotationId);
+            logger.log('Annotation clicked again - entering edit mode:', annotationId);
           } else {
-            logger.log('Annotation selected:', annotationId);
+            // First click - just select/activate the annotation
+            setSelectedAnnotationId(annotationId);
+            // Don't enter edit mode yet
+            setEditingAnnotationId(null);
+            logger.log('Annotation selected (first click):', annotationId);
           }
         } else {
           // Clicked on empty space - clear selection
           setSelectedAnnotationId(null);
+          setEditingAnnotationId(null);
         }
       } else {
-        // Clicked on empty space - clear selection
+        // Clicked on empty space - clear selection and editing
         setSelectedAnnotationId(null);
+        setEditingAnnotationId(null);
       }
     };
     
@@ -177,7 +183,7 @@ export const useAnnotationInteraction = ({
         targetElement = null;
       }
     };
-  }, [annotationMode, clippingActive, viewerReady, selectedAnnotationId, annotationGroupsRef, setEditingAnnotationId]);
+  }, [annotationMode, clippingActive, viewerReady, selectedAnnotationId, annotationGroupsRef, setEditingAnnotationId, setAnnotationMode]);
 
   // Handle annotation hover effect and cursor changes
   useEffect(() => {

@@ -257,19 +257,32 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
         logger.log('Clipper tool activated - clipping plane created (press P to create another)');
       } else {
         // Reactivating - show controls for existing planes
+        // First, set clipper active which will make planes visible
         viewerRef.current.clipper.active = true;
-        // Make sure all planes are visible (controls/arrows) and reattach controls
+        
+        // Then ensure all planes have their controls visible and attached
         viewerRef.current.clipper.planes.forEach((plane: any) => {
           if (!plane.isPlan) {
+            // Ensure plane is visible (controls/arrows)
             plane.visible = true;
             plane.active = true; // Keep clipping active
-            // Reattach controls to enable interaction
-            if (plane.controls && plane.controls.attach && plane.helper) {
-              plane.controls.attach(plane.helper);
+            
+            // Make sure controls are visible
+            if (plane.controls) {
+              plane.controls.visible = true;
+              // Reattach controls to enable interaction
+              if (plane.controls.attach && plane.helper) {
+                plane.controls.attach(plane.helper);
+              }
+            }
+            
+            // Make sure helper is visible
+            if (plane.helper) {
+              plane.helper.visible = true;
             }
           }
         });
-        logger.log('Clipper tool reactivated - controls visible and enabled');
+        logger.log(`Clipper tool reactivated - ${viewerRef.current.clipper.planes.length} plane(s) with controls visible and enabled`);
       }
     } else {
       // Deactivating clipping mode - hide controls but keep clipping active

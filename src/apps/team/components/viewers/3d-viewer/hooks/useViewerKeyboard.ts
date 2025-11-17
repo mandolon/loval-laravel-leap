@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { IfcViewerAPI } from 'web-ifc-viewer';
 import { Color } from 'three';
 import { logger } from '@/utils/logger';
+import { restoreDimensionsVisibility } from '../utils/dimensionUtils';
 
 interface UseViewerKeyboardProps {
   viewerRef: React.RefObject<IfcViewerAPI | null>;
@@ -168,23 +169,153 @@ export const useViewerKeyboard = ({
         return;
       }
 
-      // D key - create dimension (when dimensions are active)
-      if ((event.key === 'd' || event.key === 'D') && measurementMode === 'distance' && viewerRef.current?.dimensions?.active) {
+      // A key - activate annotation tool (toggle ON only)
+      if (event.key === 'a' || event.key === 'A') {
         event.preventDefault();
-        if (viewerRef.current.dimensions) {
-          const dimCountBefore = (viewerRef.current.dimensions as any).dimensions?.length || 0;
-          logger.log('Creating dimension, count before:', dimCountBefore);
-          viewerRef.current.dimensions.create();
-          logger.log('Dimension creation started (press D to create)');
-          
-          // Check if dimension was created after a short delay
-          setTimeout(() => {
-            const dimCountAfter = (viewerRef.current.dimensions as any).dimensions?.length || 0;
-            const getterCount = viewerRef.current.dimensions.getDimensionsLines?.length || 0;
-            logger.log('Dimension created, count after:', dimCountAfter, 'getter count:', getterCount);
-          }, 100);
+        // Only activate if not already active
+        if (!annotationMode) {
+          // Deactivate all other tools
+          if (measurementMode !== 'none' && viewerRef.current?.dimensions) {
+            const dimensions = viewerRef.current.dimensions;
+            dimensions.active = false;
+            dimensions.previewActive = false;
+            dimensions.cancelDrawing();
+            restoreDimensionsVisibility(dimensions, true);
+            setMeasurementMode('none');
+          }
+          if (clippingActive && viewerRef.current?.clipper) {
+            // Hide controls but keep clipping active
+            viewerRef.current.clipper.planes.forEach((plane: any) => {
+              if (!plane.isPlan) {
+                plane.visible = false;
+                if (plane.controls && plane.controls.detach) {
+                  plane.controls.detach();
+                }
+              }
+            });
+            const wasActive = viewerRef.current.clipper.active;
+            if (wasActive) {
+              (viewerRef.current.clipper as any).enabled = false;
+            }
+            setClippingActive(false);
+          }
+          if (inspectMode) {
+            setInspectMode(false);
+          }
+          // Activate annotation tool
+          setAnnotationMode(true);
+          logger.log('Annotation tool activated (A key)');
         }
         return;
+      }
+
+      // S key - activate clipping plane tool (toggle ON only)
+      if (event.key === 's' || event.key === 'S') {
+        event.preventDefault();
+        if (!viewerRef.current?.clipper) return;
+        
+        // Only activate if not already active
+        if (!clippingActive) {
+          // Deactivate all other tools
+          if (measurementMode !== 'none' && viewerRef.current?.dimensions) {
+            const dimensions = viewerRef.current.dimensions;
+            dimensions.active = false;
+            dimensions.previewActive = false;
+            dimensions.cancelDrawing();
+            restoreDimensionsVisibility(dimensions, true);
+            setMeasurementMode('none');
+          }
+          if (annotationMode) {
+            setAnnotationMode(false);
+          }
+          if (inspectMode) {
+            setInspectMode(false);
+          }
+          
+          // Activate clipping tool
+          setClippingActive(true);
+          
+          // If there are no planes yet, create one
+          if (viewerRef.current.clipper.planes.length === 0) {
+            viewerRef.current.clipper.active = true;
+            viewerRef.current.clipper.createPlane();
+            logger.log('Clipping tool activated (S key) - clipping plane created');
+          } else {
+            // Show controls for existing planes
+            viewerRef.current.clipper.active = true;
+            viewerRef.current.clipper.planes.forEach((plane: any) => {
+              if (!plane.isPlan) {
+                plane.visible = true;
+                plane.active = true;
+                if (plane.controls) {
+                  plane.controls.visible = true;
+                  if (plane.controls.attach && plane.helper) {
+                    plane.controls.attach(plane.helper);
+                  }
+                }
+                if (plane.helper) {
+                  plane.helper.visible = true;
+                }
+              }
+            });
+            logger.log(`Clipping tool activated (S key) - ${viewerRef.current.clipper.planes.length} plane(s) with controls visible`);
+          }
+        }
+        return;
+      }
+
+      // D key - activate dimensions tool (toggle ON only)
+      if (event.key === 'd' || event.key === 'D') {
+        // Only activate if dimensions are not active
+        if (measurementMode === 'none') {
+          event.preventDefault();
+          // Deactivate all other tools
+          if (clippingActive && viewerRef.current?.clipper) {
+            // Hide controls but keep clipping active
+            viewerRef.current.clipper.planes.forEach((plane: any) => {
+              if (!plane.isPlan) {
+                plane.visible = false;
+                if (plane.controls && plane.controls.detach) {
+                  plane.controls.detach();
+                }
+              }
+            });
+            const wasActive = viewerRef.current.clipper.active;
+            if (wasActive) {
+              (viewerRef.current.clipper as any).enabled = false;
+            }
+            setClippingActive(false);
+          }
+          if (annotationMode) {
+            setAnnotationMode(false);
+          }
+          if (inspectMode) {
+            setInspectMode(false);
+          }
+          // Activate dimensions tool
+          setMeasurementMode('distance');
+          logger.log('Dimensions tool activated (D key)');
+          return;
+        }
+        
+        // If dimensions are already active, use D to create dimension
+        if (measurementMode === 'distance' && viewerRef.current?.dimensions?.active) {
+          event.preventDefault();
+          if (viewerRef.current.dimensions) {
+            const dimCountBefore = (viewerRef.current.dimensions as any).dimensions?.length || 0;
+            logger.log('Creating dimension, count before:', dimCountBefore);
+            viewerRef.current.dimensions.create();
+            logger.log('Dimension creation started (press D to create)');
+            
+            // Check if dimension was created after a short delay
+            setTimeout(() => {
+              const dimCountAfter = (viewerRef.current.dimensions as any).dimensions?.length || 0;
+              const getterCount = viewerRef.current.dimensions.getDimensionsLines?.length || 0;
+              logger.log('Dimension created, count after:', dimCountAfter, 'getter count:', getterCount);
+            }, 100);
+          }
+          return;
+        }
       }
 
       // Backspace or Delete key - delete selected dimension or annotation
