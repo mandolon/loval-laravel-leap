@@ -2110,6 +2110,15 @@ const TasksView = memo(function TasksView() {
     return [...new Set(taskCreatorIds)];
   }, [tasks, workspaceMembers]);
   
+  // Extract assignee IDs that aren't in workspaceMembers
+  const assigneeIds = useMemo(() => {
+    const memberIds = new Set(workspaceMembers.map((m: User) => m.id));
+    const taskAssigneeIds = tasks
+      .flatMap((t) => Array.isArray(t.assignees) ? t.assignees : [])
+      .filter((id) => !memberIds.has(id));
+    return [...new Set(taskAssigneeIds)];
+  }, [tasks, workspaceMembers]);
+  
   // Fetch missing creators
   const { data: missingCreators = [] } = useQuery({
     queryKey: ['missing-creators', creatorIds],
@@ -2121,15 +2130,21 @@ const TasksView = memo(function TasksView() {
         .in('id', creatorIds)
         .is('deleted_at', null);
       
-      if (error) throw error;
-      return data.map((u: any) => ({
+      if (error) {
+        console.error('Error fetching missing creators:', error);
+        return [];
+      }
+      
+      return (data || []).map((u: any) => ({
         id: u.id,
-        shortId: u.short_id,
         authId: u.auth_id,
         name: u.name,
         email: u.email,
         phone: u.phone,
         avatarUrl: u.avatar_url,
+        isAdmin: u.is_admin,
+        title: u.title,
+        shortId: u.short_id,
         lastActiveAt: u.last_active_at,
         createdAt: u.created_at,
         updatedAt: u.updated_at,
@@ -2140,10 +2155,46 @@ const TasksView = memo(function TasksView() {
     enabled: creatorIds.length > 0,
   });
   
-  // Combine workspaceMembers with missing creators
+  // Fetch missing assignees
+  const { data: missingAssignees = [] } = useQuery({
+    queryKey: ['missing-assignees', assigneeIds],
+    queryFn: async () => {
+      if (assigneeIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .in('id', assigneeIds)
+        .is('deleted_at', null);
+      
+      if (error) {
+        console.error('Error fetching missing assignees:', error);
+        return [];
+      }
+      
+      return (data || []).map((u: any) => ({
+        id: u.id,
+        authId: u.auth_id,
+        name: u.name,
+        email: u.email,
+        phone: u.phone,
+        avatarUrl: u.avatar_url,
+        isAdmin: u.is_admin,
+        title: u.title,
+        shortId: u.short_id,
+        lastActiveAt: u.last_active_at,
+        createdAt: u.created_at,
+        updatedAt: u.updated_at,
+        deletedAt: u.deleted_at,
+        deletedBy: u.deleted_by,
+      }));
+    },
+    enabled: assigneeIds.length > 0,
+  });
+  
+  // Combine workspaceMembers with missing creators and assignees
   const allUsers = useMemo(() => {
-    return [...workspaceMembers, ...missingCreators];
-  }, [workspaceMembers, missingCreators]);
+    return [...workspaceMembers, ...missingCreators, ...missingAssignees];
+  }, [workspaceMembers, missingCreators, missingAssignees]);
 
   // Mutations
   const createTaskMutation = useCreateTask();
