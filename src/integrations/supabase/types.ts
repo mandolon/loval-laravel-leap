@@ -1114,6 +1114,159 @@ export type Database = {
           },
         ]
       }
+      model_files: {
+        Row: {
+          created_at: string
+          file_id: string | null
+          filename: string
+          filesize: number
+          id: string
+          mimetype: string
+          short_id: string
+          storage_path: string
+          version_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_id?: string | null
+          filename: string
+          filesize: number
+          id?: string
+          mimetype: string
+          short_id?: string
+          storage_path: string
+          version_id: string
+        }
+        Update: {
+          created_at?: string
+          file_id?: string | null
+          filename?: string
+          filesize?: number
+          id?: string
+          mimetype?: string
+          short_id?: string
+          storage_path?: string
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "model_files_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_files_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "model_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      model_settings: {
+        Row: {
+          background: string
+          id: string
+          layers: Json
+          notes: string | null
+          show_axes: boolean
+          show_grid: boolean
+          updated_at: string
+          version_id: string
+        }
+        Insert: {
+          background?: string
+          id?: string
+          layers?: Json
+          notes?: string | null
+          show_axes?: boolean
+          show_grid?: boolean
+          updated_at?: string
+          version_id: string
+        }
+        Update: {
+          background?: string
+          id?: string
+          layers?: Json
+          notes?: string | null
+          show_axes?: boolean
+          show_grid?: boolean
+          updated_at?: string
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "model_settings_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: true
+            referencedRelation: "model_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      model_versions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          is_current: boolean
+          project_id: string
+          short_id: string
+          updated_at: string
+          version_number: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_current?: boolean
+          project_id: string
+          short_id?: string
+          updated_at?: string
+          version_number: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_current?: boolean
+          project_id?: string
+          short_id?: string
+          updated_at?: string
+          version_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "model_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_versions_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_versions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notes: {
         Row: {
           content: string
