@@ -351,6 +351,8 @@ export interface StandardizedStairMetrics extends StandardizedElementBase {
   treadDepthFt?: number;           // individual tread depth
   treadDepthDisplay?: string;      // e.g., "10\""
   treadDepthCalculatedInches?: string; // calculated from run / numberOfTreads, in inches (e.g., "11\"")
+  riserHeightCalculatedInches?: string; // calculated riser height in inches (e.g., "7\"")
+  riserHeightWarning?: string; // warning message if riser height seems incorrect (e.g., "Verify in model")
   stairWidthFt?: number;           // overall width of stair
   stairWidthDisplay?: string;     // e.g., "3' 0\""
   stairRunFt?: number;             // total horizontal run
@@ -2025,6 +2027,10 @@ export async function extractStandardizedDoorMetrics(
     if (areaIfc != null) {
       metrics.leafAreaSqFt = areaToSquareFeet(areaIfc);
       metrics.leafAreaDisplay = `${formatSquareFeet(metrics.leafAreaSqFt)} SF`;
+    } else if (metrics.widthFt && metrics.heightFt) {
+      // Fallback: Calculate area from width × height if area not found in quantity sets
+      metrics.leafAreaSqFt = metrics.widthFt * metrics.heightFt;
+      metrics.leafAreaDisplay = `${formatSquareFeet(metrics.leafAreaSqFt)} SF`;
     }
     
     // Fallback: Parse dimensions from door name if not found in quantities
@@ -2181,6 +2187,10 @@ export async function extractStandardizedWindowMetrics(
     // Area
     if (areaIfc != null) {
       metrics.areaSqFt = areaToSquareFeet(areaIfc);
+      metrics.areaDisplay = `${formatSquareFeet(metrics.areaSqFt)} SF`;
+    } else if (metrics.widthFt && metrics.heightFt) {
+      // Fallback: Calculate area from width × height if area not found in quantity sets
+      metrics.areaSqFt = metrics.widthFt * metrics.heightFt;
       metrics.areaDisplay = `${formatSquareFeet(metrics.areaSqFt)} SF`;
     }
     
@@ -2931,6 +2941,8 @@ export async function extractStandardizedStairMetrics(
     let width = await extractQuantityValue(ifcManager, modelID, props, 'Width', 'Qto_StairFlightBaseQuantities');
     let length = await extractQuantityValue(ifcManager, modelID, props, 'Length', 'Qto_StairFlightBaseQuantities');
     let height = await extractQuantityValue(ifcManager, modelID, props, 'Height', 'Qto_StairFlightBaseQuantities');
+    // Also try "Rise" as it might be more accurate than "Height" for stair flights
+    let rise = await extractQuantityValue(ifcManager, modelID, props, 'Rise', 'Qto_StairFlightBaseQuantities');
     
     // If not found, try Qto_StairBaseQuantities (for IfcStair)
     if (numberOfRisers === null) {
@@ -2954,6 +2966,9 @@ export async function extractStandardizedStairMetrics(
     }
     if (height === null) {
       height = await extractQuantityValue(ifcManager, modelID, props, 'Height', 'Qto_StairBaseQuantities');
+    }
+    if (rise === null) {
+      rise = await extractQuantityValue(ifcManager, modelID, props, 'Rise', 'Qto_StairBaseQuantities');
     }
     
     // Then try BaseQuantities Pset as fallback / supplement
@@ -2983,9 +2998,10 @@ export async function extractStandardizedStairMetrics(
     }
     
     // Combine quantity set and Pset values (quantity sets take precedence)
+    // Prefer "Rise" over "Height" for stair flights as it's more accurate
     const widthIfc = width ?? baseQ?.width ?? undefined;
     const lengthIfc = length ?? baseQ?.length ?? undefined;
-    const heightIfc = height ?? baseQ?.height ?? undefined;
+    const heightIfc = rise ?? height ?? baseQ?.height ?? undefined; // Prefer Rise over Height
     
     // Number of risers
     if (numberOfRisers !== null) {
@@ -2997,7 +3013,18 @@ export async function extractStandardizedStairMetrics(
       metrics.numberOfTreads = Math.round(numberOfTreads);
     }
     
-    // Riser height
+    // Riser height - also try property sets if not found in quantity sets
+    if (riserHeight === null) {
+      riserHeight = await extractPropertyValueFromPsets(ifcManager, modelID, props, 'RiserHeight', 'Pset_StairCommon');
+      if (riserHeight === null) {
+        riserHeight = await extractPropertyValueFromPsets(ifcManager, modelID, props, 'RiserHeight', 'Pset_Rehome_StairAdapter');
+      }
+      // Try without specifying property set name (search all)
+      if (riserHeight === null) {
+        riserHeight = await extractPropertyValueFromPsets(ifcManager, modelID, props, 'RiserHeight');
+      }
+    }
+    
     if (riserHeight !== null) {
       metrics.riserHeightFt = lengthToFeet(riserHeight);
       metrics.riserHeightDisplay = lengthToFeetInches(metrics.riserHeightFt);
@@ -3037,6 +3064,41 @@ export async function extractStandardizedStairMetrics(
     if (metrics.stairRunFt && metrics.numberOfTreads && metrics.numberOfTreads > 0) {
       const treadDepthInFeet = metrics.stairRunFt / metrics.numberOfTreads;
       metrics.treadDepthCalculatedInches = formatInchesFraction(treadDepthInFeet);
+    }
+    
+    // Calculate riser height in inches
+    // Priority: 1) Direct riserHeightFt (from extracted RiserHeight), 2) Calculate from rise/risers, 3) Avoid using total height
+    let riserHeightInFeetForCheck: number | undefined = undefined;
+    
+    if (metrics.riserHeightFt) {
+      // Use direct riser height value (most accurate)
+      riserHeightInFeetForCheck = metrics.riserHeightFt;
+      metrics.riserHeightCalculatedInches = formatInchesFraction(metrics.riserHeightFt, 256);
+    } else if (metrics.stairRiseFt && metrics.numberOfRisers && metrics.numberOfRisers > 0) {
+      // Calculate from total rise divided by number of risers
+      riserHeightInFeetForCheck = metrics.stairRiseFt / metrics.numberOfRisers;
+      metrics.riserHeightCalculatedInches = formatInchesFraction(riserHeightInFeetForCheck, 256);
+    } else if (heightIfc && metrics.numberOfRisers && metrics.numberOfRisers > 0) {
+      // Only use heightIfc as last resort - verify it's actually the rise, not total element height
+      // This might be incorrect if heightIfc is the total element height rather than just the rise
+      const heightInFeet = lengthToFeet(heightIfc);
+      // Sanity check: riser height should typically be between 6-8 inches (0.5-0.67 feet)
+      riserHeightInFeetForCheck = heightInFeet / metrics.numberOfRisers;
+      if (riserHeightInFeetForCheck >= 0.4 && riserHeightInFeetForCheck <= 0.75) {
+        // Reasonable riser height range, use it
+        metrics.riserHeightCalculatedInches = formatInchesFraction(riserHeightInFeetForCheck, 256);
+      } else {
+        // If outside reasonable range, don't set it (likely using wrong height value)
+        riserHeightInFeetForCheck = undefined;
+      }
+    }
+    
+    // Check if riser height exceeds 10 inches and add warning
+    if (riserHeightInFeetForCheck !== undefined) {
+      const riserHeightInInches = riserHeightInFeetForCheck * 12;
+      if (riserHeightInInches > 10) {
+        metrics.riserHeightWarning = 'Verify in model';
+      }
     }
     
     // Dev logging

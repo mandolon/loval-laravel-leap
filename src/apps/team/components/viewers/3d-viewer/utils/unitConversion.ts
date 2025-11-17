@@ -178,6 +178,7 @@ function gcd(a: number, b: number): number {
 
 /**
  * Format a length (in feet) as inches with fractional precision (e.g., 3-1/2")
+ * If maxDenominator is 256 (Revit precision), rounds to nearest 1/4" for display
  */
 export function formatInchesFraction(feet: number, maxDenominator: number = 16): string {
   if (!feet || isNaN(feet) || feet <= 0) {
@@ -195,7 +196,27 @@ export function formatInchesFraction(feet: number, maxDenominator: number = 16):
     numerator = 0;
   }
 
-  if (numerator !== 0) {
+  // If denominator is 256 (Revit precision), round to nearest 1/4" (denominator 4)
+  if (denominator === 256 && numerator !== 0) {
+    // Convert to 1/4" increments: round to nearest quarter
+    const quarters = Math.round((numerator / 256) * 4);
+    if (quarters === 4) {
+      whole += 1;
+      numerator = 0;
+      denominator = 1;
+    } else if (quarters === 0) {
+      numerator = 0;
+      denominator = 1;
+    } else {
+      numerator = quarters;
+      denominator = 4;
+      // Simplify if possible
+      const divisor = gcd(numerator, denominator);
+      numerator = numerator / divisor;
+      denominator = denominator / divisor;
+    }
+  } else if (numerator !== 0) {
+    // Normal simplification for other denominators
     const divisor = gcd(numerator, denominator);
     numerator = numerator / divisor;
     denominator = denominator / divisor;

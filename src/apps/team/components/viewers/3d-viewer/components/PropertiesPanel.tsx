@@ -275,8 +275,13 @@ export const PropertiesPanel = ({ objectName, objectType, objectDimensions, elem
                     {(metrics as any).treadDepthCalculatedInches && (
                       <div>Tread Depth: {(metrics as any).treadDepthCalculatedInches}</div>
                     )}
-                    {(metrics as any).riserHeightDisplay && (
-                      <div>Riser Height: {(metrics as any).riserHeightDisplay}</div>
+                    {(metrics as any).riserHeightCalculatedInches && (
+                      <div>
+                        Riser Height: {(metrics as any).riserHeightCalculatedInches}
+                        {(metrics as any).riserHeightWarning && (
+                          <span className="ml-2 text-orange-600 text-[10px]">({(metrics as any).riserHeightWarning})</span>
+                        )}
+                      </div>
                     )}
                     {(metrics as any).treadDepthDisplay && (
                       <div>Tread Depth: {(metrics as any).treadDepthDisplay}</div>
