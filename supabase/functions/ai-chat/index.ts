@@ -239,21 +239,31 @@ const tools = [
     type: "function",
     function: {
       name: "search_knowledge_base",
-      description: "Search through uploaded documents and files in the knowledge base to find relevant information. Use this when users ask questions that might be answered by uploaded building codes, documents, or reference materials.",
+      description: `Search through uploaded documents and files in the knowledge base.
+    
+    IMPORTANT - Project Scoping:
+    - If user asks about a SPECIFIC PROJECT, always include project_id to search project-specific documents
+    - If user asks about general building codes or workspace-wide information, omit project_id
+    - Project-specific documents include: cost estimates, specifications, drawings, correspondence
+    - Workspace documents include: building codes, regulations, standard details`,
       parameters: {
         type: "object",
         properties: {
           query: {
             type: "string",
-            description: "The search query to find relevant information"
+            description: "The search query to find relevant information. Include project name if searching for project-specific info."
           },
           workspace_id: {
             type: "string",
             description: "Workspace UUID to search within"
           },
+          project_id: {
+            type: "string",
+            description: "Optional: Project UUID to limit search to project-specific documents only. Use when user asks about THIS project's details."
+          },
           limit: {
             type: "number",
-            description: "Maximum number of results to return (default 5)"
+            description: "Maximum number of results to return (default 10)"
           }
         },
         required: ["query", "workspace_id"]
@@ -367,8 +377,36 @@ async function logActivity(
   }
 }
 
-function generateSystemPrompt(workspaceInstructions?: string, projectAIContext?: string): string {
+function generateSystemPrompt(
+  workspaceId: string,
+  projectId?: string,
+  projectName?: string,
+  workspaceInstructions?: string,
+  projectAIContext?: string
+): string {
   let prompt = `You are a helpful AI assistant for a project management workspace specializing in residential architecture.
+
+════════════════════════════════════════
+🎯 ACTIVE CONTEXT
+════════════════════════════════════════
+Workspace ID: ${workspaceId}`;
+
+  if (projectId && projectName) {
+    prompt += `
+🏗️ **CURRENT PROJECT:**
+Project Name: "${projectName}"
+Project ID: ${projectId}
+
+⭐ IMPORTANT: When searching the knowledge base for THIS project, remember you are working on "${projectName}".
+The knowledge base contains both workspace-wide documents AND project-specific documents.
+For cost estimates, specifications, or project details, always pass the project_id parameter.`;
+  } else {
+    prompt += `
+📊 Viewing all projects (no specific project selected)`;
+  }
+
+  prompt += `
+════════════════════════════════════════
 
 CRITICAL RULES FOR TOOL USAGE:
 1. Always look for project UUIDs in the conversation context
@@ -376,11 +414,21 @@ CRITICAL RULES FOR TOOL USAGE:
 3. Use UUIDs for project_id and workspace_id parameters - NEVER use project names
 
 **WHEN TO USE search_knowledge_base:**
-- User asks about costs, prices, estimates, or rates
-- User asks about materials, specifications, or technical details
-- User asks about building codes, regulations, or requirements
-- ANY question that might be answered by uploaded project documents
+- User asks about costs, prices, estimates, or rates FOR THIS PROJECT
+- User asks about materials, specifications FOR THIS PROJECT
+- User asks about building codes, regulations, or standards (workspace-wide)
+- User asks about project history, decisions, or uploaded documents
 - ALWAYS search before saying "I don't have that information"
+
+**HOW TO USE search_knowledge_base EFFECTIVELY:**
+1. For PROJECT-SPECIFIC searches: Always pass project_id and include project name in query
+   Example: search_knowledge_base(query="Lehman project cost estimate for framing", workspace_id="...", project_id="...")
+   
+2. For WORKSPACE-WIDE searches: Omit project_id
+   Example: search_knowledge_base(query="California Title 24 requirements", workspace_id="...")
+
+3. If user says "this project" or mentions project name, always use project_id
+4. Search results will show which file each result came from
 
 EXAMPLES OF CORRECT ✅ vs WRONG ❌ USAGE:
 
@@ -1225,7 +1273,12 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
     }
 
     case 'search_knowledge_base': {
-      const { query, workspace_id, limit = 10 } = args;
+      const { query, workspace_id, project_id, limit = 10 } = args;
+      
+      // Use explicitly provided project_id, or fall back to request context projectId
+      const searchProjectId = project_id || projectId;
+      
+      console.log(`Searching knowledge base: query="${query}", workspace="${workspace_id}", project="${searchProjectId || 'all'}"`);
       
       // Generate embedding for the search query
       const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
@@ -1253,14 +1306,51 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
       const embeddingData = await embeddingResponse.json();
       const queryEmbedding = embeddingData.data[0].embedding;
 
-      // Search knowledge base using vector similarity (with optional project filter)
-      const { data, error } = await supabase.rpc('search_knowledge_base', {
-        query_embedding: queryEmbedding,
-        match_threshold: 0.5,
-        match_count: limit,
-        filter_workspace_id: workspace_id,
-        filter_project_id: projectId
-      });
+      // Two-pass search strategy
+      let data = null;
+      let error = null;
+      
+      if (searchProjectId) {
+        // First pass: Project-specific search
+        console.log('Attempting project-specific search...');
+        const projectSearch = await supabase.rpc('search_knowledge_base', {
+          query_embedding: queryEmbedding,
+          match_threshold: 0.4,  // Slightly lower threshold for project-specific
+          match_count: limit,
+          filter_workspace_id: workspace_id,
+          filter_project_id: searchProjectId
+        });
+        
+        // If we found project-specific results, use them
+        if (projectSearch.data && projectSearch.data.length > 0) {
+          data = projectSearch.data;
+          console.log(`Found ${data.length} project-specific results`);
+        } else {
+          console.log('No project-specific results, falling back to workspace search');
+          // Second pass: Workspace-wide search
+          const workspaceSearch = await supabase.rpc('search_knowledge_base', {
+            query_embedding: queryEmbedding,
+            match_threshold: 0.5,
+            match_count: limit,
+            filter_workspace_id: workspace_id,
+            filter_project_id: null
+          });
+          data = workspaceSearch.data;
+          error = workspaceSearch.error;
+        }
+      } else {
+        // No project specified, search workspace-wide only
+        console.log('Searching workspace-wide...');
+        const workspaceSearch = await supabase.rpc('search_knowledge_base', {
+          query_embedding: queryEmbedding,
+          match_threshold: 0.5,
+          match_count: limit,
+          filter_workspace_id: workspace_id,
+          filter_project_id: null
+        });
+        data = workspaceSearch.data;
+        error = workspaceSearch.error;
+      }
 
       if (error) {
         return { success: false, error: `Search failed: ${error.message}` };
@@ -1274,13 +1364,15 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
         };
       }
 
-      const results = data.map((item: any, index: number) => 
-        `[${index + 1}] From "${item.file_name}" (similarity: ${(item.similarity * 100).toFixed(1)}%):\n${item.chunk_content.substring(0, 500)}...`
-      ).join('\n\n');
+      // Improved result formatting with scope indicator
+      const results = data.map((item: any, index: number) => {
+        const scope = item.project_id ? `📁 Project-specific` : `📚 Workspace-wide`;
+        return `[${index + 1}] ${scope} - From "${item.file_name}" (${(item.similarity * 100).toFixed(1)}% match):\n${item.chunk_content.substring(0, 600)}...\n`;
+      }).join('\n');
 
       return {
         success: true,
-        message: `Found ${data.length} relevant sections in knowledge base:\n\n${results}`,
+        message: `Found ${data.length} relevant sections:\n\n${results}`,
         data
       };
     }
@@ -1463,6 +1555,7 @@ serve(async (req) => {
 
     // Fetch and format project AI identity
     let projectAIContext: string | undefined;
+    let effectiveProjectName: string | undefined;
     if (projectId) {
       const { data: project } = await supabase
         .from('projects')
@@ -1470,12 +1563,22 @@ serve(async (req) => {
         .eq('id', projectId)
         .maybeSingle();
       
-      if (project?.ai_identity) {
-        projectAIContext = formatProjectAIIdentity(project.ai_identity, project.name);
+      if (project) {
+        // Use fetched project name if not provided in request
+        effectiveProjectName = projectName || project.name;
+        if (project.ai_identity) {
+          projectAIContext = formatProjectAIIdentity(project.ai_identity, project.name);
+        }
       }
     }
 
-    const systemPrompt = generateSystemPrompt(workspaceInstructions, projectAIContext);
+    const systemPrompt = generateSystemPrompt(
+      workspaceId,
+      projectId,
+      effectiveProjectName,
+      workspaceInstructions,
+      projectAIContext
+    );
 
     // Initial AI call with tools
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
