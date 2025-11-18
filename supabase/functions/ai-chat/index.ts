@@ -393,6 +393,13 @@ CRITICAL RULES FOR TOOL USAGE:
 2. Copy the UUID EXACTLY (format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
 3. Use that UUID for project_id parameters - NEVER use project names
 
+**WHEN TO USE search_knowledge_base:**
+- User asks about costs, prices, estimates, or rates
+- User asks about materials, specifications, or technical details
+- User asks about building codes, regulations, or requirements
+- ANY question that might be answered by uploaded project documents
+- ALWAYS search before saying "I don't have that information"
+
 EXAMPLES OF CORRECT ✅ vs WRONG ❌ USAGE:
 
 create_task:
@@ -419,6 +426,7 @@ YOUR CAPABILITIES:
 - get_recent_activity: View recent activity across workspace or project
 - summarize_tasks: Get task summary with status breakdown
 - get_project_timeline: Show chronological project history
+- search_knowledge_base: Search ingested project documents for cost estimates, specifications, building codes, and technical details
 
 EXAMPLE TOOL CALLS:
 
@@ -442,9 +450,17 @@ Example 7 - Summarize tasks:
 User: "Give me a summary of all tasks"
 You call: summarize_tasks(workspace_id="${workspaceId}")
 
-Example 8 - Search knowledge base:
-User: "What can you tell me about Title 16?"
-You call: search_knowledge_base(workspace_id="${workspaceId}", query="Title 16 Sacramento Code of Ordinances")
+Example 8 - Search for cost information:
+User: "What's the cost estimate for pressure treated beams?"
+You call: search_knowledge_base(workspace_id="${workspaceId}", query="pressure treated beam cost per linear foot")
+
+Example 9 - Search for project specifications:
+User: "What insulation are we using?"
+You call: search_knowledge_base(workspace_id="${workspaceId}", query="insulation specifications")
+
+Example 10 - Search for building codes:
+User: "What are the setback requirements?"
+You call: search_knowledge_base(workspace_id="${workspaceId}", query="setback requirements zoning")
 
 Keep responses clear, concise, and actionable.`;
 
@@ -1252,7 +1268,7 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
     }
 
     case 'search_knowledge_base': {
-      const { query, workspace_id, limit = 5 } = args;
+      const { query, workspace_id, limit = 10 } = args;
       
       // Generate embedding for the search query
       const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
