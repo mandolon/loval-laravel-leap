@@ -25,7 +25,9 @@ import {
   useModelClippingPlanes,
   useSaveModelClippingPlane,
   useSaveModelCameraView,
+  useModelCameraViews,
 } from '@/lib/api/hooks/useModelViewerState';
+import type { ModelCameraView } from '@/lib/api/types';
 
 interface ModelSettings {
   background?: string;
@@ -64,6 +66,7 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber, versionId }: Te
   const { data: savedDimensions = [] } = useModelDimensions(versionId);
   const { data: savedAnnotations = [] } = useModelAnnotations(versionId);
   const { data: savedClippingPlanes = [] } = useModelClippingPlanes(versionId);
+  const { data: savedCameraViews = [] } = useModelCameraViews(versionId);
   
   // Mutations for saving state
   const saveDimensionMutation = useSaveModelDimension();
@@ -548,6 +551,65 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber, versionId }: Te
     logger.log(`Saved camera view: ${name}`);
   }, [versionId, saveCameraView]);
 
+  const handleLoadCameraView = useCallback((view: ModelCameraView) => {
+    if (!viewerRef.current) return;
+
+    const viewer = viewerRef.current;
+    const camera = viewer.context.getCamera();
+    const controls = viewer.context.ifcCamera.cameraControls as any;
+
+    camera.position.set(view.position.x, view.position.y, view.position.z);
+    controls.setTarget?.(view.target.x, view.target.y, view.target.z);
+    camera.zoom = view.zoom;
+    camera.updateProjectionMatrix();
+
+    logger.log(`Loaded camera view: ${view.name}`);
+  }, []);
+
+  // Restore saved dimensions on load
+  useEffect(() => {
+    if (!viewerRef.current || !viewerReady || loading || savedDimensions.length === 0) return;
+
+    logger.log(`Restoring ${savedDimensions.length} saved dimensions`);
+    // Note: Dimension restoration requires IFC.js dimension API
+    // This is a placeholder - actual implementation depends on web-ifc-viewer's dimension API
+  }, [viewerReady, loading, savedDimensions]);
+
+  // Restore saved annotations on load
+  useEffect(() => {
+    if (!viewerRef.current || !viewerReady || loading || savedAnnotations.length === 0) return;
+
+    logger.log(`Restoring ${savedAnnotations.length} saved annotations`);
+    // Annotations are managed by useAnnotationTool hook
+    // The hook should handle restoration internally
+  }, [viewerReady, loading, savedAnnotations]);
+
+  // Restore saved clipping planes on load
+  useEffect(() => {
+    if (!viewerRef.current || !viewerReady || loading || savedClippingPlanes.length === 0) return;
+
+    const viewer = viewerRef.current;
+    logger.log(`Restoring ${savedClippingPlanes.length} saved clipping planes`);
+
+    savedClippingPlanes.forEach(clippingPlane => {
+      try {
+        viewer.clipper.createPlane();
+        const lastPlane = viewer.clipper.planes[viewer.clipper.planes.length - 1];
+        
+        if (lastPlane && lastPlane.plane) {
+          lastPlane.plane.normal.set(
+            clippingPlane.plane_data.normal.x,
+            clippingPlane.plane_data.normal.y,
+            clippingPlane.plane_data.normal.z
+          );
+          lastPlane.plane.constant = clippingPlane.plane_data.origin.x;
+        }
+      } catch (error) {
+        logger.error('Failed to restore clipping plane:', error);
+      }
+    });
+  }, [viewerReady, loading, savedClippingPlanes]);
+
   if (!modelFile) {
     return (
       <div className="flex items-center justify-center h-full bg-background">
@@ -579,6 +641,8 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber, versionId }: Te
           onResetView={handleResetView}
           versionId={versionId}
           onSaveCameraView={handleSaveCameraView}
+          onLoadCameraView={handleLoadCameraView}
+          savedCameraViews={savedCameraViews}
         />
         
         {/* Properties Panel */}

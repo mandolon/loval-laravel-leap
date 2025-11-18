@@ -4,8 +4,16 @@ import {
   Scissors,
   MousePointer2,
   Tag,
-  Bookmark
+  Bookmark,
+  Camera
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import type { ModelCameraView } from '@/lib/api/types';
 
 interface ViewerToolbarProps {
   inspectMode: boolean;
@@ -21,6 +29,8 @@ interface ViewerToolbarProps {
   onResetView: () => void;
   versionId?: string;
   onSaveCameraView?: () => void;
+  onLoadCameraView?: (view: ModelCameraView) => void;
+  savedCameraViews?: ModelCameraView[];
 }
 
 export const ViewerToolbar = ({
@@ -37,6 +47,8 @@ export const ViewerToolbar = ({
   onResetView,
   versionId,
   onSaveCameraView,
+  onLoadCameraView,
+  savedCameraViews = [],
 }: ViewerToolbarProps) => {
   // 3D model tab color from ProjectPanel theme (#06B6D4)
   const modelTabColor = '#06B6D4';
@@ -223,24 +235,54 @@ export const ViewerToolbar = ({
             </div>
           </div>
           
-          {/* Save Camera View Button */}
-          {versionId && onSaveCameraView && (
+          {/* Camera Views Dropdown */}
+          {versionId && (
             <>
               <div className="w-px h-5 bg-border" />
-              <button
-                onClick={onSaveCameraView}
-                className="h-7 w-7 flex items-center justify-center rounded transition-colors text-muted-foreground"
-                style={{ backgroundColor: 'transparent' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = hoverBgColor;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
-                title="Save Current View"
-              >
-                <Bookmark className="h-4 w-4" />
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="h-7 w-7 flex items-center justify-center rounded transition-colors text-muted-foreground"
+                    style={{ backgroundColor: 'transparent' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = hoverBgColor;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                    title="Camera Views"
+                  >
+                    <Camera className="h-4 w-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center">
+                  {onSaveCameraView && (
+                    <>
+                      <DropdownMenuItem onClick={onSaveCameraView}>
+                        <Bookmark className="h-4 w-4 mr-2" />
+                        Save Current View
+                      </DropdownMenuItem>
+                      {savedCameraViews.length > 0 && (
+                        <div className="h-px bg-border my-1" />
+                      )}
+                    </>
+                  )}
+                  {savedCameraViews.length === 0 ? (
+                    <DropdownMenuItem disabled>
+                      No saved views
+                    </DropdownMenuItem>
+                  ) : (
+                    savedCameraViews.map((view) => (
+                      <DropdownMenuItem
+                        key={view.id}
+                        onClick={() => onLoadCameraView?.(view)}
+                      >
+                        {view.name}
+                      </DropdownMenuItem>
+                    ))
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           )}
         </div>
