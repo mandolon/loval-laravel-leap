@@ -103,7 +103,7 @@ export function useModelAnnotations(versionId: string | undefined) {
         .order('created_at', { ascending: true });
       
       if (error) throw error;
-      return data || [];
+      return (data || []) as unknown as ModelAnnotation[];
     },
     enabled: !!versionId,
   });
@@ -200,7 +200,7 @@ export function useModelClippingPlanes(versionId: string | undefined) {
         .order('created_at', { ascending: true });
       
       if (error) throw error;
-      return data || [];
+      return (data || []) as unknown as ModelClippingPlane[];
     },
     enabled: !!versionId,
   });
@@ -268,7 +268,7 @@ export function useModelCameraViews(versionId: string | undefined) {
         .order('created_at', { ascending: true });
       
       if (error) throw error;
-      return data || [];
+      return (data || []) as unknown as ModelCameraView[];
     },
     enabled: !!versionId,
   });

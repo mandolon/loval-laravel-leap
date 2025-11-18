@@ -1275,6 +1275,186 @@ export type Database = {
           },
         ]
       }
+      model_annotations: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          position: Json
+          text: string
+          updated_at: string | null
+          version_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          position: Json
+          text: string
+          updated_at?: string | null
+          version_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          position?: Json
+          text?: string
+          updated_at?: string | null
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "model_annotations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_annotations_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "model_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      model_camera_views: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          name: string
+          position: Json
+          target: Json
+          updated_at: string | null
+          version_id: string
+          zoom: number
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          name: string
+          position: Json
+          target: Json
+          updated_at?: string | null
+          version_id: string
+          zoom: number
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          name?: string
+          position?: Json
+          target?: Json
+          updated_at?: string | null
+          version_id?: string
+          zoom?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "model_camera_views_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_camera_views_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "model_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      model_clipping_planes: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          name: string | null
+          plane_data: Json
+          version_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          name?: string | null
+          plane_data: Json
+          version_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          name?: string | null
+          plane_data?: Json
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "model_clipping_planes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_clipping_planes_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "model_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      model_dimensions: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          dimension_data: Json
+          id: string
+          label: string | null
+          version_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          dimension_data: Json
+          id?: string
+          label?: string | null
+          version_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          dimension_data?: Json
+          id?: string
+          label?: string | null
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "model_dimensions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_dimensions_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "model_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       model_files: {
         Row: {
           created_at: string
