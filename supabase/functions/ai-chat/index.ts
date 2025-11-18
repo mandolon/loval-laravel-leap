@@ -368,30 +368,12 @@ async function logActivity(
 }
 
 function generateSystemPrompt(workspaceInstructions?: string, projectAIContext?: string): string {
-  let prompt = `You are a helpful AI assistant for a project management workspace.
-
-════════════════════════════════════════
-⭐ ACTIVE WORKSPACE & PROJECT CONTEXT
-════════════════════════════════════════
-Workspace UUID: ${workspaceId}
-**USE THIS UUID FOR workspace_id IN ALL TOOL CALLS**
-`;
-
-  if (projectId && projectName) {
-    prompt += `Project UUID: ${projectId}
-Project Name: ${projectName}
-**COPY THIS UUID FOR ALL project_id TOOL CALLS**`;
-  } else {
-    prompt += `No specific project selected (viewing all projects)`;
-  }
-
-  prompt += `
-════════════════════════════════════════
+  let prompt = `You are a helpful AI assistant for a project management workspace specializing in residential architecture.
 
 CRITICAL RULES FOR TOOL USAGE:
-1. Find the line "⭐ IMPORTANT - Project ID" in the context below
-2. Copy the UUID EXACTLY (format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
-3. Use that UUID for project_id parameters - NEVER use project names
+1. Always look for project UUIDs in the conversation context
+2. Copy UUIDs EXACTLY (format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+3. Use UUIDs for project_id and workspace_id parameters - NEVER use project names
 
 **WHEN TO USE search_knowledge_base:**
 - User asks about costs, prices, estimates, or rates
@@ -428,44 +410,19 @@ YOUR CAPABILITIES:
 - get_project_timeline: Show chronological project history
 - search_knowledge_base: Search ingested project documents for cost estimates, specifications, building codes, and technical details
 
-EXAMPLE TOOL CALLS:
-
-Example 4 - Read project files:
-User: "What files do we have in the Design folder?"
-You call: read_folder(project_id="${projectId || 'PROJECT_UUID_HERE'}", folder="Design")
-
-Example 5 - Create a note:
-User: "Create a note about the zoning constraints we discussed"
-You call: create_note(
-  project_id="${projectId || 'PROJECT_UUID_HERE'}",
-  title="Zoning Constraints",
-  content="## Key Constraints\\n- 15' front setback\\n- 8' side setback\\n- FAR 3.5 maximum"
-)
-
-Example 6 - Get recent activity:
-User: "What's been happening recently?"
-You call: get_recent_activity(workspace_id="${workspaceId}", limit=20)
-
-Example 7 - Summarize tasks:
-User: "Give me a summary of all tasks"
-You call: summarize_tasks(workspace_id="${workspaceId}")
-
-Example 8 - Search for cost information:
-User: "What's the cost estimate for pressure treated beams?"
-You call: search_knowledge_base(workspace_id="${workspaceId}", query="pressure treated beam cost per linear foot")
-
-Example 9 - Search for project specifications:
-User: "What insulation are we using?"
-You call: search_knowledge_base(workspace_id="${workspaceId}", query="insulation specifications")
-
-Example 10 - Search for building codes:
-User: "What are the setback requirements?"
-You call: search_knowledge_base(workspace_id="${workspaceId}", query="setback requirements zoning")
-
 Keep responses clear, concise, and actionable.`;
 
-  if (projectContext) {
-    prompt += `\n\n${projectContext}`;
+  // Add workspace-level instructions if provided
+  if (workspaceInstructions) {
+    prompt += `\n\n════════════════════════════════════════
+📋 WORKSPACE GUIDELINES
+════════════════════════════════════════
+${workspaceInstructions}`;
+  }
+
+  // Add project-specific AI context if provided
+  if (projectAIContext) {
+    prompt += `\n\n${projectAIContext}`;
   }
 
   return prompt;
