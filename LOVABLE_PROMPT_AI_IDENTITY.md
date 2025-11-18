@@ -1,5 +1,11 @@
 # Lovable Prompt: AI Identity System Implementation
 
+**NOTE: Recent updates made to AIContextPanel.tsx (Nov 17, 2025):**
+- Project Type changed from single select to multi-select checkboxes (uses requiredProjectTypes array)
+- Jurisdiction made more flexible - accepts City, County, or Region
+- Required Compliance reduced to 3 items: Title 24, Local Zoning, Historic District
+- Required Consultants: removed Civil Engineer (now 5 items total)
+
 ## Overview
 Implement a comprehensive AI identity system that allows:
 1. **Workspace-level AI instructions** - Custom AI behavior rules for the entire workspace

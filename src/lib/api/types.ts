@@ -121,8 +121,9 @@ export interface WorkspaceMember {
 // Project AI Identity - structured context for AI assistant
 export interface ProjectAIIdentity {
   // Core Project Details
-  projectType: string; // 'adu', 'remodel', 'addition', 'new_construction', 'historic'
-  jurisdiction: string; // e.g., 'San Francisco, CA'
+  projectType: string; // DEPRECATED: Use requiredProjectTypes instead
+  requiredProjectTypes?: string[]; // Multiple project types: 'adu', 'remodel', 'addition', 'new_construction', 'historic'
+  jurisdiction: string; // Generic: City, County, Region, etc. (e.g., 'San Francisco, CA' or 'Sacramento County, CA')
   projectScope: string; // Detailed description of what's being built/changed
   
   // Regulatory & Zoning

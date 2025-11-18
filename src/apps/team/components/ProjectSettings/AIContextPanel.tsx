@@ -177,6 +177,7 @@ export function AIContextPanel({ project, activeTab = 'details', onTabChange, on
 
     return {
       projectType: savedIdentity.projectType || proj.project_type || '',
+      requiredProjectTypes: savedIdentity.requiredProjectTypes || [],
       jurisdiction: savedIdentity.jurisdiction || jurisdiction,
       projectScope: savedIdentity.projectScope || proj.description || '',
 
@@ -261,34 +262,46 @@ export function AIContextPanel({ project, activeTab = 'details', onTabChange, on
       {activeTab === 'details' && (
         <div>
           <div className="mb-4">
-            <label className="block text-sm text-slate-900 mb-1">Project Type</label>
-            {editing ? (
-              <select
-                value={data.projectType}
-                onChange={(e) => setData({ ...data, projectType: e.target.value })}
-                className={`${SELECT} border-slate-400 focus:border-slate-500 focus:ring-slate-300`}
-              >
-                <option value="">Select type...</option>
-                <option value="adu">ADU (Accessory Dwelling Unit)</option>
-                <option value="remodel">Remodel / Renovation</option>
-                <option value="addition">Addition</option>
-                <option value="new_construction">New Construction</option>
-                <option value="historic">Historic Preservation</option>
-              </select>
-            ) : (
-              <div className="w-full h-8 rounded-lg border bg-slate-50 text-[13px] text-slate-600 px-3 leading-8 border-slate-200">
-                {data.projectType ? data.projectType.charAt(0).toUpperCase() + data.projectType.slice(1).replace('_', ' ') : 'Not set'}
-              </div>
+            <label className="block text-sm text-slate-900 mb-1">Project Type(s)</label>
+            <div className="grid grid-cols-1 gap-3">
+              {[
+                { value: 'adu', label: 'ADU (Accessory Dwelling Unit)' },
+                { value: 'remodel', label: 'Remodel / Renovation' },
+                { value: 'addition', label: 'Addition' },
+                { value: 'new_construction', label: 'New Construction' },
+                { value: 'historic', label: 'Historic Preservation' },
+              ].map((item) => (
+                <label key={item.value} className="flex items-center gap-2 text-sm text-slate-900">
+                  <input
+                    type="checkbox"
+                    checked={data.requiredProjectTypes?.includes(item.value) || false}
+                    onChange={(e) =>
+                      setData({
+                        ...data,
+                        requiredProjectTypes: e.target.checked
+                          ? [...(data.requiredProjectTypes || []), item.value]
+                          : (data.requiredProjectTypes || []).filter((t) => t !== item.value),
+                      })
+                    }
+                    disabled={!editing}
+                    className="disabled:opacity-50"
+                  />
+                  <span>{item.label}</span>
+                </label>
+              ))}
+            </div>
+            {!editing && (!data.requiredProjectTypes || data.requiredProjectTypes.length === 0) && (
+              <div className="text-sm text-slate-500 italic mt-2">No project types selected</div>
             )}
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm text-slate-900 mb-1">Jurisdiction</label>
+            <label className="block text-sm text-slate-900 mb-1">Jurisdiction (City, County, or Region)</label>
             <input
               type="text"
               value={data.jurisdiction}
               onChange={(e) => setData({ ...data, jurisdiction: e.target.value })}
-              placeholder="e.g., San Francisco, CA"
+              placeholder="e.g., San Francisco, CA  OR  Sacramento County, CA  OR  Bay Area Region"
               readOnly={!editing}
               className={`${INPUT} ${!editing ? 'bg-slate-50 text-slate-600 hover:border-slate-200 focus:ring-0 focus:border-slate-200' : 'border-slate-400 focus:border-slate-500 focus:ring-slate-300'}`}
             />
@@ -450,14 +463,11 @@ export function AIContextPanel({ project, activeTab = 'details', onTabChange, on
 
           <div className="mb-4">
             <label className="block text-sm text-slate-900 mb-1">Required Compliance</label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               {[
                 { value: 'title_24', label: 'Title 24 (Energy Code)' },
                 { value: 'local_zoning', label: 'Local Zoning Compliance' },
-                { value: 'accessibility', label: 'Accessibility (ADA)' },
-                { value: 'fire_safety', label: 'Fire Safety Code' },
-                { value: 'seismic', label: 'Seismic Requirements' },
-                { value: 'environmental', label: 'Environmental Review' },
+                { value: 'historic_district', label: 'Historic District' },
               ].map((item) => (
                 <label key={item.value} className="flex items-center gap-2 text-sm text-slate-900">
                   <input
@@ -487,7 +497,6 @@ export function AIContextPanel({ project, activeTab = 'details', onTabChange, on
                 { value: 'structural_engineer', label: 'Structural Engineer' },
                 { value: 'energy_consultant', label: 'Energy Consultant' },
                 { value: 'mep_engineer', label: 'MEP Engineer' },
-                { value: 'civil_engineer', label: 'Civil Engineer' },
                 { value: 'landscape_architect', label: 'Landscape Architect' },
                 { value: 'geotechnical_engineer', label: 'Geotechnical Engineer' },
               ].map((item) => (
