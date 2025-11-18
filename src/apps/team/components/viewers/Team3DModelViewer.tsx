@@ -24,6 +24,7 @@ import {
   useDeleteModelAnnotation,
   useModelClippingPlanes,
   useSaveModelClippingPlane,
+  useSaveModelCameraView,
 } from '@/lib/api/hooks/useModelViewerState';
 
 interface ModelSettings {
@@ -70,6 +71,7 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber, versionId }: Te
   const updateAnnotationMutation = useUpdateModelAnnotation();
   const deleteAnnotationMutation = useDeleteModelAnnotation();
   const saveClippingPlaneMutation = useSaveModelClippingPlane();
+  const { mutate: saveCameraView } = useSaveModelCameraView();
   
   // Edge toggle functionality
   const { toggleEdges } = useIfcViewerAPI();
@@ -150,6 +152,10 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber, versionId }: Te
     annotationMode,
     clippingActive,
     hoveredAnnotationId: hoveredAnnotationIdRef.current,
+    versionId,
+    onSaveAnnotation: saveAnnotationMutation.mutate,
+    onUpdateAnnotation: updateAnnotationMutation.mutate,
+    onDeleteAnnotation: deleteAnnotationMutation.mutate,
   });
 
   // Annotation interaction (hover and selection)
@@ -265,6 +271,28 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber, versionId }: Te
       if (viewerRef.current.clipper.planes.length === 0) {
         viewerRef.current.clipper.active = true;
         viewerRef.current.clipper.createPlane();
+        
+        // Save clipping plane to database (access last created plane)
+        if (versionId && viewerRef.current.clipper.planes.length > 0) {
+          const plane = viewerRef.current.clipper.planes[viewerRef.current.clipper.planes.length - 1];
+          saveClippingPlaneMutation.mutate({
+            versionId,
+            planeData: {
+              normal: {
+                x: (plane as any).normal?.x || 0,
+                y: (plane as any).normal?.y || 1,
+                z: (plane as any).normal?.z || 0
+              },
+              origin: {
+                x: (plane as any).constant || 0,
+                y: 0,
+                z: 0
+              }
+            },
+            name: `Section Cut ${new Date().toLocaleTimeString()}`
+          });
+        }
+        
         logger.log('Clipper tool activated - clipping plane created (press P to create another)');
       } else {
         // Reactivating - show controls for existing planes
@@ -484,8 +512,41 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber, versionId }: Te
   const handleResetView = () => {
     if (viewerRef.current?.context) {
       viewerRef.current.context.fitToFrame();
+      logger.log('View reset to fit frame');
     }
   };
+
+  const handleSaveCameraView = useCallback(() => {
+    if (!viewerRef.current || !versionId) {
+      logger.warn('Cannot save camera view: viewer or versionId missing');
+      return;
+    }
+    
+    const viewer = viewerRef.current;
+    const camera = viewer.context.getCamera();
+    const controls = viewer.context.ifcCamera.cameraControls as any;
+    
+    const name = prompt('Enter a name for this camera view:');
+    if (!name) return;
+    
+    saveCameraView({
+      versionId,
+      name,
+      position: {
+        x: camera.position.x,
+        y: camera.position.y,
+        z: camera.position.z
+      },
+      target: {
+        x: controls.target?.x || 0,
+        y: controls.target?.y || 0,
+        z: controls.target?.z || 0
+      },
+      zoom: camera.zoom
+    });
+    
+    logger.log(`Saved camera view: ${name}`);
+  }, [versionId, saveCameraView]);
 
   if (!modelFile) {
     return (
@@ -516,6 +577,8 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber, versionId }: Te
           annotationMode={annotationMode}
           onToggleAnnotation={handleToggleAnnotation}
           onResetView={handleResetView}
+          versionId={versionId}
+          onSaveCameraView={handleSaveCameraView}
         />
         
         {/* Properties Panel */}

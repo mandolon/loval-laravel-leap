@@ -13,6 +13,10 @@ interface UseAnnotationToolProps {
   annotationMode: boolean;
   clippingActive: boolean;
   hoveredAnnotationId?: string | null;
+  versionId?: string;
+  onSaveAnnotation?: (data: { versionId: string; position: { x: number; y: number; z: number }; text: string }) => void;
+  onUpdateAnnotation?: (data: { id: string; versionId: string; text: string }) => void;
+  onDeleteAnnotation?: (data: { id: string; versionId: string }) => void;
 }
 
 export const useAnnotationTool = ({
@@ -22,6 +26,10 @@ export const useAnnotationTool = ({
   annotationMode,
   clippingActive,
   hoveredAnnotationId,
+  versionId,
+  onSaveAnnotation,
+  onUpdateAnnotation,
+  onDeleteAnnotation,
 }: UseAnnotationToolProps) => {
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [editingAnnotationId, setEditingAnnotationId] = useState<string | null>(null);
@@ -572,9 +580,23 @@ export const useAnnotationTool = ({
           if (existingGroup) {
             // Update existing annotation in scene
             updateAnnotationInScene(updatedAnn);
+            
+            // Call database update
+            if (versionId && onUpdateAnnotation) {
+              onUpdateAnnotation({ id, versionId, text });
+            }
           } else {
             // First time saving - add to scene now that we have text
             addAnnotationToScene(updatedAnn);
+            
+            // Call database save for new annotation
+            if (versionId && onSaveAnnotation) {
+              onSaveAnnotation({ 
+                versionId, 
+                position: { x: ann.position.x, y: ann.position.y, z: ann.position.z }, 
+                text 
+              });
+            }
           }
           
           return updatedAnn;
@@ -587,7 +609,7 @@ export const useAnnotationTool = ({
     setEditingAnnotationId(null);
     // Reset placement flag when saving (editing is done)
     isPlacingAnnotationRef.current = false;
-  }, [updateAnnotationInScene, removeAnnotationFromScene, addAnnotationToScene, editingAnnotationId]);
+  }, [updateAnnotationInScene, removeAnnotationFromScene, addAnnotationToScene, editingAnnotationId, versionId, onSaveAnnotation, onUpdateAnnotation]);
 
   const deleteAnnotation = useCallback((id: string) => {
     removeAnnotationFromScene(id);
@@ -595,10 +617,16 @@ export const useAnnotationTool = ({
     if (editingAnnotationId === id) {
       setEditingAnnotationId(null);
     }
+    
+    // Call database delete
+    if (versionId && onDeleteAnnotation) {
+      onDeleteAnnotation({ id, versionId });
+    }
+    
     // Reset placement flag when deleting
     isPlacingAnnotationRef.current = false;
     // Note: selectedAnnotationId should be cleared by the parent component
-  }, [removeAnnotationFromScene, editingAnnotationId]);
+  }, [removeAnnotationFromScene, editingAnnotationId, versionId, onDeleteAnnotation]);
 
   return {
     annotations,
