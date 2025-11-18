@@ -128,7 +128,7 @@ function AppRouter() {
   }
 
   if (loading || loggingOut || !routingReady) {
-    return <LoadingSpinner message="Loading your workspace..." />;
+    return <LoadingSpinner />;
   }
 
   if (!user) {
@@ -140,7 +140,7 @@ function AppRouter() {
   }
 
   if (roleLoading) {
-    return <LoadingSpinner message="Loading your workspace..." />;
+    return <LoadingSpinner />;
   }
 
   // Redirect legacy /workspace/* URLs to role-based URLs

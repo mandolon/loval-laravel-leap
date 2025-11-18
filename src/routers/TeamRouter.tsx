@@ -45,7 +45,7 @@ export default function TeamRouter() {
   }, [user?.id]);
 
   if (loading) {
-    return <LoadingSpinner message="Loading..." />;
+    return <LoadingSpinner />;
   }
 
   // Show onboarding if not completed

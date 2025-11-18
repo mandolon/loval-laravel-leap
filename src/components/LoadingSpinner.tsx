@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import React, { useMemo } from "react";
 
 const HARSH_MESSAGES = [
   "Cooking.....",
@@ -29,91 +29,164 @@ const HARSH_MESSAGES = [
   "Reticulating.....",
   "Channelling.....",
   "Philosophising.....",
-  "Spinning....."
+  "Spinning.....",
 ];
 
-const SESSION_KEY = 'rehome_loading_message';
-const PAGE_LOAD_KEY = 'rehome_page_load_id';
+const SESSION_KEY = "rehome_loading_message";
+const PAGE_LOAD_KEY = "rehome_page_load_id";
+
+const FONT =
+  '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+
+const CSS_VARS: React.CSSProperties = {
+  "--text": "#202020",
+  "--muted": "#646464",
+  "--primary": "#00639b",
+} as React.CSSProperties;
+
+const RAIL_GRADIENT =
+  "linear-gradient(180deg,hsl(222 47% 10%) 0%,hsl(222 47% 8%) 55%,hsl(222 47% 6%) 100%),radial-gradient(80% 50% at 50% 0%,hsl(213 94% 68% / 0.14),transparent),radial-gradient(80% 50% at 50% 100%,hsl(259 94% 68% / 0.12),transparent)";
 
 // Set page load ID immediately when module loads (before any component mounts)
 const currentPageLoadId = Date.now().toString();
-const storedPageLoadId = sessionStorage.getItem(PAGE_LOAD_KEY);
+const storedPageLoadId = typeof window !== "undefined" && typeof window.sessionStorage !== "undefined" 
+  ? sessionStorage.getItem(PAGE_LOAD_KEY) 
+  : null;
 
 // If this is a new page load, pick and store a new message
-if (storedPageLoadId !== currentPageLoadId) {
+if (typeof window !== "undefined" && typeof window.sessionStorage !== "undefined" && storedPageLoadId !== currentPageLoadId) {
   sessionStorage.setItem(PAGE_LOAD_KEY, currentPageLoadId);
   const randomIndex = Math.floor(Math.random() * HARSH_MESSAGES.length);
   sessionStorage.setItem(SESSION_KEY, HARSH_MESSAGES[randomIndex]);
 }
 
-// Get the message for this page load
 function getLoadingMessage(): string {
-  const storedMessage = sessionStorage.getItem(SESSION_KEY);
-  if (storedMessage) {
-    return storedMessage;
+  if (typeof window === "undefined" || typeof window.sessionStorage === "undefined") {
+    return HARSH_MESSAGES[0];
   }
-  
-  // Fallback: pick a new message
-  const randomIndex = Math.floor(Math.random() * HARSH_MESSAGES.length);
-  const newMessage = HARSH_MESSAGES[randomIndex];
-  sessionStorage.setItem(SESSION_KEY, newMessage);
-  return newMessage;
+
+  try {
+    const stored = window.sessionStorage.getItem(SESSION_KEY);
+    if (stored) return stored;
+
+    const randomIndex = Math.floor(Math.random() * HARSH_MESSAGES.length);
+    const message = HARSH_MESSAGES[randomIndex];
+    window.sessionStorage.setItem(SESSION_KEY, message);
+    return message;
+  } catch {
+    return HARSH_MESSAGES[0];
+  }
 }
 
 export function LoadingSpinner({ message }: { message?: string }) {
-  // Use the same message for all LoadingSpinner instances during this page load
-  const harshMessage = useMemo(() => getLoadingMessage(), []);
+  // If message prop is provided, use it directly. Otherwise use the session-persisted random message
+  const displayMessage = message || useMemo(() => getLoadingMessage(), []);
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex">
-      {/* Left rail - dark sidebar with icons */}
-      <div className="w-14 bg-[#1a1a1a] flex flex-col items-center py-4 space-y-4">
-        <div className="w-8 h-8 bg-slate-700 rounded animate-pulse" />
-        <div className="w-full h-px bg-slate-700" />
-        <div className="w-8 h-8 bg-slate-700 rounded animate-pulse" />
-        <div className="w-8 h-8 bg-slate-700 rounded animate-pulse" />
-        <div className="w-8 h-8 bg-slate-700 rounded animate-pulse" />
-        <div className="w-8 h-8 bg-slate-700 rounded animate-pulse" />
-        <div className="w-8 h-8 bg-slate-700 rounded animate-pulse" />
-      </div>
+    <div
+      className="fixed inset-0 z-50 flex items-stretch"
+      style={{ fontFamily: FONT, ...CSS_VARS }}
+    >
+      <style>{`
+        @keyframes rehomeLoadingBar {
+          0% { transform: translateX(-60%); }
+          50% { transform: translateX(0%); }
+          100% { transform: translateX(110%); }
+        }
+      `}</style>
 
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col">
-        {/* Top header bar */}
-        <div className="h-14 border-b border-slate-200 flex items-center justify-between px-6">
-          <div className="flex items-center gap-4">
-            <div className="h-6 w-24 bg-slate-200 rounded animate-pulse" />
-            <div className="h-8 w-64 bg-slate-200 rounded animate-pulse" />
+      {/* Background gradient to match app */}
+      <div
+        aria-hidden
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(45rem 30rem at 50% 4%, hsl(215 75% 94%) 0%, hsl(220 35% 97%) 35%, hsl(0 0% 100%) 100%)",
+        }}
+      />
+
+      {/* Left rail skeleton */}
+      <aside
+        className="absolute left-1.5 top-1.5 bottom-1.5 w-14 rounded-xl border border-white/5 shadow-lg backdrop-blur-md flex flex-col items-center pt-3 space-y-3"
+        style={{ background: RAIL_GRADIENT }}
+      >
+        <div className="h-8 w-8 rounded-xl border border-white/15 bg-white/5" />
+        <div className="h-px w-8 bg-white/10" />
+
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex flex-col items-center gap-1.5">
+            <div className="h-9 w-9 rounded-xl border border-white/15 bg-white/5" />
+            <div className="h-1.5 w-8 rounded-full bg-white/8" />
           </div>
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-20 bg-slate-200 rounded animate-pulse" />
-            <div className="h-8 w-20 bg-slate-200 rounded animate-pulse" />
-            <div className="h-8 w-8 bg-slate-200 rounded-full animate-pulse" />
+        ))}
+
+        <div className="mt-auto w-full flex flex-col items-center space-y-2 pb-2">
+          <div className="h-px w-8 bg-white/10" />
+          <div className="h-8 w-8 rounded-xl border border-white/15 bg-white/5" />
+        </div>
+      </aside>
+
+      {/* Top header skeleton (search + avatar) */}
+      <header
+        className="absolute z-40 h-9 flex items-center"
+        style={{
+          top: "0.375rem",
+          left: "calc(0.375rem + 3.5rem + 0.75rem)",
+          right: "0.375rem",
+        }}
+      >
+        <div className="w-full px-2">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-8 rounded-full bg-slate-200/40" />
+            </div>
+            <div className="flex items-center justify-center">
+              <div className="h-8 w-[380px] max-w-[48vw] rounded-lg bg-slate-200/30" />
+            </div>
+            <div className="flex items-center justify-end pr-1">
+              <div className="h-7 w-10 rounded-full bg-slate-200/40" />
+            </div>
           </div>
         </div>
+      </header>
 
-        {/* Content with tabs */}
-        <div className="flex-1 flex">
-          {/* Center content area */}
-          <div className="flex-1 p-6">
-            {/* Tab bar */}
-            <div className="flex gap-2 mb-6">
-              <div className="h-8 w-24 bg-slate-200 rounded animate-pulse" />
-              <div className="h-8 w-24 bg-slate-200 rounded animate-pulse" />
-              <div className="h-8 w-24 bg-slate-200 rounded animate-pulse" />
-              <div className="h-8 w-24 bg-slate-200 rounded animate-pulse" />
-            </div>
-
-            {/* Loading message and bar centered in remaining space */}
-            <div className="flex items-center justify-center h-[calc(100%-5rem)]">
-              <div className="flex flex-col items-center">
-                <div className="text-sm mb-3" style={{ color: '#202020' }}>{harshMessage}</div>
-                <div className="h-1.5 w-80 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-primary animate-pulse" style={{ width: '60%' }} />
-                </div>
-              </div>
+      {/* Content surface outline */}
+      <div
+        className="absolute rounded-xl border border-slate-200/80 bg-white/60 backdrop-blur-md shadow-sm overflow-hidden"
+        style={{
+          top: "calc(0.375rem + 2.25rem + 0.75rem)",
+          bottom: "1rem",
+          right: "0.75rem",
+          left: "calc(0.375rem + 3.5rem + 0.75rem)",
+        }}
+      >
+        <div className="h-full flex flex-col">
+          <div className="h-10 border-b border-slate-200/80 bg-white/80 flex items-center px-4 gap-3">
+            <div className="h-4 w-24 rounded-full bg-slate-200/30" />
+            <div className="ml-auto">
+              <div className="h-6 w-6 rounded-full bg-slate-100/50" />
             </div>
           </div>
+          <div className="flex-1 min-h-0 p-4">
+            <div className="h-full w-full rounded-lg bg-slate-50/60" />
+          </div>
+        </div>
+      </div>
+
+      {/* Loading message + animated bar */}
+      <div className="absolute bottom-6 right-6 flex items-center gap-3">
+        <div className="text-xs text-slate-600 bg-white/90 rounded-full px-3 py-1 shadow-sm">
+          {displayMessage}
+        </div>
+        <div className="h-1.5 w-40 rounded-full bg-slate-200 overflow-hidden">
+          <div
+            className="h-full w-2/3 rounded-full"
+            style={{
+              background:
+                "linear-gradient(90deg, #00639b, #38bdf8, #00639b)",
+              animation: "rehomeLoadingBar 1.2s ease-in-out infinite",
+            }}
+          />
         </div>
       </div>
     </div>
