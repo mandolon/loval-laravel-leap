@@ -107,14 +107,24 @@ const PDFViewer = ({
     'sample-pdf.pdf'.toLowerCase()
   ]), []);
 
-  // Check browser support for Promise.withResolvers (ES2024)
+  // Check browser support for ES2024 features required by PDF.js v5.x
   useEffect(() => {
+    const missingFeatures: string[] = [];
+    
     if (typeof (Promise as any).withResolvers === 'undefined') {
+      missingFeatures.push('Promise.withResolvers');
+    }
+    
+    if (typeof (URL as any).parse === 'undefined') {
+      missingFeatures.push('URL.parse');
+    }
+    
+    if (missingFeatures.length > 0) {
       setBrowserWarning(
-        'Your browser is too old to preview PDFs. Please update to Safari 17.4+, Chrome 119+, or Firefox 121+'
+        `Your browser is too old to preview PDFs. Please update to Safari 17.5+, Chrome 126+, or Firefox 126+`
       );
       setLoading(false);
-      logger.warn('[PDFViewer] Browser does not support Promise.withResolvers - PDF.js v5.x requires ES2024 features');
+      logger.warn('[PDFViewer] Browser missing ES2024 features:', missingFeatures);
     }
   }, []);
 
