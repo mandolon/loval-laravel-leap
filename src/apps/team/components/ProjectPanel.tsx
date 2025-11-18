@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef, forwardRef, useCallback } from "react";
-import { Search, FolderClosed, BookOpen, MoreVertical, Settings2, Info, Plus, RefreshCw, Edit, Trash2 } from "lucide-react";
+import { Search, FolderClosed, BookOpen, MoreVertical, Settings2, Info, Plus, RefreshCw, Edit, Trash2, Cloud } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useProjectFolders, useProjectFiles, useDeleteProjectFile, useDeleteFolder, useMoveProjectFile, useRenameFolder, useRenameProjectFile, useUploadProjectFiles, downloadProjectFile, useCreateFolder, use3DModelsFolder } from '@/lib/api/hooks/useProjectFiles';
 import { useProjectFolderDragDrop } from '@/lib/api/hooks/useProjectFolderDragDrop';
@@ -287,6 +287,7 @@ function ItemRow({
   onDrop,
   dragOverPosition,
   color = 'files',
+  showCloudIcon = false,
 }: any) {
   const [editValue, setEditValue] = useState(item.name);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -317,7 +318,12 @@ function ItemRow({
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
-      <span className="inline-block" style={{ width: SOFT_SQUARE, height: SOFT_SQUARE }} />
+      {showCloudIcon && (
+        <Cloud size={12} className="flex-shrink-0 text-blue-500" style={{ opacity: 0.7 }} />
+      )}
+      {!showCloudIcon && (
+        <span className="inline-block" style={{ width: SOFT_SQUARE, height: SOFT_SQUARE }} />
+      )}
 
       {editing ? (
         <input
@@ -690,6 +696,7 @@ export default function ProjectPanel({
 
   // Context menu (files)
   const [menu, setMenu] = useState<any>({ show: false, x: 0, y: 0, target: null });
+  const [ingestingFileId, setIngestingFileId] = useState<string | null>(null);
   useEffect(() => {
     const close = () => setMenu((m: any) => ({ ...m, show: false }));
     if (menu.show) {
@@ -697,6 +704,86 @@ export default function ProjectPanel({
       return () => document.removeEventListener("click", close);
     }
   }, [menu.show]);
+
+  // Query to get ingested file IDs from knowledge_base
+  const { data: ingestedFiles } = useQuery({
+    queryKey: ['ingested-files', projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('knowledge_base')
+        .select('file_id')
+        .eq('project_id', projectId)
+        .not('file_id', 'is', null);
+      
+      if (error) throw error;
+      
+      // Return a Set of unique file IDs
+      return new Set(data.map(item => item.file_id));
+    },
+    enabled: !!projectId,
+  });
+
+  // Handle file ingestion
+  const handleIngestFile = async (fileId: string) => {
+    const file = rawFiles.find(f => f.id === fileId);
+    if (!file) return;
+    
+    setIngestingFileId(fileId);
+    
+    try {
+      // Get the file from storage
+      const { data: fileData, error: downloadError } = await supabase
+        .storage
+        .from('project-files')
+        .download(file.storage_path);
+      
+      if (downloadError) throw downloadError;
+      
+      // Get auth session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+      
+      // Prepare form data for ingestion
+      const formData = new FormData();
+      formData.append('file', fileData, file.filename);
+      formData.append('workspace_id', currentWorkspaceId || '');
+      formData.append('project_id', projectId);
+      formData.append('file_id', fileId);
+      
+      // Call ingest-knowledge edge function
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-knowledge`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: formData,
+        }
+      );
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Ingestion failed');
+      }
+      
+      toast({
+        title: 'File ingested',
+        description: `${file.filename} is now available to the AI agent`,
+      });
+      
+      // Refetch ingested files to update cloud icons
+      queryClient.invalidateQueries({ queryKey: ['ingested-files', projectId] });
+    } catch (error: any) {
+      toast({
+        title: 'Ingestion failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIngestingFileId(null);
+    }
+  };
 
   // Whiteboards data - fetch from database
   const { data: drawingVersions, isLoading: wbLoading, error: wbError } = useDrawingVersions(projectId);
@@ -1227,6 +1314,7 @@ export default function ProjectPanel({
                     onDragOver={(e: any) => handleItemDragOver(id, idx, e)}
                     onDrop={(e: any) => handleItemDrop(id, idx, e)}
                     dragOverPosition={isDragOver ? dragOverState.position : null}
+                    showCloudIcon={ingestedFiles?.has(item.id)}
                   />
                 );
               })}
@@ -1688,31 +1776,46 @@ export default function ProjectPanel({
                       Rename
                     </button>
                     {menu.target?.type === "item" && (
-                      <button
-                        className="block w-full px-3 py-1.5 text-left text-[11px] text-[#1a2332] hover:bg-[#f0f4f8] border-t border-[#f0f4f8] transition-colors"
-                        onClick={async () => {
-                          if (!menu.target?.id) return;
-                          const file = rawFiles.find(f => f.id === menu.target.id);
-                          if (file && file.storage_path && file.filename) {
-                            try {
-                              await downloadProjectFile(file.storage_path, file.filename);
-                              toast({
-                                title: 'Download started',
-                                description: `Downloading ${file.filename}`,
-                              });
-                            } catch (error: any) {
-                              toast({
-                                title: 'Download failed',
-                                description: error?.message || 'Failed to download file',
-                                variant: 'destructive',
-                              });
+                      <>
+                        <button
+                          className="block w-full px-3 py-1.5 text-left text-[11px] text-[#1a2332] hover:bg-[#f0f4f8] border-t border-[#f0f4f8] transition-colors"
+                          onClick={async () => {
+                            if (!menu.target?.id) return;
+                            const file = rawFiles.find(f => f.id === menu.target.id);
+                            if (file && file.storage_path && file.filename) {
+                              try {
+                                await downloadProjectFile(file.storage_path, file.filename);
+                                toast({
+                                  title: 'Download started',
+                                  description: `Downloading ${file.filename}`,
+                                });
+                              } catch (error: any) {
+                                toast({
+                                  title: 'Download failed',
+                                  description: error?.message || 'Failed to download file',
+                                  variant: 'destructive',
+                                });
+                              }
                             }
-                          }
-                          setMenu((m: any) => ({ ...m, show: false }));
-                        }}
-                      >
-                        Download
-                      </button>
+                            setMenu((m: any) => ({ ...m, show: false }));
+                          }}
+                        >
+                          Download
+                        </button>
+                        <button
+                          className="block w-full px-3 py-1.5 text-left text-[11px] text-[#1a2332] hover:bg-[#f0f4f8] border-t border-[#f0f4f8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={ingestingFileId === menu.target.id || ingestedFiles?.has(menu.target.id)}
+                          onClick={() => {
+                            if (!menu.target?.id) return;
+                            handleIngestFile(menu.target.id);
+                            setMenu((m: any) => ({ ...m, show: false }));
+                          }}
+                        >
+                          {ingestingFileId === menu.target.id ? 'Ingesting...' : 
+                           ingestedFiles?.has(menu.target.id) ? 'Already in AI Context' : 
+                           'AI Context'}
+                        </button>
+                      </>
                     )}
                     {menu.target?.type === "section" && (
                       <button

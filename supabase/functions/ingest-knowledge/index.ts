@@ -92,6 +92,8 @@ serve(async (req) => {
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const workspaceId = formData.get('workspace_id') as string;
+    const projectId = formData.get('project_id') as string | null;
+    const fileId = formData.get('file_id') as string | null;
     
     if (!file) {
       return new Response(
@@ -209,6 +211,8 @@ serve(async (req) => {
       batchChunks.forEach((chunk, idx) => {
         records.push({
           workspace_id: workspaceId,
+          project_id: projectId,
+          file_id: fileId,
           file_name: file.name,
           file_path: storagePath,
           chunk_content: chunk,
@@ -220,7 +224,7 @@ serve(async (req) => {
             file_size: file.size,
             total_chunks: chunks.length
           }
-        });
+        } as any);
       });
       
       // Small delay between batches as safety net

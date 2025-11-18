@@ -456,7 +456,7 @@ Keep responses clear, concise, and actionable.`;
 }
 
 // Execute tool calls
-async function executeTool(toolName: string, args: any, supabase: any, userId: string) {
+async function executeTool(toolName: string, args: any, supabase: any, userId: string, projectId?: string) {
   console.log(`Executing tool: ${toolName}`, args);
 
   switch (toolName) {
@@ -1280,12 +1280,13 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
       const embeddingData = await embeddingResponse.json();
       const queryEmbedding = embeddingData.data[0].embedding;
 
-      // Search knowledge base using vector similarity
+      // Search knowledge base using vector similarity (with optional project filter)
       const { data, error } = await supabase.rpc('search_knowledge_base', {
         query_embedding: queryEmbedding,
         match_threshold: 0.5,
         match_count: limit,
-        filter_workspace_id: workspace_id
+        filter_workspace_id: workspace_id,
+        filter_project_id: projectId
       });
 
       if (error) {
@@ -1528,7 +1529,7 @@ serve(async (req) => {
         message.tool_calls.map(async (toolCall: any) => {
           const toolName = toolCall.function.name;
           const args = JSON.parse(toolCall.function.arguments);
-          const result = await executeTool(toolName, args, supabase, userId);
+          const result = await executeTool(toolName, args, supabase, userId, projectId);
           
           return {
             tool_call_id: toolCall.id,
