@@ -426,7 +426,6 @@ export const useTrashItems = (workspaceId: string | undefined) => {
     mutationFn: async (item: TrashItem) => {
       // For files, delete from storage first
       if (item.type === 'file') {
-        // Get the file's storage path
         const { data: fileData, error: fetchError } = await supabase
           .from('files')
           .select('storage_path')
@@ -435,17 +434,73 @@ export const useTrashItems = (workspaceId: string | undefined) => {
         
         if (fetchError) throw fetchError;
         
-        // Delete from storage
         if (fileData?.storage_path) {
           const { error: storageError } = await supabase.storage
             .from('project-files')
             .remove([fileData.storage_path]);
           
           if (storageError) {
-            console.error('Storage deletion error:', storageError);
-            // Continue anyway - we still want to delete the DB record
+            throw new Error(`Failed to delete file from storage: ${storageError.message}`);
           }
         }
+      }
+      
+      // For drawing pages, delete associated images from storage
+      if (item.type === 'drawing_page') {
+        const { data: pageData, error: fetchError } = await supabase
+          .from('drawing_pages')
+          .select('background_image_path, thumbnail_storage_path')
+          .eq('id', item.id)
+          .single();
+        
+        if (fetchError) throw fetchError;
+        
+        const imagePaths = [
+          pageData?.background_image_path,
+          pageData?.thumbnail_storage_path
+        ].filter(Boolean) as string[];
+        
+        if (imagePaths.length > 0) {
+          const { error: storageError } = await supabase.storage
+            .from('drawing-images')
+            .remove(imagePaths);
+          
+          if (storageError) {
+            throw new Error(`Failed to delete drawing images from storage: ${storageError.message}`);
+          }
+        }
+      }
+      
+      // For model versions, delete associated model files from storage
+      if (item.type === 'model_version') {
+        const { data: modelFiles, error: fetchError } = await supabase
+          .from('model_files')
+          .select('storage_path')
+          .eq('version_id', item.id);
+        
+        if (fetchError) throw fetchError;
+        
+        const filePaths = modelFiles
+          ?.map(mf => mf.storage_path)
+          .filter(Boolean) as string[];
+        
+        if (filePaths && filePaths.length > 0) {
+          const { error: storageError } = await supabase.storage
+            .from('project-files')
+            .remove(filePaths);
+          
+          if (storageError) {
+            throw new Error(`Failed to delete model files from storage: ${storageError.message}`);
+          }
+        }
+        
+        // Delete model_files records from database
+        const { error: modelFilesDeleteError } = await supabase
+          .from('model_files')
+          .delete()
+          .eq('version_id', item.id);
+        
+        if (modelFilesDeleteError) throw modelFilesDeleteError;
       }
       
       // Delete the database record

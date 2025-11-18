@@ -153,8 +153,27 @@ export const useUploadProjectFiles = (projectId: string) => {
 
       for (const file of input.files) {
         console.log('Uploading file:', file.name)
-        // Upload to storage
+        
         const storagePath = `${projectId}/${input.folder_id}/${file.name}`
+        
+        // Check if file exists in storage (orphaned file)
+        const { data: existingFiles } = await supabase.storage
+          .from('project-files')
+          .list(`${projectId}/${input.folder_id}`, {
+            search: file.name
+          });
+        
+        const fileExistsInStorage = existingFiles?.some(f => f.name === file.name);
+        
+        // If orphaned file exists, remove it first
+        if (fileExistsInStorage) {
+          console.log('Found orphaned file in storage, removing:', storagePath);
+          await supabase.storage
+            .from('project-files')
+            .remove([storagePath]);
+        }
+        
+        // Upload to storage
         const { error: uploadError } = await supabase.storage
           .from('project-files')
           .upload(storagePath, file, {
