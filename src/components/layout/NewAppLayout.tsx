@@ -26,6 +26,7 @@ function LayoutContent({ children }: NewAppLayoutProps) {
     if (path.includes('/tasks')) return 'taskboard';
     if (path.includes('/ai')) return 'ai';
     if (path.includes('/building-codes')) return 'building-codes';
+    if (path.includes('/knowledge-base')) return 'knowledge-base';
     if (path.endsWith('/')) return 'home';
     // Check if we're at workspace root
     if (path.match(/\/workspace\/[^/]+$/)) return 'home';
