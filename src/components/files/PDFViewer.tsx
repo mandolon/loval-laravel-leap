@@ -81,6 +81,7 @@ const PDFViewer = ({
   const [rotation, setRotation] = useState(initialState?.rotation ?? 0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [browserWarning, setBrowserWarning] = useState<string | null>(null);
   const [fetchStatus, setFetchStatus] = useState('checking'); // checking | ok | missing | error
   const [workerOk, setWorkerOk] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -105,6 +106,17 @@ const PDFViewer = ({
     'One Chat Journal.pdf'.toLowerCase(),
     'sample-pdf.pdf'.toLowerCase()
   ]), []);
+
+  // Check browser support for Promise.withResolvers (ES2024)
+  useEffect(() => {
+    if (typeof (Promise as any).withResolvers === 'undefined') {
+      setBrowserWarning(
+        'Your browser is too old to preview PDFs. Please update to Safari 17.4+, Chrome 119+, or Firefox 121+'
+      );
+      setLoading(false);
+      logger.warn('[PDFViewer] Browser does not support Promise.withResolvers - PDF.js v5.x requires ES2024 features');
+    }
+  }, []);
 
   const documentFileSource = useMemo(() => {
     if (!file?.name) return null;
@@ -903,6 +915,7 @@ const PDFViewer = ({
           fetchStatus={fetchStatus}
           loading={loading}
           error={error}
+          browserWarning={browserWarning}
           documentFileSource={documentFileSource === '__MISSING_LOCAL_PDF__' ? null : documentFileSource}
           workerOk={workerOk}
           onDocumentLoadSuccess={onDocumentLoadSuccess}
