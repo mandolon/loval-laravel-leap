@@ -153,6 +153,9 @@ serve(async (req) => {
       const fileBuffer = await file.arrayBuffer();
       text = new TextDecoder('utf-8', { fatal: false }).decode(fileBuffer);
       
+      // Remove null bytes and other problematic characters that PostgreSQL can't handle
+      text = text.replace(/\u0000/g, '').replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F]/g, '');
+      
       if (!text || text.trim().length === 0) {
         throw new Error('File appears to be empty or could not be read as text');
       }
