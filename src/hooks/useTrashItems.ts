@@ -528,13 +528,128 @@ export const useTrashItems = (workspaceId: string | undefined) => {
     },
   });
 
+  const deleteAllForeverMutation = useMutation({
+    mutationFn: async (items: TrashItem[]) => {
+      const errors: Array<{ item: TrashItem; error: string }> = [];
+      
+      for (const item of items) {
+        try {
+          // For files, delete from storage first
+          if (item.type === 'file') {
+            const { data: fileData } = await supabase
+              .from('files')
+              .select('storage_path')
+              .eq('id', item.id)
+              .single();
+            
+            if (fileData?.storage_path) {
+              await supabase.storage
+                .from('project-files')
+                .remove([fileData.storage_path]);
+            }
+          }
+          
+          // For drawing pages, delete associated images
+          if (item.type === 'drawing_page') {
+            const { data: pageData } = await supabase
+              .from('drawing_pages')
+              .select('background_image_path, thumbnail_storage_path')
+              .eq('id', item.id)
+              .single();
+            
+            const imagePaths = [
+              pageData?.background_image_path,
+              pageData?.thumbnail_storage_path
+            ].filter(Boolean) as string[];
+            
+            if (imagePaths.length > 0) {
+              await supabase.storage
+                .from('drawing-images')
+                .remove(imagePaths);
+            }
+          }
+          
+          // For model versions, delete associated model files
+          if (item.type === 'model_version') {
+            const { data: modelFiles } = await supabase
+              .from('model_files')
+              .select('storage_path')
+              .eq('version_id', item.id);
+            
+            const filePaths = modelFiles
+              ?.map(mf => mf.storage_path)
+              .filter(Boolean) as string[];
+            
+            if (filePaths && filePaths.length > 0) {
+              await supabase.storage
+                .from('project-files')
+                .remove(filePaths);
+            }
+            
+            // Delete model_files records
+            await supabase
+              .from('model_files')
+              .delete()
+              .eq('version_id', item.id);
+          }
+          
+          // Delete the database record
+          const tableName = getTableName(item.type);
+          const { error } = await supabase
+            .from(tableName as any)
+            .delete()
+            .eq('id', item.id);
+          
+          if (error) throw error;
+          
+        } catch (error) {
+          errors.push({
+            item,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
+      }
+      
+      return { 
+        totalDeleted: items.length - errors.length,
+        totalFailed: errors.length,
+        errors 
+      };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['trash-items', workspaceId] });
+      
+      if (result.totalFailed === 0) {
+        toast({
+          title: 'All items deleted',
+          description: `${result.totalDeleted} items have been permanently deleted.`,
+        });
+      } else {
+        toast({
+          title: 'Partial deletion',
+          description: `${result.totalDeleted} items deleted, ${result.totalFailed} failed.`,
+          variant: 'destructive',
+        });
+      }
+    },
+    onError: () => {
+      toast({
+        title: 'Delete all failed',
+        description: 'Failed to delete items. Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   return {
     items: query.data || [],
     isLoading: query.isLoading,
     error: query.error,
     restore: restoreMutation.mutate,
     deleteForever: deleteForeverMutation.mutate,
+    deleteAllForever: deleteAllForeverMutation.mutate,
     isRestoring: restoreMutation.isPending,
     isDeleting: deleteForeverMutation.isPending,
+    isDeletingAll: deleteAllForeverMutation.isPending,
   };
 };
