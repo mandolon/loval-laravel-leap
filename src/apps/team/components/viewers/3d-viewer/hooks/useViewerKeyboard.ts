@@ -267,8 +267,41 @@ export const useViewerKeyboard = ({
         return;
       }
 
+      // Backspace or Delete key - delete selected dimension or annotation (CHECK FIRST before D key)
+      if (event.key === 'Backspace' || event.key === 'Delete') {
+        // Delete selected annotation if one is selected
+        if (selectedAnnotationId) {
+          event.preventDefault();
+          deleteAnnotation(selectedAnnotationId);
+          setSelectedAnnotationId(null);
+          logger.log('Annotation deleted');
+          return;
+        }
+        
+        // Delete selected dimension if one is selected
+        if (selectedDimension && viewerRef.current?.dimensions) {
+          event.preventDefault();
+          const dimensions = viewerRef.current.dimensions;
+          const dimensionLines = dimensions.getDimensionsLines || [];
+          const index = dimensionLines.indexOf(selectedDimension);
+          
+          if (index !== -1) {
+            // Remove dimension from scene
+            selectedDimension.removeFromScene();
+            
+            // Remove from dimensions array
+            (dimensions as any).dimensions.splice(index, 1);
+            
+            logger.log('Dimension deleted');
+            setSelectedDimension(null);
+          }
+          return;
+        }
+      }
+
       // D key - activate dimensions tool (toggle ON only)
-      if (event.key === 'd' || event.key === 'D') {
+      // Skip if annotation is selected (to avoid interfering with Delete key)
+      if ((event.key === 'd' || event.key === 'D') && !selectedAnnotationId) {
         // Only activate if dimensions are not active
         if (measurementMode === 'none') {
           event.preventDefault();
@@ -316,38 +349,6 @@ export const useViewerKeyboard = ({
               const getterCount = viewerRef.current.dimensions.getDimensionsLines?.length || 0;
               logger.log('Dimension created, count after:', dimCountAfter, 'getter count:', getterCount);
             }, 100);
-          }
-          return;
-        }
-      }
-
-      // Backspace or Delete key - delete selected dimension or annotation
-      if (event.key === 'Backspace' || event.key === 'Delete') {
-        // Delete selected annotation if one is selected
-        if (selectedAnnotationId) {
-          event.preventDefault();
-          deleteAnnotation(selectedAnnotationId);
-          setSelectedAnnotationId(null);
-          logger.log('Annotation deleted');
-          return;
-        }
-        
-        // Delete selected dimension if one is selected
-        if (selectedDimension && viewerRef.current?.dimensions) {
-          event.preventDefault();
-          const dimensions = viewerRef.current.dimensions;
-          const dimensionLines = dimensions.getDimensionsLines || [];
-          const index = dimensionLines.indexOf(selectedDimension);
-          
-          if (index !== -1) {
-            // Remove dimension from scene
-            selectedDimension.removeFromScene();
-            
-            // Remove from dimensions array
-            (dimensions as any).dimensions.splice(index, 1);
-            
-            logger.log('Dimension deleted');
-            setSelectedDimension(null);
           }
           return;
         }

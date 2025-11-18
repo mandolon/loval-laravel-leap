@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import * as THREE from 'three';
 import { logger } from '@/utils/logger';
 import { restoreDimensionsVisibility } from './3d-viewer/utils/dimensionUtils';
 import { ViewerToolbar } from './3d-viewer/ViewerToolbar';
@@ -13,6 +14,7 @@ import { useAnnotationTool } from './3d-viewer/hooks/useAnnotationTool';
 import { useAnnotationInputPosition } from './3d-viewer/hooks/useAnnotationInputPosition';
 import { AnnotationInput } from './3d-viewer/components/AnnotationInput';
 import { useAnnotationInteraction } from './3d-viewer/hooks/useAnnotationInteraction';
+import { Annotation } from './3d-viewer/types/annotation';
 import { useIfcViewerAPI } from '../../hooks/useIfcViewerAPI';
 import { PropertiesPanel } from './3d-viewer/components/PropertiesPanel';
 import {
@@ -140,14 +142,36 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber, versionId }: Te
   // Create a ref to share hoveredAnnotationId between hooks
   const hoveredAnnotationIdRef = useRef<string | null>(null);
   
+  // Track which annotations have been restored to avoid duplicates
+  const restoredAnnotationIdsRef = useRef<Set<string>>(new Set());
+  
+  // Track pending save to map local ID to database ID
+  const pendingSaveLocalIdRef = useRef<string | null>(null);
+  
+  // Map local annotation IDs to database IDs for replacement
+  const localToDbIdMapRef = useRef<Map<string, string>>(new Map());
+  
+  // Wrap save mutation to track local annotation ID
+  const handleSaveAnnotation = useCallback((data: { versionId: string; position: { x: number; y: number; z: number }; text: string; localId?: string }) => {
+    if (data.localId) {
+      pendingSaveLocalIdRef.current = data.localId;
+    }
+    // Remove localId before sending to mutation (database doesn't need it)
+    const { localId, ...mutationData } = data;
+    saveAnnotationMutation.mutate(mutationData);
+  }, [saveAnnotationMutation]);
+  
   // Annotation tool
   const {
     annotations,
+    setAnnotations,
     editingAnnotationId,
     setEditingAnnotationId,
     saveAnnotation,
-    deleteAnnotation,
+    deleteAnnotation: deleteAnnotationInternal,
     annotationGroupsRef,
+    addAnnotationToScene,
+    removeAnnotationFromScene,
   } = useAnnotationTool({
     containerRef,
     viewerRef,
@@ -156,10 +180,39 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber, versionId }: Te
     clippingActive,
     hoveredAnnotationId: hoveredAnnotationIdRef.current,
     versionId,
-    onSaveAnnotation: saveAnnotationMutation.mutate,
+    onSaveAnnotation: handleSaveAnnotation,
     onUpdateAnnotation: updateAnnotationMutation.mutate,
     onDeleteAnnotation: deleteAnnotationMutation.mutate,
   });
+
+  // Wrap deleteAnnotation to also remove from restored IDs
+  const deleteAnnotation = useCallback((id: string) => {
+    deleteAnnotationInternal(id);
+    restoredAnnotationIdsRef.current.delete(id);
+  }, [deleteAnnotationInternal]);
+  
+  // Handle successful annotation save - map local ID to database ID for replacement
+  useEffect(() => {
+    if (saveAnnotationMutation.isSuccess && saveAnnotationMutation.data && pendingSaveLocalIdRef.current) {
+      const dbAnnotation = saveAnnotationMutation.data as any;
+      const dbId = dbAnnotation.id;
+      const localId = pendingSaveLocalIdRef.current;
+      
+      logger.log('Mapping local annotation to database ID:', {
+        localId,
+        dbId,
+      });
+      
+      // Store the mapping - restoration logic will use this to replace local annotation
+      localToDbIdMapRef.current.set(localId, dbId);
+      
+      // Mark database ID as restored so restoration logic knows to replace local one
+      restoredAnnotationIdsRef.current.add(dbId);
+      
+      // Clear pending save
+      pendingSaveLocalIdRef.current = null;
+    }
+  }, [saveAnnotationMutation.isSuccess, saveAnnotationMutation.data]);
 
   // Annotation interaction (hover and selection)
   const { selectedAnnotationId, setSelectedAnnotationId, hoveredAnnotationId } = useAnnotationInteraction({
@@ -575,14 +628,120 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber, versionId }: Te
     // This is a placeholder - actual implementation depends on web-ifc-viewer's dimension API
   }, [viewerReady, loading, savedDimensions]);
 
-  // Restore saved annotations on load
+  // Clear restored IDs when version changes
+  useEffect(() => {
+    restoredAnnotationIdsRef.current.clear();
+  }, [versionId]);
+
+  // Restore saved annotations on load (only restore new ones, replace local with DB versions)
   useEffect(() => {
     if (!viewerRef.current || !viewerReady || loading || savedAnnotations.length === 0) return;
 
-    logger.log(`Restoring ${savedAnnotations.length} saved annotations`);
-    // Annotations are managed by useAnnotationTool hook
-    // The hook should handle restoration internally
-  }, [viewerReady, loading, savedAnnotations]);
+    // Filter out annotations that have already been restored (but not those being replaced)
+    const newAnnotations = savedAnnotations.filter(
+      savedAnn => !restoredAnnotationIdsRef.current.has(savedAnn.id) || 
+                   Array.from(localToDbIdMapRef.current.values()).includes(savedAnn.id)
+    );
+
+    if (newAnnotations.length === 0) return;
+
+    logger.log(`Restoring ${newAnnotations.length} saved annotations`);
+    
+    // Convert saved annotations to local annotation format and add to scene
+    newAnnotations.forEach(savedAnn => {
+      // Check if this database annotation is replacing a local one
+      const localIdToReplace = Array.from(localToDbIdMapRef.current.entries())
+        .find(([_, dbId]) => dbId === savedAnn.id)?.[0];
+      
+      if (localIdToReplace) {
+        logger.log('Replacing local annotation with database version:', {
+          localId: localIdToReplace,
+          dbId: savedAnn.id,
+        });
+        
+        // CRITICAL: Update the userData.annotationId on the group BEFORE removing
+        // so that any pending click handlers use the new ID
+        const oldGroup = annotationGroupsRef.current.get(localIdToReplace);
+        if (oldGroup) {
+          oldGroup.userData.annotationId = savedAnn.id;
+          // Also update children userData
+          oldGroup.traverse((child: any) => {
+            if (child.userData && child.userData.annotationId === localIdToReplace) {
+              child.userData.annotationId = savedAnn.id;
+            }
+          });
+          // Update the map to use the new ID
+          annotationGroupsRef.current.delete(localIdToReplace);
+          annotationGroupsRef.current.set(savedAnn.id, oldGroup);
+          
+          logger.log('Updated group userData to new ID:', savedAnn.id);
+        } else {
+          // If group doesn't exist, remove from scene normally
+          removeAnnotationFromScene(localIdToReplace);
+        }
+        
+        // Remove from local state
+        setAnnotations(prev => prev.filter(ann => ann.id !== localIdToReplace));
+        
+        // Update selectedAnnotationId if it matches the old local ID
+        if (selectedAnnotationId === localIdToReplace) {
+          setSelectedAnnotationId(savedAnn.id);
+        }
+        
+        // Update editingAnnotationId if it matches the old local ID
+        if (editingAnnotationId === localIdToReplace) {
+          setEditingAnnotationId(savedAnn.id);
+        }
+        
+        // Remove from mapping
+        localToDbIdMapRef.current.delete(localIdToReplace);
+        
+        // Don't add to scene since we just updated the existing group
+        return;
+      }
+      
+      const annotation: Annotation = {
+        id: savedAnn.id,
+        position: new THREE.Vector3(
+          savedAnn.position.x,
+          savedAnn.position.y,
+          savedAnn.position.z
+        ),
+        text: savedAnn.text,
+        createdAt: new Date(savedAnn.created_at),
+        updatedAt: new Date(savedAnn.updated_at),
+        isNew: false,
+        dbId: savedAnn.id, // Track the database ID
+      };
+      
+      // Add to scene visually
+      addAnnotationToScene(annotation);
+      
+      // Mark as restored
+      restoredAnnotationIdsRef.current.add(savedAnn.id);
+    });
+    
+    // Update local state with restored annotations (append to existing)
+    setAnnotations(prev => {
+      const existingIds = new Set(prev.map(a => a.id));
+      const newAnns = newAnnotations
+        .filter(savedAnn => !existingIds.has(savedAnn.id))
+        .map(savedAnn => ({
+          id: savedAnn.id,
+          position: new THREE.Vector3(
+            savedAnn.position.x,
+            savedAnn.position.y,
+            savedAnn.position.z
+          ),
+          text: savedAnn.text,
+          createdAt: new Date(savedAnn.created_at),
+          updatedAt: new Date(savedAnn.updated_at),
+          isNew: false,
+          dbId: savedAnn.id,
+        }));
+      return [...prev, ...newAnns];
+    });
+  }, [viewerReady, loading, savedAnnotations, addAnnotationToScene, setAnnotations, removeAnnotationFromScene]);
 
   // Restore saved clipping planes on load
   useEffect(() => {

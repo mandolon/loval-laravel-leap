@@ -6,5 +6,7 @@ export interface Annotation {
   text: string;
   createdAt: Date;
   updatedAt: Date;
+  isNew?: boolean;
+  dbId?: string; // Database ID for persisted annotations
 }
 

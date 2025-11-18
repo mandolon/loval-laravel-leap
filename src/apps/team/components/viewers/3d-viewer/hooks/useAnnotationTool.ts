@@ -14,7 +14,7 @@ interface UseAnnotationToolProps {
   clippingActive: boolean;
   hoveredAnnotationId?: string | null;
   versionId?: string;
-  onSaveAnnotation?: (data: { versionId: string; position: { x: number; y: number; z: number }; text: string }) => void;
+  onSaveAnnotation?: (data: { versionId: string; position: { x: number; y: number; z: number }; text: string; localId?: string }) => void;
   onUpdateAnnotation?: (data: { id: string; versionId: string; text: string }) => void;
   onDeleteAnnotation?: (data: { id: string; versionId: string }) => void;
 }
@@ -294,13 +294,22 @@ export const useAnnotationTool = ({
       const scene = viewerRef.current.context.getScene();
       scene.remove(group);
       
-      // Dispose of geometries and materials
+      // Dispose of geometries, materials, and CSS2D elements
       group.traverse((child: any) => {
+        // Remove CSS2DObject DOM elements
+        if (child.isCSS2DObject && child.element && child.element.parentNode) {
+          child.element.parentNode.removeChild(child.element);
+        }
         if (child.geometry) child.geometry.dispose();
         if (child.material) child.material.dispose();
       });
       
       annotationGroupsRef.current.delete(annotationId);
+      
+      logger.log('Removed annotation from scene:', {
+        id: annotationId,
+        removed: true
+      });
     }
   }, []);
 
@@ -594,7 +603,8 @@ export const useAnnotationTool = ({
               onSaveAnnotation({ 
                 versionId, 
                 position: { x: ann.position.x, y: ann.position.y, z: ann.position.z }, 
-                text 
+                text,
+                localId: ann.id // Pass local ID so parent can replace it with database UUID
               });
             }
           }
@@ -612,6 +622,8 @@ export const useAnnotationTool = ({
   }, [updateAnnotationInScene, removeAnnotationFromScene, addAnnotationToScene, editingAnnotationId, versionId, onSaveAnnotation, onUpdateAnnotation]);
 
   const deleteAnnotation = useCallback((id: string) => {
+    logger.log('Deleting annotation:', { id, versionId, hasDeleteCallback: !!onDeleteAnnotation });
+    
     removeAnnotationFromScene(id);
     setAnnotations(prev => prev.filter(ann => ann.id !== id));
     if (editingAnnotationId === id) {
@@ -620,7 +632,10 @@ export const useAnnotationTool = ({
     
     // Call database delete
     if (versionId && onDeleteAnnotation) {
+      logger.log('Calling database delete for annotation:', id);
       onDeleteAnnotation({ id, versionId });
+    } else {
+      logger.warn('Cannot delete from database:', { hasVersionId: !!versionId, hasCallback: !!onDeleteAnnotation });
     }
     
     // Reset placement flag when deleting
@@ -630,11 +645,14 @@ export const useAnnotationTool = ({
 
   return {
     annotations,
+    setAnnotations,
     editingAnnotationId,
     setEditingAnnotationId,
     saveAnnotation,
     deleteAnnotation,
     annotationGroupsRef,
+    addAnnotationToScene,
+    removeAnnotationFromScene,
   };
 };
 
