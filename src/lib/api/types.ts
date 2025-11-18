@@ -118,6 +118,35 @@ export interface WorkspaceMember {
   userAvatarUrl: string | null;
 }
 
+// Project AI Identity - structured context for AI assistant
+export interface ProjectAIIdentity {
+  // Core Project Details
+  projectType: string; // 'adu', 'remodel', 'addition', 'new_construction', 'historic'
+  jurisdiction: string; // e.g., 'San Francisco, CA'
+  projectScope: string; // Detailed description of what's being built/changed
+  
+  // Regulatory & Zoning
+  zoning: string; // e.g., 'RH-2', 'R-1'
+  lotSize: number; // Square footage
+  existingSqft: number;
+  proposedSqft: number;
+  setbacks: {
+    front: number;
+    rear: number;
+    side: number;
+  };
+  heightLimit: number; // In feet
+  
+  // Compliance & Consultants
+  requiredCompliance: string[]; // e.g., ['title_24', 'local_zoning', 'accessibility']
+  requiredConsultants: string[]; // e.g., ['structural_engineer', 'energy_consultant']
+  
+  // Current Project Status
+  nextSteps: string[]; // Immediate action items
+  blockers: string[]; // Current obstacles
+  openQuestions: string[]; // Unresolved items
+}
+
 // Project entity (NO MORE CLIENT TABLE - clients embedded)
 export interface Project {
   id: string;
@@ -127,6 +156,8 @@ export interface Project {
   description?: string;
   status: 'pending' | 'active' | 'completed' | 'archived';
   phase: 'Pre-Design' | 'Design' | 'Permit' | 'Build';
+  project_type?: string; // AI identity: project category
+  ai_identity?: ProjectAIIdentity; // AI identity: structured project context
   address: {
     streetNumber?: string;
     streetName?: string;
@@ -621,6 +652,7 @@ export interface WorkspaceSettings {
   companyName?: string;
   companyLogoUrl?: string;
   taxId?: string;
+  ai_instructions?: string; // AI assistant custom instructions for workspace
   metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
@@ -631,5 +663,6 @@ export interface UpdateWorkspaceSettingsInput {
   companyName?: string;
   companyLogoUrl?: string;
   taxId?: string;
+  ai_instructions?: string; // AI assistant custom instructions
   metadata?: Record<string, unknown>;
 }

@@ -13,6 +13,7 @@ import { WorkspacesContent } from './components/settings/WorkspacesContent';
 import { WorkspaceSettingsContent } from './components/settings/WorkspaceSettingsContent';
 import { ImportsExportsContent } from './components/settings/ImportsExportsContent';
 import { TrashContent } from './components/settings/TrashContent';
+import { WorkspaceAISettings } from './components/settings/WorkspaceAISettings';
 import './styles/team-dashboard.css';
 
 export default function TeamApp() {
@@ -35,6 +36,7 @@ export default function TeamApp() {
             <Route path="profile" element={<ProfileContent />} />
             <Route path="workspaces" element={<WorkspacesContent />} />
             <Route path="workspace-settings" element={<WorkspaceSettingsContent />} />
+            <Route path="ai-assistant" element={<WorkspaceAISettings />} />
             <Route path="members" element={<MembersContent />} />
             <Route path="imports" element={<ImportsExportsContent />} />
             <Route path="trash" element={<TrashContent />} />
