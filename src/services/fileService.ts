@@ -89,7 +89,7 @@ export async function listProjectFiles(projectId: string): Promise<ProjectFile[]
  */
 export async function listFolderFiles(
   projectId: string,
-  folder: "Pre-Design" | "Design" | "Permit" | "Build"
+  folder: string
 ): Promise<ProjectFile[]> {
   // Get folder ID
   const { data: folderRecord } = await supabase
@@ -156,7 +156,7 @@ export async function saveProjectFile(
   projectId: string,
   filename: string,
   content: string | Blob,
-  folder: "Pre-Design" | "Design" | "Permit" | "Build",
+  folder: string,
   userId: string
 ): Promise<{ success: boolean; fileId?: string; error?: string }> {
   try {
