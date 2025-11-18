@@ -66,7 +66,8 @@ export function Sidebar({
       workspace: 'projects',
       taskboard: 'taskboard',
       ai: 'ai',
-      'detail-library': 'detail-library'
+      'detail-library': 'detail-library',
+      'building-codes': 'building-codes'
     }
     
     const newPage = pageMap[tab]
@@ -80,7 +81,8 @@ export function Sidebar({
         workspace: `/workspace/${currentWorkspaceId}/projects`,
         taskboard: `/workspace/${currentWorkspaceId}/tasks`,
         ai: `/workspace/${currentWorkspaceId}/ai`,
-        'detail-library': `/workspace/${currentWorkspaceId}/detail-library`
+        'detail-library': `/workspace/${currentWorkspaceId}/detail-library`,
+        'building-codes': `/workspace/${currentWorkspaceId}/building-codes`
       }
       navigate(pathMap[tab])
     }

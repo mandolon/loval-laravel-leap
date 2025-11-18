@@ -3,7 +3,7 @@
  * Helper functions and data for navigation and layout
  */
 
-import { Home, FolderKanban, CheckSquare, Bot, BarChart, Users, FileText, Settings, Library } from 'lucide-react'
+import { Home, FolderKanban, CheckSquare, Bot, BarChart, Users, FileText, Settings, Library, BookOpen } from 'lucide-react'
 import type { SidebarTab, ProjectStatus } from '@/types/layout.types'
 
 export const navIconItems = [
@@ -12,6 +12,7 @@ export const navIconItems = [
   { tab: 'taskboard' as SidebarTab, icon: CheckSquare, label: 'TaskBoard' },
   { tab: 'ai' as SidebarTab, icon: Bot, label: 'AI' },
   { tab: 'detail-library' as SidebarTab, icon: Library, label: 'Detail Library' },
+  { tab: 'building-codes' as SidebarTab, icon: BookOpen, label: 'Building Codes' },
 ]
 
 export const projectStatusLabels: Record<ProjectStatus, string> = {

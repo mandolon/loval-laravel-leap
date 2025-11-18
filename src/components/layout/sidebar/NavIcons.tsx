@@ -28,8 +28,8 @@ export function NavIcons({ collapsed, activeTab, onTabChange }: NavIconsProps) {
           }}
         >
           {navIconItems.map((item, index) => {
-            // Only show Detail Library in collapsed view
-            if (item.tab === 'detail-library' && !collapsed) {
+            // Only show Detail Library and Building Codes in collapsed view
+            if ((item.tab === 'detail-library' || item.tab === 'building-codes') && !collapsed) {
               return null
             }
 
