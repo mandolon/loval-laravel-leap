@@ -3,9 +3,9 @@
  * Type definitions for sidebar, navigation, and layout components
  */
 
-export type PageType = 'home' | 'projects' | 'taskboard' | 'completed' | 'ai' | 'detail-library'
+export type PageType = 'home' | 'projects' | 'taskboard' | 'completed' | 'ai' | 'detail-library' | 'building-codes'
 
-export type SidebarTab = 'home' | 'workspace' | 'taskboard' | 'ai' | 'detail-library'
+export type SidebarTab = 'home' | 'workspace' | 'taskboard' | 'ai' | 'detail-library' | 'building-codes'
 
 export type TaskTab = 'all' | 'my' | 'completed'
 

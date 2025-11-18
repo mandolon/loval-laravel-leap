@@ -205,6 +205,71 @@ export type Database = {
           },
         ]
       }
+      building_codes: {
+        Row: {
+          chapter: string | null
+          code_type: string
+          content: string
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          embedding: string | null
+          fts: unknown
+          id: string
+          jurisdiction: string | null
+          section: string
+          short_id: string
+          source_file: string | null
+          title: string | null
+          updated_at: string
+          year: string
+        }
+        Insert: {
+          chapter?: string | null
+          code_type: string
+          content: string
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          embedding?: string | null
+          fts?: unknown
+          id?: string
+          jurisdiction?: string | null
+          section: string
+          short_id?: string
+          source_file?: string | null
+          title?: string | null
+          updated_at?: string
+          year: string
+        }
+        Update: {
+          chapter?: string | null
+          code_type?: string
+          content?: string
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          embedding?: string | null
+          fts?: unknown
+          id?: string
+          jurisdiction?: string | null
+          section?: string
+          short_id?: string
+          source_file?: string | null
+          title?: string | null
+          updated_at?: string
+          year?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "building_codes_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_read_receipts: {
         Row: {
           created_at: string

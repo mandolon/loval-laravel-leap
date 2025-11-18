@@ -10,6 +10,7 @@ import ProjectDetails from "@/pages/ProjectDetails";
 import AIChatPage from "@/pages/AIChatPage";
 import DetailLibraryPage from "@/pages/DetailLibraryPage";
 import TrashPage from "@/pages/TrashPage";
+import BuildingCodesPage from "@/pages/BuildingCodesPage";
 
 export default function AdminRouter() {
   return (
@@ -108,6 +109,16 @@ export default function AdminRouter() {
           <ProtectedRoute>
             <NewAppLayout>
               <TrashPage />
+            </NewAppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/workspace/:workspaceId/building-codes"
+        element={
+          <ProtectedRoute>
+            <NewAppLayout>
+              <BuildingCodesPage />
             </NewAppLayout>
           </ProtectedRoute>
         }
