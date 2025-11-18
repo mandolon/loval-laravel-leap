@@ -62,6 +62,7 @@ async function generateEmbeddings(texts: string[]): Promise<number[][]> {
       },
       body: JSON.stringify({
         model: 'text-embedding-3-small',
+        dimensions: 768,
         input: texts.map(text => text.substring(0, 8000))
       })
     });
