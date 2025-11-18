@@ -367,21 +367,22 @@ async function logActivity(
 }
 
 // Generate system prompt with clear UUID instructions
-function generateSystemPrompt(projectId?: string, projectName?: string, projectContext?: string): string {
+function generateSystemPrompt(workspaceId: string, projectId?: string, projectName?: string, projectContext?: string): string {
   let prompt = `You are a helpful AI assistant for a project management workspace.
 
 ════════════════════════════════════════
-⭐ ACTIVE PROJECT CONTEXT
-════════════════════════════════════════`;
+⭐ ACTIVE WORKSPACE & PROJECT CONTEXT
+════════════════════════════════════════
+Workspace UUID: ${workspaceId}
+**USE THIS UUID FOR workspace_id IN ALL TOOL CALLS**
+`;
 
   if (projectId && projectName) {
-    prompt += `
-Project UUID: ${projectId}
+    prompt += `Project UUID: ${projectId}
 Project Name: ${projectName}
-**COPY THIS UUID FOR ALL TOOL CALLS**`;
+**COPY THIS UUID FOR ALL project_id TOOL CALLS**`;
   } else {
-    prompt += `
-No specific project selected (viewing all projects)`;
+    prompt += `No specific project selected (viewing all projects)`;
   }
 
   prompt += `
@@ -435,11 +436,15 @@ You call: create_note(
 
 Example 6 - Get recent activity:
 User: "What's been happening recently?"
-You call: get_recent_activity(workspace_id="WORKSPACE_UUID", limit=20)
+You call: get_recent_activity(workspace_id="${workspaceId}", limit=20)
 
 Example 7 - Summarize tasks:
 User: "Give me a summary of all tasks"
-You call: summarize_tasks(workspace_id="WORKSPACE_UUID")
+You call: summarize_tasks(workspace_id="${workspaceId}")
+
+Example 8 - Search knowledge base:
+User: "What can you tell me about Title 16?"
+You call: search_knowledge_base(workspace_id="${workspaceId}", query="Title 16 Sacramento Code of Ordinances")
 
 Keep responses clear, concise, and actionable.`;
 
@@ -1469,7 +1474,7 @@ serve(async (req) => {
     }
 
     // Generate system prompt with clear UUID guidance
-    const systemPrompt = generateSystemPrompt(projectId, projectName, projectContext);
+    const systemPrompt = generateSystemPrompt(workspaceId, projectId, projectName, projectContext);
 
     // Initial AI call with tools
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
