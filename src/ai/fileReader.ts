@@ -5,7 +5,7 @@ import { readProjectFile, listFolderFiles } from "@/services/fileService";
  */
 export async function getProjectFolderForAI(
   projectId: string,
-  folder: "Pre-Design" | "Design" | "Permit" | "Build"
+  folder: string
 ): Promise<string> {
   const files = await listFolderFiles(projectId, folder);
 
@@ -48,7 +48,7 @@ export async function readProjectMetadataForAI(
   projectId: string
 ): Promise<string | null> {
   try {
-    const content = await readProjectFile(projectId, "Pre-Design/project.meta.md");
+    const content = await readProjectFile(projectId, "MyHome AI Project Assets/project.meta.md");
 
     if (content && typeof content.content === "string") {
       return content.content;
@@ -64,7 +64,7 @@ export async function readProjectMetadataForAI(
  * Get all project folders and file summary for AI
  */
 export async function getProjectFilesSummaryForAI(projectId: string): Promise<string> {
-  const folders = ["Pre-Design", "Design", "Permit", "Build"] as const;
+  const folders = ["Pre-Design", "Design", "Permit", "Build", "MyHome AI Project Assets"] as const;
   let summary = "## Project Files Summary\n\n";
 
   for (const folder of folders) {
@@ -73,4 +73,11 @@ export async function getProjectFilesSummaryForAI(projectId: string): Promise<st
   }
 
   return summary;
+}
+
+/**
+ * Get AI-specific project context files
+ */
+export async function getAIProjectContext(projectId: string): Promise<string> {
+  return getProjectFolderForAI(projectId, "MyHome AI Project Assets");
 }

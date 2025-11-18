@@ -20,7 +20,7 @@ export async function createProjectNote(
   // Format content as markdown
   const markdownContent = `# ${title}\n\n${content}\n\n---\n_Created: ${new Date().toISOString()}_`;
 
-  return saveProjectFile(projectId, filename, markdownContent, "Design", userId);
+  return saveProjectFile(projectId, filename, markdownContent, "MyHome AI Project Assets", userId);
 }
 
 /**
@@ -48,12 +48,12 @@ export async function updateProjectMetadata(
         error: result.error
       };
     } else {
-      // Create new in Pre-Design folder
+      // Create new in MyHome AI Project Assets folder
       const result = await saveProjectFile(
         projectId,
         "project.meta.md",
         content,
-        "Pre-Design",
+        "MyHome AI Project Assets",
         userId
       );
       return {
@@ -78,7 +78,7 @@ export async function addDecisionToMetadata(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Read current metadata
-    const contentResult = await readProjectFile(projectId, "Pre-Design/project.meta.md");
+    const contentResult = await readProjectFile(projectId, "MyHome AI Project Assets/project.meta.md");
     if (!contentResult || typeof contentResult.content !== "string") {
       return { success: false, error: "Could not read project metadata" };
     }

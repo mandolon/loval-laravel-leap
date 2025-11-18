@@ -258,6 +258,27 @@ const tools = [
         required: ["query", "workspace_id"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "search_project_files",
+      description: "Search through project-specific AI context files and documents in the 'MyHome AI Project Assets' folder. Use this when the user asks questions about a specific project's details, history, decisions, or uploaded documents.",
+      parameters: {
+        type: "object",
+        properties: {
+          project_id: {
+            type: "string",
+            description: "UUID of the project to search within"
+          },
+          query: {
+            type: "string",
+            description: "Search query or question to find relevant information in project files"
+          }
+        },
+        required: ["project_id", "query"]
+      }
+    }
   }
 ];
 
@@ -1282,6 +1303,140 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
         message: `Found ${data.length} relevant sections in knowledge base:\n\n${results}`,
         data
       };
+    }
+
+    case 'search_project_files': {
+      const { project_id, query } = args;
+
+      // Validate UUID
+      const uuidValidation = validateUUID(project_id);
+      if (!uuidValidation.valid) {
+        return {
+          success: false,
+          error: `❌ ${uuidValidation.error}`
+        };
+      }
+
+      // Verify project exists
+      const projectCheck = await verifyProjectExists(project_id, supabase);
+      if (!projectCheck.exists) {
+        return { success: false, error: projectCheck.error };
+      }
+
+      try {
+        // Get the MyHome AI Project Assets folder
+        const { data: folder } = await supabase
+          .from('folders')
+          .select('id')
+          .eq('project_id', project_id)
+          .eq('name', 'MyHome AI Project Assets')
+          .single();
+
+        if (!folder) {
+          return {
+            success: false,
+            error: 'MyHome AI Project Assets folder not found for this project'
+          };
+        }
+
+        // Get all files in the folder
+        const { data: files } = await supabase
+          .from('files')
+          .select('id, filename, storage_path, mimetype, filesize, created_at')
+          .eq('folder_id', folder.id)
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false });
+
+        if (!files || files.length === 0) {
+          return {
+            success: true,
+            message: 'No AI project files found yet. Files will appear here as the project progresses.',
+            data: []
+          };
+        }
+
+        // Read content from text-based and PDF files
+        const queryLower = query.toLowerCase();
+        const searchResults: any[] = [];
+
+        for (const file of files) {
+          try {
+            // Download file content
+            const { data: fileBlob, error: downloadError } = await supabase.storage
+              .from('project-files')
+              .download(file.storage_path);
+
+            if (downloadError || !fileBlob) continue;
+
+            let textContent = '';
+
+            // Handle different file types
+            if (file.mimetype?.includes('text') || file.mimetype?.includes('markdown') || 
+                file.mimetype?.includes('json') || file.filename?.endsWith('.md') || 
+                file.filename?.endsWith('.txt')) {
+              textContent = await fileBlob.text();
+            } else if (file.mimetype?.includes('pdf') || file.filename?.endsWith('.pdf')) {
+              // For PDFs, we'll skip for now or add simple text extraction
+              // In a production system, you'd use a PDF parser here
+              textContent = `[PDF file: ${file.filename}]`;
+            }
+
+            // Simple text search (case-insensitive)
+            if (textContent.toLowerCase().includes(queryLower)) {
+              // Find relevant excerpts
+              const lines = textContent.split('\n');
+              const relevantLines: string[] = [];
+              
+              for (let i = 0; i < lines.length; i++) {
+                if (lines[i].toLowerCase().includes(queryLower)) {
+                  // Get context: 2 lines before and after
+                  const start = Math.max(0, i - 2);
+                  const end = Math.min(lines.length, i + 3);
+                  relevantLines.push(lines.slice(start, end).join('\n'));
+                }
+              }
+
+              searchResults.push({
+                filename: file.filename,
+                excerpts: relevantLines.slice(0, 3), // Limit to 3 excerpts per file
+                size: file.filesize,
+                created: file.created_at
+              });
+            }
+          } catch (fileError) {
+            console.error(`Error reading file ${file.filename}:`, fileError);
+          }
+        }
+
+        if (searchResults.length === 0) {
+          return {
+            success: true,
+            message: `No matches found for "${query}" in project AI files. Try a different search term or check if relevant files have been uploaded.`,
+            data: []
+          };
+        }
+
+        // Format results
+        const formattedResults = searchResults.map((result, index) => {
+          const excerpts = result.excerpts.map((excerpt: string) => 
+            `    ${excerpt.substring(0, 300)}${excerpt.length > 300 ? '...' : ''}`
+          ).join('\n\n');
+          
+          return `[${index + 1}] From "${result.filename}":\n${excerpts}`;
+        }).join('\n\n---\n\n');
+
+        return {
+          success: true,
+          message: `Found ${searchResults.length} project file(s) matching "${query}":\n\n${formattedResults}`,
+          data: searchResults
+        };
+
+      } catch (error: any) {
+        return {
+          success: false,
+          error: `Error searching project files: ${error.message}`
+        };
+      }
     }
 
     default:
