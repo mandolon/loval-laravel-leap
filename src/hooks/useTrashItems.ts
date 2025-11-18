@@ -424,6 +424,31 @@ export const useTrashItems = (workspaceId: string | undefined) => {
 
   const deleteForeverMutation = useMutation({
     mutationFn: async (item: TrashItem) => {
+      // For files, delete from storage first
+      if (item.type === 'file') {
+        // Get the file's storage path
+        const { data: fileData, error: fetchError } = await supabase
+          .from('files')
+          .select('storage_path')
+          .eq('id', item.id)
+          .single();
+        
+        if (fetchError) throw fetchError;
+        
+        // Delete from storage
+        if (fileData?.storage_path) {
+          const { error: storageError } = await supabase.storage
+            .from('project-files')
+            .remove([fileData.storage_path]);
+          
+          if (storageError) {
+            console.error('Storage deletion error:', storageError);
+            // Continue anyway - we still want to delete the DB record
+          }
+        }
+      }
+      
+      // Delete the database record
       const tableName = getTableName(item.type);
       const { error } = await supabase
         .from(tableName as any)
