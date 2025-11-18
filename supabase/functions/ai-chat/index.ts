@@ -1278,7 +1278,7 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
       // Search knowledge base using vector similarity
       const { data, error } = await supabase.rpc('search_knowledge_base', {
         query_embedding: queryEmbedding,
-        match_threshold: 0.7,
+        match_threshold: 0.5,
         match_count: limit,
         filter_workspace_id: workspace_id
       });
