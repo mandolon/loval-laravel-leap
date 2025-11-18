@@ -540,20 +540,18 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
           />
         ))}
 
-        {["tasks", "ai"].map((tab) => (
-          <RailItem
-            key={tab}
-            tabKey={tab}
-            label={TITLES[tab as keyof typeof TITLES]}
-            icon={ICON_MAP[tab as keyof typeof ICON_MAP]}
-            active={active === tab}
-            openTab={openTab}
-            setOpenTab={setOpenTab}
-            selected={selected}
-            setSelected={setSelected}
-            onActivate={tab === "tasks" ? () => { setActive("tasks"); navigateToWorkspace("/tasks"); } : tab === "ai" ? () => { setActive("ai"); navigateToWorkspace("/ai"); } : () => setActive(tab)}
-          />
-        ))}
+        <RailItem
+          key="tasks"
+          tabKey="tasks"
+          label={TITLES.tasks}
+          icon={ICON_MAP.tasks}
+          active={active === "tasks"}
+          openTab={openTab}
+          setOpenTab={setOpenTab}
+          selected={selected}
+          setSelected={setSelected}
+          onActivate={() => { setActive("tasks"); navigateToWorkspace("/tasks"); }}
+        />
 
         <div className="my-2 h-px w-8 bg-white/20" />
 
@@ -568,6 +566,19 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
           selected={selected}
           setSelected={setSelected}
           onActivate={() => { setActive("details"); navigateToWorkspace("/detail-library"); }}
+        />
+
+        <RailItem
+          key="ai"
+          tabKey="ai"
+          label={TITLES.ai}
+          icon={ICON_MAP.ai}
+          active={active === "ai"}
+          openTab={openTab}
+          setOpenTab={setOpenTab}
+          selected={selected}
+          setSelected={setSelected}
+          onActivate={() => { setActive("ai"); navigateToWorkspace("/ai"); }}
         />
 
         <div className="mt-auto w-full flex flex-col items-center">

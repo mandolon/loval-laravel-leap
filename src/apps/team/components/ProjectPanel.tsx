@@ -1162,30 +1162,31 @@ export default function ProjectPanel({
   };
 
   const handleFolderDragOver = (e: React.DragEvent, folderId: string) => {
-    // Check if dragging files from OS (not internal drag)
-    if (dragState) return; // Internal drag, ignore
-    
     e.preventDefault();
     e.stopPropagation();
-    e.dataTransfer.dropEffect = 'copy';
+    
+    // Set appropriate drop effect based on drag source
+    if (dragState) {
+      // Internal file drag - moving within the app
+      e.dataTransfer.dropEffect = 'move';
+    } else {
+      // OS file drag - copying from desktop
+      e.dataTransfer.dropEffect = 'copy';
+    }
   };
 
 
   const handleFolderDragEnter = (e: React.DragEvent, folderId: string) => {
-    // Only track OS file drags (not internal drag operations)
-    if (dragState) return;
+    e.preventDefault();
+    e.stopPropagation();
     
-    // Check if dragging files (not other elements)
-    if (e.dataTransfer.types.includes('Files')) {
-      e.preventDefault();
-      e.stopPropagation();
+    // Track drag over for both OS files and internal file drags
+    if (dragState || e.dataTransfer.types.includes('Files')) {
       setDragOverFolderId(folderId);
     }
   };
 
   const handleFolderDragLeave = (e: React.DragEvent, folderId: string) => {
-    if (dragState) return;
-    
     // Only clear if actually leaving this specific folder
     const relatedTarget = e.relatedTarget as HTMLElement;
     if (!e.currentTarget.contains(relatedTarget)) {
@@ -1194,15 +1195,39 @@ export default function ProjectPanel({
   };
 
   const handleFolderDrop = async (e: React.DragEvent, folderId: string) => {
-    // Check if dragging files from OS
-    if (dragState) return; // Internal drag, handled elsewhere
-    
     e.preventDefault();
     e.stopPropagation();
     
     // Clear drag-over state
     setDragOverFolderId(null);
     
+    // Check if it's an internal file drag (from another folder)
+    if (dragState && dragState.itemId) {
+      const { fromList, itemId } = dragState;
+      const item = (localLists[fromList] || []).find((i) => i.id === itemId);
+      if (!item) return;
+      
+      // Update UI optimistically
+      setLocalLists((prev) => ({ ...prev, [fromList]: prev[fromList].filter((i) => i.id !== itemId) }));
+      setLocalLists((prev) => {
+        const target = [...(prev[folderId] || [])];
+        target.push(item); // Add to end of target folder
+        return { ...prev, [folderId]: target };
+      });
+      
+      // If moving to a different folder, update the database
+      if (fromList !== folderId) {
+        moveFile.mutate({
+          fileId: itemId,
+          newFolderId: folderId
+        });
+      }
+      
+      setDragState(null);
+      return;
+    }
+    
+    // Otherwise, it's an OS file drop
     const files = Array.from(e.dataTransfer.files);
     if (files.length === 0) return;
 
@@ -1307,7 +1332,13 @@ export default function ProjectPanel({
           <Expander isOpen={isOpen}>
             <div className="ml-3">
               {!query.trim() && items.length === 0 && (
-                <div className="group relative flex items-center gap-0.5 py-[2px] px-1 rounded-lg select-none text-[#99a8b8]">
+                <div 
+                  className="group relative flex items-center gap-0.5 py-[2px] px-1 rounded-lg select-none text-[#99a8b8]"
+                  onDragEnter={(e) => handleFolderDragEnter(e, id)}
+                  onDragLeave={(e) => handleFolderDragLeave(e, id)}
+                  onDragOver={(e) => handleFolderDragOver(e, id)}
+                  onDrop={(e) => handleFolderDrop(e, id)}
+                >
                   <span className="inline-block" style={{ width: SOFT_SQUARE, height: SOFT_SQUARE }} />
                   <span className="text-[11px] italic">empty</span>
                 </div>
@@ -1672,15 +1703,15 @@ export default function ProjectPanel({
             width: '28px',
             height: '28px',
             borderRadius: radius.md,
-            border: tab === "ai" ? `1px solid #8B5CF6` : '1px solid rgba(229, 231, 235, 0.5)',
-            backgroundColor: tab === "ai" ? '#8B5CF6' : 'transparent',
+            border: tab === "ai" ? `1px solid #10B981` : '1px solid rgba(229, 231, 235, 0.5)',
+            backgroundColor: tab === "ai" ? '#10B981' : 'transparent',
             display: 'grid',
             placeItems: 'center',
             transition: 'all 0.2s',
             cursor: 'pointer',
           }}
           onMouseEnter={(e) => {
-            if (tab !== "ai") e.currentTarget.style.backgroundColor = '#8B5CF615';
+            if (tab !== "ai") e.currentTarget.style.backgroundColor = '#10B98115';
           }}
           onMouseLeave={(e) => {
             if (tab !== "ai") e.currentTarget.style.backgroundColor = 'transparent';
@@ -1689,7 +1720,7 @@ export default function ProjectPanel({
           title="AI Context"
           onClick={() => handleTabChange("ai")}
         >
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke={tab === "ai" ? '#FFFFFF' : 'rgba(139, 92, 246, 0.5)'} strokeWidth="2">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke={tab === "ai" ? '#FFFFFF' : 'rgba(16, 185, 129, 0.5)'} strokeWidth="2">
             <path d="M12 2L2 7l10 5 10-5-10-5z"/>
             <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
           </svg>
