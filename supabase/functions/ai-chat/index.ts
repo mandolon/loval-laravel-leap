@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.0";
+import { formatProjectAIIdentity } from "./helpers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -366,8 +367,7 @@ async function logActivity(
   }
 }
 
-// Generate system prompt with clear UUID instructions
-function generateSystemPrompt(workspaceId: string, projectId?: string, projectName?: string, projectContext?: string): string {
+function generateSystemPrompt(workspaceInstructions?: string, projectAIContext?: string): string {
   let prompt = `You are a helpful AI assistant for a project management workspace.
 
 ════════════════════════════════════════
@@ -1490,8 +1490,35 @@ serve(async (req) => {
       throw new Error("User not authenticated");
     }
 
-    // Generate system prompt with clear UUID guidance
-    const systemPrompt = generateSystemPrompt(workspaceId, projectId, projectName, projectContext);
+    // Fetch workspace AI instructions
+    let workspaceInstructions: string | undefined;
+    if (workspaceId) {
+      const { data: workspaceSettings } = await supabase
+        .from('workspace_settings')
+        .select('ai_instructions')
+        .eq('workspace_id', workspaceId)
+        .maybeSingle();
+      
+      if (workspaceSettings?.ai_instructions) {
+        workspaceInstructions = workspaceSettings.ai_instructions;
+      }
+    }
+
+    // Fetch and format project AI identity
+    let projectAIContext: string | undefined;
+    if (projectId) {
+      const { data: project } = await supabase
+        .from('projects')
+        .select('ai_identity, name')
+        .eq('id', projectId)
+        .maybeSingle();
+      
+      if (project?.ai_identity) {
+        projectAIContext = formatProjectAIIdentity(project.ai_identity, project.name);
+      }
+    }
+
+    const systemPrompt = generateSystemPrompt(workspaceInstructions, projectAIContext);
 
     // Initial AI call with tools
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

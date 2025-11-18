@@ -1698,6 +1698,7 @@ export type Database = {
       projects: {
         Row: {
           address: Json | null
+          ai_identity: Json | null
           assessor_parcel_info: Json | null
           completed_tasks: number | null
           created_at: string | null
@@ -1716,6 +1717,7 @@ export type Database = {
           primary_client_last_name: string | null
           primary_client_phone: string | null
           progress: number | null
+          project_type: string | null
           secondary_client_address: Json | null
           secondary_client_email: string | null
           secondary_client_first_name: string | null
@@ -1731,6 +1733,7 @@ export type Database = {
         }
         Insert: {
           address?: Json | null
+          ai_identity?: Json | null
           assessor_parcel_info?: Json | null
           completed_tasks?: number | null
           created_at?: string | null
@@ -1749,6 +1752,7 @@ export type Database = {
           primary_client_last_name?: string | null
           primary_client_phone?: string | null
           progress?: number | null
+          project_type?: string | null
           secondary_client_address?: Json | null
           secondary_client_email?: string | null
           secondary_client_first_name?: string | null
@@ -1764,6 +1768,7 @@ export type Database = {
         }
         Update: {
           address?: Json | null
+          ai_identity?: Json | null
           assessor_parcel_info?: Json | null
           completed_tasks?: number | null
           created_at?: string | null
@@ -1782,6 +1787,7 @@ export type Database = {
           primary_client_last_name?: string | null
           primary_client_phone?: string | null
           progress?: number | null
+          project_type?: string | null
           secondary_client_address?: Json | null
           secondary_client_email?: string | null
           secondary_client_first_name?: string | null
@@ -2454,6 +2460,7 @@ export type Database = {
       }
       workspace_settings: {
         Row: {
+          ai_instructions: string | null
           company_logo_url: string | null
           company_name: string | null
           created_at: string
@@ -2466,6 +2473,7 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          ai_instructions?: string | null
           company_logo_url?: string | null
           company_name?: string | null
           created_at?: string
@@ -2478,6 +2486,7 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          ai_instructions?: string | null
           company_logo_url?: string | null
           company_name?: string | null
           created_at?: string
