@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { Project, ProjectAIIdentity } from '@/lib/api/types';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Card,
   CardContent,
@@ -12,6 +11,8 @@ import { Button } from '@/components/ui/button';
 
 interface AIContextPanelProps {
   project: Project;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
   onUpdate: (data: ProjectAIIdentity) => void;
 }
 
@@ -102,7 +103,7 @@ const PROJECT_TYPE_INFO: Record<string, { timeline: number; consultants: string[
   },
 };
 
-export function AIContextPanel({ project, onUpdate }: AIContextPanelProps) {
+export function AIContextPanel({ project, activeTab = 'details', onTabChange, onUpdate }: AIContextPanelProps) {
   const [data, setData] = useState<ProjectAIIdentity>(() => {
     // Pre-fill from existing project data
     const existingAddress = project.address;
@@ -118,7 +119,7 @@ export function AIContextPanel({ project, onUpdate }: AIContextPanelProps) {
     const zoning = project.assessorParcelInfo?.zoningDesignation || '';
 
     // Load saved ai_identity if it exists, otherwise create from template
-    const savedIdentity = project.ai_identity || {};
+    const savedIdentity = (project.ai_identity as ProjectAIIdentity) || {} as ProjectAIIdentity;
 
     return {
       projectType: savedIdentity.projectType || project.project_type || '',
@@ -148,24 +149,10 @@ export function AIContextPanel({ project, onUpdate }: AIContextPanelProps) {
   const typeInfo = PROJECT_TYPE_INFO[data.projectType as keyof typeof PROJECT_TYPE_INFO];
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto p-6">
-      <div>
-        <h2 className="text-xl font-semibold mb-1">AI Project Context</h2>
-        <p className="text-sm text-gray-600">
-          Define your project comprehensively. The AI will use this to make intelligent suggestions
-          about next steps, requirements, and consultants.
-        </p>
-      </div>
-
-      <Tabs defaultValue="details" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="details">Project Details</TabsTrigger>
-          <TabsTrigger value="regulatory">Regulatory</TabsTrigger>
-          <TabsTrigger value="status">Current Status</TabsTrigger>
-        </TabsList>
-
-        {/* TAB 1: PROJECT DETAILS */}
-        <TabsContent value="details" className="space-y-4">
+    <div className="space-y-6">
+      {/* TAB 1: PROJECT DETAILS */}
+      {activeTab === 'details' && (
+        <div className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Basic Information</CardTitle>
@@ -228,10 +215,12 @@ export function AIContextPanel({ project, onUpdate }: AIContextPanelProps) {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>
+      )}
 
-        {/* TAB 2: REGULATORY */}
-        <TabsContent value="regulatory" className="space-y-4">
+      {/* TAB 2: REGULATORY */}
+      {activeTab === 'regulatory' && (
+        <div className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Zoning & Physical Requirements</CardTitle>
@@ -423,10 +412,12 @@ export function AIContextPanel({ project, onUpdate }: AIContextPanelProps) {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>
+      )}
 
-        {/* TAB 3: CURRENT STATUS */}
-        <TabsContent value="status" className="space-y-4">
+      {/* TAB 3: CURRENT STATUS */}
+      {activeTab === 'status' && (
+        <div className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Next Steps & Blockers</CardTitle>
@@ -463,8 +454,8 @@ export function AIContextPanel({ project, onUpdate }: AIContextPanelProps) {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
 
       <div className="flex gap-2 pt-4">
         <Button onClick={handleSave} className="bg-blue-600 text-white hover:bg-blue-700">

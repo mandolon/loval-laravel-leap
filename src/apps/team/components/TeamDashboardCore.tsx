@@ -9,6 +9,7 @@ import React, {
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useRoleAwareNavigation } from "@/hooks/useRoleAwareNavigation";
 import { ProjectInfoContent } from './ProjectInfoContent';
+import { ProjectAIContextView } from './ProjectAIContextView';
 import {
   Home,
   FolderKanban,
@@ -397,6 +398,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
 
   const projectPanelTab = searchParams.get('projectTab') || 'files';
   const isInfoTabActive = projectPanelTab === 'info';
+  const isAITabActive = projectPanelTab === 'ai';
 
   // Restore project selection from URL on load
   useEffect(() => {
@@ -624,6 +626,11 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
                       projectId={userProjects.find((p: any) => p.name === selected?.item)?.id || ''}
                       workspaceId={currentWorkspaceId || ''}
                       contentType={(searchParams.get('infoSection') || 'project-profile') as any}
+                    />
+                  ) : isAITabActive ? (
+                    <ProjectAIContextView
+                      projectId={userProjects.find((p: any) => p.name === selected?.item)?.id || ''}
+                      workspaceId={currentWorkspaceId || ''}
                     />
                   ) : selectedModel ? (
                     <Team3DModelViewer

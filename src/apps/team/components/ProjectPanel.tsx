@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef, forwardRef, useCallback } from "react";
-import { Search, FolderClosed, BookOpen, MoreVertical, Settings2, Info, Plus, RefreshCw, Edit, Trash2, Cloud } from "lucide-react";
+import { Search, FolderClosed, BookOpen, MoreVertical, Settings2, Info, Plus, RefreshCw, Edit, Trash2, Cloud, FileText, Scale, Activity } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useProjectFolders, useProjectFiles, useDeleteProjectFile, useDeleteFolder, useMoveProjectFile, useRenameFolder, useRenameProjectFile, useUploadProjectFiles, downloadProjectFile, useCreateFolder, use3DModelsFolder } from '@/lib/api/hooks/useProjectFiles';
 import { useProjectFolderDragDrop } from '@/lib/api/hooks/useProjectFolderDragDrop';
@@ -16,6 +16,8 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { ProjectInfoNavigation } from './ProjectInfoNavigation';
 import { ProjectPanel3DModelsTab } from './project-panel-tabs/ProjectPanel3DModelsTab';
+import { ProjectAIContextView } from './ProjectAIContextView';
+import { AIContextNavigation } from './AIContextNavigation';
 import { theme, SOFT_SQUARE, radius, shadows, typography } from './ProjectPanelTheme';
 import '@/lib/pdf-config'; // Configure PDF.js worker globally
 
@@ -413,8 +415,8 @@ export default function ProjectPanel({
   initialWhiteboardPageId?: string | null;
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialTab = (searchParams.get('projectTab') as 'files' | 'whiteboards' | '3dmodels' | 'settings' | 'info') || 'files';
-  const [tab, setTab] = useState<'files' | 'whiteboards' | '3dmodels' | 'settings' | 'info'>(initialTab);
+  const initialTab = (searchParams.get('projectTab') as 'files' | 'whiteboards' | '3dmodels' | 'ai' | 'settings' | 'info') || 'files';
+  const [tab, setTab] = useState<'files' | 'whiteboards' | '3dmodels' | 'ai' | 'settings' | 'info'>(initialTab);
   const [query, setQuery] = useState("");
   const [wbQuery, setWbQuery] = useState("");
   const [selectedWB, setSelectedWB] = useState<any>(null);
@@ -1677,6 +1679,33 @@ export default function ProjectPanel({
             width: '28px',
             height: '28px',
             borderRadius: radius.md,
+            border: tab === "ai" ? `1px solid #8B5CF6` : '1px solid rgba(229, 231, 235, 0.5)',
+            backgroundColor: tab === "ai" ? '#8B5CF6' : 'transparent',
+            display: 'grid',
+            placeItems: 'center',
+            transition: 'all 0.2s',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            if (tab !== "ai") e.currentTarget.style.backgroundColor = '#8B5CF615';
+          }}
+          onMouseLeave={(e) => {
+            if (tab !== "ai") e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+          aria-label="AI Context"
+          title="AI Context"
+          onClick={() => handleTabChange("ai")}
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke={tab === "ai" ? '#FFFFFF' : 'rgba(139, 92, 246, 0.5)'} strokeWidth="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </button>
+        <button
+          style={{
+            width: '28px',
+            height: '28px',
+            borderRadius: radius.md,
             border: tab === "settings" ? `1px solid ${theme.settings}` : '1px solid rgba(229, 231, 235, 0.5)',
             backgroundColor: tab === "settings" ? theme.settings : 'transparent',
             display: 'grid',
@@ -1711,6 +1740,8 @@ export default function ProjectPanel({
             workspaceId={currentWorkspaceId || ''}
             onClose={() => handleTabChange('files')}
           />
+        ) : tab === "ai" ? (
+          <AIContextNavigation />
         ) : (
           <div className="h-full w-full overflow-y-auto no-scrollbar" style={{
             fontSize: typography.size.sm,
