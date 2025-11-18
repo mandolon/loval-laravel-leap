@@ -23,9 +23,10 @@ const MAX_COLUMN_WIDTH = 500;
 
 export function TrashContent() {
   const { currentWorkspace } = useWorkspaces();
-  const { items, isLoading, restore, deleteForever, isRestoring, isDeleting } = useTrashItems(currentWorkspace?.id);
+  const { items, isLoading, restore, deleteForever, deleteAllForever, isRestoring, isDeleting, isDeletingAll } = useTrashItems(currentWorkspace?.id);
   const [searchQuery, setSearchQuery] = useState('');
   const [itemToDelete, setItemToDelete] = useState<TrashItem | null>(null);
+  const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   
   // Initialize column widths from localStorage or defaults
   const [columnWidths, setColumnWidths] = useState<number[]>(() => {
@@ -149,7 +150,18 @@ export function TrashContent() {
     <div className="p-4 md:p-6 space-y-4 text-[var(--muted)]" data-testid="trash-content">
       <div className="flex items-center justify-between">
         <h2 className="text-[var(--text)] text-lg font-medium">Trash</h2>
-        <div />
+        
+        {/* Delete All Button - only show if there are items */}
+        {items.length > 0 && (
+          <button
+            onClick={() => setShowDeleteAllDialog(true)}
+            disabled={isDeletingAll || isDeleting || isRestoring}
+            className="flex items-center gap-2 h-9 px-4 rounded-md bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+          >
+            <Trash2 className="h-4 w-4" />
+            {isDeletingAll ? `Deleting (${items.length})...` : 'Delete All'}
+          </button>
+        )}
       </div>
       
       <p className="text-[var(--muted)] text-sm">
@@ -278,7 +290,7 @@ export function TrashContent() {
                 {/* Restore Button */}
                 <button
                   onClick={() => restore(row)}
-                  disabled={isRestoring || isDeleting}
+                  disabled={isRestoring || isDeleting || isDeletingAll}
                   aria-label="Restore"
                   className="h-7 w-7 grid place-items-center rounded-md bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -298,7 +310,7 @@ export function TrashContent() {
                 {/* Delete Forever Button */}
                 <button
                   onClick={() => setItemToDelete(row)}
-                  disabled={isRestoring || isDeleting}
+                  disabled={isRestoring || isDeleting || isDeletingAll}
                   aria-label="Delete forever"
                   className="h-7 w-7 grid place-items-center rounded-md bg-red-500 hover:bg-red-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -335,6 +347,69 @@ export function TrashContent() {
               className="bg-red-500 hover:bg-red-600"
             >
               Delete Forever
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete All Confirmation Dialog */}
+      <AlertDialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete All Items Forever?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                This will permanently delete <strong>{items.length} items</strong> from the trash.
+                This action cannot be undone.
+              </p>
+              <div className="mt-4 p-3 bg-slate-50 rounded-md border border-slate-200">
+                <p className="text-sm font-medium text-slate-700 mb-2">Items to be deleted:</p>
+                <ul className="text-xs text-slate-600 space-y-1">
+                  {items.filter(i => i.type === 'project').length > 0 && (
+                    <li>• {items.filter(i => i.type === 'project').length} Projects</li>
+                  )}
+                  {items.filter(i => i.type === 'file').length > 0 && (
+                    <li>• {items.filter(i => i.type === 'file').length} Files</li>
+                  )}
+                  {items.filter(i => i.type === 'folder').length > 0 && (
+                    <li>• {items.filter(i => i.type === 'folder').length} Folders</li>
+                  )}
+                  {items.filter(i => i.type === 'task').length > 0 && (
+                    <li>• {items.filter(i => i.type === 'task').length} Tasks</li>
+                  )}
+                  {items.filter(i => i.type === 'note').length > 0 && (
+                    <li>• {items.filter(i => i.type === 'note').length} Notes</li>
+                  )}
+                  {items.filter(i => i.type === 'link').length > 0 && (
+                    <li>• {items.filter(i => i.type === 'link').length} Links</li>
+                  )}
+                  {items.filter(i => i.type === 'ai_chat_thread').length > 0 && (
+                    <li>• {items.filter(i => i.type === 'ai_chat_thread').length} AI Chats</li>
+                  )}
+                  {items.filter(i => i.type === 'drawing').length > 0 && (
+                    <li>• {items.filter(i => i.type === 'drawing').length} Drawings</li>
+                  )}
+                  {items.filter(i => i.type === 'drawing_page').length > 0 && (
+                    <li>• {items.filter(i => i.type === 'drawing_page').length} Drawing Pages</li>
+                  )}
+                  {items.filter(i => i.type === 'model_version').length > 0 && (
+                    <li>• {items.filter(i => i.type === 'model_version').length} 3D Models</li>
+                  )}
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingAll}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                deleteAllForever(items);
+                setShowDeleteAllDialog(false);
+              }}
+              disabled={isDeletingAll}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              {isDeletingAll ? 'Deleting...' : 'Delete All Forever'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
