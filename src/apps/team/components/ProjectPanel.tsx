@@ -731,13 +731,59 @@ export default function ProjectPanel({
     setIngestingFileId(fileId);
     
     try {
-      // Get the file from storage
-      const { data: fileData, error: downloadError } = await supabase
-        .storage
-        .from('project-files')
-        .download(file.storage_path);
+      // Check if it's a PDF file
+      const isPDF = file.mimetype === 'application/pdf' || file.filename.toLowerCase().endsWith('.pdf');
       
-      if (downloadError) throw downloadError;
+      let fileToIngest: Blob;
+      let filename: string = file.filename;
+      
+      if (isPDF) {
+        // For PDFs, we need to parse them first using pdfjs-dist
+        const { data: pdfData, error: downloadError } = await supabase
+          .storage
+          .from('project-files')
+          .download(file.storage_path);
+        
+        if (downloadError) throw downloadError;
+        
+        // Dynamically import pdfjs-dist
+        const pdfjsLib = await import('pdfjs-dist');
+        
+        // Set worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+        
+        // Load PDF
+        const arrayBuffer = await pdfData.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        
+        // Extract text from all pages
+        let fullText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items
+            .map((item: any) => item.str)
+            .join(' ');
+          fullText += pageText + '\n\n';
+        }
+        
+        if (!fullText.trim()) {
+          throw new Error('No text content found in PDF. The file may be image-based or empty.');
+        }
+        
+        // Create a text file from the extracted content
+        fileToIngest = new Blob([fullText], { type: 'text/plain' });
+        filename = file.filename.replace('.pdf', '.txt');
+      } else {
+        // For non-PDF files, download directly
+        const { data: fileData, error: downloadError } = await supabase
+          .storage
+          .from('project-files')
+          .download(file.storage_path);
+        
+        if (downloadError) throw downloadError;
+        fileToIngest = fileData;
+      }
       
       // Get auth session
       const { data: { session } } = await supabase.auth.getSession();
@@ -745,7 +791,7 @@ export default function ProjectPanel({
       
       // Prepare form data for ingestion
       const formData = new FormData();
-      formData.append('file', fileData, file.filename);
+      formData.append('file', fileToIngest, filename);
       formData.append('workspace_id', currentWorkspaceId || '');
       formData.append('project_id', projectId);
       formData.append('file_id', fileId);
