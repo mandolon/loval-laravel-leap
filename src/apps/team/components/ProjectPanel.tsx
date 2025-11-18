@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ProjectInfoNavigation } from './ProjectInfoNavigation';
 import { ProjectPanel3DModelsTab } from './project-panel-tabs/ProjectPanel3DModelsTab';
 import { theme, SOFT_SQUARE, radius, shadows, typography } from './ProjectPanelTheme';
+import '@/lib/pdf-config'; // Configure PDF.js worker globally
 
 /**
  * PROJECT PANEL — Files & Whiteboards now share identical interaction rules
@@ -746,11 +747,8 @@ export default function ProjectPanel({
         
         if (downloadError) throw downloadError;
         
-        // Dynamically import pdfjs-dist
+        // Dynamically import pdfjs-dist (worker already configured by pdf-config)
         const pdfjsLib = await import('pdfjs-dist');
-        
-        // Set worker
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
         
         // Load PDF
         const arrayBuffer = await pdfData.arrayBuffer();
