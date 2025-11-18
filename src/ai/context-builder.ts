@@ -107,7 +107,7 @@ export async function buildAIContext(
     .single();
 
   if (project?.ai_identity) {
-    context += formatProjectAIIdentity(project.ai_identity as ProjectAIIdentity);
+    context += formatProjectAIIdentity(project.ai_identity as unknown as ProjectAIIdentity);
     sources.push("project_ai_identity");
   }
 
