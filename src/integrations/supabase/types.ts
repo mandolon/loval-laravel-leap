@@ -1124,11 +1124,13 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           embedding: string | null
+          file_id: string | null
           file_name: string
           file_path: string
           fts: unknown
           id: string
           metadata: Json | null
+          project_id: string | null
           short_id: string
           updated_at: string
           workspace_id: string
@@ -1141,11 +1143,13 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           embedding?: string | null
+          file_id?: string | null
           file_name: string
           file_path: string
           fts?: unknown
           id?: string
           metadata?: Json | null
+          project_id?: string | null
           short_id?: string
           updated_at?: string
           workspace_id: string
@@ -1158,11 +1162,13 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           embedding?: string | null
+          file_id?: string | null
           file_name?: string
           file_path?: string
           fts?: unknown
           id?: string
           metadata?: Json | null
+          project_id?: string | null
           short_id?: string
           updated_at?: string
           workspace_id?: string
@@ -1180,6 +1186,20 @@ export type Database = {
             columns: ["deleted_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_base_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_base_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
           {
@@ -2545,22 +2565,40 @@ export type Database = {
         Args: { _user_id: string; _workspace_id: string }
         Returns: boolean
       }
-      search_knowledge_base: {
-        Args: {
-          filter_workspace_id: string
-          match_count: number
-          match_threshold: number
-          query_embedding: string
-        }
-        Returns: {
-          chunk_content: string
-          chunk_index: number
-          file_name: string
-          file_path: string
-          id: string
-          similarity: number
-        }[]
-      }
+      search_knowledge_base:
+        | {
+            Args: {
+              filter_project_id?: string
+              filter_workspace_id: string
+              match_count: number
+              match_threshold: number
+              query_embedding: string
+            }
+            Returns: {
+              chunk_content: string
+              chunk_index: number
+              file_name: string
+              file_path: string
+              id: string
+              similarity: number
+            }[]
+          }
+        | {
+            Args: {
+              filter_workspace_id: string
+              match_count: number
+              match_threshold: number
+              query_embedding: string
+            }
+            Returns: {
+              chunk_content: string
+              chunk_index: number
+              file_name: string
+              file_path: string
+              id: string
+              similarity: number
+            }[]
+          }
       workspace_has_no_members: {
         Args: { _workspace_id: string }
         Returns: boolean
