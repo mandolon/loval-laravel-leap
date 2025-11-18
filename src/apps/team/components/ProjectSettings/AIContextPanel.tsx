@@ -13,7 +13,7 @@ interface AIContextPanelProps {
   project: Project;
   activeTab?: string;
   onTabChange?: (tab: string) => void;
-  onUpdate: (data: ProjectAIIdentity) => void;
+  onUpdate: (data: ProjectAIIdentity) => Promise<void>;
 }
 
 // Helper component for tag input
@@ -104,27 +104,27 @@ const PROJECT_TYPE_INFO: Record<string, { timeline: number; consultants: string[
 };
 
 export function AIContextPanel({ project, activeTab = 'details', onTabChange, onUpdate }: AIContextPanelProps) {
-  const [data, setData] = useState<ProjectAIIdentity>(() => {
-    // Pre-fill from existing project data
-    const existingAddress = project.address;
+  // Helper function to initialize data from project
+  const initializeData = (proj: Project): ProjectAIIdentity => {
+    const existingAddress = proj.address;
     const jurisdiction = existingAddress?.city && existingAddress?.state
       ? `${existingAddress.city}, ${existingAddress.state}`
       : '';
 
     // Parse lot area from assessor info if available
-    const lotSize = project.assessorParcelInfo?.lotArea
-      ? parseInt(project.assessorParcelInfo.lotArea.replace(/,/g, '')) || 0
+    const lotSize = proj.assessorParcelInfo?.lotArea
+      ? parseInt(proj.assessorParcelInfo.lotArea.replace(/,/g, '')) || 0
       : 0;
 
-    const zoning = project.assessorParcelInfo?.zoningDesignation || '';
+    const zoning = proj.assessorParcelInfo?.zoningDesignation || '';
 
     // Load saved ai_identity if it exists, otherwise create from template
-    const savedIdentity = (project.ai_identity as ProjectAIIdentity) || {} as ProjectAIIdentity;
+    const savedIdentity = (proj.ai_identity as ProjectAIIdentity) || {} as ProjectAIIdentity;
 
     return {
-      projectType: savedIdentity.projectType || project.project_type || '',
+      projectType: savedIdentity.projectType || proj.project_type || '',
       jurisdiction: savedIdentity.jurisdiction || jurisdiction,
-      projectScope: savedIdentity.projectScope || project.description || '',
+      projectScope: savedIdentity.projectScope || proj.description || '',
 
       zoning: savedIdentity.zoning || zoning,
       lotSize: savedIdentity.lotSize || lotSize,
@@ -140,10 +140,31 @@ export function AIContextPanel({ project, activeTab = 'details', onTabChange, on
       blockers: savedIdentity.blockers || [],
       openQuestions: savedIdentity.openQuestions || [],
     };
-  });
+  };
 
-  const handleSave = () => {
-    onUpdate(data);
+  const [data, setData] = useState<ProjectAIIdentity>(() => initializeData(project));
+  const prevProjectIdRef = useRef<string | undefined>(project?.id);
+
+  // Sync state when project changes (different project selected)
+  useEffect(() => {
+    // Update state when switching to a different project
+    if (project?.id && project.id !== prevProjectIdRef.current) {
+      prevProjectIdRef.current = project.id;
+      setData(initializeData(project));
+    }
+  }, [project?.id]);
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await onUpdate(data);
+    } catch (error) {
+      console.error('Error saving AI context:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const typeInfo = PROJECT_TYPE_INFO[data.projectType as keyof typeof PROJECT_TYPE_INFO];
@@ -458,10 +479,14 @@ export function AIContextPanel({ project, activeTab = 'details', onTabChange, on
       )}
 
       <div className="flex gap-2 pt-4">
-        <Button onClick={handleSave} className="bg-blue-600 text-white hover:bg-blue-700">
-          Save Project Context
+        <Button 
+          onClick={handleSave} 
+          disabled={isSaving}
+          className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+        >
+          {isSaving ? 'Saving...' : 'Save Project Context'}
         </Button>
-        <Button variant="outline">Cancel</Button>
+        <Button variant="outline" disabled={isSaving}>Cancel</Button>
       </div>
     </div>
   );

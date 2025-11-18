@@ -57,13 +57,17 @@ export function ProjectAIContextView({ projectId, workspaceId }: ProjectAIContex
                 onUpdate={async (aiIdentity) => {
                   const { error } = await supabase
                     .from('projects')
-                    .update({ ai_identity: aiIdentity } as any)
+                    .update({ 
+                      ai_identity: aiIdentity,
+                      project_type: aiIdentity.projectType || null
+                    } as any)
                     .eq('id', projectId);
                   
                   if (error) {
+                    console.error('Failed to save AI context:', error);
                     toast({
                       title: 'Error',
-                      description: 'Failed to save AI context',
+                      description: error.message || 'Failed to save AI context',
                       variant: 'destructive',
                     });
                   } else {
