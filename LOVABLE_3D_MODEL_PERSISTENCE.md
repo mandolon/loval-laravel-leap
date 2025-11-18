@@ -61,57 +61,6 @@ CREATE TABLE model_camera_views (
 CREATE INDEX idx_model_camera_views_version ON model_camera_views(version_id);
 ```
 
-## RLS Policies (Apply to All 4 Tables)
-
-```sql
--- Enable RLS
-ALTER TABLE model_dimensions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE model_annotations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE model_clipping_planes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE model_camera_views ENABLE ROW LEVEL SECURITY;
-
--- SELECT: Users can view if they're project members
-CREATE POLICY "view_model_state" ON model_dimensions FOR SELECT
-USING (
-  EXISTS (
-    SELECT 1 FROM model_versions mv
-    JOIN projects p ON mv.project_id = p.id
-    JOIN project_members pm ON p.id = pm.project_id
-    WHERE mv.id = model_dimensions.version_id AND pm.user_id = auth.uid()
-  )
-);
-
--- INSERT: Users can create if they're project members
-CREATE POLICY "create_model_state" ON model_dimensions FOR INSERT
-WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM model_versions mv
-    JOIN projects p ON mv.project_id = p.id
-    JOIN project_members pm ON p.id = pm.project_id
-    WHERE mv.id = model_dimensions.version_id AND pm.user_id = auth.uid()
-  )
-);
-
--- UPDATE: Users can update their own entries
-CREATE POLICY "update_model_state" ON model_dimensions FOR UPDATE
-USING (created_by = auth.uid());
-
--- DELETE: Users can delete their own entries or if they're project members
-CREATE POLICY "delete_model_state" ON model_dimensions FOR DELETE
-USING (
-  created_by = auth.uid() OR
-  EXISTS (
-    SELECT 1 FROM model_versions mv
-    JOIN projects p ON mv.project_id = p.id
-    JOIN project_members pm ON p.id = pm.project_id
-    WHERE mv.id = model_dimensions.version_id AND pm.user_id = auth.uid()
-  )
-);
-
--- Repeat these 4 policies for: model_annotations, model_clipping_planes, model_camera_views
--- (Just replace table name in policy definitions)
-```
-
 ## Implementation Status
 ✅ TypeScript types added to `src/lib/api/types.ts`
 ✅ API hooks created in `src/lib/api/hooks/useModelViewerState.ts`
