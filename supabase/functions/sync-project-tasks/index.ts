@@ -108,7 +108,7 @@ async function regenerateTasksFile(projectId: string, userId?: string) {
     .from('folders')
     .select('id')
     .eq('project_id', projectId)
-    .eq('name', 'Pre-Design')
+    .eq('name', 'MyHome AI Project Assets')
     .maybeSingle();
 
   if (folder) {
