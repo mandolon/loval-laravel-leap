@@ -21,31 +21,60 @@ function chunkText(text: string, chunkSize = 1000): string[] {
   return chunks;
 }
 
-// Generate embeddings using OpenAI
-async function generateEmbedding(text: string): Promise<number[]> {
+// Retry with exponential backoff for rate limiting
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries = 5,
+  initialDelayMs = 1000
+): Promise<T> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      const isRateLimitError = error.message?.includes('429') || error.message?.includes('rate_limit');
+      
+      if (!isRateLimitError || attempt === maxRetries - 1) {
+        throw error;
+      }
+
+      // Extract wait time from error message if available (e.g., "Please try again in 969ms")
+      const waitMatch = error.message?.match(/try again in (\d+)ms/);
+      const waitTime = waitMatch ? parseInt(waitMatch[1]) : initialDelayMs * Math.pow(2, attempt);
+      
+      console.log(`Rate limit hit (attempt ${attempt + 1}/${maxRetries}), waiting ${waitTime}ms...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+  }
+  throw new Error('Max retries exceeded');
+}
+
+// Generate embeddings using OpenAI (batched)
+async function generateEmbeddings(texts: string[]): Promise<number[][]> {
   const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
   if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
 
-  const response = await fetch('https://api.openai.com/v1/embeddings', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${OPENAI_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'text-embedding-3-small',
-      input: text.substring(0, 8000)
-    })
+  return await retryWithBackoff(async () => {
+    const response = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'text-embedding-3-small',
+        input: texts.map(text => text.substring(0, 8000))
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Embedding API error (${response.status}):`, errorText);
+      throw new Error(`Embedding API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data.data.map((item: any) => item.embedding);
   });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`Embedding API error (${response.status}):`, errorText);
-    throw new Error(`Embedding API error: ${response.status} - ${errorText}`);
-  }
-
-  const data = await response.json();
-  return data.data[0].embedding;
 }
 
 serve(async (req) => {
@@ -149,27 +178,54 @@ serve(async (req) => {
       );
     }
 
-    // Generate embeddings and insert records
-    const records = [];
-    for (let i = 0; i < chunks.length; i++) {
-      console.log(`Processing chunk ${i + 1}/${chunks.length}`);
+    // Generate embeddings and insert records in batches
+    const records: Array<{
+      workspace_id: string;
+      file_name: string;
+      file_path: string;
+      chunk_content: string;
+      chunk_index: number;
+      embedding: string;
+      created_by: string | null;
+      metadata: {
+        file_type: string;
+        file_size: number;
+        total_chunks: number;
+      };
+    }> = [];
+    const BATCH_SIZE = 100; // Process 100 chunks per API call
+    const totalBatches = Math.ceil(chunks.length / BATCH_SIZE);
+    
+    for (let batchIndex = 0; batchIndex < chunks.length; batchIndex += BATCH_SIZE) {
+      const batchNumber = Math.floor(batchIndex / BATCH_SIZE) + 1;
+      const batchEnd = Math.min(batchIndex + BATCH_SIZE, chunks.length);
+      const batchChunks = chunks.slice(batchIndex, batchEnd);
       
-      const embedding = await generateEmbedding(chunks[i]);
+      console.log(`Processing batch ${batchNumber}/${totalBatches} (chunks ${batchIndex + 1}-${batchEnd})`);
       
-      records.push({
-        workspace_id: workspaceId,
-        file_name: file.name,
-        file_path: storagePath,
-        chunk_content: chunks[i],
-        chunk_index: i,
-        embedding: JSON.stringify(embedding),
-        created_by: userId,
-        metadata: {
-          file_type: file.type,
-          file_size: file.size,
-          total_chunks: chunks.length
-        }
+      const embeddings = await generateEmbeddings(batchChunks);
+      
+      batchChunks.forEach((chunk, idx) => {
+        records.push({
+          workspace_id: workspaceId,
+          file_name: file.name,
+          file_path: storagePath,
+          chunk_content: chunk,
+          chunk_index: batchIndex + idx,
+          embedding: JSON.stringify(embeddings[idx]),
+          created_by: userId,
+          metadata: {
+            file_type: file.type,
+            file_size: file.size,
+            total_chunks: chunks.length
+          }
+        });
       });
+      
+      // Small delay between batches as safety net
+      if (batchEnd < chunks.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
     }
 
     // Insert in batches
