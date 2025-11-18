@@ -14,3 +14,6 @@ verify_jwt = true
 
 [functions.ingest-building-code]
 verify_jwt = true
+
+[functions.ingest-knowledge]
+verify_jwt = true

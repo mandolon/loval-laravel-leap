@@ -1115,6 +1115,82 @@ export type Database = {
           },
         ]
       }
+      knowledge_base: {
+        Row: {
+          chunk_content: string
+          chunk_index: number
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          embedding: string | null
+          file_name: string
+          file_path: string
+          fts: unknown
+          id: string
+          metadata: Json | null
+          short_id: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          chunk_content: string
+          chunk_index: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          embedding?: string | null
+          file_name: string
+          file_path: string
+          fts?: unknown
+          id?: string
+          metadata?: Json | null
+          short_id?: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          chunk_content?: string
+          chunk_index?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          embedding?: string | null
+          file_name?: string
+          file_path?: string
+          fts?: unknown
+          id?: string
+          metadata?: Json | null
+          short_id?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_base_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_base_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_base_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       links: {
         Row: {
           created_at: string
@@ -2468,6 +2544,22 @@ export type Database = {
       is_workspace_team_member: {
         Args: { _user_id: string; _workspace_id: string }
         Returns: boolean
+      }
+      search_knowledge_base: {
+        Args: {
+          filter_workspace_id: string
+          match_count: number
+          match_threshold: number
+          query_embedding: string
+        }
+        Returns: {
+          chunk_content: string
+          chunk_index: number
+          file_name: string
+          file_path: string
+          id: string
+          similarity: number
+        }[]
       }
       workspace_has_no_members: {
         Args: { _workspace_id: string }

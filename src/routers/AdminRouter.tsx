@@ -11,6 +11,7 @@ import AIChatPage from "@/pages/AIChatPage";
 import DetailLibraryPage from "@/pages/DetailLibraryPage";
 import TrashPage from "@/pages/TrashPage";
 import BuildingCodesPage from "@/pages/BuildingCodesPage";
+import KnowledgeBasePage from "@/pages/KnowledgeBasePage";
 
 export default function AdminRouter() {
   return (
@@ -119,6 +120,16 @@ export default function AdminRouter() {
           <ProtectedRoute>
             <NewAppLayout>
               <BuildingCodesPage />
+            </NewAppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/workspace/:workspaceId/knowledge-base"
+        element={
+          <ProtectedRoute>
+            <NewAppLayout>
+              <KnowledgeBasePage />
             </NewAppLayout>
           </ProtectedRoute>
         }

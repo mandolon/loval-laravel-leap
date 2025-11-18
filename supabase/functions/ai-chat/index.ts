@@ -233,6 +233,31 @@ const tools = [
         required: ["project_id"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "search_knowledge_base",
+      description: "Search through uploaded documents and files in the knowledge base to find relevant information. Use this when users ask questions that might be answered by uploaded building codes, documents, or reference materials.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "The search query to find relevant information"
+          },
+          workspace_id: {
+            type: "string",
+            description: "Workspace UUID to search within"
+          },
+          limit: {
+            type: "number",
+            description: "Maximum number of results to return (default 5)"
+          }
+        },
+        required: ["query", "workspace_id"]
+      }
+    }
   }
 ];
 
@@ -1196,6 +1221,65 @@ async function executeTool(toolName: string, args: any, supabase: any, userId: s
       return {
         success: true,
         message: `Project Timeline (last ${days} days):\n\n${timeline}`,
+        data
+      };
+    }
+
+    case 'search_knowledge_base': {
+      const { query, workspace_id, limit = 5 } = args;
+      
+      // Generate embedding for the search query
+      const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+      if (!LOVABLE_API_KEY) {
+        return { success: false, error: 'LOVABLE_API_KEY not configured' };
+      }
+
+      const embeddingResponse = await fetch('https://ai.gateway.lovable.dev/v1/embeddings', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'text-embedding-3-small',
+          input: query
+        })
+      });
+
+      if (!embeddingResponse.ok) {
+        return { success: false, error: 'Failed to generate search embedding' };
+      }
+
+      const embeddingData = await embeddingResponse.json();
+      const queryEmbedding = embeddingData.data[0].embedding;
+
+      // Search knowledge base using vector similarity
+      const { data, error } = await supabase.rpc('search_knowledge_base', {
+        query_embedding: queryEmbedding,
+        match_threshold: 0.7,
+        match_count: limit,
+        filter_workspace_id: workspace_id
+      });
+
+      if (error) {
+        return { success: false, error: `Search failed: ${error.message}` };
+      }
+
+      if (!data || data.length === 0) {
+        return {
+          success: true,
+          message: 'No relevant information found in knowledge base. The knowledge base may be empty or the query may not match any uploaded documents.',
+          data: []
+        };
+      }
+
+      const results = data.map((item: any, index: number) => 
+        `[${index + 1}] From "${item.file_name}" (similarity: ${(item.similarity * 100).toFixed(1)}%):\n${item.chunk_content.substring(0, 500)}...`
+      ).join('\n\n');
+
+      return {
+        success: true,
+        message: `Found ${data.length} relevant sections in knowledge base:\n\n${results}`,
         data
       };
     }
