@@ -139,11 +139,35 @@ export default function KnowledgeBasePage() {
           formData.append('file', file);
           formData.append('workspace_id', workspaceId!);
 
-          const { data, error } = await supabase.functions.invoke('ingest-knowledge', {
+          // Get auth token for the request
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) {
+            throw new Error('Not authenticated');
+          }
+
+          // Use direct fetch instead of supabase.functions.invoke for FormData
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const response = await fetch(`${supabaseUrl}/functions/v1/ingest-knowledge`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+            },
             body: formData
           });
 
-          if (error) throw error;
+          if (!response.ok) {
+            const errorText = await response.text();
+            let errorMessage = `Edge Function returned a non-2xx status code: ${response.status}`;
+            try {
+              const errorJson = JSON.parse(errorText);
+              errorMessage = errorJson.error || errorMessage;
+            } catch {
+              errorMessage = errorText || errorMessage;
+            }
+            throw new Error(errorMessage);
+          }
+
+          const data = await response.json();
 
           setIngestionProgress(prev => prev.map(p => 
             p.fileName === file.name 
@@ -157,11 +181,11 @@ export default function KnowledgeBasePage() {
           
           setIngestionProgress(prev => prev.map(p => 
             p.fileName === file.name 
-              ? { ...p, status: 'error', progress: 100, error: error.message }
+              ? { ...p, status: 'error', progress: 100, error: error.message || 'Unknown error' }
               : p
           ));
 
-          results.push({ fileName: file.name, success: false, error: error.message });
+          results.push({ fileName: file.name, success: false, error: error.message || 'Unknown error' });
         }
       }
 

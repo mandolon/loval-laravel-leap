@@ -61,8 +61,24 @@ serve(async (req) => {
     const file = formData.get('file') as File;
     const workspaceId = formData.get('workspace_id') as string;
     
-    if (!file || !workspaceId) {
-      throw new Error('File and workspace_id are required');
+    if (!file) {
+      return new Response(
+        JSON.stringify({ error: 'File is required' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400 
+        }
+      );
+    }
+    
+    if (!workspaceId) {
+      return new Response(
+        JSON.stringify({ error: 'workspace_id is required' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400 
+        }
+      );
     }
 
     console.log(`Processing file: ${file.name} for workspace: ${workspaceId}`);
@@ -98,15 +114,37 @@ serve(async (req) => {
     }
 
     // Read file content
-    const fileBuffer = await file.arrayBuffer();
-    const text = new TextDecoder().decode(fileBuffer);
+    let text: string;
+    try {
+      const fileBuffer = await file.arrayBuffer();
+      text = new TextDecoder('utf-8', { fatal: false }).decode(fileBuffer);
+      
+      if (!text || text.trim().length === 0) {
+        throw new Error('File appears to be empty or could not be read as text');
+      }
+    } catch (error: any) {
+      console.error('Error reading file:', error);
+      return new Response(
+        JSON.stringify({ error: `Failed to read file: ${error.message}` }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400 
+        }
+      );
+    }
     
     // Chunk the content
     const chunks = chunkText(text);
     console.log(`Created ${chunks.length} chunks`);
 
     if (chunks.length === 0) {
-      throw new Error('No content extracted from file');
+      return new Response(
+        JSON.stringify({ error: 'No content extracted from file. The file may be empty or contain only whitespace.' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400 
+        }
+      );
     }
 
     // Generate embeddings and insert records
@@ -162,11 +200,14 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error('Error:', error);
+    const errorMessage = error?.message || error?.toString() || 'Unknown error occurred';
+    const statusCode = error?.status || 500;
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
+        status: statusCode 
       }
     );
   }
