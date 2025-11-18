@@ -1,13 +1,58 @@
 import { useState, useEffect, useRef } from 'react';
 import { Project, ProjectAIIdentity } from '@/lib/api/types';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+
+// Constants matching ProjectInfoContent styles
+const INPUT =
+  "w-full h-8 rounded-lg border bg-white text-[13px] text-slate-800 placeholder:text-slate-400 placeholder:text-[13px] px-3 outline-none transition border-slate-200 hover:border-slate-300 focus:border-[#00639b] focus:ring-1 focus:ring-[#9ecafc] disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed";
+const SELECT =
+  "w-full h-8 rounded-lg border bg-white text-[13px] text-slate-800 px-3 outline-none transition border-slate-200 hover:border-slate-300 focus:border-[#00639b] focus:ring-1 focus:ring-[#9ecafc] disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed";
+const TEXTAREA =
+  "w-full min-h-[140px] rounded-lg border bg-white text-[13px] text-slate-800 p-3 outline-none transition border-slate-200 hover:border-slate-300 focus:border-[#00639b] focus:ring-1 focus:ring-[#9ecafc] disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed";
+
+// EditBar Component - matching ProjectInfoContent
+function EditBar({ 
+  editing, 
+  onStart, 
+  onCancel, 
+  onSave,
+  isSaving
+}: { 
+  editing: boolean; 
+  onStart: () => void; 
+  onCancel: () => void; 
+  onSave: () => void;
+  isSaving?: boolean;
+}) {
+  return (
+    <div className="mb-3 flex items-center justify-end gap-2">
+      {!editing ? (
+        <button 
+          onClick={onStart} 
+          className="h-8 px-3 rounded-lg border border-transparent bg-amber-400 hover:bg-amber-500 text-slate-900 text-[13px] font-medium"
+        >
+          Edit
+        </button>
+      ) : (
+        <>
+          <button 
+            onClick={onCancel}
+            disabled={isSaving}
+            className="h-8 px-3 rounded-lg border bg-white text-[13px] disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={onSave}
+            disabled={isSaving}
+            className="h-8 px-3 rounded-lg border border-amber-400 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[13px] font-medium disabled:opacity-50"
+          >
+            {isSaving ? 'Saving...' : 'Save'}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
 
 interface AIContextPanelProps {
   project: Project;
@@ -21,64 +66,73 @@ function SimpleTagInput({
   value,
   onChange,
   placeholder,
+  disabled = false,
 }: {
   value: string[];
   onChange: (value: string[]) => void;
   placeholder: string;
+  disabled?: boolean;
 }) {
   const [input, setInput] = useState('');
 
   const handleAdd = () => {
-    if (input.trim()) {
+    if (input.trim() && !disabled) {
       onChange([...value, input.trim()]);
       setInput('');
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !disabled) {
       e.preventDefault();
       handleAdd();
     }
   };
 
   return (
-    <div className="space-y-2">
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          className="flex-1 border rounded px-3 py-2 text-sm"
-        />
-        <button
-          onClick={handleAdd}
-          type="button"
-          className="px-3 py-2 bg-gray-100 rounded hover:bg-gray-200 text-sm"
-        >
-          Add
-        </button>
-      </div>
+    <div>
+      {!disabled && (
+        <div className="flex gap-2 mb-2">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            className={`${INPUT} flex-1 border-slate-400 focus:border-slate-500 focus:ring-slate-300`}
+          />
+          <button
+            onClick={handleAdd}
+            type="button"
+            className="h-8 px-3 rounded-lg border bg-white text-[13px] hover:bg-slate-50 border-slate-200"
+          >
+            Add
+          </button>
+        </div>
+      )}
       {value.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {value.map((tag, i) => (
             <div
               key={i}
-              className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm flex items-center gap-1"
+              className="bg-slate-100 text-slate-800 px-2 py-1 rounded text-sm flex items-center gap-1"
             >
-              {tag}
-              <button
-                type="button"
-                onClick={() => onChange(value.filter((_, idx) => idx !== i))}
-                className="text-blue-600 hover:text-blue-900"
-              >
-                ×
-              </button>
+              <span>{tag}</span>
+              {!disabled && (
+                <button
+                  type="button"
+                  onClick={() => onChange(value.filter((_, idx) => idx !== i))}
+                  className="text-slate-600 hover:text-slate-900 ml-1"
+                >
+                  ×
+                </button>
+              )}
             </div>
           ))}
         </div>
+      )}
+      {value.length === 0 && disabled && (
+        <div className="text-sm text-slate-500 italic">No items added yet</div>
       )}
     </div>
   );
@@ -144,22 +198,27 @@ export function AIContextPanel({ project, activeTab = 'details', onTabChange, on
 
   const [data, setData] = useState<ProjectAIIdentity>(() => initializeData(project));
   const prevProjectIdRef = useRef<string | undefined>(project?.id);
+  const backup = useRef<ProjectAIIdentity>(initializeData(project));
 
   // Sync state when project changes (different project selected)
   useEffect(() => {
     // Update state when switching to a different project
     if (project?.id && project.id !== prevProjectIdRef.current) {
       prevProjectIdRef.current = project.id;
-      setData(initializeData(project));
+      const newData = initializeData(project);
+      setData(newData);
+      backup.current = newData;
     }
   }, [project?.id]);
 
   const [isSaving, setIsSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
       await onUpdate(data);
+      setEditing(false);
     } catch (error) {
       console.error('Error saving AI context:', error);
     } finally {
@@ -167,327 +226,328 @@ export function AIContextPanel({ project, activeTab = 'details', onTabChange, on
     }
   };
 
+  const handleCancel = () => {
+    setData(backup.current);
+    setEditing(false);
+  };
+
+  const handleStartEdit = () => {
+    backup.current = { ...data };
+    setEditing(true);
+  };
+
   const typeInfo = PROJECT_TYPE_INFO[data.projectType as keyof typeof PROJECT_TYPE_INFO];
 
   return (
-    <div className="space-y-6">
+    <div onKeyDown={(e) => {
+      if (!editing) return;
+      if (e.key === 'Enter' && !e.shiftKey && e.ctrlKey) {
+        e.preventDefault();
+        handleSave();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        handleCancel();
+      }
+    }}>
+      <EditBar
+        editing={editing}
+        onStart={handleStartEdit}
+        onCancel={handleCancel}
+        onSave={handleSave}
+        isSaving={isSaving}
+      />
+      
       {/* TAB 1: PROJECT DETAILS */}
       {activeTab === 'details' && (
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Basic Information</CardTitle>
-              <CardDescription>Auto-filled from project data, edit to customize</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Project Type</label>
-                  <select
-                    value={data.projectType}
-                    onChange={(e) => setData({ ...data, projectType: e.target.value })}
-                    className="w-full border rounded px-3 py-2 text-sm"
-                  >
-                    <option value="">Select type...</option>
-                    <option value="adu">ADU (Accessory Dwelling Unit)</option>
-                    <option value="remodel">Remodel / Renovation</option>
-                    <option value="addition">Addition</option>
-                    <option value="new_construction">New Construction</option>
-                    <option value="historic">Historic Preservation</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Jurisdiction</label>
-                  <input
-                    type="text"
-                    value={data.jurisdiction}
-                    onChange={(e) => setData({ ...data, jurisdiction: e.target.value })}
-                    placeholder="e.g., San Francisco, CA"
-                    className="w-full border rounded px-3 py-2 text-sm"
-                  />
-                </div>
+        <div>
+          <div className="mb-4">
+            <label className="block text-sm text-slate-900 mb-1">Project Type</label>
+            {editing ? (
+              <select
+                value={data.projectType}
+                onChange={(e) => setData({ ...data, projectType: e.target.value })}
+                className={`${SELECT} border-slate-400 focus:border-slate-500 focus:ring-slate-300`}
+              >
+                <option value="">Select type...</option>
+                <option value="adu">ADU (Accessory Dwelling Unit)</option>
+                <option value="remodel">Remodel / Renovation</option>
+                <option value="addition">Addition</option>
+                <option value="new_construction">New Construction</option>
+                <option value="historic">Historic Preservation</option>
+              </select>
+            ) : (
+              <div className="w-full h-8 rounded-lg border bg-slate-50 text-[13px] text-slate-600 px-3 leading-8 border-slate-200">
+                {data.projectType ? data.projectType.charAt(0).toUpperCase() + data.projectType.slice(1).replace('_', ' ') : 'Not set'}
               </div>
+            )}
+          </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Project Scope</label>
-                <p className="text-xs text-gray-600 mb-2">
-                  Detailed description of what's being built or changed
-                </p>
-                <textarea
-                  value={data.projectScope}
-                  onChange={(e) => setData({ ...data, projectScope: e.target.value })}
-                  placeholder="e.g., 500 SF modern ADU addition with wood frame, passive solar orientation, ground floor bedroom/bath"
-                  rows={4}
-                  className="w-full border rounded px-3 py-2 text-sm"
-                />
+          <div className="mb-4">
+            <label className="block text-sm text-slate-900 mb-1">Jurisdiction</label>
+            <input
+              type="text"
+              value={data.jurisdiction}
+              onChange={(e) => setData({ ...data, jurisdiction: e.target.value })}
+              placeholder="e.g., San Francisco, CA"
+              readOnly={!editing}
+              className={`${INPUT} ${!editing ? 'bg-slate-50 text-slate-600 hover:border-slate-200 focus:ring-0 focus:border-slate-200' : 'border-slate-400 focus:border-slate-500 focus:ring-slate-300'}`}
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm text-slate-900 mb-1">Project Scope</label>
+            <textarea
+              value={data.projectScope}
+              onChange={(e) => setData({ ...data, projectScope: e.target.value })}
+              placeholder="e.g., 500 SF modern ADU addition with wood frame, passive solar orientation, ground floor bedroom/bath"
+              readOnly={!editing}
+              className={`${TEXTAREA} ${!editing ? 'bg-slate-50 text-slate-600 hover:border-slate-200 focus:ring-0 focus:border-slate-200' : 'border-slate-400 focus:border-slate-500 focus:ring-slate-300'}`}
+            />
+          </div>
+
+          {typeInfo && (
+            <div className="mb-4 p-4 rounded-lg border border-slate-200 bg-slate-50">
+              <div className="text-sm text-slate-600 mb-1">
+                <strong className="text-slate-900">Typical Timeline:</strong> {typeInfo.timeline} days
               </div>
-
-              {typeInfo && (
-                <div className="bg-gray-50 p-3 rounded border border-gray-200 text-sm space-y-1">
-                  <p>
-                    <strong>Typical Timeline:</strong> {typeInfo.timeline} days
-                  </p>
-                  {typeInfo.consultants.length > 0 && (
-                    <p>
-                      <strong>Typical Consultants:</strong> {typeInfo.consultants.join(', ')}
-                    </p>
-                  )}
+              {typeInfo.consultants.length > 0 && (
+                <div className="text-sm text-slate-600">
+                  <strong className="text-slate-900">Typical Consultants:</strong> {typeInfo.consultants.join(', ')}
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          )}
         </div>
       )}
 
       {/* TAB 2: REGULATORY */}
       {activeTab === 'regulatory' && (
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Zoning & Physical Requirements</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Zoning</label>
-                  <input
-                    type="text"
-                    value={data.zoning}
-                    onChange={(e) => setData({ ...data, zoning: e.target.value })}
-                    placeholder="e.g., RH-2, R-1"
-                    className="w-full border rounded px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Height Limit (ft)</label>
-                  <input
-                    type="number"
-                    value={data.heightLimit || ''}
-                    onChange={(e) =>
-                      setData({ ...data, heightLimit: parseInt(e.target.value) || 0 })
-                    }
-                    className="w-full border rounded px-3 py-2 text-sm"
-                  />
-                </div>
-              </div>
+        <div>
+          <div className="mb-4 grid gap-2 md:grid-cols-2">
+            <div>
+              <label className="block text-sm text-slate-900 mb-1">Zoning</label>
+              <input
+                type="text"
+                value={data.zoning}
+                onChange={(e) => setData({ ...data, zoning: e.target.value })}
+                placeholder="e.g., RH-2, R-1"
+                readOnly={!editing}
+                className={`${INPUT} ${!editing ? 'bg-slate-50 text-slate-600 hover:border-slate-200 focus:ring-0 focus:border-slate-200' : 'border-slate-400 focus:border-slate-500 focus:ring-slate-300'}`}
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-slate-900 mb-1">Height Limit (ft)</label>
+              <input
+                type="number"
+                value={data.heightLimit || ''}
+                onChange={(e) =>
+                  setData({ ...data, heightLimit: parseInt(e.target.value) || 0 })
+                }
+                readOnly={!editing}
+                className={`${INPUT} ${!editing ? 'bg-slate-50 text-slate-600 hover:border-slate-200 focus:ring-0 focus:border-slate-200' : 'border-slate-400 focus:border-slate-500 focus:ring-slate-300'}`}
+              />
+            </div>
+          </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Lot Size (SF)</label>
-                  <input
-                    type="number"
-                    value={data.lotSize || ''}
-                    onChange={(e) =>
-                      setData({ ...data, lotSize: parseInt(e.target.value) || 0 })
-                    }
-                    className="w-full border rounded px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Existing Sqft</label>
-                  <input
-                    type="number"
-                    value={data.existingSqft || ''}
-                    onChange={(e) =>
-                      setData({ ...data, existingSqft: parseInt(e.target.value) || 0 })
-                    }
-                    className="w-full border rounded px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Proposed Sqft</label>
-                  <input
-                    type="number"
-                    value={data.proposedSqft || ''}
-                    onChange={(e) =>
-                      setData({ ...data, proposedSqft: parseInt(e.target.value) || 0 })
-                    }
-                    className="w-full border rounded px-3 py-2 text-sm"
-                  />
-                </div>
-              </div>
+          <div className="mb-4 grid gap-2 md:grid-cols-3">
+            <div>
+              <label className="block text-sm text-slate-900 mb-1">Lot Size (SF)</label>
+              <input
+                type="number"
+                value={data.lotSize || ''}
+                onChange={(e) =>
+                  setData({ ...data, lotSize: parseInt(e.target.value) || 0 })
+                }
+                readOnly={!editing}
+                className={`${INPUT} ${!editing ? 'bg-slate-50 text-slate-600 hover:border-slate-200 focus:ring-0 focus:border-slate-200' : 'border-slate-400 focus:border-slate-500 focus:ring-slate-300'}`}
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-slate-900 mb-1">Existing Sqft</label>
+              <input
+                type="number"
+                value={data.existingSqft || ''}
+                onChange={(e) =>
+                  setData({ ...data, existingSqft: parseInt(e.target.value) || 0 })
+                }
+                readOnly={!editing}
+                className={`${INPUT} ${!editing ? 'bg-slate-50 text-slate-600 hover:border-slate-200 focus:ring-0 focus:border-slate-200' : 'border-slate-400 focus:border-slate-500 focus:ring-slate-300'}`}
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-slate-900 mb-1">Proposed Sqft</label>
+              <input
+                type="number"
+                value={data.proposedSqft || ''}
+                onChange={(e) =>
+                  setData({ ...data, proposedSqft: parseInt(e.target.value) || 0 })
+                }
+                readOnly={!editing}
+                className={`${INPUT} ${!editing ? 'bg-slate-50 text-slate-600 hover:border-slate-200 focus:ring-0 focus:border-slate-200' : 'border-slate-400 focus:border-slate-500 focus:ring-slate-300'}`}
+              />
+            </div>
+          </div>
 
+          <div className="mb-4">
+            <label className="block text-sm text-slate-900 mb-1">Setbacks (ft)</label>
+            <div className="grid grid-cols-3 gap-2">
               <div>
-                <label className="block text-sm font-medium mb-2">Setbacks (ft)</label>
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="text-xs text-gray-600 mb-1 block">Front</label>
-                    <input
-                      type="number"
-                      value={data.setbacks.front || ''}
-                      onChange={(e) =>
-                        setData({
-                          ...data,
-                          setbacks: {
-                            ...data.setbacks,
-                            front: parseInt(e.target.value) || 0,
-                          },
-                        })
-                      }
-                      className="w-full border rounded px-2 py-1 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-600 mb-1 block">Side</label>
-                    <input
-                      type="number"
-                      value={data.setbacks.side || ''}
-                      onChange={(e) =>
-                        setData({
-                          ...data,
-                          setbacks: {
-                            ...data.setbacks,
-                            side: parseInt(e.target.value) || 0,
-                          },
-                        })
-                      }
-                      className="w-full border rounded px-2 py-1 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-600 mb-1 block">Rear</label>
-                    <input
-                      type="number"
-                      value={data.setbacks.rear || ''}
-                      onChange={(e) =>
-                        setData({
-                          ...data,
-                          setbacks: {
-                            ...data.setbacks,
-                            rear: parseInt(e.target.value) || 0,
-                          },
-                        })
-                      }
-                      className="w-full border rounded px-2 py-1 text-sm"
-                    />
-                  </div>
-                </div>
+                <label className="text-xs text-slate-600 mb-1 block">Front</label>
+                <input
+                  type="number"
+                  value={data.setbacks.front || ''}
+                  onChange={(e) =>
+                    setData({
+                      ...data,
+                      setbacks: {
+                        ...data.setbacks,
+                        front: parseInt(e.target.value) || 0,
+                      },
+                    })
+                  }
+                  readOnly={!editing}
+                  className={`${INPUT} ${!editing ? 'bg-slate-50 text-slate-600 hover:border-slate-200 focus:ring-0 focus:border-slate-200' : 'border-slate-400 focus:border-slate-500 focus:ring-slate-300'}`}
+                />
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Compliance & Consultants</CardTitle>
-              <CardDescription>Which codes and specialists apply to this project?</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Required Compliance</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { value: 'title_24', label: 'Title 24 (Energy Code)' },
-                    { value: 'local_zoning', label: 'Local Zoning Compliance' },
-                    { value: 'accessibility', label: 'Accessibility (ADA)' },
-                    { value: 'fire_safety', label: 'Fire Safety Code' },
-                    { value: 'seismic', label: 'Seismic Requirements' },
-                    { value: 'environmental', label: 'Environmental Review' },
-                  ].map((item) => (
-                    <label key={item.value} className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={data.requiredCompliance.includes(item.value)}
-                        onChange={(e) =>
-                          setData({
-                            ...data,
-                            requiredCompliance: e.target.checked
-                              ? [...data.requiredCompliance, item.value]
-                              : data.requiredCompliance.filter((c) => c !== item.value),
-                          })
-                        }
-                      />
-                      {item.label}
-                    </label>
-                  ))}
-                </div>
+                <label className="text-xs text-slate-600 mb-1 block">Side</label>
+                <input
+                  type="number"
+                  value={data.setbacks.side || ''}
+                  onChange={(e) =>
+                    setData({
+                      ...data,
+                      setbacks: {
+                        ...data.setbacks,
+                        side: parseInt(e.target.value) || 0,
+                      },
+                    })
+                  }
+                  readOnly={!editing}
+                  className={`${INPUT} ${!editing ? 'bg-slate-50 text-slate-600 hover:border-slate-200 focus:ring-0 focus:border-slate-200' : 'border-slate-400 focus:border-slate-500 focus:ring-slate-300'}`}
+                />
               </div>
-
               <div>
-                <label className="block text-sm font-medium mb-2">Required Consultants</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { value: 'structural_engineer', label: 'Structural Engineer' },
-                    { value: 'energy_consultant', label: 'Energy Consultant' },
-                    { value: 'mep_engineer', label: 'MEP Engineer' },
-                    { value: 'civil_engineer', label: 'Civil Engineer' },
-                    { value: 'landscape_architect', label: 'Landscape Architect' },
-                    { value: 'geotechnical_engineer', label: 'Geotechnical Engineer' },
-                  ].map((item) => (
-                    <label key={item.value} className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={data.requiredConsultants.includes(item.value)}
-                        onChange={(e) =>
-                          setData({
-                            ...data,
-                            requiredConsultants: e.target.checked
-                              ? [...data.requiredConsultants, item.value]
-                              : data.requiredConsultants.filter((c) => c !== item.value),
-                          })
-                        }
-                      />
-                      {item.label}
-                    </label>
-                  ))}
-                </div>
+                <label className="text-xs text-slate-600 mb-1 block">Rear</label>
+                <input
+                  type="number"
+                  value={data.setbacks.rear || ''}
+                  onChange={(e) =>
+                    setData({
+                      ...data,
+                      setbacks: {
+                        ...data.setbacks,
+                        rear: parseInt(e.target.value) || 0,
+                      },
+                    })
+                  }
+                  readOnly={!editing}
+                  className={`${INPUT} ${!editing ? 'bg-slate-50 text-slate-600 hover:border-slate-200 focus:ring-0 focus:border-slate-200' : 'border-slate-400 focus:border-slate-500 focus:ring-slate-300'}`}
+                />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm text-slate-900 mb-1">Required Compliance</label>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { value: 'title_24', label: 'Title 24 (Energy Code)' },
+                { value: 'local_zoning', label: 'Local Zoning Compliance' },
+                { value: 'accessibility', label: 'Accessibility (ADA)' },
+                { value: 'fire_safety', label: 'Fire Safety Code' },
+                { value: 'seismic', label: 'Seismic Requirements' },
+                { value: 'environmental', label: 'Environmental Review' },
+              ].map((item) => (
+                <label key={item.value} className="flex items-center gap-2 text-sm text-slate-900">
+                  <input
+                    type="checkbox"
+                    checked={data.requiredCompliance.includes(item.value)}
+                    onChange={(e) =>
+                      setData({
+                        ...data,
+                        requiredCompliance: e.target.checked
+                          ? [...data.requiredCompliance, item.value]
+                          : data.requiredCompliance.filter((c) => c !== item.value),
+                      })
+                    }
+                    disabled={!editing}
+                    className="disabled:opacity-50"
+                  />
+                  <span>{item.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm text-slate-900 mb-1">Required Consultants</label>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { value: 'structural_engineer', label: 'Structural Engineer' },
+                { value: 'energy_consultant', label: 'Energy Consultant' },
+                { value: 'mep_engineer', label: 'MEP Engineer' },
+                { value: 'civil_engineer', label: 'Civil Engineer' },
+                { value: 'landscape_architect', label: 'Landscape Architect' },
+                { value: 'geotechnical_engineer', label: 'Geotechnical Engineer' },
+              ].map((item) => (
+                <label key={item.value} className="flex items-center gap-2 text-sm text-slate-900">
+                  <input
+                    type="checkbox"
+                    checked={data.requiredConsultants.includes(item.value)}
+                    onChange={(e) =>
+                      setData({
+                        ...data,
+                        requiredConsultants: e.target.checked
+                          ? [...data.requiredConsultants, item.value]
+                          : data.requiredConsultants.filter((c) => c !== item.value),
+                      })
+                    }
+                    disabled={!editing}
+                    className="disabled:opacity-50"
+                  />
+                  <span>{item.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
       {/* TAB 3: CURRENT STATUS */}
       {activeTab === 'status' && (
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Next Steps & Blockers</CardTitle>
-              <CardDescription>
-                Track immediate action items and current obstacles
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Immediate Next Steps</label>
-                <SimpleTagInput
-                  value={data.nextSteps}
-                  onChange={(steps) => setData({ ...data, nextSteps: steps })}
-                  placeholder="e.g., Structural calculations, site survey, Title 24 analysis"
-                />
-              </div>
+        <div>
+          <div className="mb-4">
+            <label className="block text-sm text-slate-900 mb-1">Immediate Next Steps</label>
+            <SimpleTagInput
+              value={data.nextSteps}
+              onChange={(steps) => setData({ ...data, nextSteps: steps })}
+              placeholder="e.g., Structural calculations, site survey, Title 24 analysis"
+              disabled={!editing}
+            />
+          </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Current Blockers</label>
-                <SimpleTagInput
-                  value={data.blockers}
-                  onChange={(blockers) => setData({ ...data, blockers })}
-                  placeholder="e.g., Waiting on surveyor report, unclear zoning interpretation"
-                />
-              </div>
+          <div className="mb-4">
+            <label className="block text-sm text-slate-900 mb-1">Current Blockers</label>
+            <SimpleTagInput
+              value={data.blockers}
+              onChange={(blockers) => setData({ ...data, blockers })}
+              placeholder="e.g., Waiting on surveyor report, unclear zoning interpretation"
+              disabled={!editing}
+            />
+          </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Open Questions</label>
-                <SimpleTagInput
-                  value={data.openQuestions}
-                  onChange={(questions) => setData({ ...data, openQuestions: questions })}
-                  placeholder="e.g., Final material selections, roof type, structural system"
-                />
-              </div>
-            </CardContent>
-          </Card>
+          <div className="mb-4">
+            <label className="block text-sm text-slate-900 mb-1">Open Questions</label>
+            <SimpleTagInput
+              value={data.openQuestions}
+              onChange={(questions) => setData({ ...data, openQuestions: questions })}
+              placeholder="e.g., Final material selections, roof type, structural system"
+              disabled={!editing}
+            />
+          </div>
         </div>
       )}
-
-      <div className="flex gap-2 pt-4">
-        <Button 
-          onClick={handleSave} 
-          disabled={isSaving}
-          className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
-        >
-          {isSaving ? 'Saving...' : 'Save Project Context'}
-        </Button>
-        <Button variant="outline" disabled={isSaving}>Cancel</Button>
-      </div>
     </div>
   );
 }
