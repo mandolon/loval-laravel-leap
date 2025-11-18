@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef, forwardRef, useCallback } from "react";
-import { Search, FolderClosed, BookOpen, MoreVertical, Settings2, Info, Plus, RefreshCw, Edit, Trash2, Cloud, FileText, Scale, Activity } from "lucide-react";
+import { Search, FolderClosed, BookOpen, MoreVertical, Info, Plus, RefreshCw, Edit, Trash2, Cloud, FileText, Scale, Activity } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useProjectFolders, useProjectFiles, useDeleteProjectFile, useDeleteFolder, useMoveProjectFile, useRenameFolder, useRenameProjectFile, useUploadProjectFiles, downloadProjectFile, useCreateFolder, use3DModelsFolder } from '@/lib/api/hooks/useProjectFiles';
 import { useProjectFolderDragDrop } from '@/lib/api/hooks/useProjectFolderDragDrop';
@@ -7,12 +7,9 @@ import { useDrawingVersions, useUpdateDrawingScale, useCreateDrawingPage, useCre
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
-import { useHardDeleteProject, useProject } from '@/lib/api/hooks/useProjects';
+import { useProject } from '@/lib/api/hooks/useProjects';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useRoleAwareNavigation } from '@/hooks/useRoleAwareNavigation';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
+import { useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { ProjectInfoNavigation } from './ProjectInfoNavigation';
 import { ProjectPanel3DModelsTab } from './project-panel-tabs/ProjectPanel3DModelsTab';
@@ -415,12 +412,11 @@ export default function ProjectPanel({
   initialWhiteboardPageId?: string | null;
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialTab = (searchParams.get('projectTab') as 'files' | 'whiteboards' | '3dmodels' | 'ai' | 'settings' | 'info') || 'files';
-  const [tab, setTab] = useState<'files' | 'whiteboards' | '3dmodels' | 'ai' | 'settings' | 'info'>(initialTab);
+  const initialTab = (searchParams.get('projectTab') as 'files' | 'whiteboards' | '3dmodels' | 'ai' | 'info') || 'files';
+  const [tab, setTab] = useState<'files' | 'whiteboards' | '3dmodels' | 'ai' | 'info'>(initialTab);
   const [query, setQuery] = useState("");
   const [wbQuery, setWbQuery] = useState("");
   const [selectedWB, setSelectedWB] = useState<any>(null);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   
   // 3D Models tab state
   const [selectedModelVersion, setSelectedModelVersion] = useState("");
@@ -439,9 +435,6 @@ export default function ProjectPanel({
   const [draftVersionNotes, setDraftVersionNotes] = useState("");
 
   const { currentWorkspaceId } = useWorkspaces();
-  const navigate = useNavigate();
-  const { navigateToWorkspace } = useRoleAwareNavigation();
-  const hardDeleteProjectMutation = useHardDeleteProject(currentWorkspaceId || "");
   const { data: project } = useProject(projectId);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -1701,35 +1694,6 @@ export default function ProjectPanel({
             <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
           </svg>
         </button>
-        <button
-          style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: radius.md,
-            border: tab === "settings" ? `1px solid ${theme.settings}` : '1px solid rgba(229, 231, 235, 0.5)',
-            backgroundColor: tab === "settings" ? theme.settings : 'transparent',
-            display: 'grid',
-            placeItems: 'center',
-            transition: 'all 0.2s',
-            cursor: 'pointer',
-            marginLeft: 'auto',
-          }}
-          onMouseEnter={(e) => {
-            if (tab !== "settings") e.currentTarget.style.backgroundColor = `${theme.settings}15`;
-          }}
-          onMouseLeave={(e) => {
-            if (tab !== "settings") e.currentTarget.style.backgroundColor = 'transparent';
-          }}
-          aria-label="Project Settings"
-          title="Project Settings"
-          onClick={() => handleTabChange("settings")}
-        >
-          <Settings2 style={{
-            width: '16px',
-            height: '16px',
-            color: tab === "settings" ? '#FFFFFF' : 'rgba(52, 211, 153, 0.5)',
-          }} />
-        </button>
       </div>
       
       {/* Modern Content Area */}
@@ -2290,69 +2254,9 @@ export default function ProjectPanel({
             onModelSelect={onModelSelect}
           />
         )}
-
-        {/* Settings tab */}
-        {tab === "settings" && (
-          <div className="px-2.5 pt-1.5 pb-2">
-            <div className="space-y-4">
-              <div>
-                <div className="text-[13px] font-medium text-slate-700 mb-2">Project Settings</div>
-                <div className="text-[10px] text-slate-500 mb-4">{projectName}</div>
-              </div>
-              
-              <div className="pt-4 border-t border-slate-200">
-                <Button
-                  variant="destructive"
-                  onClick={() => setDeleteConfirmOpen(true)}
-                  className="w-full h-8 text-[11px]"
-                >
-                  Delete Project Permanently
-                </Button>
-                <div className="mt-2 text-[10px] text-slate-500 text-center">
-                  This action cannot be undone
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-          </div>
+      </div>
         )}
       </div>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Project Permanently?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the project "{projectName}" and all of its data including files, tasks, whiteboards, and all related information.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                hardDeleteProjectMutation.mutate(projectId, {
-                  onSuccess: () => {
-                    setDeleteConfirmOpen(false);
-                    // Navigate to projects list or home, then refresh
-                    if (currentWorkspaceId) {
-                      navigateToWorkspace("/projects");
-                    } else {
-                      navigate('/');
-                    }
-                    // Refresh the page to update the project list
-                    window.location.reload();
-                  },
-                });
-              }}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              Delete Permanently
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Upload Progress Bar */}
       {uploadingFiles.length > 0 && (

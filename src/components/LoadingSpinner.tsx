@@ -1,14 +1,35 @@
 import { useMemo } from 'react';
 
 const HARSH_MESSAGES = [
-  "You don't need a north arrow, you need God.",
-  "This bar moves more than you today.",
-  "Your plans aren't the only thing stuck in 2D.",
-  "Everything you need is in this dashboard. Get to work.",
-  "You are good, but AI is better.",
-  "Client is waiting...",
-  "Good job.",
-  "Loading up your paycheck..."
+  "Cooking.....",
+  "Crunching.....",
+  "Tinkering.....",
+  "Shimmying.....",
+  "Computing.....",
+  "Wrangling.....",
+  "Manifesting.....",
+  "Meandering.....",
+  "Unravelling.....",
+  "Creating.....",
+  "Spelunking.....",
+  "Cogitating.....",
+  "Frolicking.....",
+  "Discombobulating.....",
+  "Booping.....",
+  "Stewing.....",
+  "Ideating.....",
+  "Effecting.....",
+  "Baking.....",
+  "Schlepping.....",
+  "Churning.....",
+  "Hatching.....",
+  "Imagining.....",
+  "Processing.....",
+  "Ruminating.....",
+  "Reticulating.....",
+  "Channelling.....",
+  "Philosophising.....",
+  "Spinning....."
 ];
 
 const SESSION_KEY = 'rehome_loading_message';

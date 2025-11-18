@@ -637,6 +637,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
                       modelFile={selectedModel.modelFile}
                       settings={selectedModel.settings}
                       versionNumber={selectedModel.versionNumber}
+                      versionId={selectedModel.versionId}
                     />
                   ) : selectedWhiteboard ? (
                     <DrawingErrorBoundary 

@@ -3,7 +3,8 @@ import {
   Ruler,
   Scissors,
   MousePointer2,
-  Tag
+  Tag,
+  Bookmark
 } from 'lucide-react';
 
 interface ViewerToolbarProps {
@@ -18,6 +19,8 @@ interface ViewerToolbarProps {
   annotationMode: boolean;
   onToggleAnnotation: () => void;
   onResetView: () => void;
+  versionId?: string;
+  onSaveCameraView?: () => void;
 }
 
 export const ViewerToolbar = ({
@@ -32,6 +35,8 @@ export const ViewerToolbar = ({
   annotationMode,
   onToggleAnnotation,
   onResetView,
+  versionId,
+  onSaveCameraView,
 }: ViewerToolbarProps) => {
   // 3D model tab color from ProjectPanel theme (#06B6D4)
   const modelTabColor = '#06B6D4';
@@ -217,6 +222,27 @@ export const ViewerToolbar = ({
               )}
             </div>
           </div>
+          
+          {/* Save Camera View Button */}
+          {versionId && onSaveCameraView && (
+            <>
+              <div className="w-px h-5 bg-border" />
+              <button
+                onClick={onSaveCameraView}
+                className="h-7 w-7 flex items-center justify-center rounded transition-colors text-muted-foreground"
+                style={{ backgroundColor: 'transparent' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = hoverBgColor;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+                title="Save Current View"
+              >
+                <Bookmark className="h-4 w-4" />
+              </button>
+            </>
+          )}
         </div>
         {/* Helper Text */}
         {helperText && (

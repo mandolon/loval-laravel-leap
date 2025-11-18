@@ -15,6 +15,16 @@ import { AnnotationInput } from './3d-viewer/components/AnnotationInput';
 import { useAnnotationInteraction } from './3d-viewer/hooks/useAnnotationInteraction';
 import { useIfcViewerAPI } from '../../hooks/useIfcViewerAPI';
 import { PropertiesPanel } from './3d-viewer/components/PropertiesPanel';
+import {
+  useModelDimensions,
+  useSaveModelDimension,
+  useModelAnnotations,
+  useSaveModelAnnotation,
+  useUpdateModelAnnotation,
+  useDeleteModelAnnotation,
+  useModelClippingPlanes,
+  useSaveModelClippingPlane,
+} from '@/lib/api/hooks/useModelViewerState';
 
 interface ModelSettings {
   background?: string;
@@ -37,9 +47,10 @@ interface Team3DModelViewerProps {
   } | null;
   settings?: ModelSettings;
   versionNumber?: string;
+  versionId?: string;
 }
 
-const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelViewerProps) => {
+const Team3DModelViewer = ({ modelFile, settings, versionNumber, versionId }: Team3DModelViewerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   
   // Initialize viewer
@@ -47,6 +58,18 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber }: Team3DModelVi
   
   // Load model
   const { loading, error } = useModelLoading(viewerRef, viewerReady, modelFile, settings);
+  
+  // Load persisted viewer state
+  const { data: savedDimensions = [] } = useModelDimensions(versionId);
+  const { data: savedAnnotations = [] } = useModelAnnotations(versionId);
+  const { data: savedClippingPlanes = [] } = useModelClippingPlanes(versionId);
+  
+  // Mutations for saving state
+  const saveDimensionMutation = useSaveModelDimension();
+  const saveAnnotationMutation = useSaveModelAnnotation();
+  const updateAnnotationMutation = useUpdateModelAnnotation();
+  const deleteAnnotationMutation = useDeleteModelAnnotation();
+  const saveClippingPlaneMutation = useSaveModelClippingPlane();
   
   // Edge toggle functionality
   const { toggleEdges } = useIfcViewerAPI();

@@ -667,3 +667,48 @@ export interface UpdateWorkspaceSettingsInput {
   ai_instructions?: string; // AI assistant custom instructions
   metadata?: Record<string, unknown>;
 }
+
+// ============= 3D Model Viewer State =============
+
+export interface ModelCameraView {
+  id: string;
+  version_id: string;
+  name: string;
+  position: { x: number; y: number; z: number };
+  target: { x: number; y: number; z: number };
+  zoom: number;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ModelDimension {
+  id: string;
+  version_id: string;
+  dimension_data: any; // IFC.js dimension object
+  label?: string;
+  created_by?: string;
+  created_at: string;
+}
+
+export interface ModelAnnotation {
+  id: string;
+  version_id: string;
+  position: { x: number; y: number; z: number };
+  text: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ModelClippingPlane {
+  id: string;
+  version_id: string;
+  plane_data: {
+    normal: { x: number; y: number; z: number };
+    origin: { x: number; y: number; z: number };
+  };
+  name?: string;
+  created_by?: string;
+  created_at: string;
+}
