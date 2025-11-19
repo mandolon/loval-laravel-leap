@@ -118,11 +118,44 @@ export const useViewerInitialization = (
           window.addEventListener('keydown', handleKeyDown, true);
           window.addEventListener('keyup', handleKeyUp, true);
           
+          // Slow zoom when Shift is pressed
+          const handleWheel = (event: WheelEvent) => {
+            if (event.shiftKey) {
+              event.preventDefault();
+              event.stopPropagation();
+              
+              // Create a new wheel event with reduced deltaY (slower zoom)
+              const slowFactor = 0.2; // 20% of normal speed
+              const slowedEvent = new WheelEvent('wheel', {
+                bubbles: true,
+                cancelable: true,
+                view: window,
+                deltaX: event.deltaX,
+                deltaY: event.deltaY * slowFactor,
+                deltaZ: event.deltaZ,
+                deltaMode: event.deltaMode,
+                clientX: event.clientX,
+                clientY: event.clientY,
+                screenX: event.screenX,
+                screenY: event.screenY,
+                ctrlKey: event.ctrlKey,
+                shiftKey: false, // Remove shift from the event so CameraControls doesn't see it
+                altKey: event.altKey,
+                metaKey: event.metaKey
+              });
+              
+              domElement.dispatchEvent(slowedEvent);
+            }
+          };
+          
+          domElement.addEventListener('wheel', handleWheel, true);
+          
           // Store cleanup function
-          (viewer as any)._shiftMiddleMouseCleanup = () => {
+          (viewer as any)._customControlsCleanup = () => {
             domElement.removeEventListener('mousedown', handleMouseDown, true);
             domElement.removeEventListener('mousemove', handleMouseMove, true);
             domElement.removeEventListener('mouseup', handleMouseUp, true);
+            domElement.removeEventListener('wheel', handleWheel, true);
             window.removeEventListener('keydown', handleKeyDown, true);
             window.removeEventListener('keyup', handleKeyUp, true);
           };
@@ -146,8 +179,8 @@ export const useViewerInitialization = (
     return () => {
       if (viewerRef.current) {
         // Cleanup custom event handlers
-        if ((viewerRef.current as any)._shiftMiddleMouseCleanup) {
-          (viewerRef.current as any)._shiftMiddleMouseCleanup();
+        if ((viewerRef.current as any)._customControlsCleanup) {
+          (viewerRef.current as any)._customControlsCleanup();
         }
         viewerRef.current.dispose();
         viewerRef.current = null;
