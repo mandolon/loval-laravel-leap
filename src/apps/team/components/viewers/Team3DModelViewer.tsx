@@ -782,7 +782,7 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber, versionId }: Te
   }
 
   return (
-    <div className="flex flex-col bg-background h-full">
+    <div className="flex flex-col bg-background h-full rounded-b-xl overflow-hidden">
       {/* 3D Viewer Content */}
       <div className="flex-1 overflow-hidden relative bg-background">
         {/* Floating Toolbar */}
