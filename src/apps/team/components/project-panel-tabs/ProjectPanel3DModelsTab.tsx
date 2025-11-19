@@ -31,6 +31,7 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
   const [selectedModelVersion, setSelectedModelVersion] = useState("");
   const [modelBackground, setModelBackground] = useState<"light" | "dark">("light");
   const [showEdges, setShowEdges] = useState(true);
+  const [hiddenLineMode, setHiddenLineMode] = useState(false);
   const [showGrid, setShowGrid] = useState(true);
   const [showAxes, setShowAxes] = useState(true);
   const [layers, setLayers] = useState({
@@ -86,6 +87,7 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
       const settings = modelSettings as any;
       setModelBackground(settings.background || 'light');
       setShowEdges(settings.show_edges ?? true);
+      setHiddenLineMode(settings.hidden_line_mode ?? false);
       setShowGrid(settings.show_grid ?? true);
       setShowAxes(settings.show_axes ?? true);
       setLayers(settings.layers || {
@@ -102,6 +104,7 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
       // Reset to defaults if no settings found
       setModelBackground('light');
       setShowEdges(true);
+      setHiddenLineMode(false);
       setShowGrid(true);
       setShowAxes(true);
       setLayers({
@@ -150,6 +153,7 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
     const settings = {
       background: modelBackground,
       show_edges: showEdges,
+      hidden_line_mode: hiddenLineMode,
       show_grid: showGrid,
       show_axes: showAxes,
       layers,
@@ -182,7 +186,7 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
       settings,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedModelVersion, versionFiles, modelVersions, modelBackground, showEdges, showGrid, showAxes, layers, onModelSelect]);
+  }, [selectedModelVersion, versionFiles, modelVersions, modelBackground, showEdges, hiddenLineMode, showGrid, showAxes, layers, onModelSelect]);
 
   // ---- 3D Models: upload and save handlers ----
   const handleModelUploadClick = () => {
@@ -463,6 +467,7 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
           background: modelBackground,
           show_grid: showGrid,
           show_axes: showAxes,
+          hidden_line_mode: hiddenLineMode,
           layers,
           notes: versionNotes,
         },
@@ -605,6 +610,24 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
                   <span
                     className={`inline-block h-2.5 w-2.5 transform rounded-full bg-white transition-transform ${
                       showEdges ? 'translate-x-3' : 'translate-x-0.5'
+                    }`}
+                  />
+                </button>
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-slate-800">
+                <span>Hidden Line</span>
+                <button
+                  type="button"
+                  onClick={() => setHiddenLineMode(!hiddenLineMode)}
+                  className={`relative inline-flex h-3.5 w-6 items-center rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-slate-500 focus:ring-offset-1 ${
+                    hiddenLineMode ? 'bg-slate-900' : 'bg-slate-300'
+                  }`}
+                  role="switch"
+                  aria-checked={hiddenLineMode}
+                >
+                  <span
+                    className={`inline-block h-2.5 w-2.5 transform rounded-full bg-white transition-transform ${
+                      hiddenLineMode ? 'translate-x-3' : 'translate-x-0.5'
                     }`}
                   />
                 </button>

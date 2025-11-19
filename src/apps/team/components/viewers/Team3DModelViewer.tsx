@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import * as THREE from 'three';
 import { logger } from '@/utils/logger';
 import { restoreDimensionsVisibility } from './3d-viewer/utils/dimensionUtils';
+import { toggleHiddenLineMode } from './3d-viewer/utils/hiddenLineMode';
 import { ViewerToolbar } from './3d-viewer/ViewerToolbar';
 import { useViewerInitialization } from './3d-viewer/hooks/useViewerInitialization';
 import { useModelLoading } from './3d-viewer/hooks/useModelLoading';
@@ -92,6 +93,21 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber, versionId }: Te
       logger.warn('Error toggling edges:', error);
     }
   }, [settings?.show_edges, viewerReady, loading, toggleEdges]);
+  
+  // Handle hidden line mode toggle
+  useEffect(() => {
+    if (!viewerRef.current || !viewerReady || loading) return;
+    
+    const hiddenLineMode = settings?.hidden_line_mode ?? false;
+    console.log('[Team3DModelViewer] Hidden line mode setting changed:', hiddenLineMode);
+    
+    try {
+      const modelID = 0; // Assuming first model
+      toggleHiddenLineMode(viewerRef.current, modelID, hiddenLineMode);
+    } catch (error) {
+      console.error('[Team3DModelViewer] Error toggling hidden line mode:', error);
+    }
+  }, [settings?.hidden_line_mode, viewerReady, loading]);
   
   // Tool state
   const [measurementMode, setMeasurementMode] = useState<'none' | 'distance' | 'area' | 'volume'>('none');
