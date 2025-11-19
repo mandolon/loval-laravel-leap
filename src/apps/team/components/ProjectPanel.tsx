@@ -1737,7 +1737,10 @@ export default function ProjectPanel({
               if (tab !== "whiteboards") e.currentTarget.style.backgroundColor = 'transparent';
             }}
             aria-label="Whiteboards"
-            onClick={() => handleTabChange("whiteboards")}
+            onClick={() => {
+              setSelectedWB(null);
+              handleTabChange("whiteboards");
+            }}
           >
             <StickyNote style={{
               width: '16px',

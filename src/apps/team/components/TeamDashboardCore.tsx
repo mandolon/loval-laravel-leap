@@ -664,6 +664,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
                       }}
                     >
                       <ExcalidrawCanvas
+                        key={selectedWhiteboard.pageId}
                         pageId={selectedWhiteboard.pageId}
                         projectId={userProjects.find((p: any) => p.name === selected?.item)?.id || ''}
                         onApiReady={(api) => {/* Optional: store api reference */}}
