@@ -106,7 +106,6 @@ const PDFViewer = ({
     'sample-pdf.pdf'.toLowerCase()
   ]), []);
 
-
   const documentFileSource = useMemo(() => {
     if (!file?.name) return null;
     if (file.url) {
