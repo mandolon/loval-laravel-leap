@@ -260,9 +260,22 @@ export default function ExcalidrawCanvas({
     return data;
   }, [pageData]);
   
-  // Ensure collaborators is always a Map - memoized to prevent infinite re-renders
+  // Stabilize appState with ref to prevent re-renders
+  const mergedAppStateRef = useRef<any>(null);
+  
+  // Only update appState if data actually changed
   const mergedAppState = useMemo(() => {
     const savedAppState = excalidrawData?.appState || {};
+    
+    // Stringify to compare if data actually changed
+    const newStateString = JSON.stringify(savedAppState);
+    const oldStateString = mergedAppStateRef.current ? JSON.stringify(mergedAppStateRef.current) : null;
+    
+    // If state hasn't changed, return previous reference
+    if (newStateString === oldStateString && mergedAppStateRef.current) {
+      return mergedAppStateRef.current;
+    }
+    
     const sanitizedAppState = {
       ...defaultAppState,
       ...savedAppState,
@@ -275,6 +288,7 @@ export default function ExcalidrawCanvas({
       sanitizedAppState.searchMatches = null;
     }
     
+    mergedAppStateRef.current = sanitizedAppState;
     return sanitizedAppState;
   }, [excalidrawData, defaultAppState]);
   
