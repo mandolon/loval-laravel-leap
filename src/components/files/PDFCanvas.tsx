@@ -12,7 +12,6 @@ interface PDFCanvasProps {
   fetchStatus: string;
   loading: boolean;
   error: string | null;
-  browserWarning?: string | null;
   documentFileSource: string | null;
   workerOk: boolean;
   onDocumentLoadSuccess: (data: { numPages: number }) => void;
@@ -33,7 +32,6 @@ const PDFCanvas = forwardRef<HTMLDivElement, PDFCanvasProps>(({
   fetchStatus: _fetchStatus,
   loading: _loading,
   error,
-  browserWarning,
   documentFileSource,
   workerOk: _workerOk,
   onDocumentLoadSuccess,
@@ -305,17 +303,7 @@ const PDFCanvas = forwardRef<HTMLDivElement, PDFCanvasProps>(({
         contentVisibility: 'auto',
       }}
     >
-      {browserWarning && (
-        <div className="flex flex-col items-center justify-center h-64 text-center px-4">
-          <div className={`text-destructive text-[10px] mb-2`}>⚠️</div>
-          <div className={`text-destructive text-[10px] font-medium leading-normal tracking-normal mb-2`}>{browserWarning}</div>
-          <div className={`text-muted-foreground text-[10px] mt-1`}>
-            Please update your browser or use a modern device to preview PDFs.
-          </div>
-        </div>
-      )}
-
-      {error && !browserWarning && (
+      {error && (
         <div className="flex flex-col items-center justify-center h-64 text-center">
           <div className={`text-destructive text-[10px] mb-2`}>⚠️</div>
           <div className={`text-destructive text-[10px] font-medium leading-normal tracking-normal`}>{error}</div>
@@ -325,7 +313,7 @@ const PDFCanvas = forwardRef<HTMLDivElement, PDFCanvasProps>(({
         </div>
       )}
 
-      {!error && !browserWarning && documentFileSource && (
+      {!error && documentFileSource && (
         <div className="block w-full" style={{ lineHeight: 0, fontSize: 0 }}>
           <Document
             key={documentFileSource}
