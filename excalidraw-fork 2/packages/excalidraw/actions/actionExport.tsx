@@ -263,7 +263,7 @@ export const actionSaveToDatabase = register({
     window.dispatchEvent(event);
     
     return {
-      captureUpdate: CaptureUpdateAction.NONE,
+      captureUpdate: CaptureUpdateAction.NEVER,
       appState: {
         ...appState,
         toast: { message: "Saving..." },

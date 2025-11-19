@@ -2167,51 +2167,49 @@ export default function ProjectPanel({
                   <span className="text-[11px] text-slate-400">/</span>
                   <span className="text-[11px] text-slate-900 font-medium truncate">{selectedWB.pageName}</span>
                 </div>
-                <div className="mt-2.5 rounded-xl border border-slate-200 bg-white shadow-sm p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-[12px] font-semibold text-slate-900">Properties</div>
-                    <button className="h-6 w-6 grid place-items-center rounded-md opacity-70 hover:opacity-100 transition-opacity hover:bg-slate-100" aria-label="Collapse">
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="m6 9 6 6 6-6" />
-                      </svg>
-                    </button>
+                
+                <div className="mt-3 space-y-4">
+                  {/* File Information */}
+                  <div>
+                    <div className="text-[10px] font-semibold text-slate-500 tracking-[0.08em] mb-2">
+                      FILE INFORMATION
+                    </div>
+                    <div className="space-y-2">
+                      {(() => {
+                        const m = pageMeta[selectedWB.pageId as keyof typeof pageMeta] || { by: "—", at: "—" };
+                        return (
+                          <>
+                            <KeyVal k="Version #" v={(m as any).version_number != null ? String((m as any).version_number) : "—"} />
+                            <KeyVal k="Sheet" v={(m as any).filename || selectedWB.pageName} />
+                            <KeyVal k="File ID" v={(m as any).file_short_id || "—"} />
+                            <KeyVal k="Created" v={m.at} />
+                            <KeyVal k="Updated" v={(m as any).updated || m.at} />
+                          </>
+                        );
+                      })()}
+                    </div>
                   </div>
-                  <div className="space-y-3">
-                    {/* File facts */}
-                    {(() => {
-                      const m = pageMeta[selectedWB.pageId as keyof typeof pageMeta] || { by: "—", at: "—" };
-                      return (
-                        <>
-                          <KeyVal k="Version #" v={(m as any).version_number != null ? String((m as any).version_number) : "—"} />
-                          <KeyVal k="Sheet" v={(m as any).filename || selectedWB.pageName} />
-                          <KeyVal k="File ID" v={(m as any).file_short_id || "—"} />
-                          <KeyVal k="MIME Type" v={(m as any).mimetype || "—"} />
-                          <KeyVal k="Filesize" v={formatBytes((m as any).filesize)} />
-                          <KeyVal k="Uploaded by" v={(m as any).uploaded_by_short_id || m.by} />
-                          <KeyVal k="Created" v={m.at} />
-                          <KeyVal k="Updated" v={(m as any).updated || m.at} />
-                          <KeyVal k="Downloads" v={(m as any).download_count != null ? String((m as any).download_count) : "—"} />
-                        </>
-                      );
-                    })()}
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-slate-200 space-y-3">
-                    <div className="text-[11px] font-semibold text-slate-900 mb-2.5">Drawing Tools</div>
+
+                  {/* Drawing Tools */}
+                  <div>
+                    <div className="text-[10px] font-semibold text-slate-500 tracking-[0.08em] mb-2">
+                      DIMENSIONS
+                    </div>
                     
-                    {/* Arrow Counter - always enabled, button toggles stats visibility */}
-                    <div className="mb-4">
-                      <div className="text-[10px] text-slate-600 mb-1.5">Arrow Counter</div>
+                    {/* Arrow Counter */}
+                    <div className="mb-3">
+                      <div className="text-[11px] text-slate-700 mb-1.5">Arrow Counter</div>
                       <div className="flex gap-2">
                         <button
                           onClick={() => onToggleArrowStats?.()}
-                          className={`flex-1 h-10 rounded-lg border flex items-center justify-center gap-2 text-sm font-medium transition-colors ${
+                          className={`flex-1 h-8 rounded-md border flex items-center justify-center gap-1.5 text-[11px] font-medium transition-colors ${
                             showArrowStats
                               ? 'border-purple-400 bg-purple-50 text-purple-700'
                               : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
                           }`}
                         >
                           {showArrowStats && (
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
                           )}
@@ -2219,22 +2217,22 @@ export default function ProjectPanel({
                         </button>
                         <button
                           onClick={() => onCalibrate?.()}
-                          className="px-4 h-10 rounded-lg border border-blue-400 bg-blue-50 text-blue-700 text-sm font-medium hover:bg-blue-100 transition-colors whitespace-nowrap"
+                          className="px-3 h-8 rounded-md border border-blue-400 bg-blue-50 text-blue-700 text-[11px] font-medium hover:bg-blue-100 transition-colors whitespace-nowrap"
                           title="Set scale by calibrating with a known measurement"
                         >
                           Set Scale
                         </button>
                       </div>
                       {inchesPerSceneUnit && (
-                        <div className="mt-2 text-[10px] text-slate-500">
+                        <div className="mt-1.5 text-[10px] text-slate-500">
                           Current scale: {(1 / inchesPerSceneUnit).toFixed(3)} px/inch
                         </div>
                       )}
                     </div>
 
                     {/* Drawing Scale Dropdown */}
-                    <div className="mb-4">
-                      <div className="text-[10px] text-slate-600 mb-1.5">Drawing Scale</div>
+                    <div className="mb-3">
+                      <div className="text-[11px] text-slate-700 mb-1.5">Drawing Scale</div>
                       <select
                         value={currentScale}
                         onChange={(e) => {
@@ -2250,7 +2248,7 @@ export default function ProjectPanel({
                             });
                           }
                         }}
-                        className="w-full h-10 px-3 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full h-8 px-2.5 text-[11px] border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
                       >
                         {Object.keys(SCALE_PRESETS).map(scale => (
                           <option key={scale} value={scale}>{scale}</option>
@@ -2258,14 +2256,14 @@ export default function ProjectPanel({
                       </select>
                     </div>
 
-                    {/* Live Statistics - matching design from screenshot */}
+                    {/* Live Statistics */}
                     {showArrowStats && arrowStats && arrowStats.count > 0 && (
-                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                        <div className="text-center text-purple-700 font-semibold text-sm mb-1">
+                      <div className="rounded-md bg-slate-50 p-2.5">
+                        <div className="text-center text-purple-700 font-medium text-[11px] mb-0.5">
                           {arrowStats.count} arrow{arrowStats.count !== 1 ? 's' : ''} labeled
                         </div>
                         {arrowStats.values.length > 0 && (
-                          <div className="text-center text-xs text-slate-600">
+                          <div className="text-center text-[10px] text-slate-600">
                             Values: {arrowStats.values.join(', ')}
                           </div>
                         )}
