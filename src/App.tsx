@@ -127,8 +127,14 @@ function AppRouter() {
     return <Routes><Route path="/auth" element={<AuthPage />} /><Route path="*" element={<Navigate to="/auth" replace />} /></Routes>;
   }
 
+  // Only show loading spinner if we have a user session (don't show on login screen)
   if (loading || loggingOut || !routingReady) {
-    return <LoadingSpinner />;
+    // If loading but no user session yet, go to auth page
+    if (!user && !loading) {
+      return <Routes><Route path="/auth" element={<AuthPage />} /><Route path="*" element={<Navigate to="/auth" replace />} /></Routes>;
+    }
+    // Only show loading spinner if we have a user
+    return user ? <LoadingSpinner /> : null;
   }
 
   if (!user) {

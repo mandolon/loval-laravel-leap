@@ -53,6 +53,7 @@ export default function ExcalidrawCanvas({
   const persistRef = useRef<any>(null);
   const changeCountRef = useRef(0);
   const onApiReadyRef = useRef(onApiReady);
+  const onArrowStatsChangeRef = useRef(onArrowStatsChange);
   const loggedImageIdsRef = useRef<Set<string>>(new Set());
   
   // Popup state (styled like existing page UI)
@@ -73,10 +74,11 @@ export default function ExcalidrawCanvas({
   const updatePage = useUpdateDrawingPage();
   const { toast } = useToast();
   
-  // Keep ref updated
+  // Keep refs updated
   useEffect(() => {
     onApiReadyRef.current = onApiReady;
-  }, [onApiReady]);
+    onArrowStatsChangeRef.current = onArrowStatsChange;
+  }, [onApiReady, onArrowStatsChange]);
   
   // Loading progress simulation and timeout tracking
   useEffect(() => {
@@ -160,14 +162,14 @@ export default function ExcalidrawCanvas({
           elements,
           excaliRef.current,
           inchesPerSceneUnit,
-          onArrowStatsChange
+          onArrowStatsChangeRef.current
         );
       }
     } catch (error) {
       console.error('Error in arrow counter useEffect:', error);
       // Don't throw - just log and continue
     }
-  }, [inchesPerSceneUnit, pageId, onArrowStatsChange]);
+  }, [inchesPerSceneUnit, pageId]);
   
   // Handle calibration event from ProjectPanel
   useEffect(() => {
@@ -247,7 +249,16 @@ export default function ExcalidrawCanvas({
   }), []);
   
   // Safely parse excalidraw data - memoized to prevent infinite re-renders
-  const excalidrawData = useMemo(() => pageData?.excalidraw_data as any, [pageData]);
+  const excalidrawData = useMemo(() => {
+    const data = pageData?.excalidraw_data as any;
+    console.log('📂 Loading excalidraw data:', {
+      hasPageData: !!pageData,
+      hasExcalidrawData: !!data,
+      elementsCount: data?.elements?.length || 0,
+      filesCount: data?.files ? Object.keys(data.files).length : 0
+    });
+    return data;
+  }, [pageData]);
   
   // Ensure collaborators is always a Map - memoized to prevent infinite re-renders
   const mergedAppState = useMemo(() => {
@@ -277,19 +288,26 @@ export default function ExcalidrawCanvas({
   const handleChange = useCallback((elements: any, appState: any, files: any) => {
     changeCountRef.current++;
     
+    console.log('✏️ handleChange received:', {
+      elementsCount: elements?.length || 0,
+      filesCount: files ? Object.keys(files).length : 0,
+      filesKeys: files ? Object.keys(files) : []
+    });
+    
     // Ensure collaborators is always a Map
     const sanitizedAppState = {
       ...appState,
       collaborators: new Map(),
     };
     
-    // Always apply arrow counter if inchesPerSceneUnit is available
-    if (excaliRef.current && inchesPerSceneUnit) {
+    // Only apply arrow counter if there are actual arrow elements
+    // This prevents infinite loops from updateScene triggering onChange
+    if (excaliRef.current && inchesPerSceneUnit && elements?.some((el: any) => el.type === 'arrow')) {
       handleArrowCounter(
         elements, 
         excaliRef.current, 
         inchesPerSceneUnit,
-        onArrowStatsChange
+        onArrowStatsChangeRef.current
       );
     }
     
@@ -297,12 +315,22 @@ export default function ExcalidrawCanvas({
     if (persistRef.current) clearTimeout(persistRef.current);
     persistRef.current = setTimeout(() => {
       const { collaborators, ...appStateToSave } = sanitizedAppState;
+      
+      const dataToSave = { elements, appState: appStateToSave, files };
+      const sizeKB = (JSON.stringify(dataToSave).length / 1024).toFixed(2);
+      
+      console.log('💾 Saving:', { 
+        elements: elements.length, 
+        files: files ? Object.keys(files).length : 0,
+        sizeKB: `${sizeKB} KB`
+      });
+      
       updatePage.mutate({
         pageId,
-        excalidrawData: { elements, appState: appStateToSave, files }
+        excalidrawData: dataToSave
       });
     }, 3000);
-  }, [pageId, inchesPerSceneUnit, onArrowStatsChange, updatePage]);
+  }, [pageId, inchesPerSceneUnit, updatePage]);
   
   // Handle Excalidraw API ready
   const handleExcalidrawAPI = useCallback((api: any) => {
