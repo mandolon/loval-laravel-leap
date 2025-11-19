@@ -209,34 +209,78 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
         folder_id: modelsFolder,
       });
       
-      // Step 2: Get the latest version number
+      // Step 2: Get ALL existing versions to find the next available version number
       const { data: existingVersions } = await supabase
         .from('model_versions')
         .select('version_number')
         .eq('project_id', projectId)
         .is('deleted_at', null)
-        .order('created_at', { ascending: false })
-        .limit(1);
+        .order('version_number', { ascending: false });
       
-      // Step 3: Generate new version number
-      const latestVersion = existingVersions?.[0]?.version_number || 'v0.0';
-      const versionMatch = latestVersion.match(/v(\d+)\.(\d+)/);
-      const major = versionMatch ? parseInt(versionMatch[1]) : 0;
-      const minor = versionMatch ? parseInt(versionMatch[2]) : 0;
-      const newVersion = `v${major}.${minor + 1}`;
+      // Step 3: Find the highest version number and calculate next
+      let major = 0;
+      let minor = 0;
       
-      // Step 4: Create new model version
-      const { data: newModelVersion, error: versionError } = await supabase
-        .from('model_versions')
-        .insert({
-          project_id: projectId,
-          version_number: newVersion,
-          is_current: true,
-        })
-        .select()
-        .single();
+      if (existingVersions && existingVersions.length > 0) {
+        // Parse all versions to find the highest
+        const versions = existingVersions
+          .map(v => {
+            const match = v.version_number.match(/v(\d+)\.(\d+)/);
+            return match ? { major: parseInt(match[1]), minor: parseInt(match[2]) } : null;
+          })
+          .filter((v): v is { major: number; minor: number } => v !== null);
+        
+        if (versions.length > 0) {
+          // Sort by major then minor to get highest
+          versions.sort((a, b) => {
+            if (a.major !== b.major) return b.major - a.major;
+            return b.minor - a.minor;
+          });
+          
+          major = versions[0].major;
+          minor = versions[0].minor + 1;
+        }
+      }
       
-      if (versionError) throw versionError;
+      // Step 4: Create new model version with retry logic
+      let newModelVersion;
+      let newVersion = `v${major}.${minor}`;
+      let retryCount = 0;
+      const maxRetries = 10;
+      
+      while (retryCount < maxRetries) {
+        newVersion = `v${major}.${minor}`;
+        
+        // Version doesn't exist, try to create it
+        const { data, error: versionError } = await supabase
+          .from('model_versions')
+          .insert({
+            project_id: projectId,
+            version_number: newVersion,
+            is_current: true,
+          })
+          .select()
+          .single();
+        
+        if (versionError) {
+          // If it's a conflict error, increment and retry
+          if (versionError.code === '23505') { // Unique constraint violation
+            console.log(`Conflict creating ${newVersion}, incrementing to next version...`);
+            minor++;
+            retryCount++;
+            continue;
+          }
+          throw versionError;
+        }
+        
+        newModelVersion = data;
+        console.log(`Successfully created model version ${newVersion}`);
+        break;
+      }
+      
+      if (!newModelVersion) {
+        throw new Error('Failed to create model version after multiple retries');
+      }
       
       // Step 5: Set all other versions to not current
       await supabase
@@ -276,7 +320,6 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
           version_id: newModelVersion.id,
           show_grid: true,
           show_axes: true,
-          show_edges: true,
           background: 'light',
           layers: {
             roof: true,
