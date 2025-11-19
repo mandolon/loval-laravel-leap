@@ -1776,9 +1776,8 @@ const ChatView = memo(function ChatView({ resetTrigger }: ChatViewProps) {
 // Home View
 // ----------------------------------
 const HomeView = memo(function HomeView() {
-  const VIEW_TABS = ["Overview", "To Do", "Calendar", "Activity"];
+  const VIEW_TABS = ["Overview", "To Do", "Activity"];
   const [viewTab, setViewTab] = useState("Overview");
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const { currentWorkspace } = useWorkspaces();
   const { data: tasks = [] } = useWorkspaceTasks(currentWorkspace?.id || '');
 
@@ -1793,11 +1792,6 @@ const HomeView = memo(function HomeView() {
       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
         <rect x="3" y="3" width="18" height="18" rx="2" />
         <path d="m9 12 2 2 4-5" />
-      </svg>
-    ) : t === "Calendar" ? (
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="3" y="4" width="18" height="18" rx="2" />
-        <path d="M16 2v4M8 2v4M3 10h18" />
       </svg>
     ) : (
       <svg
@@ -1816,103 +1810,6 @@ const HomeView = memo(function HomeView() {
 
   const tabs = VIEW_TABS.map((t) => ({ key: t, label: t, icon: icon(t) }));
 
-  // Get tasks with due dates
-  const tasksWithDates = useMemo(() => {
-    return tasks.filter(task => task.dueDate);
-  }, [tasks]);
-
-  // Get dates that have tasks
-  const datesWithTasks = useMemo(() => {
-    return tasksWithDates.map(task => new Date(task.dueDate!).toDateString());
-  }, [tasksWithDates]);
-
-  // Get tasks for selected date
-  const tasksForSelectedDate = useMemo(() => {
-    if (!selectedDate) return [];
-    const selectedDateString = selectedDate.toDateString();
-    return tasksWithDates.filter(task =>
-      new Date(task.dueDate!).toDateString() === selectedDateString
-    );
-  }, [selectedDate, tasksWithDates]);
-
-  // Render calendar view
-  const renderCalendarView = () => (
-    <div className="flex gap-6">
-      <div className="flex-shrink-0">
-        <Calendar
-          mode="single"
-          selected={selectedDate}
-          onSelect={setSelectedDate}
-          className="rounded-md border"
-          modifiers={{
-            hasTask: (date) => datesWithTasks.includes(date.toDateString())
-          }}
-          modifiersStyles={{
-            hasTask: {
-              fontWeight: 'bold',
-              textDecoration: 'underline',
-              textDecorationColor: 'hsl(222.2 47.4% 11.2%)',
-              textUnderlineOffset: '3px'
-            }
-          }}
-        />
-      </div>
-      <div className="flex-1">
-        <h3 className="text-sm font-semibold mb-3">
-          {selectedDate ? selectedDate.toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          }) : 'Select a date'}
-        </h3>
-        {tasksForSelectedDate.length > 0 ? (
-          <div className="space-y-2">
-            {tasksForSelectedDate.map(task => (
-              <div
-                key={task.id}
-                className="p-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h4 className="text-sm font-medium text-slate-900">{task.title}</h4>
-                    {task.description && (
-                      <p className="text-xs text-slate-600 mt-1">{task.description}</p>
-                    )}
-                  </div>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    task.priority === 'urgent' ? 'bg-red-100 text-red-800' :
-                    task.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                    task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-slate-100 text-slate-800'
-                  }`}>
-                    {task.priority}
-                  </span>
-                </div>
-                <div className="mt-2 flex items-center gap-3 text-xs text-slate-500">
-                  <span className={`px-2 py-0.5 rounded ${
-                    task.status === 'done_completed' ? 'bg-green-100 text-green-800' :
-                    task.status === 'progress_update' ? 'bg-blue-100 text-blue-800' :
-                    'bg-slate-100 text-slate-800'
-                  }`}>
-                    {task.status === 'done_completed' ? 'Completed' :
-                     task.status === 'progress_update' ? 'In Progress' :
-                     'Redline'}
-                  </span>
-                  {task.assignees.length > 0 && (
-                    <span>{task.assignees.length} assignee{task.assignees.length > 1 ? 's' : ''}</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-slate-500">No tasks scheduled for this date.</p>
-        )}
-      </div>
-    </div>
-  );
-
   return (
     <div className="px-6 pt-1 pb-12">
       <div className="mt-1 mb-3">
@@ -1926,7 +1823,6 @@ const HomeView = memo(function HomeView() {
         {viewTab === "To Do" && (
           <div className="text-sm text-slate-600">To Do content placeholder</div>
         )}
-        {viewTab === "Calendar" && renderCalendarView()}
         {viewTab === "Activity" && (
           <div className="text-sm text-slate-600">Activity content placeholder</div>
         )}
@@ -1940,7 +1836,7 @@ const HomeView = memo(function HomeView() {
 // ----------------------------------
 
 // View tabs for Tasks
-const VIEW_TABS = ["List", "Board", "Calendar", "View"];
+const VIEW_TABS = ["List", "Calendar"];
 const viewIcon = (tab: string) => {
   if (tab === "List")
     return (
@@ -1992,6 +1888,7 @@ const TasksView = memo(function TasksView() {
   const [taskAssignees, setTaskAssignees] = useState<User[]>([]);
   const [taskCreator, setTaskCreator] = useState<User | null>(null);
   const [viewTab, setViewTab] = useState("List");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const deleteTaskMutation = useDeleteTask();
   const [drawerWidth, setDrawerWidth] = useState(640);
   const tabsRef = useRef<HTMLDivElement>(null);
@@ -2301,6 +2198,125 @@ const TasksView = memo(function TasksView() {
     return combined;
   }, [workspaceMembers, missingCreators, missingAssignees]);
 
+  // Calendar logic - Get tasks with due dates
+  const tasksWithDates = useMemo(() => {
+    return tasks.filter(task => task.dueDate);
+  }, [tasks]);
+
+  // Get dates that have tasks
+  const datesWithTasks = useMemo(() => {
+    return tasksWithDates.map(task => new Date(task.dueDate!).toDateString());
+  }, [tasksWithDates]);
+
+  // Get tasks for selected date
+  const tasksForSelectedDate = useMemo(() => {
+    if (!selectedDate) return [];
+    const selectedDateString = selectedDate.toDateString();
+    return tasksWithDates.filter(task =>
+      new Date(task.dueDate!).toDateString() === selectedDateString
+    );
+  }, [selectedDate, tasksWithDates]);
+
+  // Render calendar view
+  const renderCalendarView = () => (
+    <div className="flex gap-6 h-full">
+      <div className="w-[60%]">
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={setSelectedDate}
+          className="rounded-md border w-full h-full p-0"
+          classNames={{
+            months: "flex flex-col h-full p-0",
+            month: "flex-1 flex flex-col p-0",
+            caption: "flex justify-center pt-4 pb-4 relative items-center font-semibold mb-6",
+            caption_label: "text-base font-bold",
+            nav: "space-x-4 flex items-center",
+            nav_button: "h-8 w-8 bg-transparent p-0 opacity-50 hover:opacity-100",
+            nav_button_previous: "absolute left-4",
+            nav_button_next: "absolute right-4",
+            table: "w-full border-collapse flex-1",
+            head_row: "flex w-full mb-3 px-4",
+            head_cell: "text-slate-500 rounded-md w-full font-semibold text-xs uppercase",
+            row: "flex w-full mt-2 px-4",
+            cell: "h-16 w-full text-center p-0 relative",
+            day: "h-full w-full p-0 font-medium text-sm hover:bg-slate-100 rounded-md flex items-center justify-center",
+            day_selected: "bg-slate-900 text-white hover:bg-slate-900 hover:text-white focus:bg-slate-900 focus:text-white",
+            day_today: "bg-slate-200 text-slate-900",
+            day_outside: "text-slate-400 opacity-50",
+            day_disabled: "text-slate-400 opacity-50",
+          }}
+          modifiers={{
+            hasTask: (date) => datesWithTasks.includes(date.toDateString())
+          }}
+          modifiersStyles={{
+            hasTask: {
+              fontWeight: 'bold',
+              textDecoration: 'underline',
+              textDecorationColor: 'hsl(222.2 47.4% 11.2%)',
+              textUnderlineOffset: '3px',
+              textDecorationThickness: '1.5px'
+            }
+          }}
+        />
+      </div>
+      <div className="flex-1 overflow-y-auto pr-2">
+        <h3 className="text-base font-semibold mb-4 sticky top-0 bg-white pb-2">
+          {selectedDate ? selectedDate.toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }) : 'Select a date'}
+        </h3>
+        {tasksForSelectedDate.length > 0 ? (
+          <div className="space-y-2">
+            {tasksForSelectedDate.map(task => (
+              <div
+                key={task.id}
+                className="p-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors cursor-pointer"
+                onClick={() => handleTaskClick(task)}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h4 className="text-sm font-medium text-slate-900">{task.title}</h4>
+                    {task.description && (
+                      <p className="text-xs text-slate-600 mt-1">{task.description}</p>
+                    )}
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    task.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                    task.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                    task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-slate-100 text-slate-800'
+                  }`}>
+                    {task.priority}
+                  </span>
+                </div>
+                <div className="mt-2 flex items-center gap-3 text-xs text-slate-500">
+                  <span className={`px-2 py-0.5 rounded ${
+                    task.status === 'done_completed' ? 'bg-green-100 text-green-800' :
+                    task.status === 'progress_update' ? 'bg-blue-100 text-blue-800' :
+                    'bg-slate-100 text-slate-800'
+                  }`}>
+                    {task.status === 'done_completed' ? 'Completed' :
+                     task.status === 'progress_update' ? 'In Progress' :
+                     'Redline'}
+                  </span>
+                  {task.assignees.length > 0 && (
+                    <span>{task.assignees.length} assignee{task.assignees.length > 1 ? 's' : ''}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">No tasks scheduled for this date.</p>
+        )}
+      </div>
+    </div>
+  );
+
   // Mutations
   const createTaskMutation = useCreateTask();
   const updateTaskMutation = useUpdateTask();
@@ -2470,54 +2486,64 @@ const TasksView = memo(function TasksView() {
             style={{ marginRight: selectedTask ? drawerWidth : 0 }}
           >
             {/* Filter row - moves left with table */}
-            <div className="-mx-6 px-6 mt-1.5 mb-0 flex items-center justify-between gap-2 text-[12px] h-6 shrink-0">
-              <div className="flex items-center gap-2.5 text-[#202020] font-medium">
-                <button className="inline-flex items-center gap-1 h-6 px-3 rounded-full border border-slate-200 bg-white text-[#202020] hover:bg-slate-50 transition-colors">
-                  Group: Status
-                </button>
-                <button className="inline-flex items-center gap-1 h-6 px-3 rounded-full border border-slate-200 bg-white text-[#202020] hover:bg-slate-50 transition-colors">
-                  Subtasks
-                </button>
-                <button className="inline-flex items-center gap-1 h-6 px-3 rounded-full border border-slate-200 bg-white text-[#202020] hover:bg-slate-50 transition-colors">
-                  Columns
-                </button>
-              </div>
-              <div className="flex items-center gap-2.5 font-medium">
-                <button className="h-6 px-3 rounded-full border border-slate-200 bg-white inline-flex items-center gap-1 hover:bg-slate-50 transition-colors">
-                  Save view
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="m6 9 6 6 6-6" />
-                  </svg>
-                </button>
-                <button className="h-6 px-3 rounded-full text-slate-600 hover:bg-slate-100 transition-colors">Filter</button>
-                <button 
-                  onClick={() => setShowClosedOnly(!showClosedOnly)}
-                  className={`h-6 px-3 rounded-full transition-colors inline-flex items-center gap-1 ${
-                    showClosedOnly 
-                      ? 'border border-slate-200 bg-white text-[#202020] hover:bg-slate-50' 
-                      : 'text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  Closed
-                </button>
-                <button className="h-6 px-3 rounded-full text-slate-600 hover:bg-slate-100 transition-colors">Assignee</button>
-                <button className="h-6 w-6 rounded-full bg-slate-900 text-white grid place-items-center text-[11px]">A</button>
-              </div>
+            <div className="-mx-6 px-6 mt-1.5 mb-3 flex items-center justify-between gap-2 text-[12px] h-6 shrink-0">
+              {viewTab !== "Calendar" && (
+                <>
+                  <div className="flex items-center gap-2.5 text-[#202020] font-medium">
+                    <button className="inline-flex items-center gap-1 h-6 px-3 rounded-full border border-slate-200 bg-white text-[#202020] hover:bg-slate-50 transition-colors">
+                      Group: Status
+                    </button>
+                    <button className="inline-flex items-center gap-1 h-6 px-3 rounded-full border border-slate-200 bg-white text-[#202020] hover:bg-slate-50 transition-colors">
+                      Subtasks
+                    </button>
+                    <button className="inline-flex items-center gap-1 h-6 px-3 rounded-full border border-slate-200 bg-white text-[#202020] hover:bg-slate-50 transition-colors">
+                      Columns
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2.5 font-medium">
+                    <button className="h-6 px-3 rounded-full border border-slate-200 bg-white inline-flex items-center gap-1 hover:bg-slate-50 transition-colors">
+                      Save view
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
+                    </button>
+                    <button className="h-6 px-3 rounded-full text-slate-600 hover:bg-slate-100 transition-colors">Filter</button>
+                    <button 
+                      onClick={() => setShowClosedOnly(!showClosedOnly)}
+                      className={`h-6 px-3 rounded-full transition-colors inline-flex items-center gap-1 ${
+                        showClosedOnly 
+                          ? 'border border-slate-200 bg-white text-[#202020] hover:bg-slate-50' 
+                          : 'text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      Closed
+                    </button>
+                    <button className="h-6 px-3 rounded-full text-slate-600 hover:bg-slate-100 transition-colors">Assignee</button>
+                    <button className="h-6 w-6 rounded-full bg-slate-900 text-white grid place-items-center text-[11px]">A</button>
+                  </div>
+                </>
+              )}
             </div>
 
-            {/* Tasks table */}
+            {/* Conditional content based on tab */}
             <div className="flex-1 overflow-hidden">
-              <TasksTable
-                tasks={tasks}
-                projects={projects}
-                users={allUsers}
-                onTaskClick={handleTaskClick}
-                onProjectClick={handleProjectClick}
-                onStatusToggle={handleStatusToggle}
-                onQuickAdd={handleQuickAdd}
-                onUpdateTaskAssignees={handleUpdateTaskAssignees}
-                showClosedOnly={showClosedOnly}
-              />
+              {viewTab === "Calendar" ? (
+                <div className="h-full flex flex-col px-4 pt-4">
+                  {renderCalendarView()}
+                </div>
+              ) : (
+                <TasksTable
+                  tasks={tasks}
+                  projects={projects}
+                  users={allUsers}
+                  onTaskClick={handleTaskClick}
+                  onProjectClick={handleProjectClick}
+                  onStatusToggle={handleStatusToggle}
+                  onQuickAdd={handleQuickAdd}
+                  onUpdateTaskAssignees={handleUpdateTaskAssignees}
+                  showClosedOnly={showClosedOnly}
+                />
+              )}
             </div>
           </div>
         </div>
