@@ -24,6 +24,8 @@ const transformProject = (row: any): Project => ({
   description: row.description,
   status: row.status,
   phase: row.phase,
+  project_type: row.project_type,
+  ai_identity: row.ai_identity,
   address: row.address || {},
   primaryClient: {
     firstName: row.primary_client_first_name,

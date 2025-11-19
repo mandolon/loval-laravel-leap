@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useWorkspaceSettings } from '@/lib/api/hooks/useWorkspaceSettings';
+import { useWorkspaceSettings, useUpdateWorkspaceSettings } from '@/lib/api/hooks/useWorkspaceSettings';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { Button } from '@/components/ui/button';
 import { Loader2, Sparkles } from 'lucide-react';
@@ -29,8 +29,8 @@ Use architectural and construction terminology. Reference code sections specific
 export function WorkspaceAISettings() {
   const { currentWorkspaceId } = useWorkspaces();
   const { data: workspaceSettings, isLoading } = useWorkspaceSettings(currentWorkspaceId || '');
+  const updateSettings = useUpdateWorkspaceSettings();
   const [instructions, setInstructions] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -45,16 +45,11 @@ export function WorkspaceAISettings() {
   const handleSave = async () => {
     if (!currentWorkspaceId) return;
     
-    setIsSaving(true);
     try {
-      const { supabase } = await import('@/integrations/supabase/client');
-      
-      const { error } = await supabase
-        .from('workspace_settings')
-        .update({ ai_instructions: instructions })
-        .eq('workspace_id', currentWorkspaceId);
-
-      if (error) throw error;
+      await updateSettings.mutateAsync({
+        workspaceId: currentWorkspaceId,
+        input: { ai_instructions: instructions }
+      });
 
       toast({
         title: 'AI Configuration Saved',
@@ -67,8 +62,6 @@ export function WorkspaceAISettings() {
         description: error.message || 'Failed to save AI configuration',
         variant: 'destructive',
       });
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -101,33 +94,15 @@ export function WorkspaceAISettings() {
             Workspace AI Identity
           </h2>
           <p className="text-sm leading-5">
-            Define how the AI understands your residential architecture practice. These instructions
+            Define how the AI understands this workspace. These instructions
             appear in every conversation and help the AI provide relevant, industry-specific guidance.
           </p>
         </div>
 
         {/* Right - Form */}
         <div className="space-y-4">
-          {/* Preset Info Card */}
-          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-            <div className="flex items-start gap-3">
-              <div className="rounded-md bg-blue-100 p-2">
-                <Sparkles className="h-4 w-4 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-blue-900 mb-1">
-                  Residential Architecture Preconstruction
-                </h3>
-                <p className="text-xs text-blue-800 leading-relaxed">
-                  Optimized for site analysis, feasibility studies, Title 24 compliance, 
-                  California Building Code, and permit preparation workflow.
-                </p>
-              </div>
-            </div>
-          </div>
-
           {/* Instructions Textarea */}
-          <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
+          <div className="rounded-lg bg-white p-4 space-y-3">
             <div>
               <label className="block text-sm font-medium text-[var(--text)] mb-1">
                 Custom Instructions
@@ -155,10 +130,10 @@ export function WorkspaceAISettings() {
               </button>
               <Button
                 onClick={handleSave}
-                disabled={isSaving}
+                disabled={updateSettings.isPending}
                 className="bg-[#4C75D1] hover:bg-[#4C75D1]/90"
               >
-                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {updateSettings.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Instructions
               </Button>
             </div>

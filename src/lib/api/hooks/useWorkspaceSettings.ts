@@ -16,6 +16,7 @@ const transformDbToWorkspaceSettings = (data: any): WorkspaceSettings => ({
   companyName: data.company_name,
   companyLogoUrl: data.company_logo_url,
   taxId: data.tax_id,
+  ai_instructions: data.ai_instructions,
   metadata: data.metadata,
   createdAt: data.created_at,
   updatedAt: data.updated_at,
@@ -75,6 +76,7 @@ export const useUpdateWorkspaceSettings = () => {
       if (input.companyName !== undefined) updateData.company_name = input.companyName
       if (input.companyLogoUrl !== undefined) updateData.company_logo_url = input.companyLogoUrl
       if (input.taxId !== undefined) updateData.tax_id = input.taxId
+      if (input.ai_instructions !== undefined) updateData.ai_instructions = input.ai_instructions
       if (input.metadata !== undefined) updateData.metadata = input.metadata as any
       
       const { data, error } = await supabase

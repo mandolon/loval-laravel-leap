@@ -2,6 +2,7 @@ import React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AIContextPanel } from './ProjectSettings/AIContextPanel';
 import { useProject } from '@/lib/api/hooks/useProjects';
+import { projectKeys } from '@/lib/api/hooks/useProjects';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
@@ -81,27 +82,31 @@ export function ProjectAIContextView({ projectId, workspaceId }: ProjectAIContex
           project={project}
           activeTab={activeTab}
           onUpdate={async (aiIdentity) => {
-            const { error } = await supabase
-              .from('projects')
-              .update({ 
-                ai_identity: aiIdentity,
-                project_type: aiIdentity.projectType || null
-              } as any)
-              .eq('id', projectId);
-            
-            if (error) {
+            try {
+              const { error } = await supabase
+                .from('projects')
+                .update({ 
+                  ai_identity: aiIdentity,
+                  project_type: aiIdentity.projectType || null
+                } as any)
+                .eq('id', projectId);
+              
+              if (error) throw error;
+
+              // Invalidate the query to refetch the data with correct query key
+              await queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+
+              toast({
+                title: 'Saved',
+                description: 'AI context updated successfully',
+              });
+            } catch (error: any) {
               console.error('Failed to save AI context:', error);
               toast({
                 title: 'Error',
                 description: error.message || 'Failed to save AI context',
                 variant: 'destructive',
               });
-            } else {
-              toast({
-                title: 'Saved',
-                description: 'AI context updated successfully',
-              });
-              queryClient.invalidateQueries({ queryKey: ['project', projectId] });
             }
           }}
         />

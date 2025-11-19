@@ -451,11 +451,19 @@ export default function ProjectPanel({
   const createFolder = useCreateFolder(projectId);
   const { reorderFoldersMutation, moveFolderAcrossSectionsMutation, batchUpdateFoldersMutation } = useProjectFolderDragDrop(projectId);
 
+  // Helper to get display name for folders
+  const getFolderDisplayName = (folderName: string) => {
+    if (folderName === 'MyHome AI Project Assets') {
+      return 'AI Project Assets';
+    }
+    return folderName;
+  };
+
   // Transform database data to component format
   const sections = useMemo(() => {
     return rawFolders.map(folder => ({
       id: folder.id,
-      title: folder.name,
+      title: getFolderDisplayName(folder.name),
     }));
   }, [rawFolders]);
 

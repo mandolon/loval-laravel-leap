@@ -198,27 +198,47 @@ export function AIContextPanel({ project, activeTab = 'details', onTabChange, on
   };
 
   const [data, setData] = useState<ProjectAIIdentity>(() => initializeData(project));
-  const prevProjectIdRef = useRef<string | undefined>(project?.id);
-  const backup = useRef<ProjectAIIdentity>(initializeData(project));
-
-  // Sync state when project changes (different project selected)
-  useEffect(() => {
-    // Update state when switching to a different project
-    if (project?.id && project.id !== prevProjectIdRef.current) {
-      prevProjectIdRef.current = project.id;
-      const newData = initializeData(project);
-      setData(newData);
-      backup.current = newData;
-    }
-  }, [project?.id]);
-
   const [isSaving, setIsSaving] = useState(false);
   const [editing, setEditing] = useState(false);
+  const prevProjectIdRef = useRef<string | undefined>(project?.id);
+  const prevAiIdentityRef = useRef<any>(project?.ai_identity);
+  const backup = useRef<ProjectAIIdentity>(initializeData(project));
+
+  // Sync state when project changes or when ai_identity is updated
+  useEffect(() => {
+    if (project?.id) {
+      const projectChanged = project.id !== prevProjectIdRef.current;
+      const aiIdentityChanged = JSON.stringify(project.ai_identity) !== JSON.stringify(prevAiIdentityRef.current);
+      
+      console.log('[AIContextPanel] Effect triggered:', {
+        projectChanged,
+        aiIdentityChanged,
+        editing,
+        'project.ai_identity': project.ai_identity,
+        'prevAiIdentityRef.current': prevAiIdentityRef.current
+      });
+      
+      // Update state when switching to a different project OR when ai_identity changes (but not while editing)
+      if (projectChanged || (aiIdentityChanged && !editing)) {
+        console.log('[AIContextPanel] Updating state from project data');
+        prevProjectIdRef.current = project.id;
+        prevAiIdentityRef.current = project.ai_identity;
+        const newData = initializeData(project);
+        console.log('[AIContextPanel] New data initialized:', newData);
+        setData(newData);
+        backup.current = newData;
+      }
+    }
+  }, [project?.id, project?.ai_identity, editing]);
 
   const handleSave = async () => {
+    console.log('[AIContextPanel] Saving data:', data);
     setIsSaving(true);
     try {
       await onUpdate(data);
+      backup.current = { ...data }; // Update backup with saved data
+      prevAiIdentityRef.current = data; // Update ref to prevent re-initialization
+      console.log('[AIContextPanel] Save successful, refs updated');
       setEditing(false);
     } catch (error) {
       console.error('Error saving AI context:', error);

@@ -1,11 +1,18 @@
-import { useMemo } from 'react';
+import { Loader2 } from 'lucide-react';
+import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { SETTINGS_CONSTANTS } from '../../lib/settings-constants';
 
 export function WorkspacesContent() {
-  const workspaces = useMemo(() => [
-    { short_id: 'W-ab12', name: 'PinerWorks', created_at: '2024-06-10' },
-    { short_id: 'W-cd34', name: 'Rehome', created_at: '2024-11-01' }
-  ], []);
+  const { workspaces, loading } = useWorkspaces();
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: '2-digit', 
+      day: '2-digit' 
+    });
+  };
 
   return (
     <div className="p-4 md:p-6 text-[var(--muted)]" data-testid="workspaces-content">
@@ -29,18 +36,29 @@ export function WorkspacesContent() {
             <div>CREATED</div>
           </div>
 
-          {/* Table Rows */}
-          {workspaces.map((workspace, i) => (
-            <div
-              key={workspace.short_id}
-              className={`grid grid-cols-[1fr_auto] px-3 h-11 items-center ${
-                i ? 'border-t border-slate-200' : ''
-              }`}
-            >
-              <div className="text-[var(--text)]">{workspace.name}</div>
-              <div className="text-sm">{workspace.created_at}</div>
+          {/* Loading State */}
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-[var(--muted)]" />
             </div>
-          ))}
+          ) : workspaces.length === 0 ? (
+            <div className="px-3 py-8 text-center text-sm text-[var(--muted)]">
+              No workspaces found
+            </div>
+          ) : (
+            /* Table Rows */
+            workspaces.map((workspace, i) => (
+              <div
+                key={workspace.id}
+                className={`grid grid-cols-[1fr_auto] px-3 h-11 items-center ${
+                  i ? 'border-t border-slate-200' : ''
+                }`}
+              >
+                <div className="text-[var(--text)]">{workspace.name}</div>
+                <div className="text-sm">{formatDate(workspace.created_at)}</div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
