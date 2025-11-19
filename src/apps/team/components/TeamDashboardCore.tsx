@@ -122,6 +122,7 @@ interface RailItemProps {
   onCreateProject?: (input: any) => void;
   currentWorkspaceId?: string;
   hasNotification?: boolean;
+  disabled?: boolean;
 }
 
 interface TopHeaderProps {
@@ -566,6 +567,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
           selected={selected}
           setSelected={setSelected}
           onActivate={() => { setActive("details"); navigateToWorkspace("/detail-library"); }}
+          disabled={true}
         />
 
         <RailItem
@@ -579,6 +581,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
           selected={selected}
           setSelected={setSelected}
           onActivate={() => { setActive("ai"); navigateToWorkspace("/ai"); }}
+          disabled={true}
         />
 
         <div className="mt-auto w-full flex flex-col items-center">
@@ -782,6 +785,7 @@ const RailItem = memo(function RailItem({
   onCreateProject,
   currentWorkspaceId,
   hasNotification = false,
+  disabled = false,
 }: RailItemProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const showTimer = useRef<number | null>(null);
@@ -935,19 +939,23 @@ const RailItem = memo(function RailItem({
       ref={containerRef}
     >
       <button
-        onClick={handleClick}
-        onPointerDown={handlePointerDown}
-        onPointerUp={handlePointerUp}
-        onPointerEnter={handlePointerEnter}
-        onPointerLeave={handlePointerLeave}
-        onBlur={scheduleClose}
+        onClick={disabled ? undefined : handleClick}
+        onPointerDown={disabled ? undefined : handlePointerDown}
+        onPointerUp={disabled ? undefined : handlePointerUp}
+        onPointerEnter={disabled ? undefined : handlePointerEnter}
+        onPointerLeave={disabled ? undefined : handlePointerLeave}
+        onBlur={disabled ? undefined : scheduleClose}
         aria-label={label}
         aria-haspopup="menu"
         aria-expanded={menuEnabled && openTab === tabKey}
-        className={`relative group h-11 w-11 cursor-pointer grid place-items-center rounded-xl transition duration-300 ease-out touch-manipulation ${
-          active
-            ? "bg-white/10 text-white"
-            : "text-white/80 hover:text-white hover:bg-white/5"
+        aria-disabled={disabled}
+        title={disabled ? "Dev mode only" : undefined}
+        className={`relative group h-11 w-11 grid place-items-center rounded-xl transition duration-300 ease-out touch-manipulation ${
+          disabled
+            ? "opacity-30 cursor-not-allowed"
+            : active
+            ? "bg-white/10 text-white cursor-pointer"
+            : "text-white/80 hover:text-white hover:bg-white/5 cursor-pointer"
         }`}
         style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
       >
