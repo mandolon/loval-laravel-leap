@@ -8,6 +8,7 @@ import {
   actionClearCanvas,
   actionLoadScene,
   actionSaveToActiveFile,
+  actionSaveToDatabase,
   actionShortcuts,
   actionToggleSearchMenu,
   actionToggleTheme,
@@ -109,6 +110,26 @@ export const SaveToActiveFile = () => {
   );
 };
 SaveToActiveFile.displayName = "SaveToActiveFile";
+
+export const SaveToDatabase = () => {
+  const { t } = useI18n();
+  const actionManager = useExcalidrawActionManager();
+
+  if (!actionManager.isActionEnabled(actionSaveToDatabase)) {
+    return null;
+  }
+
+  return (
+    <DropdownMenuItem
+      shortcut={getShortcutFromShortcutName("saveToDatabase")}
+      data-testid="save-to-database-button"
+      onSelect={() => actionManager.executeAction(actionSaveToDatabase)}
+      icon={save}
+      aria-label="Save"
+    >Save</DropdownMenuItem>
+  );
+};
+SaveToDatabase.displayName = "SaveToDatabase";
 
 export const SaveAsImage = () => {
   const setAppState = useExcalidrawSetAppState();

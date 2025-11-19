@@ -50,11 +50,12 @@ export default function ExcalidrawCanvas({
   onCalibrationChange
 }: Props) {
   const excaliRef = useRef<any>(null);
-  const persistRef = useRef<any>(null);
   const changeCountRef = useRef(0);
   const onApiReadyRef = useRef(onApiReady);
   const onArrowStatsChangeRef = useRef(onArrowStatsChange);
   const loggedImageIdsRef = useRef<Set<string>>(new Set());
+  const currentDataRef = useRef<any>(null); // Track current unsaved data
+  const lastSavedDataRef = useRef<string>(''); // Track last saved data
   
   // Popup state (styled like existing page UI)
   const [alertOpen, setAlertOpen] = useState(false);
@@ -63,6 +64,7 @@ export default function ExcalidrawCanvas({
   const [calibrateInput, setCalibrateInput] = useState('');
   const [calibrateError, setCalibrateError] = useState<string | null>(null);
   const pendingArrowLengthPxRef = useRef<number | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   // Loading state management
   const [loadingProgress, setLoadingProgress] = useState(0);
@@ -302,20 +304,7 @@ export default function ExcalidrawCanvas({
   const handleChange = useCallback((elements: any, appState: any, files: any) => {
     changeCountRef.current++;
     
-    console.log('✏️ handleChange received:', {
-      elementsCount: elements?.length || 0,
-      filesCount: files ? Object.keys(files).length : 0,
-      filesKeys: files ? Object.keys(files) : []
-    });
-    
-    // Ensure collaborators is always a Map
-    const sanitizedAppState = {
-      ...appState,
-      collaborators: new Map(),
-    };
-    
     // Only apply arrow counter if there are actual arrow elements
-    // This prevents infinite loops from updateScene triggering onChange
     if (excaliRef.current && inchesPerSceneUnit && elements?.some((el: any) => el.type === 'arrow')) {
       handleArrowCounter(
         elements, 
@@ -325,26 +314,82 @@ export default function ExcalidrawCanvas({
       );
     }
     
-    // Auto-save after 3 seconds (without collaborators field)
-    if (persistRef.current) clearTimeout(persistRef.current);
-    persistRef.current = setTimeout(() => {
-      const { collaborators, ...appStateToSave } = sanitizedAppState;
-      
-      const dataToSave = { elements, appState: appStateToSave, files };
-      const sizeKB = (JSON.stringify(dataToSave).length / 1024).toFixed(2);
-      
-      console.log('💾 Saving:', { 
-        elements: elements.length, 
-        files: files ? Object.keys(files).length : 0,
-        sizeKB: `${sizeKB} KB`
+    // Only compare elements and files (ignore appState viewport changes)
+    const dataToCompare = { elements, files };
+    const compareString = JSON.stringify(dataToCompare);
+    
+    // Only update if actual drawing data changed
+    if (compareString !== lastSavedDataRef.current) {
+      console.log('✏️ handleChange - data changed:', {
+        elementsCount: elements?.length || 0,
+        filesCount: files ? Object.keys(files).length : 0,
       });
       
-      updatePage.mutate({
-        pageId,
-        excalidrawData: dataToSave
-      });
-    }, 3000);
-  }, [pageId, inchesPerSceneUnit, updatePage]);
+      // Store full data including appState for saving
+      const { collaborators, ...appStateToSave } = {
+        ...appState,
+        collaborators: new Map(),
+      };
+      
+      currentDataRef.current = { elements, appState: appStateToSave, files };
+      lastSavedDataRef.current = compareString;
+      setHasUnsavedChanges(true);
+    }
+  }, [inchesPerSceneUnit]);
+  
+  // Manual save function
+  const handleSave = useCallback(() => {
+    if (!currentDataRef.current) return;
+    
+    const sizeKB = (JSON.stringify(currentDataRef.current).length / 1024).toFixed(2);
+    
+    console.log('💾 Saving:', { 
+      elements: currentDataRef.current.elements.length, 
+      files: currentDataRef.current.files ? Object.keys(currentDataRef.current.files).length : 0,
+      sizeKB: `${sizeKB} KB`
+    });
+    
+    updatePage.mutate({
+      pageId,
+      excalidrawData: currentDataRef.current
+    }, {
+      onSuccess: () => {
+        setHasUnsavedChanges(false);
+        toast({ title: 'Saved', description: 'Drawing saved successfully' });
+      },
+      onError: (error) => {
+        console.error('Save failed:', error);
+        toast({ 
+          title: 'Save failed', 
+          description: 'Could not save drawing. Please try again.',
+          variant: 'destructive'
+        });
+      }
+    });
+  }, [pageId, updatePage, toast]);
+  
+  // Keyboard shortcut for save (Ctrl+S / Cmd+S)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    
+    // Listen for custom save event from Excalidraw fork
+    const handleExcalidrawSave = (event: any) => {
+      handleSave();
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('excalidraw-save-to-database', handleExcalidrawSave);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('excalidraw-save-to-database', handleExcalidrawSave);
+    };
+  }, [handleSave]);
   
   // Handle Excalidraw API ready
   const handleExcalidrawAPI = useCallback((api: any) => {
@@ -436,6 +481,37 @@ export default function ExcalidrawCanvas({
             excalidrawAPI={handleExcalidrawAPI}
             initialData={initialData}
             onChange={handleChange}
+            UIOptions={{
+              canvasActions: {
+                saveToActiveFile: true,
+                export: { saveFileToDisk: true }
+              }
+            }}
+            renderTopRightUI={() => (
+              <Button
+                onClick={handleSave}
+                disabled={!hasUnsavedChanges || updatePage.isPending}
+                size="sm"
+                variant={hasUnsavedChanges ? "default" : "ghost"}
+                className="mr-2"
+              >
+                {updatePage.isPending ? (
+                  <>
+                    <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : hasUnsavedChanges ? (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h5a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h5v5.586l-1.293-1.293zM9 4a1 1 0 012 0v2H9V4z" />
+                    </svg>
+                    Save
+                  </>
+                ) : (
+                  '✓ Saved'
+                )}
+              </Button>
+            )}
           />
         </div>
       </div>

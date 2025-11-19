@@ -250,6 +250,41 @@ export const actionSaveFileToDisk = register({
   ),
 });
 
+export const actionSaveToDatabase = register({
+  name: "saveToDatabase",
+  label: "Save",
+  icon: saveAs,
+  trackEvent: { category: "export" },
+  perform: async (elements, appState, value, app) => {
+    // Trigger custom save event that the parent component can listen to
+    const event = new CustomEvent('excalidraw-save-to-database', {
+      detail: { elements, appState, files: app.files }
+    });
+    window.dispatchEvent(event);
+    
+    return {
+      captureUpdate: CaptureUpdateAction.NONE,
+      appState: {
+        ...appState,
+        toast: { message: "Saving..." },
+      },
+    };
+  },
+  keyTest: (event) =>
+    event.key === KEYS.S && event[KEYS.CTRL_OR_CMD] && !event.shiftKey,
+  PanelComponent: ({ updateData }) => (
+    <ToolButton
+      type="button"
+      icon={saveAs}
+      title="Save"
+      aria-label="Save"
+      showAriaLabel={useDevice().editor.isMobile}
+      onClick={() => updateData(null)}
+      data-testid="save-to-database-button"
+    />
+  ),
+});
+
 export const actionLoadScene = register({
   name: "loadScene",
   label: "buttons.load",

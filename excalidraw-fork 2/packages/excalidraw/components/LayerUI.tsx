@@ -110,6 +110,7 @@ const DefaultMainMenu: React.FC<{
     <MainMenu __fallback>
       <MainMenu.DefaultItems.LoadScene />
       <MainMenu.DefaultItems.SaveToActiveFile />
+      <MainMenu.DefaultItems.SaveToDatabase />
       {/* FIXME we should to test for this inside the item itself */}
       {UIOptions.canvasActions.export && <MainMenu.DefaultItems.Export />}
       {/* FIXME we should to test for this inside the item itself */}

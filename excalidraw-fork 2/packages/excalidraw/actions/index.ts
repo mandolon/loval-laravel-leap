@@ -40,6 +40,7 @@ export {
   actionChangeExportBackground,
   actionSaveToActiveFile,
   actionSaveFileToDisk,
+  actionSaveToDatabase,
   actionLoadScene,
 } from "./actionExport";
 

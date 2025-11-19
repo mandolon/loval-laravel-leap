@@ -49,6 +49,7 @@ export type ShortcutName =
       | "setFrameAsActiveTool"
       | "saveFileToDisk"
       | "saveToActiveFile"
+      | "saveToDatabase"
       | "toggleShortcuts"
       | "wrapSelectionInFrame"
     >
@@ -114,6 +115,7 @@ const shortcutMap: Record<ShortcutName, string[]> = {
   setFrameAsActiveTool: [getShortcutKey("F")],
   saveFileToDisk: [getShortcutKey("CtrlOrCmd+S")],
   saveToActiveFile: [getShortcutKey("CtrlOrCmd+S")],
+  saveToDatabase: [getShortcutKey("CtrlOrCmd+S")],
   toggleShortcuts: [getShortcutKey("?")],
   searchMenu: [getShortcutKey("CtrlOrCmd+F")],
   wrapSelectionInFrame: [],
