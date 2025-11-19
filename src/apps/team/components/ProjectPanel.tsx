@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef, forwardRef, useCallback } from "react";
-import { Search, FolderClosed, BookOpen, MoreVertical, Info, Plus, RefreshCw, Edit, Trash2, Cloud, FileText, Scale, Activity, Sparkles, Folder, TableProperties, StickyNote } from "lucide-react";
+import { Search, FolderClosed, BookOpen, MoreVertical, Info, Plus, RefreshCw, Edit, Trash2, Cloud, FileText, Scale, Activity, Sparkles, Folder, TableProperties, StickyNote, ArrowLeft } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useProjectFolders, useProjectFiles, useDeleteProjectFile, useDeleteFolder, useMoveProjectFile, useRenameFolder, useRenameProjectFile, useUploadProjectFiles, downloadProjectFile, useCreateFolder, use3DModelsFolder } from '@/lib/api/hooks/useProjectFiles';
 import { useProjectFolderDragDrop } from '@/lib/api/hooks/useProjectFolderDragDrop';
@@ -2232,6 +2232,15 @@ export default function ProjectPanel({
             {/* Properties view (when whiteboard is selected) */}
             {selectedWB && (
               <div className="px-2.5 pt-1.5 pb-3">
+                {/* Back Button */}
+                <button
+                  onClick={() => setSelectedWB(null)}
+                  className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-slate-900 mb-3 transition-colors"
+                >
+                  <ArrowLeft size={14} />
+                  <span>Back to Drawings</span>
+                </button>
+                
                 <div className="mt-3 space-y-4">
                   {/* File Information */}
                   <div>
