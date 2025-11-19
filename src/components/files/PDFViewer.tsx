@@ -81,7 +81,6 @@ const PDFViewer = ({
   const [rotation, setRotation] = useState(initialState?.rotation ?? 0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [browserWarning, setBrowserWarning] = useState<string | null>(null);
   const [fetchStatus, setFetchStatus] = useState('checking'); // checking | ok | missing | error
   const [workerOk, setWorkerOk] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -107,26 +106,6 @@ const PDFViewer = ({
     'sample-pdf.pdf'.toLowerCase()
   ]), []);
 
-  // Check browser support for ES2024 features required by PDF.js v5.x
-  useEffect(() => {
-    const missingFeatures: string[] = [];
-    
-    if (typeof (Promise as any).withResolvers === 'undefined') {
-      missingFeatures.push('Promise.withResolvers');
-    }
-    
-    if (typeof (URL as any).parse === 'undefined') {
-      missingFeatures.push('URL.parse');
-    }
-    
-    if (missingFeatures.length > 0) {
-      setBrowserWarning(
-        `Your browser is too old to preview PDFs. Please update to Safari 17.5+, Chrome 126+, or Firefox 126+`
-      );
-      setLoading(false);
-      logger.warn('[PDFViewer] Browser missing ES2024 features:', missingFeatures);
-    }
-  }, []);
 
   const documentFileSource = useMemo(() => {
     if (!file?.name) return null;
@@ -925,7 +904,6 @@ const PDFViewer = ({
           fetchStatus={fetchStatus}
           loading={loading}
           error={error}
-          browserWarning={browserWarning}
           documentFileSource={documentFileSource === '__MISSING_LOCAL_PDF__' ? null : documentFileSource}
           workerOk={workerOk}
           onDocumentLoadSuccess={onDocumentLoadSuccess}
