@@ -29,6 +29,8 @@ export interface DrawingPageMetadata {
   name: string;
   page_number: number;
   thumbnail_storage_path?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface DrawingPage {
@@ -69,6 +71,8 @@ export function useDrawingVersions(projectId: string) {
             name,
             page_number,
             thumbnail_storage_path,
+            created_at,
+            updated_at,
             deleted_at
           )
         `)
@@ -316,7 +320,7 @@ export function useCreateDrawingPage() {
         .insert({
           drawing_id: drawingId,
           page_number: nextPageNumber,
-          name: `Page ${nextPageNumber}`,
+          name: `Sheet ${nextPageNumber}`,
           excalidraw_data: { elements: [], appState: {}, files: {} },
         })
         .select()
@@ -327,10 +331,10 @@ export function useCreateDrawingPage() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: drawingKeys.list(variables.projectId) });
-      toast.success('New page created');
+      toast.success('New sheet created');
     },
     onError: (error: any) => {
-      toast.error(`Failed to create page: ${error.message}`);
+      toast.error(`Failed to create sheet: ${error.message}`);
     },
   });
 }

@@ -108,8 +108,8 @@ const DefaultMainMenu: React.FC<{
 }> = ({ UIOptions }) => {
   return (
     <MainMenu __fallback>
-      <MainMenu.DefaultItems.LoadScene />
-      <MainMenu.DefaultItems.SaveToActiveFile />
+      {/* <MainMenu.DefaultItems.LoadScene /> */}
+      {/* <MainMenu.DefaultItems.SaveToActiveFile /> */}
       <MainMenu.DefaultItems.SaveToDatabase />
       {/* FIXME we should to test for this inside the item itself */}
       {UIOptions.canvasActions.export && <MainMenu.DefaultItems.Export />}
@@ -119,7 +119,7 @@ const DefaultMainMenu: React.FC<{
       )}
       <MainMenu.DefaultItems.SearchMenu />
       <MainMenu.DefaultItems.Help />
-      <MainMenu.DefaultItems.ClearCanvas />
+      {/* <MainMenu.DefaultItems.ClearCanvas /> */}
       <MainMenu.Separator />
       <MainMenu.DefaultItems.ToggleTheme />
       <MainMenu.DefaultItems.ChangeCanvasBackground />

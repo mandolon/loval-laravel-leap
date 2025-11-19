@@ -240,7 +240,7 @@ const ImageExportModal = ({
         </div>
       </div>
       <div className="ImageExportModal__settings">
-        <h3>{t("imageExportDialog.header")}</h3>
+        <h3>Export Options</h3>
         {hasSelection && (
           <ExportSetting
             label={t("imageExportDialog.label.onlySelected")}
@@ -272,7 +272,7 @@ const ImageExportModal = ({
             }}
           />
         </ExportSetting>
-        {supportsContextFilters && (
+        {false && supportsContextFilters && (
           <ExportSetting
             label={t("imageExportDialog.label.darkMode")}
             name="exportDarkModeSwitch"
@@ -291,43 +291,55 @@ const ImageExportModal = ({
             />
           </ExportSetting>
         )}
-        <ExportSetting
-          label={t("imageExportDialog.label.embedScene")}
-          tooltip={t("imageExportDialog.tooltip.embedScene")}
-          name="exportEmbedSwitch"
-        >
-          <Switch
+        {false && (
+          <ExportSetting
+            label={t("imageExportDialog.label.embedScene")}
+            tooltip={t("imageExportDialog.tooltip.embedScene")}
             name="exportEmbedSwitch"
-            checked={embedScene}
-            onChange={(checked) => {
-              setEmbedScene(checked);
-              actionManager.executeAction(
-                actionChangeExportEmbedScene,
-                "ui",
-                checked,
-              );
-            }}
-          />
-        </ExportSetting>
-        <ExportSetting
-          label={t("imageExportDialog.label.scale")}
-          name="exportScale"
-        >
-          <RadioGroup
+          >
+            <Switch
+              name="exportEmbedSwitch"
+              checked={embedScene}
+              onChange={(checked) => {
+                setEmbedScene(checked);
+                actionManager.executeAction(
+                  actionChangeExportEmbedScene,
+                  "ui",
+                  checked,
+                );
+              }}
+            />
+          </ExportSetting>
+        )}
+        {false && (
+          <ExportSetting
+            label={t("imageExportDialog.label.scale")}
             name="exportScale"
-            value={exportScale}
-            onChange={(scale) => {
-              setExportScale(scale);
-              actionManager.executeAction(actionChangeExportScale, "ui", scale);
-            }}
-            choices={EXPORT_SCALES.map((scale) => ({
-              value: scale,
-              label: `${scale}\u00d7`,
-            }))}
-          />
-        </ExportSetting>
+          >
+            <RadioGroup
+              name="exportScale"
+              value={exportScale}
+              onChange={(scale) => {
+                setExportScale(scale);
+                actionManager.executeAction(actionChangeExportScale, "ui", scale);
+              }}
+              choices={EXPORT_SCALES.map((scale) => ({
+                value: scale,
+                label: `${scale}\u00d7`,
+              }))}
+            />
+          </ExportSetting>
+        )}
 
         <div className="ImageExportModal__settings__buttons">
+          <FilledButton
+            className="ImageExportModal__settings__buttons__button"
+            label="JPEG"
+            onClick={handlePrintExportJpeg}
+            icon={downloadIcon}
+          >
+            JPEG
+          </FilledButton>
           <FilledButton
             className="ImageExportModal__settings__buttons__button"
             label={t("imageExportDialog.title.exportToPng")}
@@ -372,14 +384,6 @@ const ImageExportModal = ({
               {t("imageExportDialog.button.copyPngToClipboard")}
             </FilledButton>
           )}
-          <FilledButton
-            className="ImageExportModal__settings__buttons__button"
-            label="Export JPEG"
-            onClick={handlePrintExportJpeg}
-            icon={downloadIcon}
-          >
-            Export JPEG
-          </FilledButton>
         </div>
       </div>
     </div>

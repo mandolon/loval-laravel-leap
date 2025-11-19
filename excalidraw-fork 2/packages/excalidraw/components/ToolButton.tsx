@@ -149,7 +149,7 @@ export const ToolButton = React.forwardRef(
               aria-disabled={!!props.disabled}
             >
               {props.icon || props.label}
-              {props.keyBindingLabel && (
+              {false && props.keyBindingLabel && (
                 <span className="ToolIcon__keybinding">
                   {props.keyBindingLabel}
                 </span>
@@ -197,7 +197,7 @@ export const ToolButton = React.forwardRef(
         />
         <div className="ToolIcon__icon">
           {props.icon}
-          {props.keyBindingLabel && (
+          {false && props.keyBindingLabel && (
             <span className="ToolIcon__keybinding">
               {props.keyBindingLabel}
             </span>

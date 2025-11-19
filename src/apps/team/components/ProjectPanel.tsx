@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef, forwardRef, useCallback } from "react";
-import { Search, FolderClosed, BookOpen, MoreVertical, Info, Plus, RefreshCw, Edit, Trash2, Cloud, FileText, Scale, Activity } from "lucide-react";
+import { Search, FolderClosed, BookOpen, MoreVertical, Info, Plus, RefreshCw, Edit, Trash2, Cloud, FileText, Scale, Activity, Sparkles, Folder, TableProperties, StickyNote } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useProjectFolders, useProjectFiles, useDeleteProjectFile, useDeleteFolder, useMoveProjectFile, useRenameFolder, useRenameProjectFile, useUploadProjectFiles, downloadProjectFile, useCreateFolder, use3DModelsFolder } from '@/lib/api/hooks/useProjectFiles';
 import { useProjectFolderDragDrop } from '@/lib/api/hooks/useProjectFolderDragDrop';
@@ -826,6 +826,14 @@ export default function ProjectPanel({
 
   // Whiteboards data - fetch from database
   const { data: drawingVersions, isLoading: wbLoading, error: wbError } = useDrawingVersions(projectId);
+  
+  // Log error for debugging
+  React.useEffect(() => {
+    if (wbError) {
+      console.error('Whiteboard loading error:', wbError);
+    }
+  }, [wbError]);
+  
   const updateDrawingScale = useUpdateDrawingScale();
   const createDrawingPage = useCreateDrawingPage();
   const createDrawingVersion = useCreateDrawingVersion(projectId);
@@ -916,18 +924,34 @@ export default function ProjectPanel({
     }
   }, [wbMenu.show]);
 
-  // Mock metadata for whiteboard pages
-  const pageMeta = useMemo(
-    () => ({
-      w21: { by: "Armando L.", at: "Oct 30, 2025 9:12 AM" },
-      w22: { by: "Matt P.", at: "Oct 28, 2025 4:05 PM" },
-      w23: { by: "Dustin H.", at: "Oct 27, 2025 1:17 PM" },
-      w151: { by: "Armando L.", at: "Oct 20, 2025 10:02 AM" },
-      w152: { by: "Matt P.", at: "Oct 19, 2025 3:41 PM" },
-      w101: { by: "Armando L.", at: "Oct 05, 2025 8:29 AM" },
-    }),
-    []
-  );
+  // Build metadata from actual drawing page data
+  const pageMeta = useMemo(() => {
+    const meta: Record<string, any> = {};
+    
+    // Helper function to format timestamp
+    const formatTimestamp = (isoString: string | undefined) => {
+      if (!isoString) return '';
+      const date = new Date(isoString);
+      const options: Intl.DateTimeFormatOptions = { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric', 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      };
+      return date.toLocaleDateString('en-US', options);
+    };
+    
+    drawingVersions?.forEach(version => {
+      version.drawing_pages.forEach(page => {
+        meta[page.id] = {
+          updated: formatTimestamp(page.updated_at)
+        };
+      });
+    });
+    return meta;
+  }, [drawingVersions]);
 
   const visFiles = useMemo(() => filterSections(query, localSections, localLists), [query, localSections, localLists]);
   const visWB = useMemo(() => filterSections(wbQuery, wbSections, wbPages), [wbQuery, wbSections, wbPages]);
@@ -1608,7 +1632,7 @@ export default function ProjectPanel({
           title="Files"
           onClick={() => handleTabChange("files")}
         >
-          <FolderClosed style={{
+          <Folder style={{
             width: '16px',
             height: '16px',
             color: tab === "files" ? '#FFFFFF' : 'rgba(96, 165, 250, 0.5)',
@@ -1636,7 +1660,7 @@ export default function ProjectPanel({
           title="Whiteboards"
           onClick={() => handleTabChange("whiteboards")}
         >
-          <BookOpen style={{
+          <StickyNote style={{
             width: '16px',
             height: '16px',
             color: tab === "whiteboards" ? '#FFFFFF' : 'rgba(124, 58, 237, 0.5)',
@@ -1692,7 +1716,7 @@ export default function ProjectPanel({
           title="Project Info"
           onClick={() => handleTabChange("info")}
         >
-          <Info style={{
+          <TableProperties style={{
             width: '16px',
             height: '16px',
             color: tab === "info" ? '#FFFFFF' : 'rgba(251, 191, 36, 0.5)',
@@ -1720,10 +1744,7 @@ export default function ProjectPanel({
           title="AI Context"
           onClick={() => handleTabChange("ai")}
         >
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke={tab === "ai" ? '#FFFFFF' : 'rgba(16, 185, 129, 0.5)'} strokeWidth="2">
-            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-            <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
-          </svg>
+          <Sparkles size={16} color={tab === "ai" ? '#FFFFFF' : 'rgba(16, 185, 129, 0.5)'} strokeWidth={2} />
         </button>
       </div>
       
@@ -2001,11 +2022,9 @@ export default function ProjectPanel({
             ) : wbError ? (
               <div className="px-2.5 py-4 text-[11px] text-red-600 text-center">
                 Error loading whiteboards. Please refresh the page.
-                {process.env.NODE_ENV === 'development' && (
-                  <div className="mt-1 text-[10px] text-slate-500">
-                    {String(wbError)}
-                  </div>
-                )}
+                <div className="mt-1 text-[10px] text-slate-500">
+                  {wbError instanceof Error ? wbError.message : String(wbError)}
+                </div>
               </div>
             ) : (
               <div 
@@ -2081,7 +2100,7 @@ export default function ProjectPanel({
                           setWbMenu((m: any) => ({ ...m, show: false }));
                         }}
                       >
-                        New Page…
+                        New Sheet…
                       </button>
                     )}
                     <button
@@ -2157,33 +2176,20 @@ export default function ProjectPanel({
             {/* Properties view (when whiteboard is selected) */}
             {selectedWB && (
               <div className="px-2.5 pt-1.5 pb-3">
-                <div className="group relative flex items-center gap-1 py-[2px] px-1 rounded-lg select-none">
-                  <span className="inline-flex items-center justify-center" style={{ width: SOFT_SQUARE, height: SOFT_SQUARE }}>
-                    <BookOpen className="h-3 w-3 text-slate-700" />
-                  </span>
-                  <span className="text-[11px] font-medium text-slate-800">Whiteboards</span>
-                  <span className="text-[11px] text-slate-400">/</span>
-                  <span className="text-[11px] text-slate-700">{selectedWB.versionTitle}</span>
-                  <span className="text-[11px] text-slate-400">/</span>
-                  <span className="text-[11px] text-slate-900 font-medium truncate">{selectedWB.pageName}</span>
-                </div>
-                
                 <div className="mt-3 space-y-4">
                   {/* File Information */}
                   <div>
                     <div className="text-[10px] font-semibold text-slate-500 tracking-[0.08em] mb-2">
-                      FILE INFORMATION
+                      SHEET INFO
                     </div>
                     <div className="space-y-2">
                       {(() => {
-                        const m = pageMeta[selectedWB.pageId as keyof typeof pageMeta] || { by: "—", at: "—" };
+                        const m = pageMeta[selectedWB.pageId as keyof typeof pageMeta] || { updated: "—" };
                         return (
                           <>
-                            <KeyVal k="Version #" v={(m as any).version_number != null ? String((m as any).version_number) : "—"} />
-                            <KeyVal k="Sheet" v={(m as any).filename || selectedWB.pageName} />
-                            <KeyVal k="File ID" v={(m as any).file_short_id || "—"} />
-                            <KeyVal k="Created" v={m.at} />
-                            <KeyVal k="Updated" v={(m as any).updated || m.at} />
+                            <KeyVal k="Version" v={selectedWB.versionTitle || "—"} />
+                            <KeyVal k="Name" v={(m as any).filename || selectedWB.pageName} />
+                            <KeyVal k="Last saved" v={m.updated || "—"} />
                           </>
                         );
                       })()}
@@ -2196,40 +2202,6 @@ export default function ProjectPanel({
                       DIMENSIONS
                     </div>
                     
-                    {/* Arrow Counter */}
-                    <div className="mb-3">
-                      <div className="text-[11px] text-slate-700 mb-1.5">Arrow Counter</div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => onToggleArrowStats?.()}
-                          className={`flex-1 h-8 rounded-md border flex items-center justify-center gap-1.5 text-[11px] font-medium transition-colors ${
-                            showArrowStats
-                              ? 'border-purple-400 bg-purple-50 text-purple-700'
-                              : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                          }`}
-                        >
-                          {showArrowStats && (
-                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                          {showArrowStats ? 'Hide Values' : 'Show Values'}
-                        </button>
-                        <button
-                          onClick={() => onCalibrate?.()}
-                          className="px-3 h-8 rounded-md border border-blue-400 bg-blue-50 text-blue-700 text-[11px] font-medium hover:bg-blue-100 transition-colors whitespace-nowrap"
-                          title="Set scale by calibrating with a known measurement"
-                        >
-                          Set Scale
-                        </button>
-                      </div>
-                      {inchesPerSceneUnit && (
-                        <div className="mt-1.5 text-[10px] text-slate-500">
-                          Current scale: {(1 / inchesPerSceneUnit).toFixed(3)} px/inch
-                        </div>
-                      )}
-                    </div>
-
                     {/* Drawing Scale Dropdown */}
                     <div className="mb-3">
                       <div className="text-[11px] text-slate-700 mb-1.5">Drawing Scale</div>
@@ -2254,6 +2226,29 @@ export default function ProjectPanel({
                           <option key={scale} value={scale}>{scale}</option>
                         ))}
                       </select>
+                    </div>
+
+                    {/* Arrow Counter Buttons */}
+                    <div className="mb-3">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => onToggleArrowStats?.()}
+                          className={`flex-1 h-7 rounded text-[10px] font-medium transition-colors ${
+                            showArrowStats
+                              ? 'bg-slate-800 text-white hover:bg-slate-700'
+                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                          }`}
+                        >
+                          {showArrowStats ? 'Hide Values' : 'Show Values'}
+                        </button>
+                        <button
+                          onClick={() => onCalibrate?.()}
+                          className="px-3 h-7 rounded bg-slate-800 text-white text-[10px] font-medium hover:bg-slate-700 transition-colors whitespace-nowrap"
+                          title="Set scale by calibrating with a known measurement"
+                        >
+                          Set Scale
+                        </button>
+                      </div>
                     </div>
 
                     {/* Live Statistics */}

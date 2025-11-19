@@ -79,12 +79,12 @@ export const ViewerToolbar = ({
   return (
     <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
       <div className="flex flex-col items-center gap-2">
-        <div className="flex items-center gap-2 px-3 py-2 bg-card/95 backdrop-blur-sm border border-border rounded-lg shadow-lg pointer-events-auto transition-all duration-300 ease-in-out">
+        <div className="flex items-center gap-1 px-2 py-1.5 bg-card/95 backdrop-blur-sm border border-border rounded-lg shadow-lg pointer-events-auto transition-all duration-300 ease-in-out">
           <div className="flex items-center gap-1 text-foreground">
             {/* Inspect Mode */}
             <button
               onClick={onToggleInspect}
-              className={`h-7 w-7 flex items-center justify-center rounded transition-colors ${inspectMode ? 'text-white' : 'text-muted-foreground'}`}
+              className={`h-8 w-8 flex items-center justify-center rounded transition-colors ${inspectMode ? 'text-white' : 'text-[#202020]'}`}
               style={{
                 backgroundColor: inspectMode ? modelTabColor : 'transparent',
               }}
@@ -100,13 +100,13 @@ export const ViewerToolbar = ({
               }}
               title="Inspect Mode (Hover to Highlight)"
             >
-              <MousePointer2 className="h-4 w-4" />
+              <MousePointer2 className="h-[18px] w-[18px]" strokeWidth={1.75} />
             </button>
             
             {/* Measurement Tools */}
             <button
               onClick={onMeasureDistance}
-              className={`h-7 w-7 flex items-center justify-center rounded transition-colors ${measurementMode === 'distance' ? 'text-white' : 'text-muted-foreground'}`}
+              className={`h-8 w-8 flex items-center justify-center rounded transition-colors ${measurementMode === 'distance' ? 'text-white' : 'text-[#202020]'}`}
               style={{
                 backgroundColor: measurementMode === 'distance' ? modelTabColor : 'transparent',
               }}
@@ -122,13 +122,13 @@ export const ViewerToolbar = ({
               }}
               title="Measure Distance"
             >
-              <Ruler className="h-4 w-4" />
+              <Ruler className="h-[18px] w-[18px]" strokeWidth={1.75} />
             </button>
             
             {/* Annotation Tool */}
             <button
               onClick={onToggleAnnotation}
-              className={`h-7 w-7 flex items-center justify-center rounded transition-colors ${annotationMode ? 'text-white' : 'text-muted-foreground'}`}
+              className={`h-8 w-8 flex items-center justify-center rounded transition-colors ${annotationMode ? 'text-white' : 'text-[#202020]'}`}
               style={{
                 backgroundColor: annotationMode ? modelTabColor : 'transparent',
               }}
@@ -144,13 +144,13 @@ export const ViewerToolbar = ({
               }}
               title="Annotate (Tag Notes)"
             >
-              <Tag className="h-4 w-4" />
+              <Tag className="h-[18px] w-[18px]" strokeWidth={1.75} />
             </button>
             
             {/* Section Cut */}
             <button
               onClick={onToggleClipping}
-              className={`h-7 w-7 flex items-center justify-center rounded transition-colors ${clippingActive ? 'text-white' : 'text-muted-foreground'}`}
+              className={`h-8 w-8 flex items-center justify-center rounded transition-colors ${clippingActive ? 'text-white' : 'text-[#202020]'}`}
               style={{
                 backgroundColor: clippingActive ? modelTabColor : 'transparent',
               }}
@@ -166,13 +166,16 @@ export const ViewerToolbar = ({
               }}
               title="Section Cut"
             >
-              <Scissors className="h-4 w-4" />
+              <Scissors className="h-[18px] w-[18px]" strokeWidth={1.75} />
             </button>
+            
+            {/* Separator */}
+            <div className="w-px h-5 bg-border mx-0.5" />
             
             {/* View Controls */}
             <button
               onClick={onResetView}
-              className="h-7 w-7 flex items-center justify-center rounded transition-colors text-muted-foreground"
+              className="h-8 w-8 flex items-center justify-center rounded transition-colors text-[#202020]"
               style={{ backgroundColor: 'transparent' }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = hoverBgColor;
@@ -182,7 +185,7 @@ export const ViewerToolbar = ({
               }}
               title="Reset View"
             >
-              <Home className="h-4 w-4" />
+              <Home className="h-[18px] w-[18px]" strokeWidth={1.75} />
             </button>
           </div>
           
@@ -190,12 +193,12 @@ export const ViewerToolbar = ({
           <div 
             className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out ${
               hasClearButtons 
-                ? 'max-w-[200px] opacity-100 gap-2' 
+                ? 'max-w-[200px] opacity-100 gap-1.5' 
                 : 'max-w-0 opacity-0 gap-0 w-0'
             }`}
           >
             <div 
-              className={`w-px h-5 bg-border transition-all duration-300 ease-in-out ${
+              className={`w-px h-5 bg-border transition-all duration-300 ease-in-out ml-0.5 ${
                 hasClearButtons ? 'opacity-100' : 'opacity-0'
               }`}
             />
@@ -203,7 +206,7 @@ export const ViewerToolbar = ({
               {measurementMode === 'distance' && (
                 <button
                   onClick={onClearMeasurements}
-                  className="h-7 px-2 flex items-center justify-center rounded transition-all duration-300 ease-in-out text-muted-foreground text-[10px] whitespace-nowrap"
+                  className="h-8 px-2 flex items-center justify-center rounded transition-all duration-300 ease-in-out text-[#202020] text-[10px] whitespace-nowrap"
                   style={{ backgroundColor: 'transparent' }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = hoverBgColor;
@@ -219,7 +222,7 @@ export const ViewerToolbar = ({
               {clippingActive && (
                 <button
                   onClick={onClearClipping}
-                  className="h-7 px-2 flex items-center justify-center rounded transition-all duration-300 ease-in-out text-muted-foreground text-[10px] whitespace-nowrap"
+                  className="h-8 px-2 flex items-center justify-center rounded transition-all duration-300 ease-in-out text-[#202020] text-[10px] whitespace-nowrap"
                   style={{ backgroundColor: 'transparent' }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = hoverBgColor;
@@ -235,14 +238,14 @@ export const ViewerToolbar = ({
             </div>
           </div>
           
-          {/* Camera Views Dropdown */}
-          {versionId && (
+          {/* Camera Views Dropdown - Hidden */}
+          {false && versionId && (
             <>
-              <div className="w-px h-5 bg-border" />
+              <div className="w-px h-5 bg-border ml-0.5" />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
-                    className="h-7 w-7 flex items-center justify-center rounded transition-colors text-muted-foreground"
+                    className="h-8 w-8 flex items-center justify-center rounded transition-colors text-[#202020]"
                     style={{ backgroundColor: 'transparent' }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.backgroundColor = hoverBgColor;
@@ -252,7 +255,7 @@ export const ViewerToolbar = ({
                     }}
                     title="Camera Views"
                   >
-                    <Camera className="h-4 w-4" />
+                    <Camera className="h-[18px] w-[18px]" strokeWidth={1.75} />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="center">

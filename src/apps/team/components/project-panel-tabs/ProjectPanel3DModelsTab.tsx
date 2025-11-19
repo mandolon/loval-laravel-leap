@@ -508,11 +508,8 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
         {!selectedModelVersion && (
           <div className="flex items-center justify-center h-full min-h-[200px]">
             <div className="text-center px-4">
-              <p className="text-[11px] text-slate-500 mb-1">
-                Select a model version from the dropdown above
-              </p>
-              <p className="text-[11px] text-slate-400">
-                or upload a new version using the button below
+              <p className="text-[11px] text-slate-500">
+                Select a model version
               </p>
             </div>
           </div>

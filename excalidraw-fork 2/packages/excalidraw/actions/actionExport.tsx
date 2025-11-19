@@ -272,17 +272,6 @@ export const actionSaveToDatabase = register({
   },
   keyTest: (event) =>
     event.key === KEYS.S && event[KEYS.CTRL_OR_CMD] && !event.shiftKey,
-  PanelComponent: ({ updateData }) => (
-    <ToolButton
-      type="button"
-      icon={saveAs}
-      title="Save"
-      aria-label="Save"
-      showAriaLabel={useDevice().editor.isMobile}
-      onClick={() => updateData(null)}
-      data-testid="save-to-database-button"
-    />
-  ),
 });
 
 export const actionLoadScene = register({

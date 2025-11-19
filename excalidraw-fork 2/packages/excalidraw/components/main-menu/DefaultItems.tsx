@@ -49,65 +49,14 @@ import {
 import "./DefaultItems.scss";
 
 export const LoadScene = () => {
-  const { t } = useI18n();
-  const actionManager = useExcalidrawActionManager();
-  const elements = useExcalidrawElements();
-
-  if (!actionManager.isActionEnabled(actionLoadScene)) {
-    return null;
-  }
-
-  const handleSelect = async () => {
-    if (
-      !elements.length ||
-      (await openConfirmModal({
-        title: t("overwriteConfirm.modal.loadFromFile.title"),
-        actionLabel: t("overwriteConfirm.modal.loadFromFile.button"),
-        color: "warning",
-        description: (
-          <Trans
-            i18nKey="overwriteConfirm.modal.loadFromFile.description"
-            bold={(text) => <strong>{text}</strong>}
-            br={() => <br />}
-          />
-        ),
-      }))
-    ) {
-      actionManager.executeAction(actionLoadScene);
-    }
-  };
-
-  return (
-    <DropdownMenuItem
-      icon={LoadIcon}
-      onSelect={handleSelect}
-      data-testid="load-button"
-      shortcut={getShortcutFromShortcutName("loadScene")}
-      aria-label={t("buttons.load")}
-    >
-      {t("buttons.load")}
-    </DropdownMenuItem>
-  );
+  // Hidden - always return null
+  return null;
 };
 LoadScene.displayName = "LoadScene";
 
 export const SaveToActiveFile = () => {
-  const { t } = useI18n();
-  const actionManager = useExcalidrawActionManager();
-
-  if (!actionManager.isActionEnabled(actionSaveToActiveFile)) {
-    return null;
-  }
-
-  return (
-    <DropdownMenuItem
-      shortcut={getShortcutFromShortcutName("saveScene")}
-      data-testid="save-button"
-      onSelect={() => actionManager.executeAction(actionSaveToActiveFile)}
-      icon={save}
-      aria-label={`${t("buttons.save")}`}
-    >{`${t("buttons.save")}`}</DropdownMenuItem>
-  );
+  // Hidden - always return null
+  return null;
 };
 SaveToActiveFile.displayName = "SaveToActiveFile";
 
@@ -140,9 +89,9 @@ export const SaveAsImage = () => {
       data-testid="image-export-button"
       onSelect={() => setAppState({ openDialog: { name: "imageExport" } })}
       shortcut={getShortcutFromShortcutName("imageExport")}
-      aria-label={t("buttons.exportImage")}
+      aria-label="Export"
     >
-      {t("buttons.exportImage")}
+      Export
     </DropdownMenuItem>
   );
 };
