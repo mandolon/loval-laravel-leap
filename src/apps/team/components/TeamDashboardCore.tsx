@@ -211,6 +211,8 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
   const [inchesPerSceneUnit, setInchesPerSceneUnit] = useState<number>(getInchesPerSceneUnit(SCALE_PRESETS["1/4\" = 1'"]));
   const [pxPerStep, setPxPerStep] = useState(0.668); // Calibration state
   const [chatResetTrigger, setChatResetTrigger] = useState(0);
+  const projectsIconRef = useRef<HTMLDivElement>(null);
+  const [projectsIconPosition, setProjectsIconPosition] = useState({ x: 0, y: 0 });
   const mdUp = useMediaQuery("(min-width: 768px)");
   const { currentWorkspaceId } = useWorkspaces();
   const { user } = useUser();
@@ -674,7 +676,31 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
                     <TeamFileViewer file={selectedFile} />
                   ) : !selected?.item ? (
                     // Empty state: No project selected
-                    <div className="h-full flex items-center justify-center">
+                    <div className="h-full flex items-center justify-center relative">
+                      {/* Curved arrow pointing to Projects icon in left sidebar - positioned dynamically */}
+                      <svg 
+                        className="absolute w-32 h-32 text-slate-400"
+                        style={{
+                          left: railCollapsed ? (mdUp ? '14px' : '8px') : '18px',
+                          top: '120px', // Approximate vertical position of Projects icon
+                          transition: 'left 260ms cubic-bezier(0.22, 1, 0.36, 1)',
+                        }}
+                        viewBox="0 0 120 120" 
+                        fill="none" 
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path 
+                          d="M 90 60 Q 40 60, 15 30" 
+                          stroke="currentColor" 
+                          strokeWidth="2.5" 
+                          fill="none"
+                          strokeLinecap="round"
+                        />
+                        <path 
+                          d="M 15 30 L 20 38 L 23 29 Z" 
+                          fill="currentColor"
+                        />
+                      </svg>
                       <div className="text-center max-w-md px-6">
                         <h2 className="text-2xl font-semibold mb-3 text-slate-900">
                           Open a project to begin
@@ -686,7 +712,26 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
                     </div>
                   ) : (
                     // Empty state: Project selected but no item chosen
-                    <div className="h-full flex items-center justify-center">
+                    <div className="h-full flex items-center justify-center relative">
+                      {/* Curved arrow pointing to top right corner */}
+                      <svg 
+                        className="absolute top-2 right-2 w-32 h-32 text-slate-400"
+                        viewBox="0 0 120 120" 
+                        fill="none" 
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path 
+                          d="M 30 100 Q 60 40, 105 15" 
+                          stroke="currentColor" 
+                          strokeWidth="2.5" 
+                          fill="none"
+                          strokeLinecap="round"
+                        />
+                        <path 
+                          d="M 105 15 L 97 15 L 102 23 Z" 
+                          fill="currentColor"
+                        />
+                      </svg>
                       <div className="text-center max-w-md px-6">
                         <h2 className="text-2xl font-semibold mb-3 text-slate-900">
                           Start in the Project Panel

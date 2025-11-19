@@ -17,6 +17,75 @@ import { ProjectAIContextView } from './ProjectAIContextView';
 import { AIContextNavigation } from './AIContextNavigation';
 import { theme, SOFT_SQUARE, radius, shadows, typography } from './ProjectPanelTheme';
 import '@/lib/pdf-config'; // Configure PDF.js worker globally
+import ReactDOM from 'react-dom';
+
+// Elegant tooltip component
+const TabTooltip = ({ text, children }: { text: string; children: React.ReactNode }) => {
+  const [show, setShow] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const buttonRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    if (show && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.top
+      });
+    }
+  }, [show]);
+  
+  return (
+    <>
+      <div 
+        ref={buttonRef}
+        className="relative inline-block"
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+      >
+        {children}
+      </div>
+      {show && ReactDOM.createPortal(
+        <div
+          className="fixed z-[9999] px-2 py-1 text-[10px] font-medium text-white whitespace-nowrap rounded-md pointer-events-none tooltip-fade"
+          style={{
+            backgroundColor: '#202020',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            left: `${position.x}px`,
+            top: `${position.y - 8}px`,
+            transform: 'translate(-50%, -100%)',
+          }}
+        >
+          {text}
+          <div
+            className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0"
+            style={{
+              borderLeft: '4px solid transparent',
+              borderRight: '4px solid transparent',
+              borderTop: '4px solid #202020',
+            }}
+          />
+        </div>,
+        document.body
+      )}
+    </>
+  );
+};
+
+// Simple CSS for smooth fade animation
+const tooltipStyles = `
+  @keyframes tooltipFadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  .tooltip-fade {
+    animation: tooltipFadeIn 150ms ease-out;
+  }
+`;
 
 /**
  * PROJECT PANEL — Files & Whiteboards now share identical interaction rules
@@ -1603,6 +1672,7 @@ export default function ProjectPanel({
   return (
     <div className="h-full w-full flex flex-col">
       <HiddenScrollCSS />
+      <style>{tooltipStyles}</style>
       
       {/* Modern Tab Navigation */}
       <div style={{
@@ -1618,142 +1688,147 @@ export default function ProjectPanel({
         gap: '8px',
         flexShrink: 0,
       }}>
-        <button
-          style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: radius.md,
-            border: tab === "files" ? `1px solid ${theme.files}` : '1px solid rgba(229, 231, 235, 0.5)',
-            backgroundColor: tab === "files" ? theme.files : 'transparent',
-            display: 'grid',
-            placeItems: 'center',
-            transition: 'all 0.2s',
-            cursor: 'pointer',
-          }}
-          onMouseEnter={(e) => {
-            if (tab !== "files") e.currentTarget.style.backgroundColor = `${theme.files}15`;
-          }}
-          onMouseLeave={(e) => {
-            if (tab !== "files") e.currentTarget.style.backgroundColor = 'transparent';
-          }}
-          aria-label="Files"
-          title="Files"
-          onClick={() => handleTabChange("files")}
-        >
-          <Folder style={{
-            width: '16px',
-            height: '16px',
-            color: tab === "files" ? '#FFFFFF' : 'rgba(96, 165, 250, 0.5)',
-          }} />
-        </button>
-        <button
-          style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: radius.md,
-            border: tab === "whiteboards" ? `1px solid ${theme.whiteboards}` : '1px solid rgba(229, 231, 235, 0.5)',
-            backgroundColor: tab === "whiteboards" ? theme.whiteboards : 'transparent',
-            display: 'grid',
-            placeItems: 'center',
-            transition: 'all 0.2s',
-            cursor: 'pointer',
-          }}
-          onMouseEnter={(e) => {
-            if (tab !== "whiteboards") e.currentTarget.style.backgroundColor = `${theme.whiteboards}15`;
-          }}
-          onMouseLeave={(e) => {
-            if (tab !== "whiteboards") e.currentTarget.style.backgroundColor = 'transparent';
-          }}
-          aria-label="Whiteboards"
-          title="Whiteboards"
-          onClick={() => handleTabChange("whiteboards")}
-        >
-          <StickyNote style={{
-            width: '16px',
-            height: '16px',
-            color: tab === "whiteboards" ? '#FFFFFF' : 'rgba(124, 58, 237, 0.5)',
-          }} />
-        </button>
-        <button
-          style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: radius.md,
-            border: tab === "3dmodels" ? `1px solid ${theme.models}` : '1px solid rgba(229, 231, 235, 0.5)',
-            backgroundColor: tab === "3dmodels" ? theme.models : 'transparent',
-            display: 'grid',
-            placeItems: 'center',
-            transition: 'all 0.2s',
-            cursor: 'pointer',
-          }}
-          onMouseEnter={(e) => {
-            if (tab !== "3dmodels") e.currentTarget.style.backgroundColor = `${theme.models}15`;
-          }}
-          onMouseLeave={(e) => {
-            if (tab !== "3dmodels") e.currentTarget.style.backgroundColor = 'transparent';
-          }}
-          aria-label="3D Models"
-          title="3D Models"
-          onClick={() => handleTabChange("3dmodels")}
-        >
-          <ModelGlyph style={{
-            width: '16px',
-            height: '16px',
-            color: tab === "3dmodels" ? '#FFFFFF' : 'rgba(6, 182, 212, 0.5)',
-          }} />
-        </button>
-        <button
-          style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: radius.md,
-            border: tab === "info" ? `1px solid ${theme.info}` : '1px solid rgba(229, 231, 235, 0.5)',
-            backgroundColor: tab === "info" ? theme.info : 'transparent',
-            display: 'grid',
-            placeItems: 'center',
-            transition: 'all 0.2s',
-            cursor: 'pointer',
-          }}
-          onMouseEnter={(e) => {
-            if (tab !== "info") e.currentTarget.style.backgroundColor = `${theme.info}15`;
-          }}
-          onMouseLeave={(e) => {
-            if (tab !== "info") e.currentTarget.style.backgroundColor = 'transparent';
-          }}
-          aria-label="Project Info"
-          title="Project Info"
-          onClick={() => handleTabChange("info")}
-        >
-          <TableProperties style={{
-            width: '16px',
-            height: '16px',
-            color: tab === "info" ? '#FFFFFF' : 'rgba(251, 191, 36, 0.5)',
-          }} />
-        </button>
-        <button
-          style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: radius.md,
-            border: tab === "ai" ? `1px solid #10B981` : '1px solid rgba(229, 231, 235, 0.5)',
-            backgroundColor: tab === "ai" ? '#10B981' : 'transparent',
-            display: 'grid',
-            placeItems: 'center',
-            transition: 'all 0.2s',
-            cursor: 'pointer',
-          }}
-          onMouseEnter={(e) => {
-            if (tab !== "ai") e.currentTarget.style.backgroundColor = '#10B98115';
-          }}
-          onMouseLeave={(e) => {
-            if (tab !== "ai") e.currentTarget.style.backgroundColor = 'transparent';
-          }}
-          aria-label="AI Context"
-          title="AI Context"
-          onClick={() => handleTabChange("ai")}
-        >
-          <Sparkles size={16} color={tab === "ai" ? '#FFFFFF' : 'rgba(16, 185, 129, 0.5)'} strokeWidth={2} />
-        </button>
+        <TabTooltip text="Files">
+          <button
+            style={{
+              width: '28px',
+              height: '28px',
+              borderRadius: radius.md,
+              border: tab === "files" ? `1px solid ${theme.files}` : '1px solid rgba(229, 231, 235, 0.5)',
+              backgroundColor: tab === "files" ? theme.files : 'transparent',
+              display: 'grid',
+              placeItems: 'center',
+              transition: 'all 0.2s',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              if (tab !== "files") e.currentTarget.style.backgroundColor = `${theme.files}15`;
+            }}
+            onMouseLeave={(e) => {
+              if (tab !== "files") e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+            aria-label="Files"
+            onClick={() => handleTabChange("files")}
+          >
+            <Folder style={{
+              width: '16px',
+              height: '16px',
+              color: tab === "files" ? '#FFFFFF' : 'rgba(96, 165, 250, 0.5)',
+            }} />
+          </button>
+        </TabTooltip>
+        <TabTooltip text="Whiteboards">
+          <button
+            style={{
+              width: '28px',
+              height: '28px',
+              borderRadius: radius.md,
+              border: tab === "whiteboards" ? `1px solid ${theme.whiteboards}` : '1px solid rgba(229, 231, 235, 0.5)',
+              backgroundColor: tab === "whiteboards" ? theme.whiteboards : 'transparent',
+              display: 'grid',
+              placeItems: 'center',
+              transition: 'all 0.2s',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              if (tab !== "whiteboards") e.currentTarget.style.backgroundColor = `${theme.whiteboards}15`;
+            }}
+            onMouseLeave={(e) => {
+              if (tab !== "whiteboards") e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+            aria-label="Whiteboards"
+            onClick={() => handleTabChange("whiteboards")}
+          >
+            <StickyNote style={{
+              width: '16px',
+              height: '16px',
+              color: tab === "whiteboards" ? '#FFFFFF' : 'rgba(124, 58, 237, 0.5)',
+            }} />
+          </button>
+        </TabTooltip>
+        <TabTooltip text="3D Models">
+          <button
+            style={{
+              width: '28px',
+              height: '28px',
+              borderRadius: radius.md,
+              border: tab === "3dmodels" ? `1px solid ${theme.models}` : '1px solid rgba(229, 231, 235, 0.5)',
+              backgroundColor: tab === "3dmodels" ? theme.models : 'transparent',
+              display: 'grid',
+              placeItems: 'center',
+              transition: 'all 0.2s',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              if (tab !== "3dmodels") e.currentTarget.style.backgroundColor = `${theme.models}15`;
+            }}
+            onMouseLeave={(e) => {
+              if (tab !== "3dmodels") e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+            aria-label="3D Models"
+            onClick={() => handleTabChange("3dmodels")}
+          >
+            <ModelGlyph style={{
+              width: '16px',
+              height: '16px',
+              color: tab === "3dmodels" ? '#FFFFFF' : 'rgba(6, 182, 212, 0.5)',
+            }} />
+          </button>
+        </TabTooltip>
+        <TabTooltip text="Project Info">
+          <button
+            style={{
+              width: '28px',
+              height: '28px',
+              borderRadius: radius.md,
+              border: tab === "info" ? `1px solid ${theme.info}` : '1px solid rgba(229, 231, 235, 0.5)',
+              backgroundColor: tab === "info" ? theme.info : 'transparent',
+              display: 'grid',
+              placeItems: 'center',
+              transition: 'all 0.2s',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              if (tab !== "info") e.currentTarget.style.backgroundColor = `${theme.info}15`;
+            }}
+            onMouseLeave={(e) => {
+              if (tab !== "info") e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+            aria-label="Project Info"
+            onClick={() => handleTabChange("info")}
+          >
+            <TableProperties style={{
+              width: '16px',
+              height: '16px',
+              color: tab === "info" ? '#FFFFFF' : 'rgba(251, 191, 36, 0.5)',
+            }} />
+          </button>
+        </TabTooltip>
+        <TabTooltip text="AI Context">
+          <button
+            style={{
+              width: '28px',
+              height: '28px',
+              borderRadius: radius.md,
+              border: tab === "ai" ? `1px solid #10B981` : '1px solid rgba(229, 231, 235, 0.5)',
+              backgroundColor: tab === "ai" ? '#10B981' : 'transparent',
+              display: 'grid',
+              placeItems: 'center',
+              transition: 'all 0.2s',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              if (tab !== "ai") e.currentTarget.style.backgroundColor = '#10B98115';
+            }}
+            onMouseLeave={(e) => {
+              if (tab !== "ai") e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+            aria-label="AI Context"
+            onClick={() => handleTabChange("ai")}
+          >
+            <Sparkles size={16} color={tab === "ai" ? '#FFFFFF' : 'rgba(16, 185, 129, 0.5)'} strokeWidth={2} />
+          </button>
+        </TabTooltip>
       </div>
       
       {/* Modern Content Area */}
