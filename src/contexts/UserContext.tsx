@@ -37,11 +37,26 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set up auth state listener
+    // Set up auth state listener with token recovery
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (event, session) => {
         // Ignore auth state changes during logout to prevent flashing
         if (loggingOut) return;
+        
+        // Handle token refresh failures
+        if (event === 'TOKEN_REFRESHED' && !session) {
+          console.error('Token refresh failed - signing out user');
+          await signOut();
+          return;
+        }
+        
+        // Detect session errors and sign out
+        if (event === 'SIGNED_OUT' && !loggingOut) {
+          setUser(null);
+          setSession(null);
+          setLoading(false);
+          return;
+        }
         
         // Reset error state on new session
         setProfileLoadError(false);
@@ -88,6 +103,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (profileError) {
+        // Check if it's an auth-related error
+        if (profileError.message?.includes('JWT') || profileError.message?.includes('token')) {
+          console.error('Authentication error - signing out');
+          await signOut();
+          return;
+        }
+        
         // Check if it's a service unavailable error (503)
         if (profileError.message?.includes('503') || profileError.code === 'PGRST002') {
           console.error('Service unavailable - stopping retry attempts');
