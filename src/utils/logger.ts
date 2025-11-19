@@ -1,6 +1,14 @@
+const isDevelopment = import.meta.env.DEV;
+
 export const logger = {
-  log: (...args: any[]) => console.log(...args),
-  error: (...args: any[]) => console.error(...args),
-  warn: (...args: any[]) => console.warn(...args),
-  info: (...args: any[]) => console.info(...args),
+  log: (...args: any[]) => {
+    if (isDevelopment) console.log(...args);
+  },
+  error: (...args: any[]) => console.error(...args), // Always log errors
+  warn: (...args: any[]) => {
+    if (isDevelopment) console.warn(...args);
+  },
+  info: (...args: any[]) => {
+    if (isDevelopment) console.info(...args);
+  },
 };
