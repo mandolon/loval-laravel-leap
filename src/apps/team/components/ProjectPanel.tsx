@@ -1780,34 +1780,26 @@ export default function ProjectPanel({
               </div>
             ) : (
               <>
-                <PanelHeaderBar>
+                <div className="sticky top-0 z-10 bg-white border-b border-slate-200/80 px-2.5 pt-2 pb-1.5 flex-shrink-0">
                   <div className="relative flex-1">
                     <input
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       placeholder="Search Files"
-                      style={panelStyles.input}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = theme.files;
-                        e.target.style.boxShadow = `0 0 0 3px ${theme.files}15`;
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = theme.border.input;
-                        e.target.style.boxShadow = 'none';
-                      }}
+                      className="w-full h-7 rounded-[4px] border border-slate-300 bg-white px-2 pl-8 text-[11px] text-slate-900 focus:outline-none focus:border-slate-500"
                     />
                     <Search style={{
                       position: 'absolute',
-                      left: '12px',
+                      left: '8px',
                       top: '50%',
                       transform: 'translateY(-50%)',
-                      width: '16px',
-                      height: '16px',
+                      width: '14px',
+                      height: '14px',
                       color: theme.text.muted,
                       pointerEvents: 'none',
                     }} />
                   </div>
-                </PanelHeaderBar>
+                </div>
                 
                 {/* Hidden file input */}
                 <input
@@ -1819,24 +1811,23 @@ export default function ProjectPanel({
                   aria-label="Upload files"
                 />
 
+                {/* FILE EXPLORER Title */}
+                <div style={{
+                  padding: '6px 10px',
+                  backgroundColor: theme.bg.panel,
+                  borderBottom: `1px solid ${theme.border.default}`,
+                  borderRadius: radius.sm,
+                }}>
+                  <span style={{
+                    fontSize: typography.size.sm,
+                    fontWeight: typography.weight.bold,
+                    color: theme.text.primary,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                  }}>FILE EXPLORER</span>
+                </div>
+
                 <div className="px-2.5 pt-1.5 pb-2" onDragEnd={handleItemDragEnd}>
-                  {/* Modern section header */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    padding: '2px 4px',
-                    backgroundColor: theme.bg.section,
-                    borderRadius: radius.sm,
-                  }}>
-                    <span style={{
-                      fontSize: typography.size.sm,
-                      fontWeight: typography.weight.bold,
-                      color: theme.text.primary,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                    }}>FILE EXPLORER</span>
-                  </div>
                   
                   <div className="mt-1" onDragEnd={handleSectionDragEnd}>
                     {/* Sections above separator */}
@@ -1980,47 +1971,28 @@ export default function ProjectPanel({
         {/* Whiteboards: search + tree with full interactions */}
         {tab === "whiteboards" && (
           <>
-            <PanelHeaderBar>
-              {selectedWB && (
-                <button
-                  onClick={() => setSelectedWB(null)}
-                  className="h-7 w-7 rounded-md opacity-70 hover:opacity-100 transition-opacity border border-slate-300 bg-white grid place-items-center hover:bg-slate-50"
-                  aria-label="Back to whiteboards"
-                >
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="m15 18-6-6 6-6" />
-                  </svg>
-                </button>
-              )}
-              {!selectedWB && (
+            {!selectedWB && (
+              <div className="sticky top-0 z-10 bg-white border-b border-slate-200/80 px-2.5 pt-2 pb-1.5 flex-shrink-0">
                 <div className="relative flex-1">
                   <input
                     value={wbQuery}
                     onChange={(e) => setWbQuery(e.target.value)}
-                    placeholder="Search whiteboards"
-                    style={panelStyles.input}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = theme.whiteboards;
-                      e.target.style.boxShadow = `0 0 0 3px ${theme.whiteboards}15`;
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = theme.border.input;
-                      e.target.style.boxShadow = 'none';
-                    }}
+                    placeholder="Search Whiteboards"
+                    className="w-full h-7 rounded-[4px] border border-slate-300 bg-white px-2 pl-8 text-[11px] text-slate-900 focus:outline-none focus:border-slate-500"
                   />
                   <Search style={{
                     position: 'absolute',
-                    left: '12px',
+                    left: '8px',
                     top: '50%',
                     transform: 'translateY(-50%)',
-                    width: '16px',
-                    height: '16px',
+                    width: '14px',
+                    height: '14px',
                     color: theme.text.muted,
                     pointerEvents: 'none',
                   }} />
                 </div>
-              )}
-            </PanelHeaderBar>
+              </div>
+            )}
 
             {/* List view */}
             {wbLoading ? (
@@ -2035,6 +2007,23 @@ export default function ProjectPanel({
                 </div>
               </div>
             ) : (
+              <>
+              {/* WHITEBOARDS Title */}
+              <div style={{
+                padding: '6px 10px',
+                backgroundColor: theme.bg.panel,
+                borderBottom: `1px solid ${theme.border.default}`,
+                borderRadius: radius.sm,
+              }}>
+                <span style={{
+                  fontSize: typography.size.sm,
+                  fontWeight: typography.weight.bold,
+                  color: theme.text.primary,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}>WHITEBOARDS</span>
+              </div>
+
               <div 
                 className={selectedWB ? "hidden px-2.5 pt-1.5 pb-2" : "px-2.5 pt-1.5 pb-2"} 
                 onDragEnd={handleWbItemDragEnd}
@@ -2048,28 +2037,12 @@ export default function ProjectPanel({
                   setWbMenu({ show: true, x: e.clientX, y: e.clientY, target: { type: "background" } });
                 }}
               >
-                {/* Modern Whiteboards section header */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  padding: '2px 4px',
-                  backgroundColor: theme.bg.section,
-                  borderRadius: radius.sm,
-                }}>
-                  <span style={{
-                    fontSize: typography.size.sm,
-                    fontWeight: typography.weight.bold,
-                    color: theme.text.primary,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                  }}>Whiteboards</span>
-                </div>
                 
                 <div className="mt-1" onDragEnd={handleWbSectionDragEnd}>
                   {(wbQuery ? filterSections(wbQuery, wbSections, wbPages) : wbSections).map((s, idx) => renderWbSection(s, idx))}
                 </div>
               </div>
+              </>
             )}
 
             {/* Context Menu (Whiteboards) */}

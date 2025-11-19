@@ -1,8 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Trash2, FileText, Map, User, Receipt, Users, Activity as ActivityIcon, FileEdit, ChevronDown } from 'lucide-react';
-import { PanelHeaderBar } from './ProjectPanel';
-import { colors, componentText } from './ProjectPanelTheme';
+import { colors, componentText, radius, typography } from './ProjectPanelTheme';
 import { useHardDeleteProject, useProjects, useProject } from '@/lib/api/hooks/useProjects';
 import {
   AlertDialog,
@@ -113,40 +112,18 @@ export function ProjectInfoNavigation({ projectId, workspaceId, onClose }: Proje
   return (
     <>
       <div className="h-full w-full overflow-y-auto no-scrollbar text-[11px] bg-white flex flex-col">
-        {/* Project Selector Container - using design tokens */}
-        <PanelHeaderBar>
+        {/* Project Selector Container */}
+        <div className="sticky top-0 z-10 bg-white border-b border-slate-200/80 px-2.5 pt-2 pb-1.5 flex-shrink-0">
           <div className="relative flex-1" ref={selectorRef}>
             <button
               onClick={() => setSelectorOpen(!selectorOpen)}
-              className="w-full h-7 pr-2 rounded-[6px] flex items-center justify-start cursor-pointer focus:outline-none transition-all"
-              style={{
-                backgroundColor: colors.bg.input,
-                border: `1px solid ${colors.border.input}`,
-                color: '#9CA3AF',
-                fontSize: '10px !important' as any,
-                paddingLeft: '32px',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = colors.border.input;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = colors.border.input;
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = '#F59E0B';
-                e.currentTarget.style.boxShadow = '0 0 0 3px #F59E0B15';
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = colors.border.input;
-                e.currentTarget.style.boxShadow = 'none';
-              }}
+              className="w-full h-7 pr-2 pl-8 rounded-[4px] border border-slate-300 bg-white flex items-center justify-start cursor-pointer focus:outline-none focus:border-slate-500 transition-all text-[11px] text-slate-900"
             >
-              <span className="truncate" style={{ fontSize: '11px' }}>{currentProject?.name || 'Select Project'}</span>
+              <span className="truncate">{currentProject?.name || 'Select Project'}</span>
             </button>
             <ChevronDown 
-              className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none transition-transform" 
+              className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 pointer-events-none transition-transform text-slate-500" 
               style={{ 
-                color: '#9CA3AF',
                 transform: selectorOpen ? 'translateY(-50%) rotate(180deg)' : 'translateY(-50%)'
               }}
             />
@@ -182,15 +159,27 @@ export function ProjectInfoNavigation({ projectId, workspaceId, onClose }: Proje
               </div>
             )}
           </div>
-        </PanelHeaderBar>
+        </div>
+
+        {/* PROJECT INFO Title */}
+        <div style={{
+          padding: '6px 10px',
+          backgroundColor: colors.bg.panel,
+          borderBottom: `1px solid ${colors.border.default}`,
+          borderRadius: radius.sm,
+        }}>
+          <span style={{
+            fontSize: typography.size.sm,
+            fontWeight: typography.weight.bold,
+            color: colors.text.primary,
+            textTransform: 'uppercase' as const,
+            letterSpacing: '0.5px',
+          }}>PROJECT INFO</span>
+        </div>
         
         <div className="flex-1 pt-1.5 pb-2 text-[11px] overflow-auto">
           {menuGroups.map((g, idx) => (
             <div key={g.id} className="px-2.5">
-              {/* Section Header - using design tokens */}
-              <div className={`flex items-center gap-1 py-[2px] px-1 select-none bg-${colors.bg.section} rounded-lg mb-1`}>
-                <span className={componentText.sectionHeader.className}>{g.title}</span>
-              </div>
               <div className="mt-1 flex flex-col gap-1">
                 {g.items.map((it) => {
                   const active = activeSection === it.id;

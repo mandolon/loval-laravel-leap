@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useProject } from '@/lib/api/hooks/useProjects';
 import { useToast } from '@/hooks/use-toast';
+import { theme, radius, typography } from '../ProjectPanelTheme';
 
 interface ProjectPanel3DModelsTabProps {
   projectId: string;
@@ -499,6 +500,22 @@ export function ProjectPanel3DModelsTab({ projectId, onModelSelect }: ProjectPan
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+      </div>
+
+      {/* 3D MODELS Title */}
+      <div style={{
+        padding: '6px 10px',
+        backgroundColor: theme.bg.panel,
+        borderBottom: `1px solid ${theme.border.default}`,
+        borderRadius: radius.sm,
+      }}>
+        <span style={{
+          fontSize: typography.size.sm,
+          fontWeight: typography.weight.bold,
+          color: theme.text.primary,
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px',
+        }}>3D MODELS</span>
       </div>
 
       {/* Settings & Layers (scrollable) */}
