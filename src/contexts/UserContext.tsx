@@ -33,6 +33,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [profileLoadError, setProfileLoadError] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -41,6 +42,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
       (_event, session) => {
         // Ignore auth state changes during logout to prevent flashing
         if (loggingOut) return;
+        
+        // Reset error state on new session
+        setProfileLoadError(false);
         
         setSession(session);
         if (session?.user) {
@@ -68,6 +72,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, [loggingOut]);
 
   const loadUserProfile = async (authUser: AuthUser) => {
+    // Don't retry if we already failed
+    if (profileLoadError) {
+      setLoading(false);
+      return;
+    }
+
     try {
       // Fetch user profile with soft delete filter
       const { data: profile, error: profileError } = await supabase
@@ -77,7 +87,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
         .is('deleted_at', null)
         .maybeSingle();
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        // Check if it's a service unavailable error (503)
+        if (profileError.message?.includes('503') || profileError.code === 'PGRST002') {
+          console.error('Service unavailable - stopping retry attempts');
+          setProfileLoadError(true);
+        }
+        throw profileError;
+      }
       
       if (!profile) {
         console.error('User profile not found or deleted');

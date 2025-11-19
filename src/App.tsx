@@ -20,7 +20,21 @@ import NoWorkspacePage from "./pages/NoWorkspacePage";
 import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error: any) => {
+        // Don't retry on 503 Service Unavailable or PGRST002 errors
+        if (error?.message?.includes('503') || error?.code === 'PGRST002') {
+          return false;
+        }
+        // Limit to 2 retries for other errors
+        return failureCount < 2;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    },
+  },
+});
 
 function AppRouter() {
   const { user, loading, loggingOut } = useUser();
