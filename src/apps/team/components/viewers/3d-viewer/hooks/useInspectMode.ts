@@ -196,6 +196,7 @@ export const useInspectMode = ({
             }
             
             // Normalize type display: If type is SLAB but name indicates roof, display as ROOF
+            // Also normalize WALLSTANDARDCASE to WALL for simpler display
             let displayType = typeName;
             if (typeName && typeName.toUpperCase() === 'SLAB') {
               const nameLower = (name || '').toLowerCase();
@@ -203,6 +204,8 @@ export const useInspectMode = ({
                 displayType = 'ROOF';
                 logger.log('Normalized SLAB type to ROOF based on name:', { originalType: typeName, name, displayType });
               }
+            } else if (typeName && typeName.toUpperCase() === 'WALLSTANDARDCASE') {
+              displayType = 'WALL';
             }
             
             setSelectedObjectType(displayType);

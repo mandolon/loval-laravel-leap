@@ -155,8 +155,8 @@ export const PropertiesPanel = ({ objectName, objectType, objectDimensions, elem
                     {(metrics as any).thicknessDisplay && (
                       <div>Thickness: {(metrics as any).thicknessDisplay}</div>
                     )}
-                    {(metrics as any).areaBothSidesDisplay && (
-                      <div>Wall area (both sides): {(metrics as any).areaBothSidesDisplay}</div>
+                    {(metrics as any).areaOneSideDisplay && (
+                      <div>Area: {(metrics as any).areaOneSideDisplay}</div>
                     )}
                     {(metrics as any).volumeDisplay && (
                       <div>Volume: {(metrics as any).volumeDisplay}</div>
