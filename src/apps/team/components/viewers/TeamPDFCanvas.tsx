@@ -66,10 +66,10 @@ const TeamPDFCanvas = forwardRef<HTMLDivElement, TeamPDFCanvasProps>(({
   // Large format optimization: Aggressive DPR reduction for huge PDFs
   // 24"x36" @ 300dpi = 7200x10800px - we need to be very conservative
   const dynamicDevicePixelRatio = useMemo(() => {
-    if (scale > 4.0) return 1; // Very high zoom - use 1x DPR
-    if (scale > 2.5) return 1; // High zoom - force 1x DPR for large PDFs
-    if (scale > 1.8) return Math.min(1.5, window.devicePixelRatio * 0.5); // Medium zoom
-    if (scale > 1.2) return Math.min(1.5, window.devicePixelRatio * 0.75);
+    if (scale > 4.0) return 1.5; // Very high zoom - bump to 1.5x for clarity
+    if (scale > 2.5) return 1.5; // High zoom - increase from 1x to reduce blur
+    if (scale > 1.8) return Math.min(2, window.devicePixelRatio * 0.75); // Medium zoom
+    if (scale > 1.2) return Math.min(2, window.devicePixelRatio * 0.85); // Increase from 0.75
     return 1; // At fit-to-screen, use 1x for speed (large PDFs are huge)
   }, [scale]);
   
