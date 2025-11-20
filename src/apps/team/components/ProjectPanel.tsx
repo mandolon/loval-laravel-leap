@@ -2072,6 +2072,19 @@ export default function ProjectPanel({
               </div>
             )}
 
+            {/* Back button when whiteboard is selected */}
+            {selectedWB && (
+              <div className="sticky top-0 z-10 bg-white border-b border-slate-200/80 px-2.5 pt-2 pb-1.5 flex-shrink-0">
+                <button
+                  onClick={() => setSelectedWB(null)}
+                  className="w-full h-7 rounded-[4px] bg-transparent px-2 flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-slate-900 transition-colors"
+                >
+                  <ArrowLeft size={14} />
+                  <span>Back to Drawings</span>
+                </button>
+              </div>
+            )}
+
             {/* List view */}
             {wbLoading ? (
               <div className="px-2.5 py-4 text-[11px] text-slate-500 text-center">
@@ -2235,29 +2248,48 @@ export default function ProjectPanel({
             {/* Properties view (when whiteboard is selected) */}
             {selectedWB && (
               <div className="px-2.5 pt-1.5 pb-3">
-                {/* Back Button */}
-                <button
-                  onClick={() => setSelectedWB(null)}
-                  className="flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-slate-900 mb-3 transition-colors"
-                >
-                  <ArrowLeft size={14} />
-                  <span>Back to Drawings</span>
-                </button>
-                
                 <div className="mt-3 space-y-4">
                   {/* File Information */}
                   <div>
-                    <div className="text-[10px] font-semibold text-slate-500 tracking-[0.08em] mb-2">
+                    <div style={{
+                      fontSize: typography.size.sm,
+                      fontWeight: typography.weight.semibold,
+                      color: theme.text.primary,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      marginBottom: '8px',
+                    }}>
                       SHEET INFO
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {(() => {
                         const m = pageMeta[selectedWB.pageId as keyof typeof pageMeta] || { updated: "—" };
                         return (
                           <>
-                            <KeyVal k="Version" v={selectedWB.versionTitle || "—"} />
-                            <KeyVal k="Name" v={(m as any).filename || selectedWB.pageName} />
-                            <KeyVal k="Last saved" v={m.updated || "—"} />
+                            <div>
+                              <div style={{ fontSize: typography.size.sm, color: theme.text.muted, marginBottom: '4px' }}>
+                                Version
+                              </div>
+                              <div style={{ fontSize: typography.size.sm, color: theme.text.primary }}>
+                                {selectedWB.versionTitle || "—"}
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: typography.size.sm, color: theme.text.muted, marginBottom: '4px' }}>
+                                Name
+                              </div>
+                              <div style={{ fontSize: typography.size.sm, color: theme.text.primary }}>
+                                {(m as any).filename || selectedWB.pageName}
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: typography.size.sm, color: theme.text.muted, marginBottom: '4px' }}>
+                                Last saved
+                              </div>
+                              <div style={{ fontSize: typography.size.sm, color: theme.text.primary }}>
+                                {m.updated || "—"}
+                              </div>
+                            </div>
                           </>
                         );
                       })()}
@@ -2266,13 +2298,25 @@ export default function ProjectPanel({
 
                   {/* Drawing Tools */}
                   <div>
-                    <div className="text-[10px] font-semibold text-slate-500 tracking-[0.08em] mb-2">
+                    <div style={{
+                      height: '1px',
+                      backgroundColor: theme.border.default,
+                      marginBottom: '16px',
+                    }} />
+                    <div style={{
+                      fontSize: typography.size.sm,
+                      fontWeight: typography.weight.semibold,
+                      color: theme.text.primary,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      marginBottom: '8px',
+                    }}>
                       DIMENSIONS
                     </div>
                     
                     {/* Drawing Scale Dropdown */}
                     <div className="mb-3">
-                      <div className="text-[11px] text-slate-700 mb-1.5">Drawing Scale</div>
+                      <div style={{ fontSize: typography.size.sm, color: theme.text.secondary, marginBottom: '6px' }}>Drawing Scale</div>
                       <select
                         value={currentScale}
                         onChange={(e) => {
