@@ -397,7 +397,7 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
                 {/* Track Time */}
                 <div>
                   <label className="text-[13px] text-[#646464] block mb-2">Track Time</label>
-                  <div className="text-sm">{task.actualTime || 0}h</div>
+                  <div className="text-[12px] text-[#202020]">{task.actualTime || 0}h</div>
                 </div>
 
                 {/* Due Date */}
@@ -405,9 +405,9 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
                   <label className="text-[13px] text-[#646464] block mb-2">Due Date</label>
                   <div className="relative">
                     {task.dueDate ? (
-                      <input type="date" defaultValue={task.dueDate as any} onBlur={(e) => onUpdate?.({ dueDate: e.target.value })} className="h-8 text-sm border border-[#cecece] rounded px-2" />
+                      <input type="date" defaultValue={task.dueDate as any} onBlur={(e) => onUpdate?.({ dueDate: e.target.value })} className="text-[12px] text-[#202020] border-0 outline-none p-0 bg-transparent" />
                     ) : (
-                      <button className="h-8 px-2 text-muted-foreground inline-flex items-center gap-1" onClick={() => onUpdate?.({ dueDate: new Date().toISOString().split('T')[0] as any })}>
+                      <button className="px-0 text-[12px] text-[#646464] inline-flex items-center gap-1" onClick={() => onUpdate?.({ dueDate: new Date().toISOString().split('T')[0] as any })}>
                         <Calendar className="h-4 w-4" />
                         Set date
                       </button>

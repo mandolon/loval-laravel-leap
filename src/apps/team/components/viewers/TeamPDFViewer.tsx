@@ -259,6 +259,123 @@ const TeamPDFViewer = ({ file }: TeamPDFViewerProps) => {
     // TODO: Implement download
   }, []);
 
+  // Ctrl + wheel to zoom (matches admin PDF viewer)
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey) return; // preserve default scrolling unless Ctrl is held
+      e.preventDefault();
+      
+      suppressFitAdjustRef.current = true;
+      
+      if (e.deltaY < 0) {
+        // Zoom in
+        setScale(prev => Math.min(prev * 1.1, 6.0));
+      } else {
+        // Zoom out
+        setScale(prev => {
+          const activeFit = fitMode === 'page' ? fitPageScale : (fitMode === 'width' ? fitWidthScale : fitHeightScale);
+          const newScale = prev / 1.1;
+          return Math.max(newScale, activeFit * 0.5);
+        });
+      }
+      
+      requestAnimationFrame(() => { suppressFitAdjustRef.current = false; });
+    };
+    
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [fitMode, fitPageScale, fitWidthScale, fitHeightScale]);
+
+  // Keyboard zoom: Shift + '+' to zoom in, Shift + '-' to zoom out
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      // Avoid interfering with form inputs or contenteditable
+      const target = e.target as HTMLElement;
+      const isTyping = target && (
+        target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
+      );
+      if (isTyping) return;
+
+      if (e.shiftKey && (e.key === '+' || e.key === '=')) {
+        e.preventDefault();
+        handleZoomIn();
+      } else if (e.shiftKey && (e.key === '_' || e.key === '-')) {
+        e.preventDefault();
+        handleZoomOut();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handleZoomIn, handleZoomOut]);
+
+  // Keyboard page nav: Shift + ArrowLeft/Right
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isTyping = target && (
+        target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
+      );
+      if (isTyping) return;
+
+      if (e.shiftKey && e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleNextPage();
+      } else if (e.shiftKey && e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handlePrevPage();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handleNextPage, handlePrevPage]);
+
+  // Keyboard panning: Arrow keys scroll the zoomed PDF content
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.shiftKey) return; // Shift+Arrows are reserved for page nav
+      const isArrow = e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight';
+      if (!isArrow) return;
+
+      const target = e.target as HTMLElement;
+      const isTyping = target && (
+        target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
+      );
+      if (isTyping) return;
+
+      const el = containerRef.current;
+      if (!el) return;
+
+      const stepV = Math.max(Math.round(el.clientHeight * 0.15), 24); // vertical step ~15% viewport
+      const stepH = Math.max(Math.round(el.clientWidth * 0.15), 24);  // horizontal step ~15% viewport
+
+      const canScrollVertically = el.scrollHeight > el.clientHeight + 1;
+      const canScrollHorizontally = el.scrollWidth > el.clientWidth + 1;
+
+      if (e.key === 'ArrowUp') {
+        if (!canScrollVertically) return;
+        e.preventDefault();
+        el.scrollTop = Math.max(0, el.scrollTop - stepV);
+      } else if (e.key === 'ArrowDown') {
+        if (!canScrollVertically) return;
+        e.preventDefault();
+        el.scrollTop = Math.min(el.scrollHeight - el.clientHeight, el.scrollTop + stepV);
+      } else if (e.key === 'ArrowLeft') {
+        if (!canScrollHorizontally) return;
+        e.preventDefault();
+        el.scrollLeft = Math.max(0, el.scrollLeft - stepH);
+      } else if (e.key === 'ArrowRight') {
+        if (!canScrollHorizontally) return;
+        e.preventDefault();
+        el.scrollLeft = Math.min(el.scrollWidth - el.clientWidth, el.scrollLeft + stepH);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [containerRef]);
+
   if (!file) {
     return (
       <div className="flex items-center justify-center h-full bg-background">
