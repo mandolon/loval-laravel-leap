@@ -50,35 +50,46 @@ const TeamPDFCanvas = forwardRef<HTMLDivElement, TeamPDFCanvasProps>(({
   const isMountedRef = useRef(true);
   
   const renderMode = 'canvas' as const;
-  const [highQualityEnabled, setHighQualityEnabled] = useState(false);
   
+  // Large format PDF optimization: Enable text layer only when zoomed in enough to read
+  // For 24"x36" PDFs, text is unreadable at fit-to-screen, only show at zoom
   const shouldRenderTextLayer = useMemo(() => {
-    if (!highQualityEnabled) return false;
-    return scale >= 0.5 && scale <= 3.0;
-  }, [highQualityEnabled, scale]);
+    if (scale < 1.2) return false; // Too zoomed out - text unreadable anyway
+    if (scale > 4.0) return false; // Too zoomed in - performance hit
+    return true; // Sweet spot for reading large format PDFs
+  }, [scale]);
   
   const shouldRenderAnnotations = useMemo(() => {
-    if (!highQualityEnabled) return false;
-    return scale >= 0.75 && scale <= 2.0;
-  }, [highQualityEnabled, scale]);
+    return scale >= 1.0 && scale <= 3.0; // Only at readable zoom levels
+  }, [scale]);
   
+  // Large format optimization: Aggressive DPR reduction for huge PDFs
+  // 24"x36" @ 300dpi = 7200x10800px - we need to be very conservative
   const dynamicDevicePixelRatio = useMemo(() => {
-    if (!highQualityEnabled) return 1;
-    if (scale > 2.0) return Math.max(1, window.devicePixelRatio / 2);
-    if (scale > 1.5) return Math.max(1, window.devicePixelRatio * 0.75);
-    return window.devicePixelRatio;
-  }, [highQualityEnabled, scale]);
+    if (scale > 4.0) return 1; // Very high zoom - use 1x DPR
+    if (scale > 2.5) return 1; // High zoom - force 1x DPR for large PDFs
+    if (scale > 1.8) return Math.min(1.5, window.devicePixelRatio * 0.5); // Medium zoom
+    if (scale > 1.2) return Math.min(1.5, window.devicePixelRatio * 0.75);
+    return 1; // At fit-to-screen, use 1x for speed (large PDFs are huge)
+  }, [scale]);
   
+  // Large format PDF optimization (24"x36" architectural/engineering drawings)
   const pdfOptions = useMemo(() => ({
     cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
     cMapPacked: true,
     standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/standard_fonts/`,
     enableXfa: false,
     disableAutoFetch: false,
-    disableStream: false,
+    disableStream: false, // Enable streaming for faster initial render
     disableFontFace: false,
     isEvalSupported: false,
-    maxImageSize: 16777216,
+    maxImageSize: 16777216, // 16MB for large format PDFs (restored from 8MB)
+    useSystemFonts: false, // Disabled - large PDFs often use custom fonts
+    verbosity: 0,
+    pdfBug: false,
+    // Large format optimizations
+    useWorkerFetch: true, // Offload fetching to worker
+    isOffscreenCanvasSupported: typeof OffscreenCanvas !== 'undefined',
   }), []);
   
   useEffect(() => {
@@ -87,27 +98,18 @@ const TeamPDFCanvas = forwardRef<HTMLDivElement, TeamPDFCanvasProps>(({
       isMountedRef.current = false;
     };
   }, []);
-  
-  useEffect(() => {
-    setHighQualityEnabled(false);
-    const timer = setTimeout(() => {
-      if (isMountedRef.current) {
-        setHighQualityEnabled(true);
-      }
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [documentFileSource]);
 
   const clamp = useCallback((value: number, min: number, max: number) => {
     return Math.min(Math.max(value, min), max);
   }, []);
 
+  // Large format PDF buffer: At high zoom, pages are HUGE - render only visible
   const getRenderBuffer = useCallback(() => {
     if (scrollMode !== 'continuous') return 0;
-    if (scale >= 2.5) return 0;
-    if (scale >= 1.8) return 1;
-    if (scale >= 1.1) return 1;
-    return 2;
+    if (scale >= 2.5) return 0; // No buffer - high zoom on large PDF = massive memory
+    if (scale >= 1.5) return 0; // No buffer - still too large
+    if (scale >= 1.0) return 1; // Minimal buffer
+    return 1; // Small buffer when zoomed out (whole page visible anyway)
   }, [scrollMode, scale]);
 
   const updateRenderWindow = useCallback((el: HTMLDivElement) => {
