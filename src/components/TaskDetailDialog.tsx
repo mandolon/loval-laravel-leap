@@ -164,14 +164,14 @@ export function TaskDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="sr-only">Task Details</DialogTitle>
           <DialogDescription className="sr-only">
             View and edit task details, attachments, and information
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Header */}
           <div className="flex items-center gap-3">
             <Badge className={statusConfig[task.status].className}>

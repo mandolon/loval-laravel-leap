@@ -5,6 +5,7 @@ import type { Task, User } from '@/lib/api/types';
 import { TeamAvatar } from '@/components/TeamAvatar';
 import { AssigneeGroup } from '@/apps/team/components/AssigneeGroup';
 import { useTaskFiles, useUploadTaskFile, useDeleteTaskFile, downloadTaskFile } from '@/lib/api/hooks/useFiles';
+import { Dialog, DialogContent, DialogOverlay } from '@/components/ui/dialog';
 
 type TaskDrawerProps = {
   open: boolean;
@@ -101,6 +102,12 @@ const Popover: React.FC<{
   );
 };
 
+const Badge = ({ children, color }: { children: React.ReactNode; color: string }) => (
+  <span className="px-2 py-[2px] rounded text-[11px] font-medium" style={{ background: color, color: '#ffffff' }}>
+    {children}
+  </span>
+);
+
 const STATUS_OPTIONS: Array<{ value: Task['status']; label: string; color: string }> = [
   { value: 'task_redline', label: 'TASK/REDLINE', color: '#d14c4c' },
   { value: 'progress_update', label: 'PROGRESS/UPDATE', color: '#4c75d1' },
@@ -113,6 +120,7 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
   const [isDragging, setIsDragging] = useState(false);
   const dragState = useRef<{ startX: number; startWidth: number } | null>(null);
   const [statusPopoverOpen, setStatusPopoverOpen] = useState(false);
+  const descriptionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [localAssignees, setLocalAssignees] = useState<string[]>(() => {
     // Initialize with task assignees if available, ensuring it's always an array
     if (task) {
@@ -165,6 +173,31 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
     if (!task || !onUpdate) return;
     if (value !== task.description) onUpdate({ description: value });
   }, [task, onUpdate]);
+
+  const handleDescriptionChange = useCallback((value: string) => {
+    if (!task || !onUpdate) return;
+    
+    // Clear existing timeout
+    if (descriptionTimeoutRef.current) {
+      clearTimeout(descriptionTimeoutRef.current);
+    }
+    
+    // Set new timeout - save after 800ms of inactivity
+    descriptionTimeoutRef.current = setTimeout(() => {
+      if (value !== task.description) {
+        onUpdate({ description: value });
+      }
+    }, 800);
+  }, [task, onUpdate]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (descriptionTimeoutRef.current) {
+        clearTimeout(descriptionTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleFileUpload = useCallback((filesList: FileList | null) => {
     if (!task || !filesList || filesList.length === 0) return;
@@ -220,135 +253,116 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
   }, [handleFileUpload]);
 
   if (!task) {
-    return (
-      <div
-        className="absolute right-0 bg-white border-l border-[#cecece]"
-        style={{ width, top: topOffset, bottom: -48, transform: 'translateX(100%)' }}
-        aria-hidden
-      />
-    );
+    return null;
   }
 
   return (
-    <div
-      className="absolute right-0 bg-white border-l border-[#cecece] flex flex-col"
-      style={{ width, top: topOffset, bottom: 0 }}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="task-drawer-title"
-    >
-      {/* Resize handle on the left edge */}
-      <div
-        className="absolute left-0 top-0 h-full w-1 cursor-col-resize z-20"
-        onMouseDown={(e) => {
-          e.preventDefault();
-          dragState.current = { startX: e.clientX, startWidth: width };
-          const onMove = (ev: MouseEvent) => {
-            if (!dragState.current || !onWidthChange) return;
-            const dx = dragState.current.startX - ev.clientX; // moving left increases width
-            const next = Math.max(420, Math.min(900, Math.round(dragState.current.startWidth + dx)));
-            onWidthChange(next);
-          };
-          const onUp = () => {
-            dragState.current = null;
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup', onUp);
-          };
-          document.addEventListener('mousemove', onMove);
-          document.addEventListener('mouseup', onUp);
-        }}
-        title="Drag to resize"
-      />
-
-      <div
-        ref={containerRef}
-        className={`flex-1 min-h-0 flex flex-col transition-transform duration-200 ease-out ${open ? 'translate-x-0' : 'translate-x-full'}`}
-      >
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="max-w-5xl max-h-[85vh] p-0 gap-0 overflow-hidden flex flex-col [&>button]:hidden data-[state=open]:animate-none data-[state=closed]:animate-none">
+        <div
+          ref={containerRef}
+          className="flex-1 min-h-0 flex flex-col"
+        >
         <div className="flex flex-col h-full min-h-0 bg-white" data-testid="task-drawer-root">
           {/* Header */}
-          <div className="border-b border-[#cecece] bg-white shadow-[inset_0_-1px_0_0_#f1f1f1] shrink-0">
-            <div className="py-1 px-5">
-              <div className="max-w-[840px] mx-auto flex items-center justify-between">
-                <div className="text-[12px] text-[#202020] font-medium leading-tight">{projectName || 'Project'}</div>
-                <div className="flex items-center gap-1 -mr-2">
-                  <button
-                    className="w-7 h-7 inline-flex items-center justify-center rounded hover:bg-gray-100"
-                    onClick={onClose}
-                    aria-label="Close task detail"
-                    title="Close"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+          <div className="border-b border-[#cecece] bg-white shrink-0">
+            <div className="py-2 px-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span 
+                    className="inline-block w-4 h-4 rounded-full border-2" 
+                    style={{ borderColor: task ? getStatusColor(task.status) : '#94a3b8' }}
+                  />
+                  <span className="text-[#202020] text-[14px]">{task.shortId}</span>
+                  <span className="w-px h-4 bg-gray-300" />
+                  <div className="text-[13px] text-[#646464] font-medium leading-tight">{projectName || 'Project'}</div>
                 </div>
+                <button
+                  className="w-8 h-8 inline-flex items-center justify-center rounded hover:bg-gray-100 transition-colors"
+                  onClick={onClose}
+                  aria-label="Close task detail"
+                  title="Close"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             </div>
           </div>
 
           {/* Main */}
-          <div className="flex-1 min-h-0 overflow-auto px-10 pt-5">
-            <div className="max-w-[840px] mx-auto pb-5">
-              {/* Status + ID */}
-              <div className="flex items-center justify-between mt-2 mb-2">
-                <div className="flex items-center gap-2 relative">
-                  <Popover
-                    open={statusPopoverOpen}
-                    onClose={() => setStatusPopoverOpen(false)}
-                    anchor={
-                      <button
-                        type="button"
-                        onClick={() => setStatusPopoverOpen(true)}
-                        className="inline-flex items-center justify-center"
-                        aria-label="Change status"
-                      >
-                        <span 
-                          className="inline-block w-4 h-4 rounded-full border-2" 
-                          style={{ borderColor: task ? getStatusColor(task.status) : '#94a3b8' }}
-                        />
-                      </button>
-                    }
-                    panel={
-                      <div className="py-1">
-                        {STATUS_OPTIONS.map((option) => (
-                          <button
-                            key={option.value}
-                            onClick={() => handleStatusSelect(option.value)}
-                            className={`w-full text-left px-3 py-1.5 text-[12px] hover:bg-slate-50 transition-colors flex items-center gap-2 ${
-                              task?.status === option.value ? 'bg-slate-50' : ''
-                            }`}
-                          >
-                            <span 
-                              className="inline-block w-4 h-4 rounded-full border-2 flex-shrink-0" 
-                              style={{ borderColor: option.color }}
-                            />
-                            <span>{option.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    }
-                  />
-                  <span className="w-px h-4 bg-gray-300" />
-                  <span className="text-[#202020] text-[14px]">{task.shortId}</span>
-                </div>
+          <div className="flex-1 min-h-0 overflow-auto px-12 pt-8">
+            <div className="max-w-[840px] mx-auto pb-8">
+              {/* Status Badge */}
+              <div className="mb-4">
+                <Popover
+                  open={statusPopoverOpen}
+                  onClose={() => setStatusPopoverOpen(false)}
+                  anchor={
+                    <button
+                      type="button"
+                      onClick={() => setStatusPopoverOpen(true)}
+                      className="inline-flex items-center"
+                      aria-label="Change status"
+                    >
+                      <Badge color={task ? getStatusColor(task.status) : '#94a3b8'}>
+                        {task ? STATUS_OPTIONS.find(opt => opt.value === task.status)?.label || 'STATUS' : 'STATUS'}
+                      </Badge>
+                    </button>
+                  }
+                  panel={
+                    <div className="py-1">
+                      {STATUS_OPTIONS.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => handleStatusSelect(option.value)}
+                          className={`w-full text-left px-3 py-1.5 text-[12px] hover:bg-slate-50 transition-colors flex items-center gap-2 ${
+                            task?.status === option.value ? 'bg-slate-50' : ''
+                          }`}
+                        >
+                          <span 
+                            className="inline-block w-4 h-4 rounded-full border-2 flex-shrink-0" 
+                            style={{ borderColor: option.color }}
+                          />
+                          <span>{option.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  }
+                />
               </div>
 
               {/* Title */}
-              <div className="my-2">
+              <div className="mb-5">
                 <input
                   key={task.id}
                   id="task-drawer-title"
                   type="text"
                   defaultValue={task.title}
                   onBlur={(e) => handleTitleEdit(e.target.value)}
-                  className="w-full text-xl font-semibold tracking-tight outline-none border-b border-transparent focus:border-[#4C75D1] py-2"
+                  className="w-full text-2xl font-semibold tracking-tight outline-none border-b border-transparent focus:border-[#4C75D1] py-2 transition-colors"
                   aria-label="Task title"
                 />
               </div>
 
+              {/* Description */}
+              <div className="mb-8">
+                <div className="rounded-lg border border-[#cecece] bg-slate-50/30 focus-within:bg-white focus-within:border-[#4C75D1] focus-within:shadow-sm transition-all overflow-hidden">
+                  <textarea
+                    key={`desc-${task.id}`}
+                    placeholder="Describe the task details, requirements, or any relevant information..."
+                    className="min-h-[150px] w-full p-4 text-[14px] border-0 outline-none resize-none placeholder:text-gray-400 bg-transparent"
+                    defaultValue={task.description || ''}
+                    onChange={(e) => handleDescriptionChange(e.target.value)}
+                    onBlur={(e) => handleDescriptionBlur(e.target.value)}
+                  />
+                </div>
+              </div>
+
               {/* Fields Row */}
-              <div className="grid grid-cols-5 gap-5 mb-5 items-start">
+              <div className="grid grid-cols-5 gap-6 mb-8 items-start">
                 {/* Created by */}
-                <div className="pl-4">
-                  <label className="text-[12px] text-[#646464] block mb-1.5">Created by</label>
+                <div>
+                  <label className="text-[13px] text-[#646464] block mb-2">Created by</label>
                   <div className="flex items-center gap-2 text-[12px]">
                     {createdBy ? (
                       <TeamAvatar user={{ ...createdBy, avatar_url: createdBy.avatarUrl }} size="sm" />
@@ -360,13 +374,13 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
 
                 {/* Date Created */}
                 <div>
-                  <label className="text-[12px] text-[#646464] block mb-1.5">Date Created</label>
+                  <label className="text-[13px] text-[#646464] block mb-2">Date Created</label>
                   <div className="text-[12px] text-[#202020]">{formatShortDate(task.createdAt)}</div>
                 </div>
 
                 {/* Assigned to */}
                 <div>
-                  <label className="text-[12px] text-[#646464] block mb-1.5">Assigned to</label>
+                  <label className="text-[13px] text-[#646464] block mb-2">Assigned to</label>
                   <div className="flex items-center">
                     <AssigneeGroup
                       key={`${task.id}-${task.assignees?.sort().join(',') || ''}`}
@@ -382,13 +396,13 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
 
                 {/* Track Time */}
                 <div>
-                  <label className="text-[12px] text-[#646464] block mb-1.5">Track Time</label>
+                  <label className="text-[13px] text-[#646464] block mb-2">Track Time</label>
                   <div className="text-sm">{task.actualTime || 0}h</div>
                 </div>
 
                 {/* Due Date */}
                 <div>
-                  <label className="text-[12px] text-[#646464] block mb-1.5">Due Date</label>
+                  <label className="text-[13px] text-[#646464] block mb-2">Due Date</label>
                   <div className="relative">
                     {task.dueDate ? (
                       <input type="date" defaultValue={task.dueDate as any} onBlur={(e) => onUpdate?.({ dueDate: e.target.value })} className="h-8 text-sm border border-[#cecece] rounded px-2" />
@@ -402,33 +416,20 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
                 </div>
               </div>
 
-              {/* Description */}
-              <div className="mt-2 mb-6">
-                <div className="rounded-md border border-[#cecece] bg-white/80 focus-within:bg-white focus-within:border-[#4C75D1] focus-within:shadow-sm transition-colors">
-                  <textarea
-                    key={`desc-${task.id}`}
-                    placeholder="Describe the task details, requirements, or any relevant information..."
-                    className="min-h-[200px] w-full p-3 text-[14px] border-0 outline-none resize-none placeholder:text-gray-400"
-                    defaultValue={task.description || ''}
-                    onBlur={(e) => handleDescriptionBlur(e.target.value)}
-                  />
-                </div>
-              </div>
-
               {/* Attachments */}
-              <div className="mb-6">
-                <h2 className="text-[12px] font-semibold mb-2 pl-3">Attachments</h2>
+              <div>
+                <h2 className="text-[13px] font-semibold mb-3">Attachments</h2>
                 <input ref={fileInputRef} type="file" multiple onChange={(e) => handleFileUpload(e.target.files)} className="hidden" />
 
                 <div
-                  className={`border-2 border-dashed rounded-lg p-5 text-center cursor-pointer transition-colors ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-[#cecece] bg-gray-50 hover:bg-gray-100'}`}
+                  className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-[#cecece] bg-gray-50 hover:bg-gray-100'}`}
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <div className="flex items-center justify-center gap-2 text-[12px] text-[#646464]">
+                  <div className="flex items-center justify-center gap-2 text-[13px] text-[#646464]">
                     <Upload className="w-4 h-4" />
                     <span>Drop your files here to upload</span>
                   </div>
-                  <div className="text-[12px] text-[#646464] mt-1">(Click box to select files)</div>
+                  <div className="text-[13px] text-[#646464] mt-1">(Click box to select files)</div>
                 </div>
 
                 {files.length > 0 ? (
@@ -500,8 +501,9 @@ export default function TaskDrawer({ open, task, width, topOffset = 0, onWidthCh
             </div>
           </div>
         </div>
-      </div>
-    </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

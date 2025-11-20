@@ -70,6 +70,26 @@ export const AssigneeGroup: React.FC<AssigneeGroupProps> = ({ value, usersById, 
     }
   }, [open]);
 
+  // Close popover when clicking outside
+  useEffect(() => {
+    if (!open) return;
+    
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Check if click is outside both the container and the popover
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        !target.closest('[data-assignee-popover="true"]')
+      ) {
+        setOpen(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
   // Helpers to avoid accidental side-effects
   const assign = (userId: string) => {
     if (!value.includes(userId)) onChange?.([...value, userId]);
@@ -182,13 +202,11 @@ export const AssigneeGroup: React.FC<AssigneeGroupProps> = ({ value, usersById, 
 
       {open && createPortal(
         <div 
-          className="fixed z-[9999]" 
+          className="fixed z-[99999] pointer-events-auto" 
           data-assignee-popover="true"
           style={{ top: `${popoverPosition.top}px`, left: `${popoverPosition.left}px` }}
-          onMouseLeave={() => setOpen(false)}
-          onMouseEnter={() => setOpen(true)}
         >
-          <div className="p-1 bg-white border shadow-md rounded-md w-[220px] max-h-64 overflow-y-auto transition-all duration-150 ease-out transform">
+          <div className="p-1 bg-white border shadow-md rounded-md w-[220px] max-h-[400px] overflow-y-auto transition-all duration-150 ease-out transform pointer-events-auto">
             {/* ASSIGNED TO (priority) */}
             <div className="px-2 py-1 text-left text-[10px] uppercase tracking-wide text-gray-500">ASSIGNED TO</div>
             <div className="flex flex-col gap-1 text-[11px] select-none">

@@ -187,11 +187,21 @@ export const useDeleteTaskFile = () => {
 
       // Soft delete in database
       const { data: userData } = await supabase.auth.getUser()
+      
+      // Get the user's profile ID from auth_id
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', userData.user!.id)
+        .single()
+
+      if (!userProfile) throw new Error('User not found')
+
       const { error: dbError } = await supabase
         .from('files')
         .update({
           deleted_at: new Date().toISOString(),
-          deleted_by: userData.user?.id,
+          deleted_by: userProfile.id,
         })
         .eq('id', fileId)
 
