@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { LogOut } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
 import {
   Popover,
@@ -12,14 +10,12 @@ import { getAvatarColor, getAvatarInitials } from '@/utils/avatarUtils';
 
 export function TeamAvatarMenu() {
   const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
-  const { user } = useUser();
+  const { user, signOut } = useUser();
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
       setOpen(false);
-      navigate('/auth');
+      await signOut();
     } catch (error) {
       console.error('Error signing out:', error);
     }

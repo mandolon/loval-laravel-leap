@@ -18,6 +18,7 @@ export interface UserWithWorkspaces {
   role: 'team' | 'consultant' | 'client' | null;
   lastActiveAt?: string | null;
   lastSignInAt?: string | null;
+  lastPageVisited?: string | null;
   isOnline: boolean;
   workspaces: Array<{
     membershipId: string;
@@ -101,6 +102,7 @@ export const useUsers = () => {
           role: rolesByUserId.get(user.id) || null,
           lastActiveAt: user.last_active_at,
           lastSignInAt: user.last_sign_in_at,
+          lastPageVisited: user.last_page_visited,
           isOnline,
           workspaces: membershipsByUser.get(user.id) || [],
         };

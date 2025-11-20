@@ -323,6 +323,8 @@ const TeamPage = () => {
                       <TableHead>Title</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Last Sign In</TableHead>
+                      <TableHead>Last Active</TableHead>
+                      <TableHead>Last Page</TableHead>
                       <TableHead>Workspaces</TableHead>
                       <TableHead>Admin Status</TableHead>
                       <TableHead>Status</TableHead>
@@ -411,6 +413,24 @@ const TeamPage = () => {
                             </span>
                           ) : (
                             <span className="text-muted-foreground">Never</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {user.lastActiveAt ? (
+                            <span title={format(new Date(user.lastActiveAt), 'PPpp')}>
+                              {formatDistanceToNow(new Date(user.lastActiveAt), { addSuffix: true })}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">Never</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {user.lastPageVisited ? (
+                            <Badge variant="outline" className="capitalize">
+                              {user.lastPageVisited}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">—</span>
                           )}
                         </TableCell>
                         <TableCell>

@@ -1,21 +1,37 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
+import { useLocation } from 'react-router-dom';
 
-const UPDATE_INTERVAL = 60000; // Update every 60 seconds when active
-const DEBOUNCE_DELAY = 5000; // Wait 5 seconds after last activity before considering inactive
+// Map route patterns to main page names
+const getPageName = (pathname: string): string => {
+  if (pathname.includes('/home')) return 'home';
+  if (pathname.includes('/projects')) return 'projects';
+  if (pathname.includes('/tasks')) return 'tasks';
+  if (pathname.includes('/chat')) return 'chat';
+  if (pathname.includes('/files')) return 'files';
+  if (pathname.includes('/notes')) return 'notes';
+  if (pathname.includes('/drawings')) return 'drawings';
+  if (pathname.includes('/settings')) return 'settings';
+  if (pathname.includes('/trash')) return 'trash';
+  return 'home'; // default
+};
 
 export const useActivityTracker = () => {
-  const { user } = useUser();
-  const lastActivityRef = useRef<Date>(new Date());
-  const updateTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const { user, loggingOut } = useUser();
+  const location = useLocation();
 
   useEffect(() => {
-    if (!user?.id) return;
+    // Don't track activity if user is not logged in or currently logging out
+    if (!user?.id || loggingOut) return;
 
-    // Update last_active_at in database
+    // Update last_active_at and last_page_visited when user navigates to a new page
     const updateActivity = async () => {
+      // Double-check user is still logged in before updating
+      if (!user?.id || loggingOut) return;
+      
+      const pageName = getPageName(location.pathname);
+      
       try {
         const { data: userData } = await supabase
           .from('users')
@@ -23,10 +39,13 @@ export const useActivityTracker = () => {
           .eq('id', user.id)
           .maybeSingle();
 
-        if (userData?.auth_id) {
+        if (userData?.auth_id && user?.id && !loggingOut) {
           await supabase
             .from('users')
-            .update({ last_active_at: new Date().toISOString() })
+            .update({ 
+              last_active_at: new Date().toISOString(),
+              last_page_visited: pageName
+            })
             .eq('auth_id', userData.auth_id);
         }
       } catch (error) {
@@ -34,46 +53,8 @@ export const useActivityTracker = () => {
       }
     };
 
-    // Track activity events
-    const handleActivity = () => {
-      lastActivityRef.current = new Date();
-
-      // Clear existing debounce timer
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-
-      // Set new debounce timer
-      debounceTimerRef.current = setTimeout(() => {
-        // User is still active, continue updating
-        if (updateTimerRef.current === null) {
-          updateActivity();
-          updateTimerRef.current = setInterval(updateActivity, UPDATE_INTERVAL);
-        }
-      }, DEBOUNCE_DELAY);
-    };
-
-    // Activity event listeners
-    const events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
-    events.forEach(event => {
-      window.addEventListener(event, handleActivity, { passive: true });
-    });
-
-    // Initial activity update
+    // Update activity when page/route changes
     updateActivity();
-    updateTimerRef.current = setInterval(updateActivity, UPDATE_INTERVAL);
 
-    // Cleanup
-    return () => {
-      events.forEach(event => {
-        window.removeEventListener(event, handleActivity);
-      });
-      if (updateTimerRef.current) {
-        clearInterval(updateTimerRef.current);
-      }
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-    };
-  }, [user?.id]);
+  }, [user?.id, loggingOut, location.pathname]);
 };

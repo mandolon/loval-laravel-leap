@@ -40,21 +40,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
     // Set up auth state listener with token recovery
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        // Ignore auth state changes during logout to prevent flashing
+        // Handle SIGNED_OUT event immediately, even during logout
+        if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setSession(null);
+          setLoading(false);
+          return;
+        }
+        
+        // Ignore other auth state changes during logout to prevent flashing
         if (loggingOut) return;
         
         // Handle token refresh failures
         if (event === 'TOKEN_REFRESHED' && !session) {
           console.error('Token refresh failed - signing out user');
           await signOut();
-          return;
-        }
-        
-        // Detect session errors and sign out
-        if (event === 'SIGNED_OUT' && !loggingOut) {
-          setUser(null);
-          setSession(null);
-          setLoading(false);
           return;
         }
         
@@ -175,19 +175,40 @@ export function UserProvider({ children }: { children: ReactNode }) {
       // Set logging out flag to prevent state changes during logout
       setLoggingOut(true);
       
-      // Clear local state
+      // Clear local state first
       setUser(null);
       setSession(null);
       
-      // Actually sign out from Supabase
-      await supabase.auth.signOut();
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Supabase signOut error:', error);
+      }
+      
+      // Manually clear all Supabase auth data from localStorage as backup
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('sb-')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
       
       // Navigate to auth page
-      navigate('/auth');
+      navigate('/auth', { replace: true });
     } catch (err) {
       console.error('Error during sign out:', err);
+      // Still clear state even if signout fails
+      setUser(null);
+      setSession(null);
+      navigate('/auth', { replace: true });
     } finally {
-      setLoggingOut(false);
+      // Small delay to ensure navigation completes before clearing flag
+      setTimeout(() => {
+        setLoggingOut(false);
+      }, 100);
     }
   };
 
