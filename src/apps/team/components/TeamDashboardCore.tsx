@@ -10,6 +10,7 @@ import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useRoleAwareNavigation } from "@/hooks/useRoleAwareNavigation";
 import { ProjectInfoContent } from './ProjectInfoContent';
 import { ProjectAIContextView } from './ProjectAIContextView';
+import { GitHubActivityFeed } from './GitHubActivityFeed';
 import {
   Home,
   FolderKanban,
@@ -1849,8 +1850,8 @@ const ChatView = memo(function ChatView({ resetTrigger }: ChatViewProps) {
 // Home View
 // ----------------------------------
 const HomeView = memo(function HomeView() {
-  const VIEW_TABS = ["Overview", "To Do", "Activity"];
-  const [viewTab, setViewTab] = useState("Overview");
+  const VIEW_TABS = ["Activity", "Overview", "To Do"];
+  const [viewTab, setViewTab] = useState("Activity");
   const { currentWorkspace } = useWorkspaces();
   const { data: tasks = [] } = useWorkspaceTasks(currentWorkspace?.id || '');
 
@@ -1890,14 +1891,50 @@ const HomeView = memo(function HomeView() {
       </div>
 
       <div className="mt-3">
+        {viewTab === "Activity" && (
+          <div className="max-w-3xl border border-slate-200 rounded-lg overflow-hidden bg-white">
+            <div className="sticky top-0 bg-white border-b border-slate-200 p-4 z-10">
+              <h3 className="text-lg font-semibold text-slate-900 mb-1">Rehome Development Activity</h3>
+              <p className="text-sm text-slate-500">Recent updates to the app and list of new features.</p>
+            </div>
+            <div className="max-h-[700px] overflow-y-scroll p-4">
+              <GitHubActivityFeed 
+                hideKeywords={[
+                  'last_page_visited',
+                  'tracking',
+                  'monitoring',
+                  'activity tracker',
+                  'last active',
+                  'last page',
+                  'user activity',
+                  'activity tracking',
+                  'page visited',
+                  'navigation tracking',
+                  'sign out',
+                  'sign-out',
+                  'logout',
+                  'redirect loop',
+                  '403',
+                  'auth bug',
+                  'github.com/mandolon/app.rehome',
+                  'mandolon/app.rehome',
+                  'app.rehome',
+                  'github.com/mandolon/loval-laravel-leap',
+                  'mandolon/loval-laravel-leap',
+                  'loval-laravel-leap',
+                  'excalidraw',
+                  'lovable',
+                ]}
+                hideAuthors={[]}
+              />
+            </div>
+          </div>
+        )}
         {viewTab === "Overview" && (
           <div className="text-sm text-slate-600">Home content placeholder</div>
         )}
         {viewTab === "To Do" && (
           <div className="text-sm text-slate-600">To Do content placeholder</div>
-        )}
-        {viewTab === "Activity" && (
-          <div className="text-sm text-slate-600">Activity content placeholder</div>
         )}
       </div>
     </div>
