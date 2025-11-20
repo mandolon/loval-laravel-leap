@@ -48,16 +48,32 @@ const TeamPDFCanvas = forwardRef<HTMLDivElement, TeamPDFCanvasProps>(({
   const [renderRange, setRenderRange] = useState({ start: 1, end: 1 });
   const initialContinuousPageMeasuredRef = useRef(false);
   const isMountedRef = useRef(true);
+  const [isZooming, setIsZooming] = useState(false);
+  const zoomTimeoutRef = useRef<NodeJS.Timeout>();
+  
+  // Debounce text layer rendering during zoom for faster canvas updates
+  useEffect(() => {
+    setIsZooming(true);
+    if (zoomTimeoutRef.current) {
+      clearTimeout(zoomTimeoutRef.current);
+    }
+    zoomTimeoutRef.current = setTimeout(() => {
+      setIsZooming(false);
+    }, 150); // 150ms after zoom stops, enable text layer
+    
+    return () => {
+      if (zoomTimeoutRef.current) {
+        clearTimeout(zoomTimeoutRef.current);
+      }
+    };
+  }, [scale]);
   
   const renderMode = 'canvas' as const;
   
-  // Large format PDF optimization: Enable text layer only when zoomed in enough to read
-  // For 24"x36" PDFs, text is unreadable at fit-to-screen, only show at zoom
+  // Enable text layer only when not actively zooming - instant canvas updates during zoom
   const shouldRenderTextLayer = useMemo(() => {
-    if (scale < 1.2) return false; // Too zoomed out - text unreadable anyway
-    if (scale > 4.0) return false; // Too zoomed in - performance hit
-    return true; // Sweet spot for reading large format PDFs
-  }, [scale]);
+    return !isZooming; // Disable during zoom for speed, enable after for selection
+  }, [isZooming]);
   
   const shouldRenderAnnotations = useMemo(() => {
     return scale >= 1.0 && scale <= 3.0; // Only at readable zoom levels
@@ -66,12 +82,18 @@ const TeamPDFCanvas = forwardRef<HTMLDivElement, TeamPDFCanvasProps>(({
   // Large format optimization: Aggressive DPR reduction for huge PDFs
   // 24"x36" @ 300dpi = 7200x10800px - we need to be very conservative
   const dynamicDevicePixelRatio = useMemo(() => {
-    if (scale > 4.0) return 1.5; // Very high zoom - bump to 1.5x for clarity
-    if (scale > 2.5) return 1.5; // High zoom - increase from 1x to reduce blur
-    if (scale > 1.8) return Math.min(2, window.devicePixelRatio * 0.75); // Medium zoom
-    if (scale > 1.2) return Math.min(2, window.devicePixelRatio * 0.85); // Increase from 0.75
-    return 1; // At fit-to-screen, use 1x for speed (large PDFs are huge)
-  }, [scale]);
+    // During active zoom, use minimal DPR for speed
+    if (isZooming) {
+      if (scale > 2.0) return 1;
+      return 1;
+    }
+    // After zoom settles, increase quality
+    if (scale > 4.0) return 1.5;
+    if (scale > 2.5) return 1.5;
+    if (scale > 1.8) return Math.min(2, window.devicePixelRatio * 0.75);
+    if (scale > 1.2) return Math.min(2, window.devicePixelRatio * 0.85);
+    return 1;
+  }, [scale, isZooming]);
   
   // Large format PDF optimization (24"x36" architectural/engineering drawings)
   const pdfOptions = useMemo(() => ({
@@ -106,10 +128,9 @@ const TeamPDFCanvas = forwardRef<HTMLDivElement, TeamPDFCanvasProps>(({
   // Large format PDF buffer: At high zoom, pages are HUGE - render only visible
   const getRenderBuffer = useCallback(() => {
     if (scrollMode !== 'continuous') return 0;
-    if (scale >= 2.5) return 0; // No buffer - high zoom on large PDF = massive memory
-    if (scale >= 1.5) return 0; // No buffer - still too large
-    if (scale >= 1.0) return 1; // Minimal buffer
-    return 1; // Small buffer when zoomed out (whole page visible anyway)
+    if (scale >= 2.0) return 0; // No buffer - reduced from 2.5 for faster zoom
+    if (scale >= 1.2) return 0; // No buffer - reduced from 1.5 for faster zoom
+    return 1; // Minimal buffer at normal zoom
   }, [scrollMode, scale]);
 
   const updateRenderWindow = useCallback((el: HTMLDivElement) => {
@@ -341,7 +362,7 @@ const TeamPDFCanvas = forwardRef<HTMLDivElement, TeamPDFCanvasProps>(({
                       <div
                         key={pageNo}
                         data-page-number={pageNo}
-                        className="pdf-page-frame"
+                        className="pdf-page-frame react-pdf__Page"
                         ref={(el) => {
                           if (el) {
                             pageRefs.current.set(pageNo, el);
@@ -362,22 +383,22 @@ const TeamPDFCanvas = forwardRef<HTMLDivElement, TeamPDFCanvasProps>(({
                           minHeight: scrollMode === 'continuous'
                             ? `${Math.max(Math.round(estimatedHeight), 1)}px`
                             : undefined,
-                          willChange: scrollMode === 'continuous' ? 'transform' : undefined,
+                          willChange: 'transform',
                           transform: 'translateZ(0)',
                           backfaceVisibility: 'hidden' as const,
+                          contain: 'layout style paint',
                         }}
                       >
                         {userRotation === 0 ? (
                           <Page
-                            key={`page-${pageNo}-${documentFileSource}`}
+                            key={`p-${pageNo}`}
                             pageNumber={pageNo}
-                            scale={1}
+                            scale={scale}
                             renderMode={renderMode}
                             renderTextLayer={shouldRenderTextLayer}
                             renderAnnotationLayer={shouldRenderAnnotations}
                             loading={null}
                             error={null}
-                            width={w}
                             onLoadSuccess={handlePageLoadSuccess}
                             onLoadError={(error) => {
                               if (debug && error && !error.message?.includes('sendWithPromise')) {
@@ -388,16 +409,15 @@ const TeamPDFCanvas = forwardRef<HTMLDivElement, TeamPDFCanvasProps>(({
                           />
                         ) : (
                           <Page
-                            key={`page-${pageNo}-${documentFileSource}`}
+                            key={`p-${pageNo}-r${userRotation}`}
                             pageNumber={pageNo}
-                            scale={1}
+                            scale={scale}
                             rotate={userRotation}
                             renderMode={renderMode}
                             renderTextLayer={shouldRenderTextLayer}
                             renderAnnotationLayer={shouldRenderAnnotations}
                             loading={null}
                             error={null}
-                            width={w}
                             onLoadSuccess={handlePageLoadSuccess}
                             onLoadError={(error) => {
                               if (debug && error && !error.message?.includes('sendWithPromise')) {

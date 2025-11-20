@@ -215,3 +215,25 @@ All colors MUST be HSL.
 .excalidraw [data-type="line"] {
   stroke-width: 0.5;
 } */
+
+/* PDF Viewer text layer alignment fix */
+.react-pdf__Page {
+  position: relative;
+}
+
+.react-pdf__Page__textContent {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  transform-origin: top left !important;
+}
+
+.react-pdf__Page__canvas {
+  display: block;
+}
+
+/* Performance optimizations for PDF rendering */
+.pdf-page-frame {
+  contain: layout style paint;
+  content-visibility: auto;
+}
