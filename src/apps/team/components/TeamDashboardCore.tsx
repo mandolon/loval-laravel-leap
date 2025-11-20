@@ -414,6 +414,24 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
     }
   }, [urlProjectId, userProjects, active]);
 
+  // Clear all content selections when project changes
+  useEffect(() => {
+    if (!selected?.item || selected?.tab !== 'projects') return;
+    
+    // Reset all content area selections to show empty state
+    setSelectedFile(null);
+    setSelectedWhiteboard(null);
+    setSelectedModel(null);
+    
+    // Clear URL parameters for content selections
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      newParams.delete('fileId');
+      newParams.delete('whiteboardPageId');
+      return newParams;
+    }, { replace: true });
+  }, [selected?.item]); // Only trigger when the project item changes
+
   // Update URL when project selection changes (skip if we're on info tab to avoid conflicts)
   useEffect(() => {
     if (active !== 'projects' || !selected?.item) return;
@@ -1715,14 +1733,15 @@ const PageHeader = memo(function PageHeader({
           </div>
           <span className="truncate text-[#202020] text-[15px] font-medium">
             {title}
-            {projectName && (
-              <>
-                <span className="mx-2 text-slate-400">—</span>
-                <span className="truncate text-[15px] font-normal text-slate-400" title={projectName}>{projectName}</span>
-              </>
-            )}
           </span>
         </div>
+        {projectName && (
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
+            <span className="truncate text-[13px] font-medium text-[#202020]" title={projectName}>
+              {projectName}
+            </span>
+          </div>
+        )}
         <div className="flex items-center gap-2">
           {showCollapseButton && onToggleProjectPanel && (
             <button
