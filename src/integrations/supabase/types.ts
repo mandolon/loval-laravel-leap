@@ -2316,6 +2316,7 @@ export type Database = {
           id: string
           is_admin: boolean
           last_active_at: string | null
+          last_page_visited: string | null
           name: string
           phone: string | null
           short_id: string
@@ -2332,6 +2333,7 @@ export type Database = {
           id?: string
           is_admin?: boolean
           last_active_at?: string | null
+          last_page_visited?: string | null
           name: string
           phone?: string | null
           short_id?: string
@@ -2348,6 +2350,7 @@ export type Database = {
           id?: string
           is_admin?: boolean
           last_active_at?: string | null
+          last_page_visited?: string | null
           name?: string
           phone?: string | null
           short_id?: string
@@ -2741,6 +2744,7 @@ export type Database = {
           id: string
           is_admin: boolean
           last_active_at: string
+          last_page_visited: string
           last_sign_in_at: string
           name: string
           title: string
