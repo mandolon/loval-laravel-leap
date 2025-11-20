@@ -29,6 +29,7 @@ export const useInspectMode = ({
   const [selectedObjectType, setSelectedObjectType] = useState<string | null>(null);
   const [selectedObjectDimensions, setSelectedObjectDimensions] = useState<any | null>(null);
   const [selectedElementMetrics, setSelectedElementMetrics] = useState<StandardizedElementMetrics | null>(null);
+  const [selectedElementId, setSelectedElementId] = useState<{ modelID: number; expressID: number } | null>(null);
   
   // Performance optimization: Debounce rapid clicks on same object
   const lastClickRef = useRef<{ expressID: number; modelID: number; timestamp: number } | null>(null);
@@ -63,6 +64,7 @@ export const useInspectMode = ({
       setSelectedObjectName(null);
       setSelectedObjectType(null);
       setSelectedObjectDimensions(null);
+      setSelectedElementId(null);
       // Restore normal view by clearing any selections/highlights
       if (viewerRef.current?.IFC?.selector) {
         viewerRef.current.IFC.selector.unpickIfcItems();
@@ -92,16 +94,21 @@ export const useInspectMode = ({
         const result = await viewer.IFC.selector.pickIfcItem(false);
         
         if (result && result.modelID !== null && result.id !== null) {
-          // Performance optimization: Debounce rapid clicks on same object
+          // IMMEDIATELY set the selected element ID for instant hide/unhide functionality
+          // This happens before any property fetching, making hide instant
+          setSelectedElementId({ modelID: result.modelID, expressID: result.id });
+          
+          // Performance optimization: Debounce rapid clicks on same object FOR PROPERTIES ONLY
+          // Element ID is already set above for instant hide/unhide
           const now = Date.now();
           if (lastClickRef.current && 
               lastClickRef.current.expressID === result.id &&
               lastClickRef.current.modelID === result.modelID &&
               now - lastClickRef.current.timestamp < DEBOUNCE_MS) {
             if (process.env.NODE_ENV === 'development') {
-              logger.log('[Performance] Skipping duplicate click on same object (debounced)');
+              logger.log('[Performance] Skipping duplicate property fetch (debounced)');
             }
-            return; // Skip if clicked same object within debounce window
+            return; // Skip property fetch if clicked same object within debounce window
           }
           
           lastClickRef.current = {
@@ -109,8 +116,13 @@ export const useInspectMode = ({
             modelID: result.modelID,
             timestamp: now,
           };
-          // First get base properties to extract the type number (before indirect overwrites it)
-          const baseProps = await viewer.IFC.getProperties(result.modelID, result.id, false, false);
+          
+          // Fetch properties asynchronously in the background (non-blocking)
+          // This allows the UI to remain responsive while properties load
+          (async () => {
+            try {
+              // First get base properties to extract the type number (before indirect overwrites it)
+              const baseProps = await viewer.IFC.getProperties(result.modelID, result.id, false, false);
           
           // Then get full properties with indirect=true to get property sets and quantity sets for dimensions
           const props = await viewer.IFC.getProperties(result.modelID, result.id, true, false);
@@ -251,27 +263,44 @@ export const useInspectMode = ({
             
             logger.log('Object selected:', { expressID: result.id, name, typeNumber, typeName, metrics: elementMetrics });
           } else {
+            // No properties found, but keep selectedElementId for hide/unhide functionality
             setSelectedObjectName(null);
             setSelectedObjectType(null);
             setSelectedObjectDimensions(null);
             setSelectedElementMetrics(null);
-            // Clear selection if no properties found
-            viewer.IFC.selector.unpickIfcItems();
+            // Don't clear selectedElementId - it was set earlier and is still valid
+            logger.warn('No properties found for selected object, but element ID is retained for hide/unhide');
+            // Keep the visual selection (don't unpick)
           }
+            } catch (propertyError) {
+              logger.error('Error fetching properties:', propertyError);
+              // Keep selectedElementId that was set earlier
+              // Only clear the display properties
+              setSelectedObjectName(null);
+              setSelectedObjectType(null);
+              setSelectedObjectDimensions(null);
+              setSelectedElementMetrics(null);
+              logger.warn('Error extracting properties, but element ID is retained for hide/unhide');
+            }
+          })();
+          // End of async property fetch - execution continues immediately
         } else {
           // Clicked on empty space - clear selection
           setSelectedObjectName(null);
           setSelectedObjectType(null);
           setSelectedObjectDimensions(null);
           setSelectedElementMetrics(null);
+          setSelectedElementId(null);
           viewer.IFC.selector.unpickIfcItems();
         }
       } catch (err) {
-        logger.error('Error selecting object:', err);
+        logger.error('Error in click handler:', err);
+        // Clear everything on click handler error
         setSelectedObjectName(null);
         setSelectedObjectType(null);
         setSelectedObjectDimensions(null);
         setSelectedElementMetrics(null);
+        setSelectedElementId(null);
         // Make sure to clear any selection on error
         if (viewer.IFC?.selector) {
           viewer.IFC.selector.unpickIfcItems();
@@ -291,6 +320,7 @@ export const useInspectMode = ({
     selectedObjectType,
     selectedObjectDimensions,
     selectedElementMetrics,
+    selectedElementId,
   };
 };
 

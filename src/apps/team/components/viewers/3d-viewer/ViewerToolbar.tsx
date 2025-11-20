@@ -67,7 +67,7 @@ export const ViewerToolbar = ({
       return 'Click to pin a note on any surface. Press Esc to cancel, Enter to save.';
     }
     if (inspectMode) {
-      return 'Click any part of the model to see its properties.';
+      return 'Click any part of the model to see its properties. Press H to hide selected element, Shift+H to unhide all.';
     }
     return null;
   };
@@ -98,7 +98,7 @@ export const ViewerToolbar = ({
                   e.currentTarget.style.backgroundColor = 'transparent';
                 }
               }}
-              title="Inspect Mode (Hover to Highlight)"
+              title="Inspect Mode (Hover to Highlight, Click H on selected element to Hide)"
             >
               <MousePointer2 className="h-[18px] w-[18px]" strokeWidth={1} />
             </button>

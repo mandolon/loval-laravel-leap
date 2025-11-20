@@ -22,6 +22,7 @@ export const useModelLoading = (
 ) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [modelID, setModelID] = useState<number | undefined>(undefined);
   const { enableEdges, removeEdges, registerEdges } = useIfcViewerAPI();
   // Store edges created directly so they can be toggled
   const directEdgesRef = useRef<LineSegments[]>([]);
@@ -129,6 +130,9 @@ export const useModelLoading = (
             logger.log('Model type:', model.type);
             logger.log('Model ID:', modelID);
             logger.log('Model children:', model.children?.length);
+            
+            // Store modelID in state for use by other components
+            setModelID(modelID);
             
             try {
               const scene = viewerRef.current.context?.scene;
@@ -293,6 +297,6 @@ export const useModelLoading = (
     loadModel();
   }, [modelFile, viewerReady, enableEdges, removeEdges, settings?.show_edges]);
 
-  return { loading, error };
+  return { loading, error, modelID };
 };
 

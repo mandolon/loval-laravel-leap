@@ -3,6 +3,7 @@ import { IfcViewerAPI } from 'web-ifc-viewer';
 import { Color } from 'three';
 import { logger } from '@/utils/logger';
 import { restoreDimensionsVisibility } from '../utils/dimensionUtils';
+import { hideElement, unhideAllElements, getHiddenElementCount } from '../utils/hiddenElements';
 
 interface UseViewerKeyboardProps {
   viewerRef: React.RefObject<IfcViewerAPI | null>;
@@ -19,6 +20,8 @@ interface UseViewerKeyboardProps {
   selectedAnnotationId: string | null;
   setSelectedAnnotationId: (id: string | null) => void;
   deleteAnnotation: (id: string) => void;
+  selectedElementId?: { modelID: number; expressID: number } | null;
+  modelID?: number;
 }
 
 export const useViewerKeyboard = ({
@@ -36,6 +39,8 @@ export const useViewerKeyboard = ({
   selectedAnnotationId,
   setSelectedAnnotationId,
   deleteAnnotation,
+  selectedElementId,
+  modelID,
 }: UseViewerKeyboardProps) => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -353,10 +358,55 @@ export const useViewerKeyboard = ({
           return;
         }
       }
+
+      // H key - hide selected element
+      if (event.key === 'h' || event.key === 'H') {
+        logger.log(`[H key pressed] inspectMode: ${inspectMode}, selectedElementId:`, selectedElementId, 'modelID:', modelID);
+        
+        // Shift+H to unhide all
+        if (event.shiftKey) {
+          event.preventDefault();
+          if (modelID !== undefined) {
+            const success = unhideAllElements(viewerRef.current, modelID);
+            if (success) {
+              logger.log('All hidden elements restored');
+            } else {
+              logger.log('No hidden elements to restore');
+            }
+          }
+          return;
+        }
+        
+        // H to hide selected element
+        if (selectedElementId && inspectMode) {
+          event.preventDefault();
+          logger.log(`[H key] Attempting to hide element ${selectedElementId.expressID} in model ${selectedElementId.modelID}`);
+          
+          // Make async call to hideElement
+          (async () => {
+            const success = await hideElement(
+              viewerRef.current,
+              selectedElementId.modelID,
+              selectedElementId.expressID
+            );
+            
+            if (success) {
+              const hiddenCount = getHiddenElementCount(selectedElementId.modelID);
+              logger.log(`Element hidden. Total hidden elements: ${hiddenCount}`);
+            } else {
+              logger.log(`[H key] Failed to hide element`);
+            }
+          })();
+          
+          return;
+        } else {
+          logger.log(`[H key] Cannot hide - inspectMode: ${inspectMode}, hasSelectedElement: ${!!selectedElementId}`);
+        }
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [measurementMode, clippingActive, inspectMode, annotationMode, selectedDimension, selectedAnnotationId, viewerRef, setMeasurementMode, setClippingActive, setInspectMode, setAnnotationMode, setSelectedDimension, setSelectedAnnotationId, deleteAnnotation]);
+  }, [measurementMode, clippingActive, inspectMode, annotationMode, selectedDimension, selectedAnnotationId, selectedElementId, modelID, viewerRef, setMeasurementMode, setClippingActive, setInspectMode, setAnnotationMode, setSelectedDimension, setSelectedAnnotationId, deleteAnnotation]);
 };
 

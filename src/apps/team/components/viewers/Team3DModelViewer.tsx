@@ -63,7 +63,7 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber, versionId }: Te
   const { viewerRef, viewerReady } = useViewerInitialization(containerRef, settings);
   
   // Load model
-  const { loading, error } = useModelLoading(viewerRef, viewerReady, modelFile, settings);
+  const { loading, error, modelID } = useModelLoading(viewerRef, viewerReady, modelFile, settings);
   
   // Load persisted viewer state
   const { data: savedDimensions = [] } = useModelDimensions(versionId);
@@ -130,6 +130,7 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber, versionId }: Te
     selectedObjectType,
     selectedObjectDimensions,
     selectedElementMetrics,
+    selectedElementId,
   } = useInspectMode({
     containerRef,
     viewerRef,
@@ -254,6 +255,8 @@ const Team3DModelViewer = ({ modelFile, settings, versionNumber, versionId }: Te
     selectedAnnotationId,
     setSelectedAnnotationId,
     deleteAnnotation,
+    selectedElementId,
+    modelID,
   });
 
   // Helper function to deactivate all tools
