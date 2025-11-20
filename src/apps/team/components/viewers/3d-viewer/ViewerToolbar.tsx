@@ -100,7 +100,7 @@ export const ViewerToolbar = ({
               }}
               title="Inspect Mode (Hover to Highlight)"
             >
-              <MousePointer2 className="h-[18px] w-[18px]" strokeWidth={1.75} />
+              <MousePointer2 className="h-[18px] w-[18px]" strokeWidth={1} />
             </button>
             
             {/* Measurement Tools */}
@@ -122,7 +122,7 @@ export const ViewerToolbar = ({
               }}
               title="Measure Distance"
             >
-              <Ruler className="h-[18px] w-[18px]" strokeWidth={1.75} />
+              <Ruler className="h-[18px] w-[18px]" strokeWidth={1} />
             </button>
             
             {/* Annotation Tool */}
@@ -144,7 +144,7 @@ export const ViewerToolbar = ({
               }}
               title="Annotate (Tag Notes)"
             >
-              <Tag className="h-[18px] w-[18px]" strokeWidth={1.75} />
+              <Tag className="h-[18px] w-[18px]" strokeWidth={1} />
             </button>
             
             {/* Section Cut */}
@@ -166,7 +166,7 @@ export const ViewerToolbar = ({
               }}
               title="Section Cut"
             >
-              <Scissors className="h-[18px] w-[18px]" strokeWidth={1.75} />
+              <Scissors className="h-[18px] w-[18px]" strokeWidth={1} />
             </button>
             
             {/* Separator */}
@@ -185,7 +185,7 @@ export const ViewerToolbar = ({
               }}
               title="Reset View"
             >
-              <Home className="h-[18px] w-[18px]" strokeWidth={1.75} />
+              <Home className="h-[18px] w-[18px]" strokeWidth={1} />
             </button>
           </div>
           
@@ -255,7 +255,7 @@ export const ViewerToolbar = ({
                     }}
                     title="Camera Views"
                   >
-                    <Camera className="h-[18px] w-[18px]" strokeWidth={1.75} />
+                    <Camera className="h-[18px] w-[18px]" strokeWidth={1} />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="center">
