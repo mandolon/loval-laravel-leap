@@ -1,0 +1,342 @@
+/**
+ * RequestsPageBody Component
+ * Main list view with filters and actions for Requests
+ */
+
+import { useState, useMemo } from "react";
+import { RequestPreviewModal } from "./RequestPreviewModal";
+import { NewRequestModal } from "./NewRequestModal";
+import {
+  Request,
+  SEED_REQUESTS,
+  formatDate,
+  getUserDisplayName,
+  CURRENT_USER_ID,
+  CURRENT_USER_NAME,
+} from "./requestsData";
+
+const AIRY_SELECT =
+  "w-full h-8 rounded-lg border border-neutral-200 bg-white text-[13px] text-neutral-900 px-3 outline-none transition placeholder:text-neutral-400 hover:border-neutral-300 focus:border-amber-700 focus:bg-white focus:ring-1 focus:ring-amber-200 cursor-pointer disabled:bg-neutral-50 disabled:text-neutral-400 disabled:cursor-not-allowed";
+
+export function RequestsPageBody() {
+  const [requests, setRequests] = useState<Request[]>(SEED_REQUESTS);
+  const [statusFilter, setStatusFilter] = useState<"open" | "closed" | "sent">("open");
+  const [sortBy, setSortBy] = useState<"recent" | "due">("recent");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeRequest, setActiveRequest] = useState<Request | null>(null);
+  const [showNewRequestModal, setShowNewRequestModal] = useState(false);
+
+  const filteredRequests = useMemo(() => {
+    let items = requests.slice();
+
+    if (statusFilter === "sent") {
+      // Outbox: requests the current user created
+      items = items.filter((r) => r.createdByUserId === CURRENT_USER_ID);
+    } else {
+      // Inbox: requests assigned to current user
+      items = items.filter((r) => r.assignedToUserId === CURRENT_USER_ID);
+      if (statusFilter === "open") {
+        items = items.filter((r) => r.status !== "closed");
+      } else if (statusFilter === "closed") {
+        items = items.filter((r) => r.status === "closed");
+      }
+    }
+
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      items = items.filter((r) => {
+        const project = r.projectLabel || "";
+        return (
+          r.title.toLowerCase().includes(q) ||
+          r.createdByName.toLowerCase().includes(q) ||
+          project.toLowerCase().includes(q)
+        );
+      });
+    }
+
+    const toMs = (value: string | null) => {
+      if (!value) return 0;
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return 0;
+      return d.getTime();
+    };
+
+    items.sort((a, b) => {
+      if (sortBy === "recent") {
+        return toMs(b.createdAt) - toMs(a.createdAt);
+      }
+      if (sortBy === "due") {
+        const aHasDue = !!a.respondBy;
+        const bHasDue = !!b.respondBy;
+
+        // If both have a respond-by date, sort by that first.
+        if (aHasDue && bHasDue) {
+          return toMs(a.respondBy) - toMs(b.respondBy);
+        }
+        // Requests with a respond-by date come before those without.
+        if (aHasDue && !bHasDue) return -1;
+        if (!aHasDue && bHasDue) return 1;
+
+        // If neither has a respond-by date, fall back to createdAt (newest first).
+        return toMs(b.createdAt) - toMs(a.createdAt);
+      }
+      return 0;
+    });
+
+    return items;
+  }, [requests, statusFilter, sortBy, searchQuery]);
+
+  const setStatusFor = (id: string, status: "open" | "closed") => {
+    setRequests((prev) =>
+      prev.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              status,
+              isUnread: false,
+            }
+          : r
+      )
+    );
+  };
+
+  const handleTitleClick = (request: Request) => {
+    if (statusFilter === "sent") return;
+    setActiveRequest(request);
+  };
+
+  const handleEdit = (request: Request) => {
+    // Placeholder for edit modal
+    console.log("Edit sent request", request);
+  };
+
+  const handleDelete = (id: string) => {
+    setRequests((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  const handleNewRequest = (data: {
+    title: string;
+    description: string;
+    projectId: string | null;
+    assignee: string;
+    dueBy: string | null;
+  }) => {
+    // Create new Request object
+    const newRequest: Request = {
+      id: `r${Date.now()}`,
+      title: data.title,
+      body: data.description,
+      createdByUserId: CURRENT_USER_ID,
+      createdByName: CURRENT_USER_NAME,
+      assignedToUserId: data.assignee,
+      projectId: data.projectId,
+      projectLabel: data.projectId ? `Project ${data.projectId}` : null,
+      createdAt: new Date().toISOString(),
+      respondBy: data.dueBy,
+      status: "open",
+      isUnread: true,
+    };
+
+    // Prepend to local state
+    setRequests((prev) => [newRequest, ...prev]);
+    setShowNewRequestModal(false);
+  };
+
+  const searchPlaceholder = "Search";
+
+  return (
+    <div className="p-4 md:p-6 text-slate-600 flex flex-col gap-4 h-full">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-neutral-900 text-xl font-medium">Requests</h1>
+        <p className="text-[13px] text-neutral-500">Requests you've received and sent across projects.</p>
+      </div>
+
+      {/* Open / Closed / Sent tabs + primary action (outside container) */}
+      <div className="flex items-end justify-between px-1 text-[13px] mt-2 mb-[2px]">
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => setStatusFilter("open")}
+            className={`pb-1 border-b-2 cursor-pointer ${
+              statusFilter === "open"
+                ? "border-emerald-500 text-slate-900 font-medium"
+                : "border-transparent text-neutral-500 hover:text-slate-900 hover:border-slate-300"
+            }`}
+          >
+            Open
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter("closed")}
+            className={`pb-1 border-b-2 cursor-pointer ${
+              statusFilter === "closed"
+                ? "border-slate-700 text-slate-900 font-medium"
+                : "border-transparent text-neutral-500 hover:text-slate-900 hover:border-slate-300"
+            }`}
+          >
+            Closed
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter("sent")}
+            className={`pb-1 border-b-2 cursor-pointer ${
+              statusFilter === "sent"
+                ? "border-amber-600 text-slate-900 font-medium"
+                : "border-transparent text-neutral-500 hover:text-slate-900 hover:border-slate-300"
+            }`}
+          >
+            Sent
+          </button>
+        </div>
+        <button
+          type="button"
+          className="h-8 px-3 rounded-lg border border-neutral-200 bg-white text-[13px] hover:bg-neutral-50 cursor-pointer"
+        >
+          New request
+        </button>
+      </div>
+
+      <div className="rounded-lg border border-neutral-200 bg-white/95 backdrop-blur-sm overflow-hidden">
+        {/* Header controls */}
+        <div className="border-b border-neutral-200 bg-neutral-50/80 px-3 py-2.5">
+          <div className="flex flex-wrap items-center gap-2 text-[12px]">
+            <div className="relative">
+              <span className="pointer-events-none absolute inset-y-0 left-2 flex items-center">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="text-amber-800"
+                >
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+              </span>
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={searchPlaceholder}
+                className="h-8 w-[230px] rounded-md border border-neutral-200 bg-white pl-7 pr-2 text-[12px] text-neutral-900 placeholder:text-neutral-400 outline-none hover:border-neutral-300 focus:border-amber-700 focus:bg-white focus:ring-1 focus:ring-amber-200"
+              />
+            </div>
+
+            <div className="flex items-center gap-1 text-[12px] text-neutral-500">
+              <span>Sort</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as "recent" | "due")}
+                className={`${AIRY_SELECT} w-[130px] h-8 text-[12px]`}
+              >
+                <option value="recent">Newest</option>
+                <option value="due">Due date</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* List */}
+        {filteredRequests.length === 0 ? (
+          <div className="px-8 py-16 text-center text-[13px] text-neutral-600">
+            <div className="mb-2 text-[15px] font-medium text-slate-900">Welcome to requests!</div>
+            <p className="mx-auto max-w-md">
+              As requests are created, they'll appear here in a searchable and filterable list.
+            </p>
+          </div>
+        ) : (
+          <ul className="divide-y divide-neutral-200">
+            {filteredRequests.map((r) => (
+              <li key={r.id}>
+                <div className="flex items-center justify-between gap-3 px-3 py-3 hover:bg-neutral-50">
+                  <div className="flex min-w-0 items-start gap-2">
+                    <div className="mt-1 flex h-4 w-4 items-center justify-center">
+                      {r.isUnread ? (
+                        <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                      ) : (
+                        <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleTitleClick(r)}
+                          className="truncate text-left text-[14px] font-medium text-slate-900 hover:underline cursor-pointer"
+                        >
+                          {r.title}
+                        </button>
+                      </div>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[12px] text-neutral-500">
+                        <span>
+                          {statusFilter === "sent" ? "to " : "from "}
+                          {statusFilter === "sent"
+                            ? getUserDisplayName(r.assignedToUserId)
+                            : r.createdByName}
+                        </span>
+                        {r.projectLabel && <span>• {r.projectLabel}</span>}
+                        {r.respondBy && (
+                          <span>
+                            • {statusFilter === "sent" ? "Due date set to " : "respond by "}
+                            <span className="text-neutral-800 font-medium">
+                              {formatDate(r.respondBy)}
+                            </span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex shrink-0 items-center gap-2">
+                    {statusFilter === "sent" ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(r)}
+                          className="inline-flex h-7 items-center rounded-md border border-neutral-200 bg-white px-3 text-[11px] font-medium text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300 cursor-pointer"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(r.id)}
+                          className="inline-flex h-7 items-center rounded-md bg-rose-600 px-3 text-[11px] font-semibold text-white hover:bg-rose-700 cursor-pointer"
+                        >
+                          Delete
+                        </button>
+                      </>
+                    ) : (
+                      r.status !== "closed" && (
+                        <button
+                          type="button"
+                          onClick={() => setStatusFor(r.id, "closed")}
+                          className="inline-flex h-7 items-center rounded-md bg-emerald-600 px-3 text-[11px] font-semibold text-white hover:bg-emerald-700 cursor-pointer"
+                        >
+                          Close
+                        </button>
+                      )
+                    )}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {activeRequest && (
+        <RequestPreviewModal
+          request={activeRequest}
+          onClose={() => setActiveRequest(null)}
+        />
+      )}
+      {showNewRequestModal && (
+        <NewRequestModal
+          onClose={() => setShowNewRequestModal(false)}
+          onSubmit={handleNewRequest}
+        />
+      )}
+    </div>
+  );
+}

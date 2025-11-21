@@ -69,6 +69,8 @@ export function NotificationsPopover({ children }: NotificationsPopoverProps) {
   };
 
   const handleNotificationClick = (notification: Notification) => {
+    console.log('Notification clicked:', notification.actionUrl);
+    
     // Mark as read when clicked
     if (!notification.isRead) {
       handleMarkAsRead(notification.id);
@@ -77,6 +79,7 @@ export function NotificationsPopover({ children }: NotificationsPopoverProps) {
     // Navigate to the action URL if available
     if (notification.actionUrl) {
       setOpen(false);
+      console.log('Navigating to:', notification.actionUrl);
       navigate(notification.actionUrl);
     }
   };

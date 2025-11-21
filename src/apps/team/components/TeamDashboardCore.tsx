@@ -11,6 +11,7 @@ import { useRoleAwareNavigation } from "@/hooks/useRoleAwareNavigation";
 import { ProjectInfoContent } from './ProjectInfoContent';
 import { ProjectAIContextView } from './ProjectAIContextView';
 import { GitHubActivityFeed } from './GitHubActivityFeed';
+import { RequestsPageBody } from './requests/RequestsPageBody';
 import {
   Home,
   FolderKanban,
@@ -1847,7 +1848,7 @@ const ChatView = memo(function ChatView({ resetTrigger }: ChatViewProps) {
 // Home View
 // ----------------------------------
 const HomeView = memo(function HomeView() {
-  const VIEW_TABS = ["Activity", "Overview", "To Do"];
+  const VIEW_TABS = ["Activity", "Overview", "To Do", "Requests"];
   const [viewTab, setViewTab] = useState("Activity");
   const { currentWorkspace } = useWorkspaces();
   const { data: tasks = [] } = useWorkspaceTasks(currentWorkspace?.id || '');
@@ -1863,6 +1864,10 @@ const HomeView = memo(function HomeView() {
       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
         <rect x="3" y="3" width="18" height="18" rx="2" />
         <path d="m9 12 2 2 4-5" />
+      </svg>
+    ) : t === "Requests" ? (
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
       </svg>
     ) : (
       <svg
@@ -1932,6 +1937,9 @@ const HomeView = memo(function HomeView() {
         )}
         {viewTab === "To Do" && (
           <div className="text-sm text-slate-600">To Do content placeholder</div>
+        )}
+        {viewTab === "Requests" && (
+          <RequestsPageBody />
         )}
       </div>
     </div>
