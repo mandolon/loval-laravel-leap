@@ -115,7 +115,7 @@ BEGIN
       'project_chat_message',
       sender_name || ' posted in ' || project_name,
       LEFT(NEW.content, 100),
-      '/team/workspace/' || workspace_id_val || '/project/' || NEW.project_id,
+      '/team/workspace/' || workspace_id_val || '/chat?project=' || NEW.project_id,
       jsonb_build_object(
         'actorId', NEW.user_id,
         'actorName', sender_name,

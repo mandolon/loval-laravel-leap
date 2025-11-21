@@ -76,8 +76,8 @@ export function NotificationsPopover({ children }: NotificationsPopoverProps) {
 
     // Navigate to the action URL if available
     if (notification.actionUrl) {
-      navigate(notification.actionUrl);
       setOpen(false);
+      navigate(notification.actionUrl);
     }
   };
 

@@ -1791,11 +1791,25 @@ const ChatView = memo(function ChatView({ resetTrigger }: ChatViewProps) {
   const { currentWorkspaceId } = useWorkspaces();
   const { user } = useUser();
   const { data: projects = [] } = useProjects(currentWorkspaceId || '', user?.id, user?.is_admin);
+  const location = useLocation();
 
   const [selectedProject, setSelectedProject] = React.useState<any>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [page, setPage] = useState<'chat' | 'files'>('chat');
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
+
+  // Check for project query parameter and auto-select project
+  React.useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const projectId = params.get('project');
+    
+    if (projectId && projects.length > 0) {
+      const project = projects.find(p => p.id === projectId);
+      if (project) {
+        setSelectedProject(project);
+      }
+    }
+  }, [location.search, projects]);
 
   // Reset to home/default chat view when component mounts or resetTrigger changes
   React.useEffect(() => {
