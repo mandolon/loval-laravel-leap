@@ -99,8 +99,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
         const forcedSignOutAt = authUser.app_metadata?.forced_signout_at;
         
         if (forcedSignOutAt) {
-          console.log('Detected forced sign-out - signing out locally');
-          await signOut();
+          // Only sign out if the forced sign-out was recent (within last 5 minutes)
+          const forcedSignOutTime = new Date(forcedSignOutAt).getTime();
+          const now = Date.now();
+          const fiveMinutesInMs = 5 * 60 * 1000;
+          
+          if (now - forcedSignOutTime < fiveMinutesInMs) {
+            console.log('Detected forced sign-out - signing out locally');
+            await signOut();
+          }
         }
       } catch (err) {
         console.error('Error checking forced sign-out:', err);
