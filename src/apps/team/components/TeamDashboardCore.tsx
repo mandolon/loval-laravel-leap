@@ -24,6 +24,7 @@ import {
   Check,
   Plus,
   Trash2,
+  Bell,
 } from "lucide-react";
 import {
   useReactTable,
@@ -41,6 +42,7 @@ import { CreateProjectModal } from "@/components/CreateProjectModal";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { TeamAvatarMenu } from "./TeamAvatarMenu";
+import { NotificationsPopover } from "./NotificationsPopover";
 import ProjectPanel from "./ProjectPanel";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -1666,37 +1668,18 @@ const TopHeader = memo(function TopHeader({
                 />
               </label>
 
-              <button
-                className="h-7 w-7 rounded-md border border-slate-200 bg-white grid place-items-center shadow-sm"
-                aria-label="Open calendar"
-              >
-                <span className="sr-only">Calendar</span>
-                <svg
-                  viewBox="0 0 24 24"
-                  width="16"
-                  height="16"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="text-slate-500"
+              <NotificationsPopover>
+                <button
+                  className="h-7 w-7 rounded-md border border-slate-200 bg-white grid place-items-center shadow-sm hover:bg-slate-50 transition-colors"
+                  aria-label="Notifications"
                 >
-                  <rect x="3" y="4" width="18" height="18" rx="2" />
-                  <path d="M16 2v4M8 2v4M3 10h18" />
-                </svg>
-              </button>
+                  <Bell className="w-[14px] h-[14px] text-amber-800" strokeWidth={2} />
+                </button>
+              </NotificationsPopover>
 
-              <button className="h-7 px-2.5 rounded-full border border-violet-200 bg-white text-violet-700 text-[12px] font-medium shadow-sm inline-flex items-center gap-1">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="14"
-                  height="14"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                New
+              <button className="h-7 px-3 rounded-full border border-violet-200 bg-white text-violet-700 text-[12px] font-medium shadow-sm inline-flex items-center justify-center gap-1.5 hover:bg-violet-50 hover:border-violet-300 transition-colors">
+                <Plus className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={2.5} />
+                <span className="flex items-center leading-none"><span className="italic">re</span>quest</span>
               </button>
             </div>
           </div>

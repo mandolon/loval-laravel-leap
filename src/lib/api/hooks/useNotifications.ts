@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import type { Notification } from '../types'
@@ -29,7 +30,9 @@ const transformDbToNotification = (data: any): Notification => ({
 
 // Get all notifications for a user
 export const useNotifications = (userId: string) => {
-  return useQuery({
+  const queryClient = useQueryClient()
+  
+  const query = useQuery({
     queryKey: notificationKeys.list(userId),
     queryFn: async () => {
       const { data, error } = await supabase
@@ -43,6 +46,36 @@ export const useNotifications = (userId: string) => {
     },
     enabled: !!userId,
   })
+
+  // Setup real-time subscription
+  useEffect(() => {
+    if (!userId) return
+
+    const channel = supabase
+      .channel(`notifications:${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userId}`
+        },
+        (payload) => {
+          console.log('Notification change:', payload)
+          // Invalidate and refetch notifications when changes occur
+          queryClient.invalidateQueries({ queryKey: notificationKeys.list(userId) })
+          queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount(userId) })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [userId, queryClient])
+
+  return query
 }
 
 // Get unread count

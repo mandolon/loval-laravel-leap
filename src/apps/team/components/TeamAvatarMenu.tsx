@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { LogOut } from 'lucide-react';
+import { LogOut, Bell } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
+import { useWorkspaces } from '@/hooks/useWorkspaces';
+import { useRoleAwareNavigation } from '@/hooks/useRoleAwareNavigation';
 import {
   Popover,
   PopoverContent,
@@ -11,6 +13,13 @@ import { getAvatarColor, getAvatarInitials } from '@/utils/avatarUtils';
 export function TeamAvatarMenu() {
   const [open, setOpen] = useState(false);
   const { user, signOut } = useUser();
+  const { currentWorkspaceId } = useWorkspaces();
+  const { navigateToWorkspace } = useRoleAwareNavigation(currentWorkspaceId || undefined);
+
+  const handleNotificationsClick = () => {
+    navigateToWorkspace("/notifications");
+    setOpen(false);
+  };
 
   const handleLogout = async () => {
     try {
@@ -60,6 +69,13 @@ export function TeamAvatarMenu() {
               <p className="text-xs text-slate-500 truncate">{user.email}</p>
             </div>
           )}
+          <button
+            onClick={handleNotificationsClick}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+          >
+            <Bell className="h-4 w-4" />
+            Notifications
+          </button>
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors"

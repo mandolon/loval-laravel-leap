@@ -10,6 +10,7 @@ import ProjectDetails from "@/pages/ProjectDetails";
 import AIChatPage from "@/pages/AIChatPage";
 import DetailLibraryPage from "@/pages/DetailLibraryPage";
 import TrashPage from "@/pages/TrashPage";
+import NotificationsPage from "@/apps/team/pages/NotificationsPage";
 
 export default function ClientRouter() {
   return (
@@ -108,6 +109,16 @@ export default function ClientRouter() {
           <ProtectedRoute>
             <NewAppLayout>
               <TrashPage />
+            </NewAppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/client/workspace/:workspaceId/notifications"
+        element={
+          <ProtectedRoute>
+            <NewAppLayout>
+              <NotificationsPage />
             </NewAppLayout>
           </ProtectedRoute>
         }

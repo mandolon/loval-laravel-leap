@@ -12,6 +12,7 @@ import DetailLibraryPage from "@/pages/DetailLibraryPage";
 import TrashPage from "@/pages/TrashPage";
 import BuildingCodesPage from "@/pages/BuildingCodesPage";
 import KnowledgeBasePage from "@/pages/KnowledgeBasePage";
+import NotificationsPage from "@/apps/team/pages/NotificationsPage";
 
 export default function AdminRouter() {
   return (
@@ -130,6 +131,16 @@ export default function AdminRouter() {
           <ProtectedRoute>
             <NewAppLayout>
               <KnowledgeBasePage />
+            </NewAppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/workspace/:workspaceId/notifications"
+        element={
+          <ProtectedRoute>
+            <NewAppLayout>
+              <NotificationsPage />
             </NewAppLayout>
           </ProtectedRoute>
         }
