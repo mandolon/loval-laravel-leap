@@ -622,6 +622,93 @@ export interface Notification {
   createdAt: string;
 }
 
+// Notification Event Types
+export enum NotificationEventType {
+  WORKSPACE_CHAT_MESSAGE = 'workspace_chat_message',
+  PROJECT_CHAT_MESSAGE = 'project_chat_message',
+  WHITEBOARD_VERSION_CREATED = 'whiteboard_version_created',
+  MODEL_ADDED = 'model_added',
+  MODEL_VERSION_NOTES_ADDED = 'model_version_notes_added',
+  TASK_ASSIGNED = 'task_assigned',
+}
+
+// Base notification metadata (common fields)
+export interface BaseNotificationMetadata {
+  actorId: string;
+  actorName: string;
+}
+
+// 1. Workspace chat message posted
+export interface WorkspaceChatMessageMetadata extends BaseNotificationMetadata {
+  workspaceId: string;
+  workspaceName: string;
+  messageId: string;
+  messagePreview?: string; // Optional: first 100 chars of message
+}
+
+// 2. Project chat message posted
+export interface ProjectChatMessageMetadata extends BaseNotificationMetadata {
+  projectId: string;
+  projectName: string;
+  workspaceId: string;
+  workspaceName: string;
+  messageId: string;
+  messagePreview?: string; // Optional: first 100 chars of message
+}
+
+// 3. Whiteboard version created
+export interface WhiteboardVersionCreatedMetadata extends BaseNotificationMetadata {
+  projectId: string;
+  projectName: string;
+  workspaceId: string;
+  workspaceName: string;
+  versionId: string;
+  versionName?: string;
+}
+
+// 4. 3D model added to project
+export interface ModelAddedMetadata extends BaseNotificationMetadata {
+  projectId: string;
+  projectName: string;
+  workspaceId: string;
+  workspaceName: string;
+  modelId: string;
+  modelName: string;
+}
+
+// 5. Version notes added to 3D model
+export interface ModelVersionNotesAddedMetadata extends BaseNotificationMetadata {
+  projectId: string;
+  projectName: string;
+  workspaceId: string;
+  workspaceName: string;
+  modelId: string;
+  modelName: string;
+  versionId: string;
+  notesPreview?: string; // Optional: first 100 chars of notes
+}
+
+// 6. Task assigned to user
+export interface TaskAssignedMetadata extends BaseNotificationMetadata {
+  projectId: string;
+  projectName: string;
+  workspaceId: string;
+  workspaceName: string;
+  taskId: string;
+  taskTitle: string;
+  assignedToId: string;
+  assignedToName: string;
+}
+
+// Union type for all notification metadata types
+export type NotificationMetadata =
+  | WorkspaceChatMessageMetadata
+  | ProjectChatMessageMetadata
+  | WhiteboardVersionCreatedMetadata
+  | ModelAddedMetadata
+  | ModelVersionNotesAddedMetadata
+  | TaskAssignedMetadata;
+
 // ============= USER PREFERENCES =============
 
 export interface UserPreferences {

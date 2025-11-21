@@ -3,7 +3,7 @@
  * User avatar dropdown with profile, trash, settings, and sign out
  */
 
-import { Trash2, Sun, Moon, ChevronDown } from 'lucide-react'
+import { Trash2, Sun, Moon, ChevronDown, Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
@@ -47,6 +47,12 @@ export function UserMenu({ onNavigateProfile, onNavigateTrash, onLogout }: UserM
       onNavigateTrash()
     } else if (currentWorkspaceId) {
       navigateToWorkspace("/trash")
+    }
+  }
+
+  const handleNotificationsClick = () => {
+    if (currentWorkspaceId) {
+      navigateToWorkspace("/notifications")
     }
   }
 
@@ -101,6 +107,11 @@ export function UserMenu({ onNavigateProfile, onNavigateTrash, onLogout }: UserM
               Dark Mode
             </>
           )}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleNotificationsClick}>
+          <Bell className="mr-2 h-4 w-4" />
+          Notifications
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut}>Sign out</DropdownMenuItem>

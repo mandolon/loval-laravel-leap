@@ -7,6 +7,7 @@ import DetailLibraryPage from './pages/DetailLibraryPage';
 import ChatPage from './pages/ChatPage';
 import AIPage from './pages/AIPage';
 import SettingsPage from './pages/SettingsPage';
+import NotificationsPage from './pages/NotificationsPage';
 import { ProfileContent } from './components/settings/ProfileContent';
 import { MembersContent } from './components/settings/MembersContent';
 import { WorkspacesContent } from './components/settings/WorkspacesContent';
@@ -28,6 +29,7 @@ export default function TeamApp() {
           <Route path="/team/workspace/:workspaceId/tasks" element={<TasksPage />} />
           <Route path="/team/workspace/:workspaceId/ai" element={<AIPage />} />
           <Route path="/team/workspace/:workspaceId/detail-library" element={<DetailLibraryPage />} />
+          <Route path="/team/workspace/:workspaceId/notifications" element={<NotificationsPage />} />
           <Route path="/team/workspace/:workspaceId/project/:projectId" element={<ProjectsPage />} />
           
           {/* Settings Routes */}
