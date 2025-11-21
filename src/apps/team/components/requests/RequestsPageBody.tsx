@@ -6,35 +6,60 @@
 import { useState, useMemo } from "react";
 import { RequestPreviewModal } from "./RequestPreviewModal";
 import { NewRequestModal } from "./NewRequestModal";
+import { formatDate } from "./requestsData";
+import type { Request } from "@/lib/api/types";
 import {
-  Request,
-  SEED_REQUESTS,
-  formatDate,
-  getUserDisplayName,
-  CURRENT_USER_ID,
-  CURRENT_USER_NAME,
-} from "./requestsData";
+  useWorkspaceRequests,
+  useCreateRequest,
+  useUpdateRequest,
+  useDeleteRequest
+} from "@/lib/api/hooks/useRequests";
+import { useWorkspaces } from "@/hooks/useWorkspaces";
+import { useUser } from "@/contexts/UserContext";
+import { useProjects } from "@/lib/api/hooks/useProjects";
+import { useUsers } from "@/lib/api/hooks/useUsers";
 
 const AIRY_SELECT =
   "w-full h-8 rounded-lg border border-neutral-200 bg-white text-[13px] text-neutral-900 px-3 outline-none transition placeholder:text-neutral-400 hover:border-neutral-300 focus:border-amber-700 focus:bg-white focus:ring-1 focus:ring-amber-200 cursor-pointer disabled:bg-neutral-50 disabled:text-neutral-400 disabled:cursor-not-allowed";
 
 export function RequestsPageBody() {
-  const [requests, setRequests] = useState<Request[]>(SEED_REQUESTS);
+  const { currentWorkspaceId } = useWorkspaces();
+  const { user } = useUser();
+  const { data: requests = [], isLoading } = useWorkspaceRequests(currentWorkspaceId || "");
+  const { data: users = [] } = useUsers();
+  const { data: projects = [] } = useProjects();
+  const createRequest = useCreateRequest();
+  const updateRequest = useUpdateRequest();
+  const deleteRequest = useDeleteRequest();
+
   const [statusFilter, setStatusFilter] = useState<"open" | "closed" | "sent">("open");
   const [sortBy, setSortBy] = useState<"recent" | "due">("recent");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeRequest, setActiveRequest] = useState<Request | null>(null);
   const [showNewRequestModal, setShowNewRequestModal] = useState(false);
 
+  // Helper function to get user display name
+  const getUserDisplayName = (userId: string) => {
+    const foundUser = users.find((u) => u.id === userId);
+    return foundUser?.name || userId;
+  };
+
+  // Helper function to get project name
+  const getProjectName = (projectId: string | undefined) => {
+    if (!projectId) return null;
+    const project = projects.find((p) => p.id === projectId);
+    return project?.name || null;
+  };
+
   const filteredRequests = useMemo(() => {
     let items = requests.slice();
 
     if (statusFilter === "sent") {
       // Outbox: requests the current user created
-      items = items.filter((r) => r.createdByUserId === CURRENT_USER_ID);
+      items = items.filter((r) => r.createdByUserId === user?.id);
     } else {
       // Inbox: requests assigned to current user
-      items = items.filter((r) => r.assignedToUserId === CURRENT_USER_ID);
+      items = items.filter((r) => r.assignedToUserId === user?.id);
       if (statusFilter === "open") {
         items = items.filter((r) => r.status !== "closed");
       } else if (statusFilter === "closed") {
@@ -45,16 +70,17 @@ export function RequestsPageBody() {
     const q = searchQuery.trim().toLowerCase();
     if (q) {
       items = items.filter((r) => {
-        const project = r.projectLabel || "";
+        const projectName = getProjectName(r.projectId);
+        const createdByName = getUserDisplayName(r.createdByUserId);
         return (
           r.title.toLowerCase().includes(q) ||
-          r.createdByName.toLowerCase().includes(q) ||
-          project.toLowerCase().includes(q)
+          createdByName.toLowerCase().includes(q) ||
+          (projectName && projectName.toLowerCase().includes(q))
         );
       });
     }
 
-    const toMs = (value: string | null) => {
+    const toMs = (value: string | null | undefined) => {
       if (!value) return 0;
       const d = new Date(value);
       if (Number.isNaN(d.getTime())) return 0;
@@ -84,34 +110,37 @@ export function RequestsPageBody() {
     });
 
     return items;
-  }, [requests, statusFilter, sortBy, searchQuery]);
+  }, [requests, statusFilter, sortBy, searchQuery, user, users, projects]);
 
   const setStatusFor = (id: string, status: "open" | "closed") => {
-    setRequests((prev) =>
-      prev.map((r) =>
-        r.id === id
-          ? {
-              ...r,
-              status,
-              isUnread: false,
-            }
-          : r
-      )
-    );
+    updateRequest.mutate({
+      id,
+      data: {
+        status,
+        isUnread: false,
+      },
+    });
   };
 
   const handleTitleClick = (request: Request) => {
     if (statusFilter === "sent") return;
+    // Mark as read when opening
+    if (request.isUnread) {
+      updateRequest.mutate({
+        id: request.id,
+        data: { isUnread: false },
+      });
+    }
     setActiveRequest(request);
   };
 
   const handleEdit = (request: Request) => {
-    // Placeholder for edit modal
+    // TODO: Implement edit modal
     console.log("Edit sent request", request);
   };
 
   const handleDelete = (id: string) => {
-    setRequests((prev) => prev.filter((r) => r.id !== id));
+    deleteRequest.mutate(id);
   };
 
   const handleNewRequest = (data: {
@@ -121,25 +150,23 @@ export function RequestsPageBody() {
     assignee: string;
     dueBy: string | null;
   }) => {
-    // Create new Request object
-    const newRequest: Request = {
-      id: `r${Date.now()}`,
-      title: data.title,
-      body: data.description,
-      createdByUserId: CURRENT_USER_ID,
-      createdByName: CURRENT_USER_NAME,
-      assignedToUserId: data.assignee,
-      projectId: data.projectId,
-      projectLabel: data.projectId ? `Project ${data.projectId}` : null,
-      createdAt: new Date().toISOString(),
-      respondBy: data.dueBy,
-      status: "open",
-      isUnread: true,
-    };
+    if (!currentWorkspaceId) return;
 
-    // Prepend to local state
-    setRequests((prev) => [newRequest, ...prev]);
-    setShowNewRequestModal(false);
+    createRequest.mutate(
+      {
+        title: data.title,
+        body: data.description,
+        assignedToUserId: data.assignee,
+        projectId: data.projectId || undefined,
+        workspaceId: currentWorkspaceId,
+        respondBy: data.dueBy || undefined,
+      },
+      {
+        onSuccess: () => {
+          setShowNewRequestModal(false);
+        },
+      }
+    );
   };
 
   const searchPlaceholder = "Search";
@@ -190,6 +217,7 @@ export function RequestsPageBody() {
         </div>
         <button
           type="button"
+          onClick={() => setShowNewRequestModal(true)}
           className="h-8 px-3 rounded-lg border border-neutral-200 bg-white text-[13px] hover:bg-neutral-50 cursor-pointer"
         >
           New request
@@ -238,7 +266,11 @@ export function RequestsPageBody() {
         </div>
 
         {/* List */}
-        {filteredRequests.length === 0 ? (
+        {isLoading ? (
+          <div className="px-8 py-16 text-center text-[13px] text-neutral-600">
+            <div className="mb-2 text-[15px] font-medium text-slate-900">Loading requests...</div>
+          </div>
+        ) : filteredRequests.length === 0 ? (
           <div className="px-8 py-16 text-center text-[13px] text-neutral-600">
             <div className="mb-2 text-[15px] font-medium text-slate-900">Welcome to requests!</div>
             <p className="mx-auto max-w-md">
@@ -273,9 +305,9 @@ export function RequestsPageBody() {
                           {statusFilter === "sent" ? "to " : "from "}
                           {statusFilter === "sent"
                             ? getUserDisplayName(r.assignedToUserId)
-                            : r.createdByName}
+                            : getUserDisplayName(r.createdByUserId)}
                         </span>
-                        {r.projectLabel && <span>• {r.projectLabel}</span>}
+                        {getProjectName(r.projectId) && <span>• {getProjectName(r.projectId)}</span>}
                         {r.respondBy && (
                           <span>
                             • {statusFilter === "sent" ? "Due date set to " : "respond by "}
@@ -328,11 +360,15 @@ export function RequestsPageBody() {
       {activeRequest && (
         <RequestPreviewModal
           request={activeRequest}
+          createdByName={getUserDisplayName(activeRequest.createdByUserId)}
+          projectName={getProjectName(activeRequest.projectId)}
           onClose={() => setActiveRequest(null)}
         />
       )}
       {showNewRequestModal && (
         <NewRequestModal
+          users={users}
+          projects={projects.filter(p => p.workspaceId === currentWorkspaceId)}
           onClose={() => setShowNewRequestModal(false)}
           onSubmit={handleNewRequest}
         />

@@ -3,23 +3,17 @@
  * Read-only modal for viewing request details
  */
 
+import type { Request } from "@/lib/api/types";
+import { formatDate } from "./requestsData";
+
 interface RequestPreviewModalProps {
-  request: any; // TODO: Use proper Request type from schema
+  request: Request;
+  createdByName: string;
+  projectName: string | null;
   onClose: () => void;
 }
 
-function formatDate(value: string | null): string {
-  if (!value) return "—";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return value;
-  return new Intl.DateTimeFormat(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(d);
-}
-
-export function RequestPreviewModal({ request, onClose }: RequestPreviewModalProps) {
+export function RequestPreviewModal({ request, createdByName, projectName, onClose }: RequestPreviewModalProps) {
   if (!request) return null;
 
   const respondBy = request.respondBy ? formatDate(request.respondBy) : null;
@@ -43,13 +37,13 @@ export function RequestPreviewModal({ request, onClose }: RequestPreviewModalPro
                 Request
               </span>
               <span className="text-[17px] font-semibold text-neutral-900">
-                from {request.createdByName}
+                from {createdByName}
               </span>
             </div>
-            {(request.projectLabel || respondBy) && (
+            {(projectName || respondBy) && (
               <div className="text-[12px] text-neutral-500">
-                {request.projectLabel && <span>{request.projectLabel}</span>}
-                {request.projectLabel && respondBy && <span> • </span>}
+                {projectName && <span>{projectName}</span>}
+                {projectName && respondBy && <span> • </span>}
                 {respondBy && (
                   <span>
                     Respond by{" "}

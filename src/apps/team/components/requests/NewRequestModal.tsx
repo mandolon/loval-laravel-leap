@@ -4,10 +4,13 @@
  */
 
 import { useState, useEffect, useRef } from "react";
+import type { User, Project } from "@/lib/api/types";
 
 const TITLE_MAX_CHARS = 40;
 
 interface NewRequestModalProps {
+  users: User[];
+  projects: Project[];
   onClose: () => void;
   onSubmit: (data: {
     title: string;
@@ -38,7 +41,7 @@ function formatShort(date: Date) {
   });
 }
 
-export function NewRequestModal({ onClose, onSubmit }: NewRequestModalProps) {
+export function NewRequestModal({ users, projects, onClose, onSubmit }: NewRequestModalProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [projectId, setProjectId] = useState("");
@@ -49,17 +52,18 @@ export function NewRequestModal({ onClose, onSubmit }: NewRequestModalProps) {
   const [dueOpen, setDueOpen] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
 
-  const projectOptions = [
-    { value: "500-u-st", label: "500-502 U Street" },
-    { value: "echo-summit", label: "Echo Summit Cabin" },
-    { value: "2709-t-st", label: "2709 T Street" },
-  ];
+  // Convert API data to dropdown options
+  const projectOptions = projects.map(p => ({
+    value: p.id,
+    label: p.name,
+  }));
 
-  const assigneeOptions = [
-    { value: "armando", label: "Armando" },
-    { value: "matthew", label: "Matthew" },
-    { value: "dustin", label: "Dustin" },
-  ];
+  const assigneeOptions = users
+    .filter(u => !u.deletedAt) // Only show active users
+    .map(u => ({
+      value: u.id,
+      label: u.name,
+    }));
 
   const projectLabel =
     projectOptions.find((p) => p.value === projectId)?.label || "Select project";
