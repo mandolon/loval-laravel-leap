@@ -1686,6 +1686,7 @@ export type Database = {
           created_at: string
           id: string
           is_read: boolean | null
+          metadata: Json | null
           project_id: string | null
           read_at: string | null
           short_id: string
@@ -1700,6 +1701,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_read?: boolean | null
+          metadata?: Json | null
           project_id?: string | null
           read_at?: string | null
           short_id?: string
@@ -1714,6 +1716,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_read?: boolean | null
+          metadata?: Json | null
           project_id?: string | null
           read_at?: string | null
           short_id?: string
@@ -2726,6 +2729,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_user_sessions: {
+        Args: { target_user_id: string }
+        Returns: undefined
+      }
       generate_detail_library_short_id: {
         Args: { prefix: string }
         Returns: string
