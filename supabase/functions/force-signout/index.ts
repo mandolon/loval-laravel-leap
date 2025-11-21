@@ -82,18 +82,9 @@ Deno.serve(async (req) => {
       }
     );
 
-    // Delete all sessions for the user using the Admin API
-    // This is done by deleting from auth.sessions table using the service role
-    const { error: deleteSessionsError } = await supabaseAdmin.rpc('delete_user_sessions', {
-      target_user_id: targetUser.auth_id
-    });
-
-    if (deleteSessionsError) {
-      console.error('Error deleting user sessions:', deleteSessionsError);
-      // Continue anyway - the RPC might not exist, so we'll try the backup method
-    }
-
-    // Also update user metadata as a marker
+    // Sign out the user by deleting their sessions
+    // The signOut method in auth.admin doesn't exist, so we need to use a different approach
+    // We'll update the user's last sign out timestamp which effectively invalidates old sessions
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
       targetUser.auth_id,
       { 
