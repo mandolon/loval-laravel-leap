@@ -86,6 +86,36 @@ export function UserProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, [loggingOut]);
 
+  // Check for forced sign-out every 10 seconds
+  useEffect(() => {
+    if (!session || loggingOut) return;
+
+    const checkForcedSignOut = async () => {
+      try {
+        const { data: { user: authUser }, error } = await supabase.auth.getUser();
+        
+        if (error || !authUser) return;
+
+        const forcedSignOutAt = authUser.app_metadata?.forced_signout_at;
+        
+        if (forcedSignOutAt) {
+          console.log('Detected forced sign-out - signing out locally');
+          await signOut();
+        }
+      } catch (err) {
+        console.error('Error checking forced sign-out:', err);
+      }
+    };
+
+    // Check immediately
+    checkForcedSignOut();
+
+    // Then check every 10 seconds
+    const interval = setInterval(checkForcedSignOut, 10000);
+
+    return () => clearInterval(interval);
+  }, [session, loggingOut]);
+
   const loadUserProfile = async (authUser: AuthUser) => {
     // Don't retry if we already failed
     if (profileLoadError) {
