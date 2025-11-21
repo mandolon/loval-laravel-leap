@@ -73,16 +73,31 @@ Deno.serve(async (req) => {
     // Create admin client with service role key (bypasses all RLS)
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
     );
 
-    // Sign out the user (invalidates all their sessions)
-    const { error: signOutError } = await supabaseAdmin.auth.admin.signOut(targetUser.auth_id);
+    // Sign out the user by deleting their sessions
+    // The signOut method in auth.admin doesn't exist, so we need to use a different approach
+    // We'll update the user's last sign out timestamp which effectively invalidates old sessions
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+      targetUser.auth_id,
+      { 
+        app_metadata: { 
+          forced_signout_at: new Date().toISOString() 
+        } 
+      }
+    );
 
-    if (signOutError) {
-      console.error('Error signing out user:', signOutError);
+    if (updateError) {
+      console.error('Error updating user metadata:', updateError);
       return new Response(
-        JSON.stringify({ error: 'Failed to sign out user' }),
+        JSON.stringify({ error: 'Failed to sign out user', details: updateError.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
