@@ -22,12 +22,11 @@ BEGIN
   FROM public.workspaces
   WHERE id = NEW.workspace_id;
 
-  -- Create notification for all workspace members except the sender
+  -- Create notification for all workspace members including the sender
   FOR member_record IN
     SELECT user_id
     FROM public.workspace_members
     WHERE workspace_id = NEW.workspace_id
-    AND user_id != NEW.user_id
     AND deleted_at IS NULL
   LOOP
     INSERT INTO public.notifications (
@@ -92,12 +91,11 @@ BEGIN
   JOIN public.workspaces w ON w.id = p.workspace_id
   WHERE p.id = NEW.project_id;
 
-  -- Create notification for all project members except the sender
+  -- Create notification for all project members including the sender
   FOR member_record IN
     SELECT user_id
     FROM public.project_members
     WHERE project_id = NEW.project_id
-    AND user_id != NEW.user_id
     AND deleted_at IS NULL
   LOOP
     INSERT INTO public.notifications (
@@ -250,12 +248,11 @@ BEGIN
   JOIN public.workspaces w ON w.id = p.workspace_id
   WHERE p.id = NEW.project_id;
 
-  -- Create notification for all project members except the uploader
+  -- Create notification for all project members including the uploader
   FOR member_record IN
     SELECT user_id
     FROM public.project_members
     WHERE project_id = NEW.project_id
-    AND user_id != NEW.uploaded_by
     AND deleted_at IS NULL
   LOOP
     INSERT INTO public.notifications (

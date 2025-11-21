@@ -60,7 +60,7 @@ export const useProjectMessages = (projectId: string) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('project_chat_messages')
-        .select('*, users!project_chat_messages_user_id_fkey(id, name, avatar_url)')
+        .select('*, users:user_id(id, name, avatar_url)')
         .eq('project_id', projectId)
         .is('deleted_at', null)
         .order('created_at', { ascending: true })

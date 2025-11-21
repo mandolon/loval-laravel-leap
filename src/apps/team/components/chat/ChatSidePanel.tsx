@@ -93,7 +93,7 @@ export function ChatSidePanel({
           .is('deleted_at', null)
           .order('created_at', { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle();
         
         return {
           projectId,
