@@ -2726,6 +2726,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_user_sessions: {
+        Args: { target_user_id: string }
+        Returns: undefined
+      }
       generate_detail_library_short_id: {
         Args: { prefix: string }
         Returns: string
