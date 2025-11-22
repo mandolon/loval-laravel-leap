@@ -219,43 +219,37 @@ export const useUpdateRequest = () => {
   });
 };
 
-// Delete a request (soft delete)
+// Delete a request (hard delete - permanently removes from database)
 export const useDeleteRequest = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError || !userData.user) throw new Error('Not authenticated');
-
-      // Get the user's internal ID from their auth ID
-      const { data: userRecord, error: userRecordError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('auth_id', userData.user.id)
-        .single();
-
-      if (userRecordError || !userRecord) throw new Error('User not found');
-
-      const { data, error } = await supabase
+      // First get the request to know the workspace ID for cache invalidation
+      const { data: request, error: fetchError } = await supabase
         .from('requests')
-        .update({
-          deleted_at: new Date().toISOString(),
-          deleted_by: userRecord.id,
-        })
+        .select('workspace_id')
         .eq('id', id)
-        .select()
         .single();
+
+      if (fetchError) throw fetchError;
+
+      // Hard delete the request from the database
+      const { error } = await supabase
+        .from('requests')
+        .delete()
+        .eq('id', id);
 
       if (error) throw error;
-      return transformRequest(data);
+      
+      return { id, workspaceId: request.workspace_id };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: requestKeys.workspace(data.workspaceId) });
       toast({
         title: 'Request deleted',
-        description: 'The request has been deleted successfully.',
+        description: 'The request has been permanently deleted.',
       });
     },
     onError: (error) => {

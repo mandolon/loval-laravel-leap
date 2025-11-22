@@ -243,53 +243,53 @@ export function RequestsPageBody() {
 
   return (
     <div className="text-slate-600 flex flex-col gap-4 h-full">
-      {/* Open / Closed / Sent tabs + primary action (outside container) */}
-      <div className="flex items-end justify-between px-1 text-[13px] mb-[2px]">
-        <div className="flex items-center gap-4">
+        {/* Open / Closed / Sent tabs + primary action (outside container) */}
+        <div className="flex items-end justify-between px-1 text-[13px] mb-[2px]">
+          <div className="flex items-center gap-4 ml-3">
+            <button
+              type="button"
+              onClick={() => setStatusFilter("open")}
+              className={`text-sm pb-1 border-b-2 cursor-pointer ${
+                statusFilter === "open"
+                  ? "border-emerald-500 text-slate-900 font-medium"
+                  : "border-transparent text-neutral-500 hover:text-slate-900 hover:border-slate-300"
+              }`}
+            >
+              Open
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("closed")}
+              className={`text-sm pb-1 border-b-2 cursor-pointer ${
+                statusFilter === "closed"
+                  ? "border-slate-700 text-slate-900 font-medium"
+                  : "border-transparent text-neutral-500 hover:text-slate-900 hover:border-slate-300"
+              }`}
+            >
+              Closed
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("sent")}
+              className={`text-sm pb-1 border-b-2 cursor-pointer ${
+                statusFilter === "sent"
+                  ? "border-amber-600 text-slate-900 font-medium"
+                  : "border-transparent text-neutral-500 hover:text-slate-900 hover:border-slate-300"
+              }`}
+            >
+              Sent
+            </button>
+          </div>
           <button
             type="button"
-            onClick={() => setStatusFilter("open")}
-            className={`pb-1 border-b-2 cursor-pointer ${
-              statusFilter === "open"
-                ? "border-emerald-500 text-slate-900 font-medium"
-                : "border-transparent text-neutral-500 hover:text-slate-900 hover:border-slate-300"
-            }`}
+            onClick={() => setShowNewRequestModal(true)}
+            className="h-8 px-3 rounded-lg border border-neutral-200 bg-white text-[13px] hover:bg-neutral-50 cursor-pointer"
           >
-            Open
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter("closed")}
-            className={`pb-1 border-b-2 cursor-pointer ${
-              statusFilter === "closed"
-                ? "border-slate-700 text-slate-900 font-medium"
-                : "border-transparent text-neutral-500 hover:text-slate-900 hover:border-slate-300"
-            }`}
-          >
-            Closed
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter("sent")}
-            className={`pb-1 border-b-2 cursor-pointer ${
-              statusFilter === "sent"
-                ? "border-amber-600 text-slate-900 font-medium"
-                : "border-transparent text-neutral-500 hover:text-slate-900 hover:border-slate-300"
-            }`}
-          >
-            Sent
+            New request
           </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowNewRequestModal(true)}
-          className="h-8 px-3 rounded-lg border border-neutral-200 bg-white text-[13px] hover:bg-neutral-50 cursor-pointer"
-        >
-          New request
-        </button>
-      </div>
 
-      <div className="rounded-lg border border-neutral-200 bg-white/95 backdrop-blur-sm overflow-hidden">
+        <div className="rounded-lg border border-neutral-200 bg-white/95 backdrop-blur-sm overflow-hidden">
         {/* Header controls */}
         <div className="border-b border-neutral-200 bg-neutral-50/80 px-3 py-2.5">
           <div className="flex flex-wrap items-center gap-2 text-[12px]">
@@ -302,7 +302,7 @@ export function RequestsPageBody() {
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
-                  className="text-amber-800"
+                  className="text-neutral-900"
                 >
                   <circle cx="11" cy="11" r="7" />
                   <path d="m21 21-4.3-4.3" />
@@ -336,10 +336,10 @@ export function RequestsPageBody() {
             <div className="mb-2 text-[15px] font-medium text-slate-900">Loading requests...</div>
           </div>
         ) : filteredRequests.length === 0 ? (
-          <div className="px-8 py-16 text-center text-[13px] text-neutral-600">
-            <div className="mb-2 text-[15px] font-medium text-slate-900">Welcome to requests!</div>
-            <p className="mx-auto max-w-md">
-              As requests are created, they'll appear here in a searchable and filterable list.
+          <div className="px-8 py-16 text-center text-neutral-600">
+            <div className="mb-3 text-xl font-medium text-slate-900">Welcome to requests!</div>
+            <p className="mx-auto max-w-md text-lg">
+              Requests are a simple way for your team to ask for what they need—plan markups, measurements, clarifications, invoices, or other project details. Use a request when someone needs a clear response, and use tasks for longer work that needs to be tracked.
             </p>
           </div>
         ) : (

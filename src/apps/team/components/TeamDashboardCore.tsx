@@ -80,7 +80,7 @@ import { DrawingErrorBoundary } from '@/components/drawings/DrawingErrorBoundary
 import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
 import type { Task, User, Project } from '@/lib/api/types';
 import { useWorkspaceTasks, useCreateTask, useUpdateTask, useDeleteTask, taskKeys } from '@/lib/api/hooks/useTasks';
-import { useCreateRequest } from '@/lib/api/hooks/useRequests';
+import { useCreateRequest, useWorkspaceRequests } from '@/lib/api/hooks/useRequests';
 import { useUploadTaskFile } from '@/lib/api/hooks/useFiles';
 import { useProjects } from '@/lib/api/hooks/useProjects';
 import { TasksTable } from './TasksTable';
@@ -2078,9 +2078,17 @@ const HomeView = memo(function HomeView() {
 
   const { currentWorkspace } = useWorkspaces();
   const { data: tasks = [] } = useWorkspaceTasks(currentWorkspace?.id || '');
+  const { data: requests = [] } = useWorkspaceRequests(currentWorkspace?.id || '');
 
-  // Request count and message
-  const requestCount = 4; // TODO: wire this up to real data
+  // Calculate open requests assigned to current user
+  const requestCount = useMemo(() => {
+    if (!user?.id) return 0;
+    return requests.filter(
+      (r) => r.assignedToUserId === user.id && r.status !== 'closed'
+    ).length;
+  }, [requests, user?.id]);
+
+  // Request message
   const requestMessage = getRequestMessage(requestCount);
 
   // Update tab when URL parameter changes (e.g., clicking notification while already on page)
@@ -2095,9 +2103,10 @@ const HomeView = memo(function HomeView() {
       <div className="flex-1 flex min-h-0 px-6 pt-6 pb-4 gap-6">
         <div className="flex-1 flex flex-col min-h-0">
           {/* Hero with pill tabs */}
-          <TeamHomeHeroCard userName={user?.name || 'there'}>
-            <div className="mt-7 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-6">
-              <div className="flex items-center gap-2 overflow-x-auto text-[13px]">
+          <TeamHomeHeroCard 
+            userName={user?.name || 'there'}
+            tabs={
+              <div className="flex items-center gap-2 overflow-x-auto text-[13px] flex-shrink-0">
                 {categories.map((cat) => {
                   const active = cat === activeCategory;
                   return (
@@ -2116,19 +2125,12 @@ const HomeView = memo(function HomeView() {
                   );
                 })}
               </div>
-              {activeCategory === "Requests" && (
-                <div className="max-w-sm text-[12px] leading-relaxed text-slate-600 -mt-7">
-                  Requests are a simple way for your team to ask for what they need—plan markups, measurements, 
-                  clarifications, invoices, or other project details. Use a request when someone needs a clear response, 
-                  and use tasks for longer work that needs to be tracked.
-                </div>
-              )}
-            </div>
-          </TeamHomeHeroCard>
+            }
+          />
 
           {/* Request status bar - shown only on Requests tab */}
           {activeCategory === "Requests" && (
-            <div className="mt-4">
+            <div className="mt-4 lg:px-[35px]">
               <div className="h-8 flex items-center justify-between rounded-full border border-slate-200 bg-white/80 px-3 shadow-sm">
                 <div className="flex items-center gap-1.5 text-[12px] text-slate-700">
                   <span>{requestMessage}</span>
@@ -2185,7 +2187,9 @@ const HomeView = memo(function HomeView() {
               <div className="text-sm text-slate-600">To Do content placeholder</div>
             )}
             {activeCategory === "Requests" && (
-              <RequestsPageBody />
+              <div className="lg:px-[35px]">
+                <RequestsPageBody />
+              </div>
             )}
           </div>
         </div>
