@@ -90,6 +90,14 @@ FOR UPDATE USING (
 -- Enable realtime for requests
 ALTER PUBLICATION supabase_realtime ADD TABLE requests;
 
+-- =====================================================
+-- NOTIFICATION SYSTEM FOR REQUESTS
+-- =====================================================
+-- When a request is created, this trigger sends a notification ONLY to the
+-- specific user who is assigned the request (NOT to all team members).
+-- The notification links directly to the Requests tab in the Home view.
+-- =====================================================
+
 -- Function to create request notification
 CREATE OR REPLACE FUNCTION create_request_notification()
 RETURNS TRIGGER AS $$
@@ -121,7 +129,7 @@ BEGIN
     WHERE id = NEW.project_id;
   END IF;
 
-  -- Create notification for the assignee
+  -- Create notification for the assignee (ONLY the specific user receives this)
   INSERT INTO public.notifications (
     user_id,
     workspace_id,
@@ -133,13 +141,13 @@ BEGIN
     metadata,
     created_at
   ) VALUES (
-    NEW.assigned_to_user_id,
+    NEW.assigned_to_user_id, -- Only this specific user will see the notification
     NEW.workspace_id,
     NEW.project_id,
     'request_created',
     creator_name || ' sent you a request',
     LEFT(NEW.title, 100),
-    '/team/workspace/' || NEW.workspace_id || '/requests',
+    '/team/workspace/' || NEW.workspace_id || '?view=requests&requestId=' || NEW.id,
     jsonb_build_object(
       'actorId', NEW.created_by_user_id,
       'actorName', creator_name,

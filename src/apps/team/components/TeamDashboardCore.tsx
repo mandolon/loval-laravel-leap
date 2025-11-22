@@ -1847,11 +1847,26 @@ const ChatView = memo(function ChatView({ resetTrigger }: ChatViewProps) {
 // ----------------------------------
 // Home View
 // ----------------------------------
+// Note: Request notifications link to ?view=requests to auto-select the Requests tab
+// This allows users to be taken directly to their request when clicking a notification
 const HomeView = memo(function HomeView() {
   const VIEW_TABS = ["Activity", "Overview", "To Do", "Requests"];
-  const [viewTab, setViewTab] = useState("Activity");
+  const [searchParams] = useSearchParams();
+  const urlView = searchParams.get('view');
+
+  // Auto-select Requests tab if coming from notification
+  const initialTab = urlView === 'requests' ? 'Requests' : 'Activity';
+  const [viewTab, setViewTab] = useState(initialTab);
+
   const { currentWorkspace } = useWorkspaces();
   const { data: tasks = [] } = useWorkspaceTasks(currentWorkspace?.id || '');
+
+  // Update tab when URL parameter changes (e.g., clicking notification while already on page)
+  useEffect(() => {
+    if (urlView === 'requests') {
+      setViewTab('Requests');
+    }
+  }, [urlView]);
 
   const icon = (t: string) =>
     t === "Overview" ? (
