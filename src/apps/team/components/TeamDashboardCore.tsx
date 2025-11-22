@@ -21,6 +21,7 @@ import {
   Sparkles,
   Book,
   MessageSquare,
+  MessageCircle,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -179,6 +180,7 @@ const ICON_MAP = {
   home: Home,
   projects: FolderKanban,
   tasks: CheckSquare,
+  requests: MessageCircle,
   ai: Sparkles,
   chat: MessageSquare,
   details: Book,
@@ -189,6 +191,7 @@ const TITLES = {
   home: "Home",
   projects: "Projects",
   tasks: "Tasks",
+  requests: "Requests",
   ai: "MyHome AI",
   chat: "Chat",
   details: "Detail Library",
@@ -761,6 +764,19 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
           onActivate={() => { setActive("tasks"); navigateToWorkspace("/tasks"); }}
         />
 
+        <RailItem
+          key="requests"
+          tabKey="requests"
+          label={TITLES.requests}
+          icon={ICON_MAP.requests}
+          active={active === "requests"}
+          openTab={openTab}
+          setOpenTab={setOpenTab}
+          selected={selected}
+          setSelected={setSelected}
+          onActivate={() => { setActive("requests"); navigateToWorkspace("/requests"); }}
+        />
+
         <div className="my-2 h-px w-8 bg-white/20" />
 
         <RailItem
@@ -954,6 +970,8 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
               <TeamDetailLibraryView />
             ) : active === "tasks" ? (
               <TasksView />
+            ) : active === "requests" ? (
+              <RequestsView />
             ) : active === "chat" ? (
               <ChatView resetTrigger={chatResetTrigger} />
             ) : active === "home" ? (
@@ -2065,78 +2083,42 @@ const getRequestMessage = (count: number): string => {
 };
 
 const HomeView = memo(function HomeView() {
-  const categories = ["Overview", "Requests", "Activity", "To Do"] as const;
+  const categories = ["Overview", "Activity", "To Do"] as const;
   type Category = (typeof categories)[number];
   
-  const [searchParams] = useSearchParams();
-  const urlView = searchParams.get('view');
   const { user } = useUser();
 
-  // Auto-select Requests tab if coming from notification
-  const initialTab: Category = urlView === 'requests' ? 'Requests' : 'Overview';
-  const [activeCategory, setActiveCategory] = useState<Category>(initialTab);
+  const [activeCategory, setActiveCategory] = useState<Category>('Overview');
 
   const { currentWorkspace } = useWorkspaces();
   const { data: tasks = [] } = useWorkspaceTasks(currentWorkspace?.id || '');
-  const { data: requests = [] } = useWorkspaceRequests(currentWorkspace?.id || '');
-
-  // Calculate open requests assigned to current user
-  const requestCount = useMemo(() => {
-    if (!user?.id) return 0;
-    return requests.filter(
-      (r) => r.assignedToUserId === user.id && r.status !== 'closed'
-    ).length;
-  }, [requests, user?.id]);
-
-  // Request message
-  const requestMessage = getRequestMessage(requestCount);
-
-  // Update tab when URL parameter changes (e.g., clicking notification while already on page)
-  useEffect(() => {
-    if (urlView === 'requests') {
-      setActiveCategory('Requests');
-    }
-  }, [urlView]);
 
   return (
-    <div className="h-full overflow-hidden flex flex-col p-6">
-      <div className="flex-1 flex flex-col min-h-0">
-        {/* Hero with pill tabs */}
-        <TeamHomeHeroCard 
-            userName={user?.name || 'there'}
-            tabs={
-              <div className="flex items-center gap-2 overflow-x-auto text-[13px] flex-shrink-0">
-                {categories.map((cat) => {
-                  const active = cat === activeCategory;
-                  return (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setActiveCategory(cat)}
-                      className={`inline-flex items-center rounded-full border px-3 h-7 whitespace-nowrap ${
-                        active
-                          ? "border-slate-900 bg-slate-900 text-white"
-                          : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
-                      }`}
-                    >
-                      {cat}
-                    </button>
-                  );
-                })}
-              </div>
-            }
-          />
-
-          {/* Request status bar - shown only on Requests tab */}
-          {activeCategory === "Requests" && (
-            <div className="mt-4 lg:px-[35px]">
-              <div className="h-8 flex items-center justify-between rounded-full border border-slate-200 bg-white/80 px-3 shadow-sm">
-                <div className="flex items-center gap-1.5 text-[12px] text-slate-700">
-                  <span>{requestMessage}</span>
-                </div>
-              </div>
+    <div className="h-full overflow-hidden flex flex-col">
+      <div className="flex-1 flex min-h-0 px-6 pt-6 pb-4 gap-6">
+        <div className="flex-1 flex flex-col min-h-0">
+          {/* Hero with pill tabs */}
+          <TeamHomeHeroCard userName={user?.name || 'there'}>
+            <div className="mt-7 flex items-center gap-2 overflow-x-auto text-[13px]">
+              {categories.map((cat) => {
+                const active = cat === activeCategory;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setActiveCategory(cat)}
+                    className={`inline-flex items-center rounded-full border px-3 h-7 whitespace-nowrap ${
+                      active
+                        ? "border-slate-900 bg-slate-900 text-white"
+                        : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
             </div>
-          )}
+          </TeamHomeHeroCard>
 
           {/* Tab content */}
           <div className="mt-4 flex-1 min-h-0 overflow-y-auto">
@@ -2185,12 +2167,48 @@ const HomeView = memo(function HomeView() {
             {activeCategory === "To Do" && (
               <div className="text-sm text-slate-600">To Do content placeholder</div>
             )}
-            {activeCategory === "Requests" && (
-              <div className="lg:px-[35px]">
-                <RequestsPageBody />
-              </div>
-            )}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+// ----------------------------------
+// Requests View
+// ----------------------------------
+const RequestsView = memo(function RequestsView() {
+  const { user } = useUser();
+  const { currentWorkspace } = useWorkspaces();
+  const { data: requests = [] } = useWorkspaceRequests(currentWorkspace?.id || '');
+
+  // Calculate open requests assigned to current user
+  const requestCount = useMemo(() => {
+    if (!user?.id) return 0;
+    return requests.filter(
+      (r) => r.assignedToUserId === user.id && r.status !== 'closed'
+    ).length;
+  }, [requests, user?.id]);
+
+  // Request message
+  const requestMessage = getRequestMessage(requestCount);
+
+  return (
+    <div className="h-full overflow-hidden flex flex-col">
+      <div className="flex-1 flex min-h-0 px-6 pt-6 pb-4 gap-6">
+        <div className="flex-1 flex flex-col min-h-0">
+          {/* Request status bar */}
+          <div className="h-8 flex items-center justify-between rounded-full border border-slate-200 bg-white/80 px-3 shadow-sm">
+            <div className="flex items-center gap-1.5 text-[12px] text-slate-700">
+              <span>{requestMessage}</span>
+            </div>
+          </div>
+
+          {/* Requests table */}
+          <div className="mt-4 flex-1 min-h-0 overflow-y-auto">
+            <RequestsPageBody />
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -2943,6 +2961,7 @@ export {
   RehomeDoubleSidebar as TeamDashboardLayout,
   TasksView,
   HomeView,
+  RequestsView,
   ChatView,
   TabsRow,
   TopHeader
