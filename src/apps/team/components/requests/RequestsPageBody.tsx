@@ -125,9 +125,8 @@ export function RequestsPageBody() {
   };
 
   const handleTitleClick = (request: Request) => {
-    if (statusFilter === "sent") return;
-    // Mark as read when opening
-    if (request.isUnread) {
+    // Mark as read when opening (only for inbox requests, not sent)
+    if (statusFilter !== "sent" && request.isUnread) {
       updateRequest.mutate({
         id: request.id,
         data: { isUnread: false },
