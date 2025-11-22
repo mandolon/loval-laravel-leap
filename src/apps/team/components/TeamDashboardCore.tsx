@@ -77,7 +77,7 @@ import Team3DModelViewer from "./viewers/Team3DModelViewer";
 import ExcalidrawCanvas from '@/components/drawings/ExcalidrawCanvas';
 import { DrawingErrorBoundary } from '@/components/drawings/DrawingErrorBoundary';
 import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
-import type { Task, User } from '@/lib/api/types';
+import type { Task, User, Project } from '@/lib/api/types';
 import { useWorkspaceTasks, useCreateTask, useUpdateTask, useDeleteTask, taskKeys } from '@/lib/api/hooks/useTasks';
 import { useCreateRequest } from '@/lib/api/hooks/useRequests';
 import { useUploadTaskFile } from '@/lib/api/hooks/useFiles';
@@ -397,9 +397,9 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
 
   // Fetch user's projects for the current workspace
   // Admin users see ALL projects in workspace, non-admin users see only projects they're members of
-  const { data: userProjects = [] } = useQuery({
+  const { data: userProjects = [] } = useQuery<Project[]>({
     queryKey: ['team-user-projects', currentWorkspaceId, user?.id, user?.is_admin],
-    queryFn: async () => {
+    queryFn: async (): Promise<Project[]> => {
       if (!currentWorkspaceId || !user?.id) {
         console.log('Missing workspace or user:', { currentWorkspaceId, userId: user?.id });
         return [];
@@ -409,7 +409,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
       if (user.is_admin) {
         const { data, error } = await supabase
           .from('projects')
-          .select('id, name')
+          .select('*')
           .eq('workspace_id', currentWorkspaceId)
           .is('deleted_at', null)
           .order('name');
@@ -420,7 +420,46 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
         }
 
         console.log('Fetched admin projects:', data);
-        return data || [];
+        // Transform to Project type
+        return (data || []).map((row: any) => ({
+          id: row.id,
+          shortId: row.short_id,
+          workspaceId: row.workspace_id,
+          name: row.name,
+          description: row.description,
+          status: row.status,
+          phase: row.phase,
+          project_type: row.project_type,
+          ai_identity: row.ai_identity,
+          address: row.address || {},
+          primaryClient: {
+            firstName: row.primary_client_first_name,
+            lastName: row.primary_client_last_name,
+            email: row.primary_client_email,
+            phone: row.primary_client_phone,
+            address: row.primary_client_address,
+          },
+          secondaryClient: row.secondary_client_first_name ? {
+            firstName: row.secondary_client_first_name,
+            lastName: row.secondary_client_last_name,
+            email: row.secondary_client_email,
+            phone: row.secondary_client_phone,
+            address: row.secondary_client_address,
+          } : undefined,
+          assessorParcelInfo: row.assessor_parcel_info || {},
+          estimatedAmount: row.estimated_amount,
+          dueDate: row.due_date,
+          progress: row.progress,
+          totalTasks: row.total_tasks,
+          completedTasks: row.completed_tasks,
+          teamMemberCount: row.team_member_count,
+          createdBy: row.created_by,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          updatedBy: row.updated_by,
+          deletedAt: row.deleted_at,
+          deletedBy: row.deleted_by,
+        }));
       }
 
       // NON-ADMIN: Fetch only projects where user is a member
@@ -428,10 +467,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
         .from('project_members')
         .select(`
           project_id,
-          projects!inner (
-            id,
-            name
-          )
+          projects!inner (*)
         `)
         .eq('user_id', user.id)
         .eq('projects.workspace_id', currentWorkspaceId)
@@ -443,7 +479,49 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
         return [];
       }
 
-      const projects = data?.map((pm: any) => ({ id: pm.projects.id, name: pm.projects.name })) || [];
+      // Transform to Project type
+      const projects = (data || []).map((pm: any) => {
+        const row = pm.projects;
+        return {
+          id: row.id,
+          shortId: row.short_id,
+          workspaceId: row.workspace_id,
+          name: row.name,
+          description: row.description,
+          status: row.status,
+          phase: row.phase,
+          project_type: row.project_type,
+          ai_identity: row.ai_identity,
+          address: row.address || {},
+          primaryClient: {
+            firstName: row.primary_client_first_name,
+            lastName: row.primary_client_last_name,
+            email: row.primary_client_email,
+            phone: row.primary_client_phone,
+            address: row.primary_client_address,
+          },
+          secondaryClient: row.secondary_client_first_name ? {
+            firstName: row.secondary_client_first_name,
+            lastName: row.secondary_client_last_name,
+            email: row.secondary_client_email,
+            phone: row.secondary_client_phone,
+            address: row.secondary_client_address,
+          } : undefined,
+          assessorParcelInfo: row.assessor_parcel_info || {},
+          estimatedAmount: row.estimated_amount,
+          dueDate: row.due_date,
+          progress: row.progress,
+          totalTasks: row.total_tasks,
+          completedTasks: row.completed_tasks,
+          teamMemberCount: row.team_member_count,
+          createdBy: row.created_by,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          updatedBy: row.updated_by,
+          deletedAt: row.deleted_at,
+          deletedBy: row.deleted_by,
+        };
+      });
       return projects;
     },
     enabled: !!currentWorkspaceId && !!user?.id,
@@ -487,7 +565,21 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
         throw usersError;
       }
 
-      return users || [];
+      // Transform to User type with camelCase fields
+      return (users || []).map((row: any) => ({
+        id: row.id,
+        shortId: row.short_id,
+        authId: row.auth_id,
+        name: row.name,
+        email: row.email,
+        phone: row.phone,
+        avatarUrl: row.avatar_url,
+        lastActiveAt: row.last_active_at,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        deletedAt: row.deleted_at,
+        deletedBy: row.deleted_by,
+      }));
     },
     enabled: !!currentWorkspaceId,
   });

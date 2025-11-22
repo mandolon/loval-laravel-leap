@@ -2036,6 +2036,106 @@ export type Database = {
           },
         ]
       }
+      requests: {
+        Row: {
+          assigned_to_user_id: string | null
+          body: string
+          created_at: string
+          created_by_user_id: string
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          is_unread: boolean
+          project_id: string | null
+          respond_by: string | null
+          short_id: string
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          workspace_id: string
+        }
+        Insert: {
+          assigned_to_user_id?: string | null
+          body: string
+          created_at?: string
+          created_by_user_id: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_unread?: boolean
+          project_id?: string | null
+          respond_by?: string | null
+          short_id?: string
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id: string
+        }
+        Update: {
+          assigned_to_user_id?: string | null
+          body?: string
+          created_at?: string
+          created_by_user_id?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_unread?: boolean
+          project_id?: string | null
+          respond_by?: string | null
+          short_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "requests_assigned_to_user_id_fkey"
+            columns: ["assigned_to_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requests_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requests_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requests_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requests_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requests_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           actual_time: number | null

@@ -28,8 +28,24 @@ export function RequestsPageBody() {
   const { currentWorkspaceId } = useWorkspaces();
   const { user } = useUser();
   const { data: requests = [], isLoading } = useWorkspaceRequests(currentWorkspaceId || "");
-  const { data: users = [] } = useUsers();
-  const { data: projects = [] } = useProjects();
+  const { data: usersData = [] } = useUsers();
+  const { data: projects = [] } = useProjects(
+    currentWorkspaceId || "",
+    user?.id,
+    user?.is_admin
+  );
+  
+  // Transform UserWithWorkspaces[] to simpler User[] format for modals
+  const users = usersData.map(u => ({
+    id: u.id,
+    shortId: '', // Not needed for modals
+    name: u.name,
+    email: u.email,
+    avatarUrl: u.avatar_url || undefined,
+    createdAt: '', // Not needed for modals
+    updatedAt: '', // Not needed for modals
+  }));
+  
   const createRequest = useCreateRequest();
   const updateRequest = useUpdateRequest();
   const deleteRequest = useDeleteRequest();

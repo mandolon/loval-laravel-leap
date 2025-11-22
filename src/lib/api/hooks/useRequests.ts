@@ -149,7 +149,12 @@ export const useCreateRequest = () => {
       });
     },
     onError: (error) => {
-      handleApiError(error, toast);
+      const errorMessage = handleApiError(error);
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
     },
   });
 };
@@ -204,7 +209,12 @@ export const useUpdateRequest = () => {
       });
     },
     onError: (error) => {
-      handleApiError(error, toast);
+      const errorMessage = handleApiError(error);
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
     },
   });
 };
@@ -249,7 +259,12 @@ export const useDeleteRequest = () => {
       });
     },
     onError: (error) => {
-      handleApiError(error, toast);
+      const errorMessage = handleApiError(error);
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
     },
   });
 };
