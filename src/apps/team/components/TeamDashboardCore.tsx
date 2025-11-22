@@ -820,7 +820,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
         }}
       >
         <div className="h-full overflow-hidden flex flex-col">
-          {active !== "settings" && active !== "home" && (
+          {active !== "settings" && (
             <PageHeader 
               tabKey={active} 
               title={TITLES[active as keyof typeof TITLES] || active}
@@ -2099,11 +2099,10 @@ const HomeView = memo(function HomeView() {
   }, [urlView]);
 
   return (
-    <div className="h-full overflow-hidden flex flex-col">
-      <div className="flex-1 flex min-h-0 px-6 pt-6 pb-4 gap-6">
-        <div className="flex-1 flex flex-col min-h-0">
-          {/* Hero with pill tabs */}
-          <TeamHomeHeroCard 
+    <div className="h-full overflow-hidden flex flex-col p-6">
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* Hero with pill tabs */}
+        <TeamHomeHeroCard 
             userName={user?.name || 'there'}
             tabs={
               <div className="flex items-center gap-2 overflow-x-auto text-[13px] flex-shrink-0">
@@ -2192,7 +2191,6 @@ const HomeView = memo(function HomeView() {
               </div>
             )}
           </div>
-        </div>
       </div>
     </div>
   );

@@ -20,6 +20,9 @@ export function TeamHomeHeroCard({ userName, tabs, helperText, children }: TeamH
     day: "numeric" 
   });
 
+  // Extract first name only
+  const firstName = userName.split(' ')[0];
+
   return (
     <div className="relative rounded-[28px] border border-slate-200/80 bg-gradient-to-br from-[#ffe4e7] via-[#fdf2ff] to-[#e5f2ff] px-8 pt-6 pb-8 overflow-hidden">
       <div className="pointer-events-none absolute -left-10 -top-24 h-64 w-64 rounded-full bg-[#ff9fb5]/40 blur-3xl" />
@@ -28,7 +31,7 @@ export function TeamHomeHeroCard({ userName, tabs, helperText, children }: TeamH
       <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
         <div className="flex-1">
           <h1 className="text-[28px] leading-tight font-semibold text-slate-900 mb-1 pl-2">
-            Welcome back, {userName}!
+            Welcome back, {firstName}!
           </h1>
           <p className="pl-2 text-lg text-slate-600 mb-8">
             Today is{" "}
