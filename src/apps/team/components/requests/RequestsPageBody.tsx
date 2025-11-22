@@ -242,14 +242,9 @@ export function RequestsPageBody() {
   const searchPlaceholder = "Search";
 
   return (
-    <div className="p-4 md:p-6 text-slate-600 flex flex-col gap-4 h-full">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-neutral-900 text-xl font-medium">Requests</h1>
-        <p className="text-[13px] text-neutral-500">Requests you've received and sent across projects.</p>
-      </div>
-
+    <div className="text-slate-600 flex flex-col gap-4 h-full">
       {/* Open / Closed / Sent tabs + primary action (outside container) */}
-      <div className="flex items-end justify-between px-1 text-[13px] mt-2 mb-[2px]">
+      <div className="flex items-end justify-between px-1 text-[13px] mb-[2px]">
         <div className="flex items-center gap-4">
           <button
             type="button"

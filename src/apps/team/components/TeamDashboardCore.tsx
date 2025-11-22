@@ -13,6 +13,7 @@ import { ProjectAIContextView } from './ProjectAIContextView';
 import { GitHubActivityFeed } from './GitHubActivityFeed';
 import { RequestsPageBody } from './requests/RequestsPageBody';
 import { NewRequestModal } from './requests/NewRequestModal';
+import { TeamHomeHeroCard } from './TeamHomeHeroCard';
 import {
   Home,
   FolderKanban,
@@ -819,7 +820,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
         }}
       >
         <div className="h-full overflow-hidden flex flex-col">
-          {active !== "settings" && (
+          {active !== "settings" && active !== "home" && (
             <PageHeader 
               tabKey={active} 
               title={TITLES[active as keyof typeof TITLES] || active}
@@ -2045,113 +2046,149 @@ const ChatView = memo(function ChatView({ resetTrigger }: ChatViewProps) {
 // ----------------------------------
 // Note: Request notifications link to ?view=requests to auto-select the Requests tab
 // This allows users to be taken directly to their request when clicking a notification
+
+// Helper to generate contextual message based on request count
+const getRequestMessage = (count: number): string => {
+  if (count === 0) {
+    return "You don't have any open requests right now.";
+  }
+  if (count <= 3) {
+    return `You have ${count} request${count === 1 ? "" : "s"} waiting for your response.`;
+  }
+  if (count <= 7) {
+    return `You have ${count} open requests currently waiting on your response.`;
+  }
+  if (count <= 12) {
+    return `You have ${count} open requests waiting for your response to keep everything moving smoothly.`;
+  }
+  return `You have ${count} open requests waiting for your response; working through these will help keep things moving without piling up.`;
+};
+
 const HomeView = memo(function HomeView() {
-  const VIEW_TABS = ["Overview", "Requests", "Activity", "To Do"];
+  const categories = ["Overview", "Requests", "Activity", "To Do"] as const;
+  type Category = (typeof categories)[number];
+  
   const [searchParams] = useSearchParams();
   const urlView = searchParams.get('view');
+  const { user } = useUser();
 
   // Auto-select Requests tab if coming from notification
-  const initialTab = urlView === 'requests' ? 'Requests' : 'Overview';
-  const [viewTab, setViewTab] = useState(initialTab);
+  const initialTab: Category = urlView === 'requests' ? 'Requests' : 'Overview';
+  const [activeCategory, setActiveCategory] = useState<Category>(initialTab);
 
   const { currentWorkspace } = useWorkspaces();
   const { data: tasks = [] } = useWorkspaceTasks(currentWorkspace?.id || '');
 
+  // Request count and message
+  const requestCount = 4; // TODO: wire this up to real data
+  const requestMessage = getRequestMessage(requestCount);
+
   // Update tab when URL parameter changes (e.g., clicking notification while already on page)
   useEffect(() => {
     if (urlView === 'requests') {
-      setViewTab('Requests');
+      setActiveCategory('Requests');
     }
   }, [urlView]);
 
-  const icon = (t: string) =>
-    t === "Overview" ? (
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="3" y="11" width="4" height="9" rx="1" />
-        <rect x="10" y="7" width="4" height="13" rx="1" />
-        <rect x="17" y="13" width="4" height="7" rx="1" />
-      </svg>
-    ) : t === "To Do" ? (
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="3" y="3" width="18" height="18" rx="2" />
-        <path d="m9 12 2 2 4-5" />
-      </svg>
-    ) : t === "Requests" ? (
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-      </svg>
-    ) : (
-      <svg
-        viewBox="0 0 24 24"
-        width="14"
-        height="14"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M22 12h-4l-3 7-6-14-3 7H2" />
-      </svg>
-    );
-
-  const tabs = VIEW_TABS.map((t) => ({ key: t, label: t, icon: icon(t) }));
-
   return (
-    <div className="px-6 pt-1 pb-12">
-      <div className="mt-1 mb-3">
-        <TabsRow tabs={tabs} active={viewTab} onChange={setViewTab} />
-      </div>
+    <div className="h-full overflow-hidden flex flex-col">
+      <div className="flex-1 flex min-h-0 px-6 pt-6 pb-4 gap-6">
+        <div className="flex-1 flex flex-col min-h-0">
+          {/* Hero with pill tabs */}
+          <TeamHomeHeroCard userName={user?.name || 'there'}>
+            <div className="mt-7 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-6">
+              <div className="flex items-center gap-2 overflow-x-auto text-[13px]">
+                {categories.map((cat) => {
+                  const active = cat === activeCategory;
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setActiveCategory(cat)}
+                      className={`inline-flex items-center rounded-full border px-3 h-7 whitespace-nowrap ${
+                        active
+                          ? "border-slate-900 bg-slate-900 text-white"
+                          : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  );
+                })}
+              </div>
+              {activeCategory === "Requests" && (
+                <div className="max-w-sm text-[12px] leading-relaxed text-slate-600 -mt-7">
+                  Requests are a simple way for your team to ask for what they need—plan markups, measurements, 
+                  clarifications, invoices, or other project details. Use a request when someone needs a clear response, 
+                  and use tasks for longer work that needs to be tracked.
+                </div>
+              )}
+            </div>
+          </TeamHomeHeroCard>
 
-      <div className="mt-3">
-        {viewTab === "Activity" && (
-          <div className="max-w-3xl border border-slate-200 rounded-lg overflow-hidden bg-white">
-            <div className="sticky top-0 bg-white border-b border-slate-200 p-4 z-10">
-              <h3 className="text-lg font-semibold text-slate-900 mb-1">Rehome Development Activity</h3>
-              <p className="text-sm text-slate-500">Recent updates to the app and list of new features.</p>
+          {/* Request status bar - shown only on Requests tab */}
+          {activeCategory === "Requests" && (
+            <div className="mt-4">
+              <div className="h-8 flex items-center justify-between rounded-full border border-slate-200 bg-white/80 px-3 shadow-sm">
+                <div className="flex items-center gap-1.5 text-[12px] text-slate-700">
+                  <span>{requestMessage}</span>
+                </div>
+              </div>
             </div>
-            <div className="max-h-[700px] overflow-y-scroll p-4">
-              <GitHubActivityFeed 
-                hideKeywords={[
-                  'last_page_visited',
-                  'tracking',
-                  'monitoring',
-                  'activity tracker',
-                  'last active',
-                  'last page',
-                  'user activity',
-                  'activity tracking',
-                  'page visited',
-                  'navigation tracking',
-                  'sign out',
-                  'sign-out',
-                  'logout',
-                  'redirect loop',
-                  '403',
-                  'auth bug',
-                  'github.com/mandolon/app.rehome',
-                  'mandolon/app.rehome',
-                  'app.rehome',
-                  'github.com/mandolon/loval-laravel-leap',
-                  'mandolon/loval-laravel-leap',
-                  'loval-laravel-leap',
-                  'excalidraw',
-                  'lovable',
-                ]}
-                hideAuthors={[]}
-              />
-            </div>
+          )}
+
+          {/* Tab content */}
+          <div className="mt-4 flex-1 min-h-0 overflow-y-auto">
+            {activeCategory === "Activity" && (
+              <div className="max-w-3xl border border-slate-200 rounded-lg overflow-hidden bg-white">
+                <div className="sticky top-0 bg-white border-b border-slate-200 p-4 z-10">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-1">Rehome Development Activity</h3>
+                  <p className="text-sm text-slate-500">Recent updates to the app and list of new features.</p>
+                </div>
+                <div className="max-h-[700px] overflow-y-scroll p-4">
+                  <GitHubActivityFeed 
+                    hideKeywords={[
+                      'last_page_visited',
+                      'tracking',
+                      'monitoring',
+                      'activity tracker',
+                      'last active',
+                      'last page',
+                      'user activity',
+                      'activity tracking',
+                      'page visited',
+                      'navigation tracking',
+                      'sign out',
+                      'sign-out',
+                      'logout',
+                      'redirect loop',
+                      '403',
+                      'auth bug',
+                      'github.com/mandolon/app.rehome',
+                      'mandolon/app.rehome',
+                      'app.rehome',
+                      'github.com/mandolon/loval-laravel-leap',
+                      'mandolon/loval-laravel-leap',
+                      'loval-laravel-leap',
+                      'excalidraw',
+                      'lovable',
+                    ]}
+                    hideAuthors={[]}
+                  />
+                </div>
+              </div>
+            )}
+            {activeCategory === "Overview" && (
+              <div className="text-sm text-slate-600">Home content placeholder</div>
+            )}
+            {activeCategory === "To Do" && (
+              <div className="text-sm text-slate-600">To Do content placeholder</div>
+            )}
+            {activeCategory === "Requests" && (
+              <RequestsPageBody />
+            )}
           </div>
-        )}
-        {viewTab === "Overview" && (
-          <div className="text-sm text-slate-600">Home content placeholder</div>
-        )}
-        {viewTab === "To Do" && (
-          <div className="text-sm text-slate-600">To Do content placeholder</div>
-        )}
-        {viewTab === "Requests" && (
-          <RequestsPageBody />
-        )}
+        </div>
       </div>
     </div>
   );
