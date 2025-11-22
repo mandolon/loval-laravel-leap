@@ -3,7 +3,8 @@
  * Main list view with filters and actions for Requests
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { RequestPreviewModal } from "./RequestPreviewModal";
 import { NewRequestModal } from "./NewRequestModal";
 import { EditRequestModal } from "./EditRequestModal";
@@ -32,6 +33,7 @@ export function RequestsPageBody() {
   const createRequest = useCreateRequest();
   const updateRequest = useUpdateRequest();
   const deleteRequest = useDeleteRequest();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [statusFilter, setStatusFilter] = useState<"open" | "closed" | "sent">("open");
   const [sortBy, setSortBy] = useState<"recent" | "due">("recent");
@@ -39,6 +41,30 @@ export function RequestsPageBody() {
   const [activeRequest, setActiveRequest] = useState<Request | null>(null);
   const [showNewRequestModal, setShowNewRequestModal] = useState(false);
   const [editingRequest, setEditingRequest] = useState<Request | null>(null);
+
+  // Auto-open request when coming from notification
+  useEffect(() => {
+    const requestId = searchParams.get('requestId');
+    if (requestId && requests.length > 0) {
+      const request = requests.find(r => r.id === requestId);
+      if (request) {
+        // Mark as read if it's assigned to the current user
+        if (request.assignedToUserId === user?.id && request.isUnread) {
+          updateRequest.mutate({
+            id: request.id,
+            data: { isUnread: false },
+          });
+        }
+        setActiveRequest(request);
+        // Clear the requestId from URL after opening
+        setSearchParams(prev => {
+          const newParams = new URLSearchParams(prev);
+          newParams.delete('requestId');
+          return newParams;
+        }, { replace: true });
+      }
+    }
+  }, [searchParams, requests, user?.id]);
 
   // Helper function to get user display name
   const getUserDisplayName = (userId: string) => {

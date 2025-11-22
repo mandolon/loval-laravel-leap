@@ -230,7 +230,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const createProjectMutation = useCreateProject(currentWorkspaceId || "");
-  const createRequest = useCreateRequest(currentWorkspaceId || "");
+  const createRequest = useCreateRequest();
 
   // Fetch workspace messages to check for unread
   const { data: workspaceMessages = [] } = useWorkspaceMessages(currentWorkspaceId || "");
@@ -351,7 +351,13 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
     });
   }, [currentWorkspaceId, createProjectMutation, queryClient, user, toast]);
 
-  const handleCreateRequest = useCallback(async (input: any) => {
+  const handleCreateRequest = useCallback(async (input: {
+    title: string;
+    description: string;
+    projectId: string | null;
+    assignee: string;
+    dueBy: string | null;
+  }) => {
     if (!currentWorkspaceId || !user?.id) {
       toast({
         title: "Error",
@@ -361,7 +367,17 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
       return;
     }
 
-    createRequest.mutate(input, {
+    // Transform modal input to API format
+    const apiInput = {
+      title: input.title,
+      body: input.description,
+      assignedToUserId: input.assignee,
+      projectId: input.projectId || undefined,
+      workspaceId: currentWorkspaceId,
+      respondBy: input.dueBy || undefined,
+    };
+
+    createRequest.mutate(apiInput, {
       onSuccess: () => {
         setShowGlobalNewRequestModal(false);
         toast({
