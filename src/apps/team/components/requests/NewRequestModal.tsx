@@ -194,29 +194,29 @@ export function NewRequestModal({ users, projects, onClose, onSubmit }: NewReque
         className="relative z-10 flex w-full max-w-[560px] flex-col gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3.5 shadow-[0_18px_45px_rgba(15,15,15,0.16)] sm:px-5 sm:py-4"
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-2.5">
-          <div className="space-y-px">
+        <div className="mb-4">
+          <div className="flex items-center justify-between gap-2.5">
             <div className="text-[19px] font-semibold text-neutral-900">
               Make a request
             </div>
-            <div className="text-[14px] text-neutral-500">
-              Say what you need so the right person can move it forward.
-            </div>
+            <button
+              type="button"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-neutral-200 bg-white text-[18px] text-neutral-500 cursor-pointer hover:border-neutral-300 hover:bg-neutral-50"
+              onClick={handleCancel}
+              aria-label="Close"
+            >
+              ×
+            </button>
           </div>
-          <button
-            type="button"
-            className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full border border-neutral-200 bg-white text-[18px] text-neutral-500 cursor-pointer hover:border-neutral-300 hover:bg-neutral-50"
-            onClick={handleCancel}
-            aria-label="Close"
-          >
-            ×
-          </button>
+          <div className="mt-2 text-[14px] text-neutral-500">
+            Say what you need so the right person can move it forward.
+          </div>
         </div>
 
         {/* Body */}
         <div className="flex flex-col gap-3.5">
           {/* Title */}
-          <div className="mt-3 flex flex-col gap-1">
+          <div className="flex flex-col gap-1">
             <div className="relative">
               <input
                 type="text"
@@ -455,7 +455,7 @@ export function NewRequestModal({ users, projects, onClose, onSubmit }: NewReque
         </div>
 
         {/* Footer */}
-        <div className="mt-3 flex items-center justify-end gap-1.75">
+        <div className="mt-3 flex items-center justify-end gap-3">
           <button
             type="button"
             onClick={handleCancel}
@@ -465,7 +465,11 @@ export function NewRequestModal({ users, projects, onClose, onSubmit }: NewReque
           </button>
           <button
             type="submit"
-            className="inline-flex h-9 items-center justify-center rounded-lg bg-[#5b3a1a] px-4 text-[14px] font-semibold text-white cursor-pointer hover:bg-[#4a2f15]"
+            className={`inline-flex h-9 items-center justify-center rounded-lg px-4 text-[14px] font-semibold text-white cursor-pointer ${
+              isValid
+                ? "bg-emerald-500 hover:bg-emerald-600"
+                : "bg-emerald-300 hover:bg-emerald-400"
+            }`}
           >
             Send request
           </button>

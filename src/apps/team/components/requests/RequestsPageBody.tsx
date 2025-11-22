@@ -262,7 +262,7 @@ export function RequestsPageBody() {
               onClick={() => setStatusFilter("closed")}
               className={`text-sm pb-1 border-b-2 cursor-pointer ${
                 statusFilter === "closed"
-                  ? "border-slate-700 text-slate-900 font-medium"
+                  ? "border-emerald-500 text-slate-900 font-medium"
                   : "border-transparent text-neutral-500 hover:text-slate-900 hover:border-slate-300"
               }`}
             >
@@ -273,7 +273,7 @@ export function RequestsPageBody() {
               onClick={() => setStatusFilter("sent")}
               className={`text-sm pb-1 border-b-2 cursor-pointer ${
                 statusFilter === "sent"
-                  ? "border-amber-600 text-slate-900 font-medium"
+                  ? "border-emerald-500 text-slate-900 font-medium"
                   : "border-transparent text-neutral-500 hover:text-slate-900 hover:border-slate-300"
               }`}
             >
