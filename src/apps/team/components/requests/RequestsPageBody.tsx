@@ -6,6 +6,7 @@
 import { useState, useMemo } from "react";
 import { RequestPreviewModal } from "./RequestPreviewModal";
 import { NewRequestModal } from "./NewRequestModal";
+import { EditRequestModal } from "./EditRequestModal";
 import { formatDate } from "./requestsData";
 import type { Request } from "@/lib/api/types";
 import {
@@ -37,6 +38,7 @@ export function RequestsPageBody() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeRequest, setActiveRequest] = useState<Request | null>(null);
   const [showNewRequestModal, setShowNewRequestModal] = useState(false);
+  const [editingRequest, setEditingRequest] = useState<Request | null>(null);
 
   // Helper function to get user display name
   const getUserDisplayName = (userId: string) => {
@@ -135,8 +137,35 @@ export function RequestsPageBody() {
   };
 
   const handleEdit = (request: Request) => {
-    // TODO: Implement edit modal
-    console.log("Edit sent request", request);
+    setEditingRequest(request);
+  };
+
+  const handleEditSubmit = (data: {
+    title: string;
+    description: string;
+    projectId: string | null;
+    assignee: string;
+    dueBy: string | null;
+  }) => {
+    if (!editingRequest) return;
+
+    updateRequest.mutate(
+      {
+        id: editingRequest.id,
+        data: {
+          title: data.title,
+          body: data.description,
+          assignedToUserId: data.assignee,
+          projectId: data.projectId || undefined,
+          respondBy: data.dueBy || undefined,
+        },
+      },
+      {
+        onSuccess: () => {
+          setEditingRequest(null);
+        },
+      }
+    );
   };
 
   const handleDelete = (id: string) => {
@@ -371,6 +400,15 @@ export function RequestsPageBody() {
           projects={projects.filter(p => p.workspaceId === currentWorkspaceId)}
           onClose={() => setShowNewRequestModal(false)}
           onSubmit={handleNewRequest}
+        />
+      )}
+      {editingRequest && (
+        <EditRequestModal
+          request={editingRequest}
+          users={users}
+          projects={projects.filter(p => p.workspaceId === currentWorkspaceId)}
+          onClose={() => setEditingRequest(null)}
+          onSubmit={handleEditSubmit}
         />
       )}
     </div>
