@@ -49,43 +49,8 @@ BEFORE UPDATE ON requests
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
--- Enable RLS
-ALTER TABLE requests ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies
--- Users can view requests in their workspace
-CREATE POLICY "Users can view workspace requests" ON requests
-FOR SELECT USING (
-  workspace_id IN (
-    SELECT workspace_id FROM workspace_members
-    WHERE user_id = auth.uid() AND deleted_at IS NULL
-  )
-);
-
--- Users can create requests in their workspace
-CREATE POLICY "Users can create requests" ON requests
-FOR INSERT WITH CHECK (
-  workspace_id IN (
-    SELECT workspace_id FROM workspace_members
-    WHERE user_id = auth.uid() AND deleted_at IS NULL
-  )
-  AND created_by_user_id = auth.uid()
-);
-
--- Users can update requests in their workspace
-CREATE POLICY "Users can update workspace requests" ON requests
-FOR UPDATE USING (
-  workspace_id IN (
-    SELECT workspace_id FROM workspace_members
-    WHERE user_id = auth.uid() AND deleted_at IS NULL
-  )
-);
-
--- Users can delete their own requests
-CREATE POLICY "Users can delete their requests" ON requests
-FOR UPDATE USING (
-  created_by_user_id = auth.uid()
-);
+-- NO RLS - Using UI filtering only per requirements
+-- RLS is intentionally disabled to rely on application-level filtering
 
 -- Enable realtime for requests
 ALTER PUBLICATION supabase_realtime ADD TABLE requests;
