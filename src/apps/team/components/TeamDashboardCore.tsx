@@ -12,6 +12,7 @@ import { ProjectInfoContent } from './ProjectInfoContent';
 import { ProjectAIContextView } from './ProjectAIContextView';
 import { GitHubActivityFeed } from './GitHubActivityFeed';
 import { RequestsPageBody } from './requests/RequestsPageBody';
+import { NewRequestModal } from './requests/NewRequestModal';
 import {
   Home,
   FolderKanban,
@@ -78,6 +79,7 @@ import { DrawingErrorBoundary } from '@/components/drawings/DrawingErrorBoundary
 import { SCALE_PRESETS, getInchesPerSceneUnit, type ScalePreset, type ArrowCounterStats } from '@/utils/excalidraw-measurement-tools';
 import type { Task, User } from '@/lib/api/types';
 import { useWorkspaceTasks, useCreateTask, useUpdateTask, useDeleteTask, taskKeys } from '@/lib/api/hooks/useTasks';
+import { useCreateRequest } from '@/lib/api/hooks/useRequests';
 import { useUploadTaskFile } from '@/lib/api/hooks/useFiles';
 import { useProjects } from '@/lib/api/hooks/useProjects';
 import { TasksTable } from './TasksTable';
@@ -133,6 +135,7 @@ interface TopHeaderProps {
   railCollapsed: boolean;
   setRailCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
   mdUp: boolean;
+  onOpenNewRequest: () => void;
 }
 
 interface PageHeaderProps {
@@ -215,6 +218,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
   const [inchesPerSceneUnit, setInchesPerSceneUnit] = useState<number>(getInchesPerSceneUnit(SCALE_PRESETS["1/4\" = 1'"]));
   const [pxPerStep, setPxPerStep] = useState(0.668); // Calibration state
   const [chatResetTrigger, setChatResetTrigger] = useState(0);
+  const [showGlobalNewRequestModal, setShowGlobalNewRequestModal] = useState(false);
   const projectsIconRef = useRef<HTMLDivElement>(null);
   const [projectsIconPosition, setProjectsIconPosition] = useState({ x: 0, y: 0 });
   const mdUp = useMediaQuery("(min-width: 768px)");
@@ -226,6 +230,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const createProjectMutation = useCreateProject(currentWorkspaceId || "");
+  const createRequest = useCreateRequest(currentWorkspaceId || "");
 
   // Fetch workspace messages to check for unread
   const { data: workspaceMessages = [] } = useWorkspaceMessages(currentWorkspaceId || "");
@@ -346,6 +351,34 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
     });
   }, [currentWorkspaceId, createProjectMutation, queryClient, user, toast]);
 
+  const handleCreateRequest = useCallback(async (input: any) => {
+    if (!currentWorkspaceId || !user?.id) {
+      toast({
+        title: "Error",
+        description: "Missing workspace or user information",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createRequest.mutate(input, {
+      onSuccess: () => {
+        setShowGlobalNewRequestModal(false);
+        toast({
+          title: "Request sent",
+          description: "Your request has been sent successfully",
+        });
+      },
+      onError: (error: any) => {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create request",
+          variant: "destructive",
+        });
+      },
+    });
+  }, [currentWorkspaceId, user, createRequest, toast]);
+
   // Fetch user's projects for the current workspace
   // Admin users see ALL projects in workspace, non-admin users see only projects they're members of
   const { data: userProjects = [] } = useQuery({
@@ -402,6 +435,46 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
 
   // No fallback to hardcoded data - show empty list if no projects exist
   const projectItems = userProjects.map((p: any) => p.name);
+
+  // Fetch workspace members for NewRequestModal
+  const { data: workspaceMembers = [] } = useQuery<User[]>({
+    queryKey: ['workspace-members', currentWorkspaceId],
+    queryFn: async (): Promise<User[]> => {
+      if (!currentWorkspaceId) return [];
+
+      // Get workspace members
+      const { data: members, error: membersError } = await supabase
+        .from('workspace_members')
+        .select('*')
+        .eq('workspace_id', currentWorkspaceId)
+        .is('deleted_at', null);
+
+      if (membersError) {
+        console.error('Error fetching workspace members:', membersError);
+        throw membersError;
+      }
+
+      if (!members || members.length === 0) return [];
+
+      // Get all user IDs
+      const userIds = members.map(m => m.user_id);
+
+      // Fetch user details
+      const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('*')
+        .in('id', userIds)
+        .is('deleted_at', null);
+
+      if (usersError) {
+        console.error('Error fetching users:', usersError);
+        throw usersError;
+      }
+
+      return users || [];
+    },
+    enabled: !!currentWorkspaceId,
+  });
 
   const projectPanelTab = searchParams.get('projectTab') || 'files';
   const isInfoTabActive = projectPanelTab === 'info';
@@ -527,6 +600,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
         railCollapsed={railCollapsed}
         setRailCollapsed={setRailCollapsed}
         mdUp={mdUp}
+        onOpenNewRequest={() => setShowGlobalNewRequestModal(true)}
       />
 
       {/* Fixed narrow rail */}
@@ -830,6 +904,16 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
               initialWhiteboardPageId={urlWhiteboardPageId}
             />
         </div>
+      )}
+
+      {/* Global NewRequestModal - rendered at top level */}
+      {showGlobalNewRequestModal && (
+        <NewRequestModal
+          users={workspaceMembers}
+          projects={userProjects}
+          onClose={() => setShowGlobalNewRequestModal(false)}
+          onSubmit={handleCreateRequest}
+        />
       )}
     </div>
   );
@@ -1591,6 +1675,7 @@ const TopHeader = memo(function TopHeader({
   railCollapsed,
   setRailCollapsed,
   mdUp,
+  onOpenNewRequest,
 }: TopHeaderProps) {
   const leftValue = railCollapsed
     ? mdUp
@@ -1678,7 +1763,10 @@ const TopHeader = memo(function TopHeader({
                 </button>
               </NotificationsPopover>
 
-              <button className="h-7 px-3 rounded-full border border-violet-200 bg-white text-violet-700 text-[12px] font-medium shadow-sm inline-flex items-center justify-center gap-1.5 hover:bg-violet-50 hover:border-violet-300 transition-colors">
+              <button
+                onClick={onOpenNewRequest}
+                className="h-7 px-3 rounded-full border border-violet-200 bg-white text-violet-700 text-[12px] font-medium shadow-sm inline-flex items-center justify-center gap-1.5 hover:bg-violet-50 hover:border-violet-300 transition-colors"
+              >
                 <Plus className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={2.5} />
                 <span className="flex items-center leading-none"><span className="italic">re</span>quest</span>
               </button>
