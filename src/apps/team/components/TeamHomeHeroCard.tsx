@@ -24,10 +24,10 @@ export function TeamHomeHeroCard({ userName, tabs, helperText, children }: TeamH
   const firstName = userName.split(' ')[0];
 
   return (
-    <div className="relative rounded-[28px] border border-slate-200/80 bg-gradient-to-br from-[#ffe4e7] via-[#fdf2ff] to-[#e5f2ff] px-8 pt-6 pb-8 overflow-hidden">
-      <div className="pointer-events-none absolute -left-10 -top-24 h-64 w-64 rounded-full bg-[#ff9fb5]/40 blur-3xl" />
-      <div className="pointer-events-none absolute -right-16 -top-10 h-72 w-72 rounded-full bg-[#60a5fa]/40 blur-3xl" />
-      <div className="pointer-events-none absolute -right-20 bottom-[-3rem] h-80 w-80 rounded-full bg-[#f97373]/30 blur-3xl" />
+    <div className="relative rounded-[28px] border border-slate-200/80 bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 px-8 pt-6 pb-8 overflow-hidden">
+      <div className="pointer-events-none absolute -left-10 -top-24 h-64 w-64 rounded-full bg-indigo-100/20 blur-3xl" />
+      <div className="pointer-events-none absolute -right-16 -top-10 h-72 w-72 rounded-full bg-blue-100/15 blur-3xl" />
+      <div className="pointer-events-none absolute -right-20 bottom-[-3rem] h-80 w-80 rounded-full bg-slate-100/10 blur-3xl" />
       <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
         <div className="flex-1">
           <h1 className="text-[28px] leading-tight font-semibold text-slate-900 mb-1 pl-2">
