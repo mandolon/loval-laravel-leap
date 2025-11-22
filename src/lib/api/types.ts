@@ -295,6 +295,46 @@ export interface Note {
   deletedBy?: string;
 }
 
+// Request entity
+export interface Request {
+  id: string;
+  shortId: string;
+  title: string;
+  body: string;
+  createdByUserId: string;
+  assignedToUserId: string;
+  projectId?: string;
+  workspaceId: string;
+  status: 'open' | 'closed';
+  respondBy?: string;
+  isUnread: boolean;
+  createdAt: string;
+  updatedAt: string;
+  updatedBy?: string;
+  deletedAt?: string;
+  deletedBy?: string;
+}
+
+// Request input types
+export interface CreateRequestInput {
+  title: string;
+  body: string;
+  assignedToUserId: string;
+  projectId?: string;
+  workspaceId: string;
+  respondBy?: string;
+}
+
+export interface UpdateRequestInput {
+  title?: string;
+  body?: string;
+  assignedToUserId?: string;
+  projectId?: string;
+  respondBy?: string;
+  status?: 'open' | 'closed';
+  isUnread?: boolean;
+}
+
 // Invoice entity with payment tracking
 export interface Invoice {
   id: string;

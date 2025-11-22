@@ -1,14 +1,15 @@
 /**
- * NewRequestModal Component
- * Modal for creating new requests
+ * EditRequestModal Component
+ * Modal for editing existing requests (sent by current user)
  */
 
 import { useState, useEffect, useRef } from "react";
-import type { User, Project } from "@/lib/api/types";
+import type { User, Project, Request } from "@/lib/api/types";
 
 const TITLE_MAX_CHARS = 40;
 
-interface NewRequestModalProps {
+interface EditRequestModalProps {
+  request: Request;
   users: User[];
   projects: Project[];
   onClose: () => void;
@@ -41,12 +42,13 @@ function formatShort(date: Date) {
   });
 }
 
-export function NewRequestModal({ users, projects, onClose, onSubmit }: NewRequestModalProps) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [projectId, setProjectId] = useState("");
-  const [assignee, setAssignee] = useState("");
-  const [dueBy, setDueBy] = useState("");
+export function EditRequestModal({ request, users, projects, onClose, onSubmit }: EditRequestModalProps) {
+  // Pre-populate with existing request data
+  const [title, setTitle] = useState(request.title);
+  const [description, setDescription] = useState(request.body);
+  const [projectId, setProjectId] = useState(request.projectId || "");
+  const [assignee, setAssignee] = useState(request.assignedToUserId);
+  const [dueBy, setDueBy] = useState(request.respondBy || "");
   const [projectOpen, setProjectOpen] = useState(false);
   const [assigneeOpen, setAssigneeOpen] = useState(false);
   const [dueOpen, setDueOpen] = useState(false);
@@ -197,10 +199,10 @@ export function NewRequestModal({ users, projects, onClose, onSubmit }: NewReque
         <div className="flex items-start justify-between gap-2.5">
           <div className="space-y-px">
             <div className="text-[19px] font-semibold text-neutral-900">
-              Make a request
+              Edit request
             </div>
             <div className="text-[14px] text-neutral-500">
-              Say what you need so the right person can move it forward.
+              Update the details of your request.
             </div>
           </div>
           <button
@@ -434,6 +436,16 @@ export function NewRequestModal({ users, projects, onClose, onSubmit }: NewReque
                         {formatShort(nextWeekDate)}
                       </span>
                     </button>
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between px-3 py-1.5 text-left text-[14px] text-neutral-500 cursor-pointer hover:bg-neutral-50"
+                      onClick={() => {
+                        setDueBy("");
+                        setDueOpen(false);
+                      }}
+                    >
+                      Clear due date
+                    </button>
                     <div className="mt-1 border-t border-neutral-100 pt-1.5">
                       <div className="px-3 pb-0.5 text-[11px] uppercase tracking-wide text-neutral-400">
                         Or pick a date
@@ -467,7 +479,7 @@ export function NewRequestModal({ users, projects, onClose, onSubmit }: NewReque
             type="submit"
             className="inline-flex h-9 items-center justify-center rounded-lg bg-[#5b3a1a] px-4 text-[14px] font-semibold text-white cursor-pointer hover:bg-[#4a2f15]"
           >
-            Send request
+            Update request
           </button>
         </div>
       </form>
