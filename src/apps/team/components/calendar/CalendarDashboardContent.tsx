@@ -226,18 +226,20 @@ export const CalendarDashboardContent: React.FC = () => {
         <div className='flex-1 flex flex-col min-w-0 gap-4'>
           {/* Calendar scroll area */}
           <div className='rounded-xl bg-white/60 px-3 md:px-4 py-3 md:py-4 shrink-0'>
-            <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-4'>
+            <div className='flex items-center justify-between gap-2 mb-4'>
               <button
                 onClick={resetToToday}
-                className='text-[10px] sm:text-[11px] tracking-[0.15em] uppercase text-[#606060] hover:text-[#4c75d1] transition-colors cursor-pointer text-left touch-manipulation'
+                className='text-[10px] sm:text-[11px] tracking-[0.15em] uppercase text-[#606060] hover:text-[#4c75d1] transition-colors cursor-pointer text-left touch-manipulation flex-1 min-w-0'
               >
-                Today is{' '}
-                <span className='text-[#4c75d1] font-medium'>
-                  <span className='inline md:hidden'>{getCurrentDateShort()}</span>
-                  <span className='hidden md:inline'>{getCurrentDate()}</span>
+                <span className='block truncate'>
+                  Today is{' '}
+                  <span className='text-[#4c75d1] font-medium'>
+                    <span className='inline md:hidden'>{getCurrentDateShort()}</span>
+                    <span className='hidden md:inline'>{getCurrentDate()}</span>
+                  </span>
                 </span>
               </button>
-              <div className='flex items-center gap-3'>
+              <div className='flex items-center gap-2 shrink-0'>
                 <div className='text-[10px] sm:text-[11px] tracking-[0.15em] uppercase text-[#606060]'>
                   {getVisibleMonth()}
                 </div>
