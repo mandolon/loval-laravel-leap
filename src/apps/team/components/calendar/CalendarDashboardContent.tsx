@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useUser } from '@/contexts/UserContext';
 import { CalendarDay } from '../../types';
 import {
   generateCalendarDays,
@@ -20,6 +21,7 @@ import { FileItem } from './FileItem';
 const INITIAL_CALENDAR = getInitialCalendar();
 
 export const CalendarDashboardContent: React.FC = () => {
+  const { user } = useUser();
   const [mdUp, setMdUp] = useState(true);
   const [currentYear, setCurrentYear] = useState(INITIAL_CALENDAR.year);
   const [currentMonth, setCurrentMonth] = useState(INITIAL_CALENDAR.month);
@@ -191,14 +193,33 @@ export const CalendarDashboardContent: React.FC = () => {
     return day ? day.monthShort.toUpperCase() : '';
   };
 
+  // Dynamic greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    if (hour < 21) return 'Good evening';
+    return 'Good night';
+  };
+
   const selectedDay = calendarDays[selectedIndex] || calendarDays[0];
   const eventsForDay = EVENTS[selectedIndex] || [];
+  const userName = user?.first_name || 'there';
 
   return (
     <div className='h-full flex flex-col overflow-hidden'>
       <div className='flex-1 flex flex-col min-h-0 px-3 md:px-6 pt-4 md:pt-6 pb-4 gap-3 md:gap-4 overflow-y-auto'>
-      {/* Calendar section */}
-      <div className='flex-1 flex flex-col lg:flex-row min-h-0 gap-4 lg:gap-6'>
+        {/* Welcome section */}
+        <div className='flex items-start justify-between gap-4'>
+          <div className='space-y-1'>
+            <div className='text-xl md:text-[26px] leading-tight font-semibold text-[#202020]'>
+              {getGreeting()}, {userName}
+            </div>
+          </div>
+        </div>
+
+        {/* Calendar section */}
+        <div className='flex-1 flex flex-col lg:flex-row min-h-0 gap-4 lg:gap-6'>
         {/* Left section - Calendar grid + Activity/Files */}
         <div className='flex-1 flex flex-col min-w-0 gap-4'>
           {/* Calendar scroll area */}
