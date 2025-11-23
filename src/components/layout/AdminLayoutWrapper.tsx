@@ -82,14 +82,14 @@ export function AdminLayoutWrapper({ children }: AdminLayoutWrapperProps) {
   };
 
   // If team view is selected, render the team dashboard layout
-  // but keep the admin children to avoid routing conflicts
+  // Pass children through for AI and Settings routes
   if (viewMode === "team") {
     return (
       <>
         <ViewToggle viewMode={viewMode} onToggle={handleToggle} />
         <TeamDashboardLayout>
-          {/* Render team dashboard content - it has its own internal routing */}
-          <div className="hidden">{children}</div>
+          {/* Children are rendered for AI and Settings routes by TeamDashboardCore */}
+          {children}
         </TeamDashboardLayout>
       </>
     );
