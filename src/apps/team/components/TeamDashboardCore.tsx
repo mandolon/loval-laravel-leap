@@ -14,6 +14,7 @@ import { GitHubActivityFeed } from './GitHubActivityFeed';
 import { RequestsPageBody } from './requests/RequestsPageBody';
 import { NewRequestModal } from './requests/NewRequestModal';
 import { TeamHomeHeroCard } from './TeamHomeHeroCard';
+import { CalendarDashboardContent } from './calendar/CalendarDashboardContent';
 import {
   Home,
   FolderKanban,
@@ -2162,7 +2163,7 @@ const HomeView = memo(function HomeView() {
               </div>
             )}
             {activeCategory === "Overview" && (
-              <div className="text-sm text-slate-600">Home content placeholder</div>
+              <CalendarDashboardContent />
             )}
             {activeCategory === "To Do" && (
               <div className="text-sm text-slate-600">To Do content placeholder</div>
