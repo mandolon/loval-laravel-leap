@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { NewAppLayout } from "@/components/layout/NewAppLayout";
+import { AdminLayoutWrapper } from "@/components/layout/AdminLayoutWrapper";
 import HomePage from "@/pages/HomePage";
 import ProjectsPage from "@/pages/Index";
 import TasksPage from "@/pages/TasksPage";
@@ -21,9 +21,9 @@ export default function AdminRouter() {
         path="/admin/workspace/:workspaceId"
         element={
           <ProtectedRoute>
-            <NewAppLayout>
+            <AdminLayoutWrapper>
               <HomePage />
-            </NewAppLayout>
+            </AdminLayoutWrapper>
           </ProtectedRoute>
         }
       />
@@ -31,9 +31,9 @@ export default function AdminRouter() {
         path="/admin/workspace/:workspaceId/projects"
         element={
           <ProtectedRoute>
-            <NewAppLayout>
+            <AdminLayoutWrapper>
               <ProjectsPage />
-            </NewAppLayout>
+            </AdminLayoutWrapper>
           </ProtectedRoute>
         }
       />
@@ -41,9 +41,9 @@ export default function AdminRouter() {
         path="/admin/workspace/:workspaceId/tasks"
         element={
           <ProtectedRoute>
-            <NewAppLayout>
+            <AdminLayoutWrapper>
               <TasksPage />
-            </NewAppLayout>
+            </AdminLayoutWrapper>
           </ProtectedRoute>
         }
       />
@@ -51,9 +51,9 @@ export default function AdminRouter() {
         path="/admin/workspace/:workspaceId/team"
         element={
           <ProtectedRoute>
-            <NewAppLayout>
+            <AdminLayoutWrapper>
               <TeamPage />
-            </NewAppLayout>
+            </AdminLayoutWrapper>
           </ProtectedRoute>
         }
       />
@@ -61,9 +61,9 @@ export default function AdminRouter() {
         path="/admin/workspace/:workspaceId/clients"
         element={
           <ProtectedRoute>
-            <NewAppLayout>
+            <AdminLayoutWrapper>
               <ClientsPage />
-            </NewAppLayout>
+            </AdminLayoutWrapper>
           </ProtectedRoute>
         }
       />
@@ -71,9 +71,9 @@ export default function AdminRouter() {
         path="/admin/workspace/:workspaceId/project/:id"
         element={
           <ProtectedRoute>
-            <NewAppLayout>
+            <AdminLayoutWrapper>
               <ProjectDetails />
-            </NewAppLayout>
+            </AdminLayoutWrapper>
           </ProtectedRoute>
         }
       />
@@ -81,9 +81,9 @@ export default function AdminRouter() {
         path="/admin/workspace/:workspaceId/ai"
         element={
           <ProtectedRoute>
-            <NewAppLayout>
+            <AdminLayoutWrapper>
               <AIChatPage />
-            </NewAppLayout>
+            </AdminLayoutWrapper>
           </ProtectedRoute>
         }
       />
@@ -91,9 +91,9 @@ export default function AdminRouter() {
         path="/admin/detail-library"
         element={
           <ProtectedRoute>
-            <NewAppLayout>
+            <AdminLayoutWrapper>
               <DetailLibraryPage />
-            </NewAppLayout>
+            </AdminLayoutWrapper>
           </ProtectedRoute>
         }
       />
@@ -109,9 +109,9 @@ export default function AdminRouter() {
         path="/admin/workspace/:workspaceId/trash"
         element={
           <ProtectedRoute>
-            <NewAppLayout>
+            <AdminLayoutWrapper>
               <TrashPage />
-            </NewAppLayout>
+            </AdminLayoutWrapper>
           </ProtectedRoute>
         }
       />
@@ -119,9 +119,9 @@ export default function AdminRouter() {
         path="/admin/workspace/:workspaceId/building-codes"
         element={
           <ProtectedRoute>
-            <NewAppLayout>
+            <AdminLayoutWrapper>
               <BuildingCodesPage />
-            </NewAppLayout>
+            </AdminLayoutWrapper>
           </ProtectedRoute>
         }
       />
@@ -129,9 +129,9 @@ export default function AdminRouter() {
         path="/admin/workspace/:workspaceId/knowledge-base"
         element={
           <ProtectedRoute>
-            <NewAppLayout>
+            <AdminLayoutWrapper>
               <KnowledgeBasePage />
-            </NewAppLayout>
+            </AdminLayoutWrapper>
           </ProtectedRoute>
         }
       />
@@ -139,9 +139,9 @@ export default function AdminRouter() {
         path="/admin/workspace/:workspaceId/notifications"
         element={
           <ProtectedRoute>
-            <NewAppLayout>
+            <AdminLayoutWrapper>
               <NotificationsPage />
-            </NewAppLayout>
+            </AdminLayoutWrapper>
           </ProtectedRoute>
         }
       />
