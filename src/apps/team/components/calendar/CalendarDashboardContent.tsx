@@ -190,7 +190,9 @@ export const CalendarDashboardContent: React.FC = () => {
   // Visible month label
   const getVisibleMonth = () => {
     const day = calendarDays[visibleIndex] || calendarDays[0];
-    return day ? day.monthShort.toUpperCase() : '';
+    if (!day) return '';
+    const yearShort = String(day.year).slice(-2);
+    return `${day.monthShort.toUpperCase()} ${yearShort}`;
   };
 
   // Dynamic greeting based on time of day
@@ -204,7 +206,7 @@ export const CalendarDashboardContent: React.FC = () => {
 
   const selectedDay = calendarDays[selectedIndex] || calendarDays[0];
   const eventsForDay = EVENTS[selectedIndex] || [];
-  const userName = user?.first_name || 'there';
+  const userName = user?.name?.split(' ')[0] || 'there';
 
   return (
     <div className='h-full flex flex-col overflow-hidden'>
