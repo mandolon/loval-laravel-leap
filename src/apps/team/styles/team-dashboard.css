@@ -3,15 +3,65 @@
   /* Base container */
   width: 100%;
   min-height: 100vh;
-  
+
   /* CSS Variables for theming (matching source design) */
   --team-primary: hsl(222 47% 11%);
   --team-primary-hover: hsl(222 47% 15%);
   --team-accent: hsl(213 94% 68%);
   --team-background: hsl(220 35% 97%);
   --team-violet: hsl(259 94% 68%);
-  
+
   /* Ensure isolation from main app styles */
   isolation: isolate;
+}
+
+/* Calendar Dashboard Utilities */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d4d4d8 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #d4d4d8;
+  border-radius: 9999px;
+}
+
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Touch-friendly scrolling */
+* {
+  -webkit-overflow-scrolling: touch;
+}
+
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
+/* Smooth momentum scrolling on iOS */
+.overflow-y-auto,
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Improve tap highlight */
+* {
+  -webkit-tap-highlight-color: rgba(76, 117, 209, 0.1);
 }
 
