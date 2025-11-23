@@ -669,7 +669,9 @@ export enum NotificationEventType {
   WHITEBOARD_VERSION_CREATED = 'whiteboard_version_created',
   MODEL_ADDED = 'model_added',
   MODEL_VERSION_NOTES_ADDED = 'model_version_notes_added',
+  FILE_ADDED = 'file_added',
   TASK_ASSIGNED = 'task_assigned',
+  REQUEST_CREATED = 'request_created',
 }
 
 // Base notification metadata (common fields)
@@ -728,7 +730,18 @@ export interface ModelVersionNotesAddedMetadata extends BaseNotificationMetadata
   notesPreview?: string; // Optional: first 100 chars of notes
 }
 
-// 6. Task assigned to user
+// 6. File added to project (replaces MODEL_ADDED - now supports all file types)
+export interface FileAddedMetadata extends BaseNotificationMetadata {
+  projectId: string;
+  projectName: string;
+  workspaceId: string;
+  workspaceName: string;
+  fileId: string;
+  fileName: string;
+  fileCount?: number; // Number of files in batch upload (1 for single file)
+}
+
+// 7. Task assigned to user
 export interface TaskAssignedMetadata extends BaseNotificationMetadata {
   projectId: string;
   projectName: string;
@@ -740,6 +753,18 @@ export interface TaskAssignedMetadata extends BaseNotificationMetadata {
   assignedToName: string;
 }
 
+// 8. Request created and assigned to user
+export interface RequestCreatedMetadata extends BaseNotificationMetadata {
+  projectId: string;
+  projectName: string;
+  workspaceId: string;
+  workspaceName: string;
+  requestId: string;
+  requestTitle: string;
+  assignedToId: string;
+  assignedToName: string;
+}
+
 // Union type for all notification metadata types
 export type NotificationMetadata =
   | WorkspaceChatMessageMetadata
@@ -747,7 +772,9 @@ export type NotificationMetadata =
   | WhiteboardVersionCreatedMetadata
   | ModelAddedMetadata
   | ModelVersionNotesAddedMetadata
-  | TaskAssignedMetadata;
+  | FileAddedMetadata
+  | TaskAssignedMetadata
+  | RequestCreatedMetadata;
 
 // ============= USER PREFERENCES =============
 
