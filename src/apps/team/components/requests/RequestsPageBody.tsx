@@ -337,9 +337,9 @@ export function RequestsPageBody() {
           </div>
         ) : filteredRequests.length === 0 ? (
           <div className="px-8 py-16 text-center text-neutral-600">
-            <div className="mb-3 text-xl font-medium text-slate-900">Welcome to requests!</div>
+            <div className="mb-3 text-xl font-medium text-slate-900">Welcome to Requests</div>
             <p className="mx-auto max-w-md text-lg">
-              Requests are a simple way for your team to ask for what they need—plan markups, measurements, clarifications, invoices, or other project details. Use a request when someone needs a clear response, and use tasks for longer work that needs to be tracked.
+              Requests give your team a quick way to ask for what they need or clear bottlenecks- like clarifications, invoices, or other project details. Use a request when you need simple, clear information or files, and use tasks for longer work that needs to be tracked.
             </p>
           </div>
         ) : (
