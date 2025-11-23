@@ -13,6 +13,7 @@ import { DESIGN_TOKENS as T } from "@/lib/design-tokens";
 import { HomeView } from "@/apps/team/components/TeamDashboardCore";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import "@/apps/team/styles/team-dashboard.css";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -22,8 +23,13 @@ const HomePage = () => {
 
   // View mode state - defaults to team view (priority to team dashboard)
   const [viewMode, setViewMode] = useState<"admin" | "team">(() => {
-    const saved = localStorage.getItem("adminDashboardViewMode");
-    return (saved === "admin" || saved === "team") ? saved : "team";
+    try {
+      const saved = localStorage.getItem("adminDashboardViewMode");
+      return (saved === "admin" || saved === "team") ? saved : "team";
+    } catch (error) {
+      console.warn("Failed to read view mode from localStorage:", error);
+      return "team"; // Default to team view on error
+    }
   });
 
   const [stats, setStats] = useState({
@@ -43,14 +49,20 @@ const HomePage = () => {
 
   // Persist view mode preference
   useEffect(() => {
-    localStorage.setItem("adminDashboardViewMode", viewMode);
+    try {
+      localStorage.setItem("adminDashboardViewMode", viewMode);
+    } catch (error) {
+      console.warn("Failed to save view mode to localStorage:", error);
+      // Continue gracefully - the app will still work without persistence
+    }
   }, [viewMode]);
 
+  // Only load stats when in admin view mode to optimize performance
   useEffect(() => {
-    if (workspaceId) {
+    if (workspaceId && viewMode === "admin") {
       loadStats();
     }
-  }, [workspaceId]);
+  }, [workspaceId, viewMode]);
 
   // Show no workspace page if there are no workspaces (after hooks)
   if (!loading && workspaces.length === 0) {
@@ -222,8 +234,8 @@ const HomePage = () => {
 
       {/* Content */}
       {viewMode === "team" ? (
-        // Team Dashboard View
-        <div className="flex-1 overflow-hidden">
+        // Team Dashboard View - wrapped in team-app for proper CSS scoping
+        <div className="flex-1 overflow-hidden team-app">
           <HomeView />
         </div>
       ) : (
