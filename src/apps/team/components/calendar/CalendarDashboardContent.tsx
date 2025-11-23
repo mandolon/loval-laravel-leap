@@ -1,17 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { CalendarDay } from '../../types/calendar';
+import { CalendarDay } from '../../types';
 import {
   generateCalendarDays,
   getCurrentDate,
   getCurrentDateShort,
   getInitialCalendar
-} from '../../utils/calendarHelpers';
+} from '../../utils';
 import {
   EVENTS,
   UPCOMING_EVENTS,
   RECENT_FILES,
   ACTIVITY_ITEMS
-} from '../../constants/calendarConstants';
+} from '../../constants';
 import { EventCard } from './EventCard';
 import { UpcomingEventCard } from './UpcomingEventCard';
 import { ActivityItem } from './ActivityItem';
@@ -195,7 +195,8 @@ export const CalendarDashboardContent: React.FC = () => {
   const eventsForDay = EVENTS[selectedIndex] || [];
 
   return (
-    <div className='flex-1 flex flex-col min-h-0 gap-4'>
+    <div className='h-full flex flex-col overflow-hidden'>
+      <div className='flex-1 flex flex-col min-h-0 px-3 md:px-6 pt-4 md:pt-6 pb-4 gap-3 md:gap-4 overflow-y-auto'>
       {/* Calendar section */}
       <div className='flex-1 flex flex-col lg:flex-row min-h-0 gap-4 lg:gap-6'>
         {/* Left section - Calendar grid + Activity/Files */}
@@ -436,6 +437,7 @@ export const CalendarDashboardContent: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

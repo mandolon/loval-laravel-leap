@@ -12,7 +12,7 @@ import { ProjectInfoContent } from './ProjectInfoContent';
 import { ProjectAIContextView } from './ProjectAIContextView';
 import { RequestsPageBody } from './requests/RequestsPageBody';
 import { NewRequestModal } from './requests/NewRequestModal';
-import { CalendarDashboardContent } from './calendar/CalendarDashboardContent';
+import { CalendarDashboardContent } from './calendar';
 import {
   Home,
   FolderKanban,
@@ -2082,13 +2082,7 @@ const getRequestMessage = (count: number): string => {
 };
 
 const HomeView = memo(function HomeView() {
-  return (
-    <div className="h-full overflow-hidden flex flex-col">
-      <div className="flex-1 flex min-h-0 px-6 pt-6 pb-4 gap-6">
-        <CalendarDashboardContent />
-      </div>
-    </div>
-  );
+  return <CalendarDashboardContent />;
 });
 
 // ----------------------------------
