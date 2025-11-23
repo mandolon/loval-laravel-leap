@@ -10,10 +10,8 @@ import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useRoleAwareNavigation } from "@/hooks/useRoleAwareNavigation";
 import { ProjectInfoContent } from './ProjectInfoContent';
 import { ProjectAIContextView } from './ProjectAIContextView';
-import { GitHubActivityFeed } from './GitHubActivityFeed';
 import { RequestsPageBody } from './requests/RequestsPageBody';
 import { NewRequestModal } from './requests/NewRequestModal';
-import { TeamHomeHeroCard } from './TeamHomeHeroCard';
 import { CalendarDashboardContent } from './calendar/CalendarDashboardContent';
 import {
   Home,
@@ -2084,92 +2082,10 @@ const getRequestMessage = (count: number): string => {
 };
 
 const HomeView = memo(function HomeView() {
-  const categories = ["Overview", "Activity", "To Do"] as const;
-  type Category = (typeof categories)[number];
-  
-  const { user } = useUser();
-
-  const [activeCategory, setActiveCategory] = useState<Category>('Overview');
-
-  const { currentWorkspace } = useWorkspaces();
-  const { data: tasks = [] } = useWorkspaceTasks(currentWorkspace?.id || '');
-
   return (
     <div className="h-full overflow-hidden flex flex-col">
       <div className="flex-1 flex min-h-0 px-6 pt-6 pb-4 gap-6">
-        <div className="flex-1 flex flex-col min-h-0">
-          {/* Hero with pill tabs */}
-          <TeamHomeHeroCard userName={user?.name || 'there'}>
-            <div className="mt-7 flex items-center gap-2 overflow-x-auto text-[13px]">
-              {categories.map((cat) => {
-                const active = cat === activeCategory;
-                return (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => setActiveCategory(cat)}
-                    className={`inline-flex items-center rounded-full border px-3 h-7 whitespace-nowrap ${
-                      active
-                        ? "border-slate-900 bg-slate-900 text-white"
-                        : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                );
-              })}
-            </div>
-          </TeamHomeHeroCard>
-
-          {/* Tab content */}
-          <div className="mt-4 flex-1 min-h-0 overflow-y-auto">
-            {activeCategory === "Activity" && (
-              <div className="max-w-3xl border border-slate-200 rounded-lg overflow-hidden bg-white">
-                <div className="sticky top-0 bg-white border-b border-slate-200 p-4 z-10">
-                  <h3 className="text-lg font-semibold text-slate-900 mb-1">Rehome Development Activity</h3>
-                  <p className="text-sm text-slate-500">Recent updates to the app and list of new features.</p>
-                </div>
-                <div className="max-h-[700px] overflow-y-scroll p-4">
-                  <GitHubActivityFeed 
-                    hideKeywords={[
-                      'last_page_visited',
-                      'tracking',
-                      'monitoring',
-                      'activity tracker',
-                      'last active',
-                      'last page',
-                      'user activity',
-                      'activity tracking',
-                      'page visited',
-                      'navigation tracking',
-                      'sign out',
-                      'sign-out',
-                      'logout',
-                      'redirect loop',
-                      '403',
-                      'auth bug',
-                      'github.com/mandolon/app.rehome',
-                      'mandolon/app.rehome',
-                      'app.rehome',
-                      'github.com/mandolon/loval-laravel-leap',
-                      'mandolon/loval-laravel-leap',
-                      'loval-laravel-leap',
-                      'excalidraw',
-                      'lovable',
-                    ]}
-                    hideAuthors={[]}
-                  />
-                </div>
-              </div>
-            )}
-            {activeCategory === "Overview" && (
-              <CalendarDashboardContent />
-            )}
-            {activeCategory === "To Do" && (
-              <div className="text-sm text-slate-600">To Do content placeholder</div>
-            )}
-          </div>
-        </div>
+        <CalendarDashboardContent />
       </div>
     </div>
   );
