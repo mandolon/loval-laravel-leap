@@ -5,17 +5,27 @@ import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { useRoleAwareNavigation } from "@/hooks/useRoleAwareNavigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FolderKanban, CheckSquare, Users, TrendingUp, ArrowRight } from "lucide-react";
+import { FolderKanban, CheckSquare, Users, TrendingUp, ArrowRight, LayoutDashboard } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageSubhead } from "@/components/layout/PageSubhead";
 import NoWorkspacePage from "./NoWorkspacePage";
 import { DESIGN_TOKENS as T } from "@/lib/design-tokens";
+import { HomeView } from "@/apps/team/components/TeamDashboardCore";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 const HomePage = () => {
   const navigate = useNavigate();
   const { navigateToWorkspace, role } = useRoleAwareNavigation();
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const { workspaces, currentWorkspace, currentWorkspaceId, loading } = useWorkspaces();
+
+  // View mode state - defaults to team view (priority to team dashboard)
+  const [viewMode, setViewMode] = useState<"admin" | "team">(() => {
+    const saved = localStorage.getItem("adminDashboardViewMode");
+    return (saved === "admin" || saved === "team") ? saved : "team";
+  });
+
   const [stats, setStats] = useState({
     totalProjects: 0,
     activeProjects: 0,
@@ -30,6 +40,11 @@ const HomePage = () => {
       navigate(`/${role}/workspace/${currentWorkspaceId}`, { replace: true });
     }
   }, [workspaceId, currentWorkspaceId, loading, navigate, role]);
+
+  // Persist view mode preference
+  useEffect(() => {
+    localStorage.setItem("adminDashboardViewMode", viewMode);
+  }, [viewMode]);
 
   useEffect(() => {
     if (workspaceId) {
@@ -180,92 +195,123 @@ const HomePage = () => {
       {/* Header */}
       <div className="h-9 px-3 border-b border-slate-200 dark:border-[#1d2230] flex items-center justify-between bg-white dark:bg-[#0E1118]">
         <span className="text-slate-700 dark:text-neutral-200 font-medium">Dashboard</span>
+
+        {/* View Toggle */}
+        <div className="flex items-center gap-2">
+          <Label
+            htmlFor="view-mode-toggle"
+            className="text-[11px] text-slate-600 dark:text-neutral-400 cursor-pointer"
+          >
+            Admin View
+          </Label>
+          <Switch
+            id="view-mode-toggle"
+            checked={viewMode === "team"}
+            onCheckedChange={(checked) => setViewMode(checked ? "team" : "admin")}
+            className="scale-75"
+          />
+          <Label
+            htmlFor="view-mode-toggle"
+            className="text-[11px] text-slate-600 dark:text-neutral-400 cursor-pointer font-medium"
+          >
+            Team View
+          </Label>
+          <LayoutDashboard className="h-3.5 w-3.5 text-slate-500 dark:text-neutral-400 ml-1" />
+        </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-4 space-y-4">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {statCards.map((stat) => (
-            <Card key={stat.title}>
-              <CardHeader className="flex flex-row items-center justify-between pb-3">
-                <CardTitle className="text-base font-medium text-muted-foreground">
-                  {stat.title}
-                </CardTitle>
-                <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                  <stat.icon className={`h-4 w-4 ${stat.color}`} />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-lg font-bold">
-                  {stat.value}{stat.suffix || ''}
-                  {stat.total !== null && (
-                    <span className="text-base text-muted-foreground ml-1">
-                      / {stat.total}
-                    </span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+      {viewMode === "team" ? (
+        // Team Dashboard View
+        <div className="flex-1 overflow-hidden">
+          <HomeView />
         </div>
-
-        {/* Quick Actions */}
-        <div>
-          <h2 className="text-lg font-semibold mb-3">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {quickActions.map((action) => (
-              <Card 
-                key={action.title} 
-                className="hover:shadow-lg transition-all duration-300 cursor-pointer group"
-                onClick={action.action}
-              >
-                <CardHeader>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="p-3 rounded-lg bg-primary/10">
-                      <action.icon className="h-6 w-6 text-primary" />
-                    </div>
-                    <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+      ) : (
+        // Admin Dashboard View
+        <div className="flex-1 overflow-auto p-4 space-y-4">
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {statCards.map((stat) => (
+              <Card key={stat.title}>
+                <CardHeader className="flex flex-row items-center justify-between pb-3">
+                  <CardTitle className="text-base font-medium text-muted-foreground">
+                    {stat.title}
+                  </CardTitle>
+                  <div className={`p-2 rounded-lg ${stat.bgColor}`}>
+                    <stat.icon className={`h-4 w-4 ${stat.color}`} />
                   </div>
-                  <CardTitle className="text-lg">{action.title}</CardTitle>
-                  <CardDescription>{action.description}</CardDescription>
                 </CardHeader>
+                <CardContent>
+                  <div className="text-lg font-bold">
+                    {stat.value}{stat.suffix || ''}
+                    {stat.total !== null && (
+                      <span className="text-base text-muted-foreground ml-1">
+                        / {stat.total}
+                      </span>
+                    )}
+                  </div>
+                </CardContent>
               </Card>
             ))}
           </div>
-        </div>
 
-        {/* Get Started */}
-        <div>
-          <h2 className="text-lg font-semibold mb-3">Get Started</h2>
-          <Card>
-            <CardContent className="pt-4">
-              {currentWorkspace ? (
-                <div className="space-y-4">
-                  <p className="text-base text-muted-foreground">
-                    Start managing your construction projects efficiently in <strong>{currentWorkspace.name}</strong>. 
-                    View projects, track tasks, and collaborate with your team all in one place.
-                  </p>
-                  <div className="flex gap-3">
-                    <Button onClick={() => navigateToWorkspace("/projects")}>
-                      View Projects
-                    </Button>
-                    <Button variant="outline" onClick={() => navigateToWorkspace("/tasks")}>
-                      View Tasks
-                    </Button>
+          {/* Quick Actions */}
+          <div>
+            <h2 className="text-lg font-semibold mb-3">Quick Actions</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {quickActions.map((action) => (
+                <Card
+                  key={action.title}
+                  className="hover:shadow-lg transition-all duration-300 cursor-pointer group"
+                  onClick={action.action}
+                >
+                  <CardHeader>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="p-3 rounded-lg bg-primary/10">
+                        <action.icon className="h-6 w-6 text-primary" />
+                      </div>
+                      <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                    </div>
+                    <CardTitle className="text-lg">{action.title}</CardTitle>
+                    <CardDescription>{action.description}</CardDescription>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          {/* Get Started */}
+          <div>
+            <h2 className="text-lg font-semibold mb-3">Get Started</h2>
+            <Card>
+              <CardContent className="pt-4">
+                {currentWorkspace ? (
+                  <div className="space-y-4">
+                    <p className="text-base text-muted-foreground">
+                      Start managing your construction projects efficiently in <strong>{currentWorkspace.name}</strong>.
+                      View projects, track tasks, and collaborate with your team all in one place.
+                    </p>
+                    <div className="flex gap-3">
+                      <Button onClick={() => navigateToWorkspace("/projects")}>
+                        View Projects
+                      </Button>
+                      <Button variant="outline" onClick={() => navigateToWorkspace("/tasks")}>
+                        View Tasks
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <p className="text-base text-muted-foreground">
-                    Please select a workspace from the sidebar to start managing your projects.
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                ) : (
+                  <div className="space-y-4">
+                    <p className="text-base text-muted-foreground">
+                      Please select a workspace from the sidebar to start managing your projects.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
+      )}
       </div>
     </div>
   );
