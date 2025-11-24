@@ -22,14 +22,14 @@ export const FileItem: React.FC<FileItemProps> = ({ file }) => (
     {/* Mobile: stacked info, Desktop: columns */}
     <div className='flex md:flex md:items-center gap-2 md:gap-4 text-xs pl-11 md:pl-0 md:shrink-0'>
       {/* Project */}
-      <div className='flex-1 md:w-20 md:shrink-0'>
+      <div className='flex-1 md:w-32 md:shrink-0'>
         <div className='text-xs text-[#606060] truncate'>
           <span className='md:hidden font-medium'>Project: </span>{file.project}
         </div>
       </div>
 
       {/* Author */}
-      <div className='flex-1 md:w-24 md:shrink-0'>
+      <div className='flex-1 md:w-24 md:shrink-0 md:ml-4'>
         <div className='text-xs text-[#606060] truncate'>
           <span className='md:hidden font-medium'>By: </span>{file.author}
         </div>

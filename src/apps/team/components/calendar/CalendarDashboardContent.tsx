@@ -420,8 +420,8 @@ export const CalendarDashboardContent: React.FC = () => {
           {/* Activity + Recent files row */}
           <div className='flex-1 flex flex-col md:flex-row gap-3 md:gap-4 min-h-0'>
             {/* Recent files */}
-            <div className='flex-1 rounded-xl border border-neutral-200 bg-white/60 py-3 flex flex-col min-w-0 max-h-[400px] md:max-h-none'>
-              <div className='flex items-center justify-between mb-3 px-3 md:px-4'>
+            <div className='flex-1 rounded-xl border border-neutral-200 bg-white/60 flex flex-col min-w-0 max-h-[400px] md:max-h-none'>
+              <div className='flex items-center justify-between px-3 md:px-4 pt-3 md:pt-4 pb-3 border-b border-neutral-100'>
                 <h3 className='text-xs md:text-[13px] font-semibold text-[#202020]'>
                   Recent files
                 </h3>
@@ -434,12 +434,12 @@ export const CalendarDashboardContent: React.FC = () => {
                     File Name
                   </div>
                 </div>
-                <div className='w-20 shrink-0'>
+                <div className='w-32 shrink-0'>
                   <div className='text-[10px] uppercase tracking-wider text-[#808080] font-semibold'>
                     Project
                   </div>
                 </div>
-                <div className='w-24 shrink-0'>
+                <div className='w-24 shrink-0 ml-4'>
                   <div className='text-[10px] uppercase tracking-wider text-[#808080] font-semibold'>
                     Author
                   </div>
@@ -460,15 +460,15 @@ export const CalendarDashboardContent: React.FC = () => {
             </div>
 
             {/* Activity Feed */}
-            <div className='md:w-80 rounded-xl border border-neutral-200 bg-white/60 py-3 flex flex-col min-w-0 max-h-[400px] md:max-h-none'>
-              <div className='flex items-center justify-between mb-3 px-3 md:px-4'>
+            <div className='md:w-80 rounded-xl border border-neutral-200 bg-white/60 flex flex-col min-w-0 max-h-[400px] md:max-h-none'>
+              <div className='flex items-center justify-between px-3 md:px-4 pt-3 md:pt-4 pb-3 border-b border-neutral-100'>
                 <h3 className='text-xs md:text-[13px] font-semibold text-[#202020]'>
                   Activity Feed
                 </h3>
               </div>
 
               <div className='flex-1 overflow-y-auto scrollbar-hide'>
-                {ACTIVITY_ITEMS.map((item) => (
+                {ACTIVITY_ITEMS.map((item, index) => (
                   <ActivityItem
                     key={item.id}
                     icon={item.icon}
@@ -476,6 +476,9 @@ export const CalendarDashboardContent: React.FC = () => {
                     title={item.title}
                     subtitle={item.subtitle}
                     time={item.time}
+                    showBorder={index > 0}
+                    isFirst={index === 0}
+                    isLast={index === ACTIVITY_ITEMS.length - 1}
                   />
                 ))}
               </div>
@@ -487,7 +490,7 @@ export const CalendarDashboardContent: React.FC = () => {
         <div className='w-full lg:w-80 lg:shrink-0 flex flex-col lg:min-h-0 gap-3 md:gap-4'>
           {/* Active date events */}
           <div className='lg:h-1/3 min-h-[250px] lg:min-h-0 rounded-xl border border-neutral-200 bg-white/60 flex flex-col overflow-hidden'>
-            <div className='flex items-start justify-between gap-2 mb-3 px-3 md:px-4 pt-3 md:pt-4'>
+            <div className='flex items-start justify-between gap-2 px-3 md:px-4 pt-3 md:pt-4 pb-3 border-b border-neutral-100'>
               <div className='flex flex-col'>
                 <span className='text-xs md:text-[13px] font-semibold text-[#202020]'>
                   {selectedDay?.monthShort} {selectedDay?.day}, {selectedDay?.year}
@@ -516,7 +519,7 @@ export const CalendarDashboardContent: React.FC = () => {
 
           {/* Upcoming events */}
           <div className='flex-1 min-h-[300px] lg:min-h-0 rounded-xl border border-neutral-200 bg-white/60 flex flex-col overflow-hidden'>
-            <div className='flex items-center justify-between mb-4 px-3 md:px-4 pt-3 md:pt-4'>
+            <div className='flex items-center justify-between px-3 md:px-4 pt-3 md:pt-4 pb-3 border-b border-neutral-100'>
               <h3 className='text-xs md:text-[13px] font-semibold text-[#202020]'>
                 Upcoming
               </h3>
