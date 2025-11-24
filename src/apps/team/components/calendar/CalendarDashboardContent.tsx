@@ -16,6 +16,7 @@ import { EventCard } from './EventCard';
 import { UpcomingEventCard } from './UpcomingEventCard';
 import { ActivityItem } from './ActivityItem';
 import { FileItem } from './FileItem';
+import AddEventPopover from './AddEventPopover';
 import { useNotifications } from '@/lib/api/hooks/useNotifications';
 import { useUserRecentFiles } from '@/lib/api/hooks/useRecentFiles';
 import { ListChecks, FileText, FolderClosed, Users, Settings, Upload, Trash2, Edit, Plus, MessageSquare, Bell } from 'lucide-react';
@@ -729,50 +730,58 @@ export const CalendarDashboardContent: React.FC = () => {
           </div>
         </div>
 
-        {/* Right section - Active date + Upcoming events */}
-        <div className='w-full lg:w-80 lg:shrink-0 flex flex-col lg:min-h-0 gap-3 md:gap-4'>
-          {/* Active date events */}
-          <div className='lg:h-1/3 min-h-[250px] lg:min-h-0 rounded-xl border border-neutral-200 bg-white/60 flex flex-col overflow-hidden'>
-            <div className='flex items-start justify-between gap-2 px-3 md:px-4 pt-3 md:pt-4 pb-3 border-b border-neutral-100'>
-              <div className='flex flex-col'>
-                <span className='text-xs md:text-[13px] font-semibold text-[#202020]'>
-                  {selectedDay?.monthShort} {selectedDay?.day}, {selectedDay?.year}
-                </span>
+        {/* Right section - Combined events card */}
+        <div className='w-full lg:w-80 lg:shrink-0 flex flex-col lg:min-h-0'>
+          {/* Combined card with Active date events + Upcoming events */}
+          <div className='flex-1 rounded-xl border border-neutral-200 bg-white/60 flex flex-col overflow-hidden'>
+            {/* Active date events section - fixed height to show ~4 events */}
+            <div className='flex flex-col' style={{ maxHeight: '280px' }}>
+              <div className='flex items-start justify-between gap-2 px-3 md:px-4 pt-3 md:pt-4 pb-3 border-b border-neutral-100'>
+                <div className='flex flex-col'>
+                  <span className='text-xs md:text-[13px] font-semibold text-[#202020]'>
+                    {selectedDay?.monthShort} {selectedDay?.day}, {selectedDay?.year}
+                  </span>
+                </div>
+                <div className='text-right text-sm text-[#202020] tabular-nums'>
+                  {eventsForDay.length}
+                  <span className='ml-1 text-xs text-[#505050]'>
+                    {eventsForDay.length === 1 ? 'event' : 'events'}
+                  </span>
+                </div>
               </div>
-              <div className='text-right text-sm text-[#202020] tabular-nums'>
-                {eventsForDay.length}
-                <span className='ml-1 text-xs text-[#505050]'>
-                  {eventsForDay.length === 1 ? 'event' : 'events'}
-                </span>
-              </div>
+
+              {eventsForDay.length > 0 ? (
+                <div className='flex-1 overflow-y-auto scrollbar-hide'>
+                  {eventsForDay.map((event, index) => (
+                    <EventCard key={event.id} event={event} showBorder={index > 0} />
+                  ))}
+                </div>
+              ) : (
+                <div className='flex items-center justify-center py-8'>
+                  <p className='text-sm text-[#808080]'>No events scheduled</p>
+                </div>
+              )}
             </div>
 
-            {eventsForDay.length > 0 ? (
-              <div className='flex-1 overflow-y-auto scrollbar-hide'>
-                {eventsForDay.map((event, index) => (
-                  <EventCard key={event.id} event={event} showBorder={index > 0} />
-                ))}
-              </div>
-            ) : (
-              <div className='flex-1 flex items-center justify-center'>
-                <p className='text-sm text-[#808080]'>No events scheduled</p>
-              </div>
-            )}
-          </div>
+            {/* Divider between sections */}
+            <div className='border-t border-neutral-200' />
 
-          {/* Upcoming events */}
-          <div className='flex-1 min-h-[300px] lg:min-h-0 rounded-xl border border-neutral-200 bg-white/60 flex flex-col overflow-hidden'>
-            <div className='flex items-center justify-between px-3 md:px-4 pt-3 md:pt-4 pb-3 border-b border-neutral-100'>
-              <h3 className='text-xs md:text-[13px] font-semibold text-[#202020]'>
-                Upcoming
-              </h3>
-              <button className='inline-flex items-center gap-1 rounded-full border border-neutral-200 px-2.5 py-1 text-xs font-medium text-[#303030] hover:border-green-500/70 hover:bg-green-50/80 transition-colors'>
-                <span className='text-sm leading-none'>+</span>
-                <span>Add event</span>
-              </button>
-            </div>
+            {/* Upcoming events section - takes remaining space */}
+            <div className='flex-1 flex flex-col overflow-hidden min-h-0'>
+              <div className='flex items-center justify-between px-3 md:px-4 pt-3 pb-3 border-b border-neutral-100'>
+                <h3 className='text-xs md:text-[13px] font-semibold text-[#202020]'>
+                  Upcoming
+                </h3>
+                <AddEventPopover
+                  buttonClassName='inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-[#303030] hover:border-[#4c75d1]/70 hover:bg-[#4c75d1]/5 active:bg-[#4c75d1]/10 transition-colors touch-manipulation shadow-sm'
+                  onAddEvent={(event) => {
+                    console.log("New event added:", event);
+                    // TODO: Add event to database/state
+                  }}
+                />
+              </div>
 
-            <div className='flex-1 overflow-y-auto scrollbar-hide relative' ref={upcomingEventsScrollRef}>
+              <div className='flex-1 overflow-y-auto scrollbar-hide relative' ref={upcomingEventsScrollRef}>
               {/* Sticky header */}
               {stickyMonth && (
                 <div className='sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-neutral-200 mb-3 px-3 md:px-4 py-2'>
@@ -816,6 +825,7 @@ export const CalendarDashboardContent: React.FC = () => {
                   </div>
                 );
               })}
+              </div>
             </div>
           </div>
         </div>
