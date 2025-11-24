@@ -26,8 +26,18 @@ DECLARE
   old_assignees UUID[];
 BEGIN
   -- Handle both INSERT and UPDATE cases
-  old_assignees := COALESCE(OLD.assignees, ARRAY[]::UUID[]);
+  IF TG_OP = 'INSERT' THEN
+    old_assignees := ARRAY[]::UUID[];
+  ELSE
+    old_assignees := COALESCE(OLD.assignees, ARRAY[]::UUID[]);
+  END IF;
+  
   new_assignees := COALESCE(NEW.assignees, ARRAY[]::UUID[]);
+
+  -- Only process if there are new assignees
+  IF array_length(new_assignees, 1) IS NULL THEN
+    RETURN NEW;
+  END IF;
 
   -- Find newly added assignees (present in NEW but not in OLD)
   FOR assignee_id IN 
@@ -36,22 +46,33 @@ BEGIN
     SELECT unnest(old_assignees)
   LOOP
     -- Track this assignment (will be converted to notification after 4 minutes)
-    INSERT INTO pending_task_assignments (task_id, assignee_id, assigned_by, assigned_at)
-    VALUES (NEW.id, assignee_id, COALESCE(NEW.updated_by, NEW.created_by), NEW.updated_at)
-    ON CONFLICT (task_id, assignee_id) DO UPDATE
-    SET assigned_at = NEW.updated_at,
-        assigned_by = COALESCE(NEW.updated_by, NEW.created_by);
+    BEGIN
+      INSERT INTO pending_task_assignments (task_id, assignee_id, assigned_by, assigned_at)
+      VALUES (NEW.id, assignee_id, COALESCE(NEW.updated_by, NEW.created_by), NEW.updated_at)
+      ON CONFLICT (task_id, assignee_id) DO UPDATE
+      SET assigned_at = NEW.updated_at,
+          assigned_by = COALESCE(NEW.updated_by, NEW.created_by);
+    EXCEPTION WHEN OTHERS THEN
+      -- Log error but don't fail the task update
+      RAISE WARNING 'Failed to track task assignment: %', SQLERRM;
+    END;
   END LOOP;
 
-  -- Remove tracking for assignees who were removed
-  DELETE FROM pending_task_assignments
-  WHERE task_id = NEW.id
-    AND assignee_id = ANY(
-      SELECT unnest(old_assignees)
-      EXCEPT
-      SELECT unnest(new_assignees)
-    );
+  -- Remove tracking for assignees who were removed (only if we have old assignees)
+  IF array_length(old_assignees, 1) > 0 THEN
+    DELETE FROM pending_task_assignments
+    WHERE task_id = NEW.id
+      AND assignee_id = ANY(
+        SELECT unnest(old_assignees)
+        EXCEPT
+        SELECT unnest(new_assignees)
+      );
+  END IF;
 
+  RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+  -- Don't let notification tracking break task updates
+  RAISE WARNING 'Task assignment tracking failed: %', SQLERRM;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -60,7 +81,6 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE TRIGGER track_task_assignments_trigger
 AFTER INSERT OR UPDATE OF assignees ON public.tasks
 FOR EACH ROW
-WHEN (NEW.assignees IS NOT NULL AND array_length(NEW.assignees, 1) > 0)
 EXECUTE FUNCTION track_task_assignments();
 
 -- Function to create notifications for assignments that have lasted 4+ minutes
