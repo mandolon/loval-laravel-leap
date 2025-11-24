@@ -28,6 +28,7 @@ export const CalendarDashboardContent: React.FC = () => {
   const [calendarDays, setCalendarDays] = useState<CalendarDay[]>(INITIAL_CALENDAR.days);
   const [selectedIndex, setSelectedIndex] = useState(INITIAL_CALENDAR.selectedIndex);
   const [visibleIndex, setVisibleIndex] = useState(INITIAL_CALENDAR.selectedIndex);
+  const [userHasSelected, setUserHasSelected] = useState(false);
 
   const calendarScrollRef = useRef<HTMLDivElement>(null);
   const isProgrammaticScroll = useRef(false);
@@ -137,6 +138,7 @@ export const CalendarDashboardContent: React.FC = () => {
     if (todayIdx >= 0) {
       setSelectedIndex(todayIdx);
       setVisibleIndex(todayIdx);
+      setUserHasSelected(false);
 
       setTimeout(() => {
         if (calendarScrollRef.current) {
@@ -184,6 +186,7 @@ export const CalendarDashboardContent: React.FC = () => {
   // Handle calendar day click
   const handleDayClick = (index: number) => {
     setSelectedIndex(index);
+    setUserHasSelected(true);
     centerCardByIndex(index);
   };
 
@@ -267,7 +270,7 @@ export const CalendarDashboardContent: React.FC = () => {
               >
                 <div className='flex gap-2 pb-4 min-w-max'>
                   {calendarDays.map((day) => {
-                    const isSelected = day.index === selectedIndex;
+                    const isSelected = userHasSelected && day.index === selectedIndex;
                     const hasEvents = !!EVENTS[day.index];
                     const isToday = day.isToday;
 
