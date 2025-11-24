@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useUser } from '@/contexts/UserContext';
-import { CalendarDay } from '../../types';
+import { useWorkspaces } from '@/hooks/useWorkspaces';
+import { CalendarDay, RecentFileItem, ActivityItemType } from '../../types';
 import {
   generateCalendarDays,
   getCurrentDate,
@@ -10,18 +11,106 @@ import {
 import {
   EVENTS,
   UPCOMING_EVENTS,
-  RECENT_FILES,
-  ACTIVITY_ITEMS
 } from '../../constants';
 import { EventCard } from './EventCard';
 import { UpcomingEventCard } from './UpcomingEventCard';
 import { ActivityItem } from './ActivityItem';
 import { FileItem } from './FileItem';
+import { useWorkspaceActivityFeed } from '@/lib/api/hooks/useActivityFeed';
+import { useUserRecentFiles } from '@/lib/api/hooks/useRecentFiles';
+import { ListChecks, FileText, FolderClosed, Users, Settings, Upload, Trash2, Edit, Plus } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 
 const INITIAL_CALENDAR = getInitialCalendar();
 
+// Helper function to get file extension from filename
+const getFileExtension = (filename: string): string => {
+  const parts = filename.split('.');
+  if (parts.length > 1) {
+    const ext = parts[parts.length - 1].toUpperCase();
+    // Limit to 3 characters for display
+    return ext.substring(0, 3);
+  }
+  return 'FILE';
+};
+
+// Helper function to get color class for file extension
+const getFileColorClass = (mimetype: string | null, filename: string): string => {
+  if (mimetype) {
+    if (mimetype.includes('pdf')) return 'bg-rose-400 text-white';
+    if (mimetype.includes('image')) return 'bg-purple-400 text-white';
+    if (mimetype.includes('video')) return 'bg-pink-400 text-white';
+    if (mimetype.includes('spreadsheet') || mimetype.includes('excel')) return 'bg-emerald-400 text-white';
+    if (mimetype.includes('document') || mimetype.includes('word')) return 'bg-blue-400 text-white';
+    if (mimetype.includes('presentation') || mimetype.includes('powerpoint')) return 'bg-orange-400 text-white';
+  }
+
+  // Fallback based on extension
+  const ext = filename.split('.').pop()?.toLowerCase();
+  if (ext === 'pdf') return 'bg-rose-400 text-white';
+  if (ext === 'ifc' || ext === 'obj' || ext === 'fbx') return 'bg-sky-400 text-white';
+  if (ext === 'xlsx' || ext === 'xls' || ext === 'csv') return 'bg-emerald-400 text-white';
+  if (ext === 'docx' || ext === 'doc') return 'bg-blue-400 text-white';
+  if (ext === 'png' || ext === 'jpg' || ext === 'jpeg' || ext === 'gif') return 'bg-purple-400 text-white';
+
+  return 'bg-neutral-400 text-white';
+};
+
+// Helper function to map activity action to icon and color
+const getActivityIcon = (action: string, resourceType: string): { icon: React.ComponentType<{ className?: string }>, iconBg: string } => {
+  const actionLower = action.toLowerCase();
+
+  if (actionLower.includes('create') || actionLower.includes('add')) {
+    if (resourceType === 'file') return { icon: Upload, iconBg: 'bg-emerald-100' };
+    if (resourceType === 'task') return { icon: ListChecks, iconBg: 'bg-blue-100' };
+    return { icon: Plus, iconBg: 'bg-emerald-100' };
+  }
+
+  if (actionLower.includes('update') || actionLower.includes('edit') || actionLower.includes('modify')) {
+    return { icon: Edit, iconBg: 'bg-amber-100' };
+  }
+
+  if (actionLower.includes('delete') || actionLower.includes('remove')) {
+    return { icon: Trash2, iconBg: 'bg-rose-100' };
+  }
+
+  if (actionLower.includes('complete')) {
+    return { icon: ListChecks, iconBg: 'bg-emerald-100' };
+  }
+
+  // Default icons based on resource type
+  if (resourceType === 'file') return { icon: FileText, iconBg: 'bg-violet-100' };
+  if (resourceType === 'task') return { icon: ListChecks, iconBg: 'bg-blue-100' };
+  if (resourceType === 'project') return { icon: FolderClosed, iconBg: 'bg-sky-100' };
+  if (resourceType === 'user' || resourceType === 'member') return { icon: Users, iconBg: 'bg-indigo-100' };
+
+  return { icon: Settings, iconBg: 'bg-neutral-100' };
+};
+
+// Helper function to format activity title and subtitle
+const formatActivityText = (item: any): { title: string, subtitle: string } => {
+  const action = item.action;
+  const resourceType = item.resource_type;
+  const userName = item.user?.name || 'Someone';
+  const projectName = item.project?.name;
+
+  let title = action;
+  let subtitle = '';
+
+  if (item.change_summary) {
+    subtitle = item.change_summary;
+  } else if (projectName) {
+    subtitle = projectName;
+  } else {
+    subtitle = resourceType;
+  }
+
+  return { title, subtitle };
+};
+
 export const CalendarDashboardContent: React.FC = () => {
   const { user } = useUser();
+  const { currentWorkspace } = useWorkspaces();
   const [mdUp, setMdUp] = useState(true);
   const [currentYear, setCurrentYear] = useState(INITIAL_CALENDAR.year);
   const [currentMonth, setCurrentMonth] = useState(INITIAL_CALENDAR.month);
@@ -35,6 +124,47 @@ export const CalendarDashboardContent: React.FC = () => {
   const isProgrammaticScroll = useRef(false);
   const upcomingEventsScrollRef = useRef<HTMLDivElement>(null);
   const monthRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  // Fetch activity feed and recent files
+  const { data: activityData = [] } = useWorkspaceActivityFeed(currentWorkspace?.id || '', 10);
+  const { data: recentFilesData = [] } = useUserRecentFiles(user?.id || '', currentWorkspace?.id || '', 10);
+
+  // Transform activity data to match ActivityItem component props
+  const activityItems = useMemo<ActivityItemType[]>(() => {
+    return activityData.map((item) => {
+      const { icon, iconBg } = getActivityIcon(item.action, item.resource_type);
+      const { title, subtitle } = formatActivityText(item);
+      const time = formatDistanceToNow(new Date(item.created_at), { addSuffix: true });
+
+      return {
+        id: parseInt(item.id.replace(/-/g, '').substring(0, 8), 16), // Convert UUID to number for id
+        icon,
+        iconBg,
+        title,
+        subtitle,
+        time,
+      };
+    });
+  }, [activityData]);
+
+  // Transform recent files data to match RecentFileItem component props
+  const recentFiles = useMemo<RecentFileItem[]>(() => {
+    return recentFilesData.map((file) => {
+      const ext = getFileExtension(file.filename);
+      const colorClass = getFileColorClass(file.mimetype, file.filename);
+      const date = formatDistanceToNow(new Date(file.updated_at || file.created_at), { addSuffix: true });
+
+      return {
+        id: parseInt(file.id.replace(/-/g, '').substring(0, 8), 16), // Convert UUID to number for id
+        name: file.filename,
+        project: file.project?.name || 'Unknown Project',
+        author: file.uploader?.name || 'Unknown',
+        date,
+        ext,
+        colorClass,
+      };
+    });
+  }, [recentFilesData]);
 
   useEffect(() => {
     const checkSize = () => setMdUp(window.innerWidth >= 768);
@@ -453,9 +583,15 @@ export const CalendarDashboardContent: React.FC = () => {
 
               {/* Table Body */}
               <div className='flex-1 overflow-y-auto scrollbar-hide'>
-                {RECENT_FILES.map((file) => (
-                  <FileItem key={file.id} file={file} />
-                ))}
+                {recentFiles.length > 0 ? (
+                  recentFiles.map((file) => (
+                    <FileItem key={file.id} file={file} />
+                  ))
+                ) : (
+                  <div className='flex items-center justify-center py-8'>
+                    <p className='text-sm text-[#808080]'>No recent files</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -468,19 +604,25 @@ export const CalendarDashboardContent: React.FC = () => {
               </div>
 
               <div className='flex-1 overflow-y-auto scrollbar-hide'>
-                {ACTIVITY_ITEMS.map((item, index) => (
-                  <ActivityItem
-                    key={item.id}
-                    icon={item.icon}
-                    iconBg={item.iconBg}
-                    title={item.title}
-                    subtitle={item.subtitle}
-                    time={item.time}
-                    showBorder={index > 0}
-                    isFirst={index === 0}
-                    isLast={index === ACTIVITY_ITEMS.length - 1}
-                  />
-                ))}
+                {activityItems.length > 0 ? (
+                  activityItems.map((item, index) => (
+                    <ActivityItem
+                      key={item.id}
+                      icon={item.icon}
+                      iconBg={item.iconBg}
+                      title={item.title}
+                      subtitle={item.subtitle}
+                      time={item.time}
+                      showBorder={index > 0}
+                      isFirst={index === 0}
+                      isLast={index === activityItems.length - 1}
+                    />
+                  ))
+                ) : (
+                  <div className='flex items-center justify-center py-8'>
+                    <p className='text-sm text-[#808080]'>No recent activity</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
