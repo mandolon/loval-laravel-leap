@@ -30,6 +30,11 @@ export function useUserRecentFiles(userId: string, workspaceId: string, limit: n
   return useQuery({
     queryKey: [...recentFilesKeys.user(userId, workspaceId), limit],
     queryFn: async () => {
+      // Validate inputs
+      if (!userId || userId.trim() === '' || !workspaceId || workspaceId.trim() === '') {
+        return [];
+      }
+
       // First, get all project IDs in this workspace
       const { data: projects, error: projectsError } = await supabase
         .from('projects')
@@ -68,8 +73,11 @@ export function useUserRecentFiles(userId: string, workspaceId: string, limit: n
         .limit(limit);
 
       if (error) throw error;
-      return data as RecentFile[];
+      return (data || []) as RecentFile[];
     },
-    enabled: !!userId && !!workspaceId,
+    enabled: !!userId && userId.trim() !== '' && !!workspaceId && workspaceId.trim() !== '',
+    staleTime: 1000 * 60, // 1 minute
+    gcTime: 1000 * 60 * 5, // 5 minutes
+    retry: 2,
   });
 }

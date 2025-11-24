@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface ActivityLogItem {
@@ -12,39 +12,65 @@ export interface ActivityLogItem {
   project_id: string | null;
   created_at: string;
   user?: {
-    name: string;
-    email: string;
-  };
+    name: string | null;
+    email: string | null;
+  } | null;
   project?: {
-    name: string;
-  };
+    name: string | null;
+  } | null;
 }
 
 // Query keys
 export const activityFeedKeys = {
   all: ['activity-feed'] as const,
-  workspace: (workspaceId: string) => [...activityFeedKeys.all, workspaceId] as const,
+  workspace: (workspaceId: string, days: number) => [...activityFeedKeys.all, workspaceId, days] as const,
 };
 
-// Fetch recent activity for a workspace
-export function useWorkspaceActivityFeed(workspaceId: string, limit: number = 10) {
-  return useQuery({
-    queryKey: [...activityFeedKeys.workspace(workspaceId), limit],
-    queryFn: async () => {
-      const { data, error } = await supabase
+const PAGE_SIZE = 20;
+
+// Fetch recent activity for a workspace (last N days) with infinite scroll
+export function useWorkspaceActivityFeed(workspaceId: string, days: number = 14) {
+  return useInfiniteQuery({
+    queryKey: activityFeedKeys.workspace(workspaceId, days),
+    queryFn: async ({ pageParam = 0 }) => {
+      // Validate workspace ID
+      if (!workspaceId || workspaceId.trim() === '') {
+        return { data: [], hasMore: false };
+      }
+
+      // Calculate date threshold (14 days ago)
+      const dateThreshold = new Date();
+      dateThreshold.setDate(dateThreshold.getDate() - days);
+      const dateThresholdISO = dateThreshold.toISOString();
+
+      const from = pageParam * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
+      const { data, error, count } = await supabase
         .from('activity_log')
         .select(`
           *,
           user:users!activity_log_user_id_fkey(name, email),
           project:projects(name)
-        `)
+        `, { count: 'exact' })
         .eq('workspace_id', workspaceId)
+        .gte('created_at', dateThresholdISO)
         .order('created_at', { ascending: false })
-        .limit(limit);
+        .range(from, to);
 
       if (error) throw error;
-      return data as ActivityLogItem[];
+
+      const activities = (data || []) as ActivityLogItem[];
+      const hasMore = count ? (from + PAGE_SIZE) < count : false;
+
+      return { data: activities, hasMore };
     },
-    enabled: !!workspaceId,
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.hasMore ? allPages.length : undefined;
+    },
+    enabled: !!workspaceId && workspaceId.trim() !== '',
+    staleTime: 1000 * 60, // 1 minute
+    gcTime: 1000 * 60 * 5, // 5 minutes (formerly cacheTime)
+    retry: 2,
   });
 }
