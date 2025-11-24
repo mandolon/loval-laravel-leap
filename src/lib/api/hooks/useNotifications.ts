@@ -35,6 +35,15 @@ export const useNotifications = (userId: string) => {
   const query = useQuery({
     queryKey: notificationKeys.list(userId),
     queryFn: async () => {
+      // First, process any pending task notifications older than 4 minutes
+      try {
+        await supabase.rpc('process_pending_task_notifications');
+      } catch (err) {
+        console.warn('Failed to process pending task notifications:', err);
+        // Continue even if this fails - we'll still get existing notifications
+      }
+
+      // Then fetch all notifications
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
