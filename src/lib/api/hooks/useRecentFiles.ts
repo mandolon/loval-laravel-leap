@@ -6,11 +6,22 @@ export interface RecentFile {
   filename: string;
   mimetype: string | null;
   filesize: number | null;
+  storage_path: string;
   project_id: string;
   uploaded_by: string;
   created_at: string;
   updated_at: string | null;
   project?: {
+    name: string;
+    address: {
+      streetNumber?: string;
+      streetName?: string;
+      city?: string;
+      state?: string;
+      zipCode?: string;
+    };
+  };
+  folder?: {
     name: string;
   };
   uploader?: {
@@ -58,11 +69,13 @@ export function useUserRecentFiles(userId: string, workspaceId: string, limit: n
           filename,
           mimetype,
           filesize,
+          storage_path,
           project_id,
           uploaded_by,
           created_at,
           updated_at,
-          project:projects(name),
+          project:projects(name, address),
+          folder:folders(name),
           uploader:users!files_uploaded_by_fkey(name, email)
         `)
         .in('project_id', projectIds)

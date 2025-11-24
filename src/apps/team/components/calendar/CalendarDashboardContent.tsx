@@ -16,9 +16,9 @@ import { EventCard } from './EventCard';
 import { UpcomingEventCard } from './UpcomingEventCard';
 import { ActivityItem } from './ActivityItem';
 import { FileItem } from './FileItem';
-import { useWorkspaceActivityFeed } from '@/lib/api/hooks/useActivityFeed';
+import { useNotifications } from '@/lib/api/hooks/useNotifications';
 import { useUserRecentFiles } from '@/lib/api/hooks/useRecentFiles';
-import { ListChecks, FileText, FolderClosed, Users, Settings, Upload, Trash2, Edit, Plus } from 'lucide-react';
+import { ListChecks, FileText, FolderClosed, Users, Settings, Upload, Trash2, Edit, Plus, MessageSquare, Bell } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 const INITIAL_CALENDAR = getInitialCalendar();
@@ -125,18 +125,9 @@ export const CalendarDashboardContent: React.FC = () => {
   const isProgrammaticScroll = useRef(false);
   const upcomingEventsScrollRef = useRef<HTMLDivElement>(null);
   const monthRefs = useRef<Map<string, HTMLDivElement>>(new Map());
-  const activityLoadMoreRef = useRef<HTMLDivElement>(null);
 
-  // Fetch activity feed (14 days) and recent files
-  const {
-    data: activityData,
-    fetchNextPage: fetchNextActivityPage,
-    hasNextPage: hasNextActivityPage,
-    isFetchingNextPage: isFetchingNextActivity,
-    isLoading: isLoadingActivity,
-    isError: isActivityError,
-    error: activityError,
-  } = useWorkspaceActivityFeed(currentWorkspace?.id || '', 14);
+  // Fetch notifications (last 14 days) and recent files
+  const { data: allNotifications = [], isLoading: isLoadingActivity, isError: isActivityError } = useNotifications(user?.id || '');
 
   const { data: recentFilesData = [], isLoading: isLoadingFiles } = useUserRecentFiles(
     user?.id || '',
@@ -144,21 +135,54 @@ export const CalendarDashboardContent: React.FC = () => {
     10
   );
 
-  // Flatten paginated activity data
-  const allActivityItems = useMemo(() => {
-    return activityData?.pages.flatMap(page => page.data) || [];
-  }, [activityData]);
+  // Filter notifications to last 14 days
+  const recentNotifications = useMemo(() => {
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+    
+    return allNotifications.filter(notification => {
+      try {
+        const notificationDate = new Date(notification.createdAt);
+        return notificationDate >= fourteenDaysAgo;
+      } catch (e) {
+        return false;
+      }
+    });
+  }, [allNotifications]);
 
-  // Transform activity data to match ActivityItem component props with safe null checks
+  // Helper function to get notification icon based on type
+  const getNotificationIcon = (type: string): { icon: React.ComponentType<{ className?: string }>, iconBg: string } => {
+    const typeLower = type.toLowerCase();
+    
+    if (typeLower.includes('message') || typeLower.includes('chat')) {
+      return { icon: MessageSquare, iconBg: 'bg-blue-100' };
+    }
+    if (typeLower.includes('file') || typeLower.includes('upload')) {
+      return { icon: Upload, iconBg: 'bg-emerald-100' };
+    }
+    if (typeLower.includes('model')) {
+      return { icon: FolderClosed, iconBg: 'bg-purple-100' };
+    }
+    if (typeLower.includes('request')) {
+      return { icon: ListChecks, iconBg: 'bg-amber-100' };
+    }
+    if (typeLower.includes('task')) {
+      return { icon: ListChecks, iconBg: 'bg-blue-100' };
+    }
+    
+    // Default notification icon
+    return { icon: Bell, iconBg: 'bg-neutral-100' };
+  };
+
+  // Transform notifications to match ActivityItem component props
   const activityItems = useMemo<ActivityItemType[]>(() => {
-    return allActivityItems.map((item) => {
-      const { icon, iconBg } = getActivityIcon(item.action, item.resource_type);
-      const { title, subtitle } = formatActivityText(item);
+    return recentNotifications.map((notification) => {
+      const { icon, iconBg } = getNotificationIcon(notification.type);
 
       // Safe date parsing with fallback
       let time = 'recently';
       try {
-        const createdDate = new Date(item.created_at);
+        const createdDate = new Date(notification.createdAt);
         if (!isNaN(createdDate.getTime())) {
           time = formatDistanceToNow(createdDate, { addSuffix: true });
         }
@@ -167,15 +191,15 @@ export const CalendarDashboardContent: React.FC = () => {
       }
 
       return {
-        id: parseInt(item.id.replace(/-/g, '').substring(0, 15), 16), // Use more chars to reduce collision risk
+        id: parseInt(notification.id.replace(/-/g, '').substring(0, 15), 16),
         icon,
         iconBg,
-        title,
-        subtitle,
+        title: notification.title,
+        subtitle: notification.content || '',
         time,
       };
     });
-  }, [allActivityItems]);
+  }, [recentNotifications]);
 
   // Transform recent files data with safe null checks
   const recentFiles = useMemo<RecentFileItem[]>(() => {
@@ -194,39 +218,25 @@ export const CalendarDashboardContent: React.FC = () => {
         console.error('Error parsing file date:', e);
       }
 
+      // Format project address as "street number + street name"
+      const projectAddress = file.project?.address;
+      const streetAddress = projectAddress?.streetNumber && projectAddress?.streetName
+        ? `${projectAddress.streetNumber} ${projectAddress.streetName}`
+        : file.project?.name || 'Unknown Project';
+
       return {
         id: parseInt(file.id.replace(/-/g, '').substring(0, 15), 16), // Use more chars to reduce collision risk
+        fileId: file.id,
         name: file.filename || 'Unnamed file',
-        project: file.project?.name || 'Unknown Project',
-        author: file.uploader?.name || 'Unknown',
+        project: streetAddress,
+        folder: file.folder?.name || 'Root',
         date,
         ext,
         colorClass,
+        storagePath: file.storage_path,
       };
     });
   }, [recentFilesData]);
-
-  // Intersection observer for lazy loading activity feed
-  useEffect(() => {
-    if (!activityLoadMoreRef.current || !hasNextActivityPage || isFetchingNextActivity) {
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasNextActivityPage && !isFetchingNextActivity) {
-          fetchNextActivityPage();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    observer.observe(activityLoadMoreRef.current);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [hasNextActivityPage, isFetchingNextActivity, fetchNextActivityPage]);
 
   useEffect(() => {
     const checkSize = () => setMdUp(window.innerWidth >= 768);
@@ -620,7 +630,7 @@ export const CalendarDashboardContent: React.FC = () => {
               </div>
 
               {/* Table Header - Hidden on mobile */}
-              <div className='hidden md:flex items-center gap-4 px-3 md:px-4 pb-2 border-b border-neutral-200'>
+              <div className='hidden md:flex items-center gap-4 px-3 md:px-4 pt-2 pb-2 border-b border-neutral-200'>
                 <div className='flex-1 min-w-0'>
                   <div className='text-[10px] uppercase tracking-wider text-[#808080] font-semibold'>
                     File Name
@@ -628,12 +638,12 @@ export const CalendarDashboardContent: React.FC = () => {
                 </div>
                 <div className='w-32 shrink-0'>
                   <div className='text-[10px] uppercase tracking-wider text-[#808080] font-semibold'>
-                    Project
+                    Folder
                   </div>
                 </div>
-                <div className='w-24 shrink-0 ml-4'>
+                <div className='w-40 shrink-0'>
                   <div className='text-[10px] uppercase tracking-wider text-[#808080] font-semibold'>
-                    Author
+                    Project
                   </div>
                 </div>
                 <div className='w-20 shrink-0'>
@@ -703,23 +713,9 @@ export const CalendarDashboardContent: React.FC = () => {
                         time={item.time}
                         showBorder={index > 0}
                         isFirst={index === 0}
-                        isLast={index === activityItems.length - 1 && !hasNextActivityPage}
+                        isLast={index === activityItems.length - 1}
                       />
                     ))}
-
-                    {/* Lazy loading trigger */}
-                    {hasNextActivityPage && (
-                      <div ref={activityLoadMoreRef} className='py-2 px-3 md:px-4'>
-                        {isFetchingNextActivity ? (
-                          <div className='flex items-center justify-center gap-2'>
-                            <div className='w-3 h-3 border-2 border-[#4c75d1] border-t-transparent rounded-full animate-spin' />
-                            <span className='text-xs text-[#808080]'>Loading more...</span>
-                          </div>
-                        ) : (
-                          <div className='h-4' /> // Spacer for intersection observer
-                        )}
-                      </div>
-                    )}
                   </>
                 ) : (
                   <div className='flex items-center justify-center py-8'>

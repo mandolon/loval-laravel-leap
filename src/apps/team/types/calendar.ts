@@ -31,12 +31,14 @@ export interface UpcomingEventItem {
 
 export interface RecentFileItem {
   id: number;
+  fileId: string;
   name: string;
   project: string;
-  author: string;
+  folder: string;
   date: string;
   ext: string;
   colorClass: string;
+  storagePath: string;
 }
 
 export interface ActivityItemType {
