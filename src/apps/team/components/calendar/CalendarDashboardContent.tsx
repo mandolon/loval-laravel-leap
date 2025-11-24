@@ -231,7 +231,7 @@ export const CalendarDashboardContent: React.FC = () => {
                 <span>Today is</span>
                 <button
                   onClick={resetToToday}
-                  className='text-[#4c75d1] font-medium hover:text-[#202020] transition-colors cursor-pointer touch-manipulation truncate'
+                  className='text-[#4c75d1] font-medium hover:text-[#202020] transition-colors cursor-pointer touch-manipulation truncate uppercase'
                 >
                   <span className='inline md:hidden'>{getCurrentDateShort()}</span>
                   <span className='hidden md:inline'>{getCurrentDate()}</span>
