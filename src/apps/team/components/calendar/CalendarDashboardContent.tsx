@@ -59,6 +59,7 @@ const getFileColorClass = (mimetype: string | null, filename: string): string =>
 
 // Helper function to map activity action to icon and color
 const neutralIconBg = 'bg-neutral-100';
+const ACTIVE_EVENTS_HEIGHT = 'clamp(170px, 32vh, 220px)';
 
 const formatNotificationTitle = (notification: any): React.ReactNode => {
   const baseTitle = notification?.title || '';
@@ -780,8 +781,8 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
         <div className='w-full lg:w-80 lg:shrink-0 flex flex-col lg:min-h-0'>
           {/* Combined card with Active date events + Upcoming events */}
           <div className='flex-1 rounded-xl border border-neutral-200 bg-white/60 flex flex-col overflow-hidden'>
-            {/* Active date events section - fixed height to show ~4 events */}
-            <div className='flex flex-col' style={{ maxHeight: '280px' }}>
+            {/* Active date events section - fixed height to keep Upcoming stable; responsive via clamp */}
+            <div className='flex flex-col flex-shrink-0' style={{ height: ACTIVE_EVENTS_HEIGHT }}>
               <div className='flex items-start justify-between gap-2 px-3 md:px-4 pt-3 md:pt-4 pb-3 border-b border-neutral-100'>
                 <div className='flex flex-col'>
                   <span className='text-xs md:text-[13px] font-semibold text-[#202020]'>
@@ -797,7 +798,7 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
               </div>
 
               {eventsForDay.length > 0 ? (
-                <div className='flex-1 overflow-y-auto scrollbar-hide'>
+                <div className='flex-1 min-h-0 overflow-y-auto scrollbar-hide'>
                   {eventsForDay.map((event, index) => (
                     <EventCard key={event.id} event={event} showBorder={index > 0} />
                   ))}
