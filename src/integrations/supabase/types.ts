@@ -1749,6 +1749,52 @@ export type Database = {
           },
         ]
       }
+      pending_task_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string
+          assignee_id: string
+          id: string
+          task_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by: string
+          assignee_id: string
+          id?: string
+          task_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string
+          assignee_id?: string
+          id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_task_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_task_assignments_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_task_assignments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_chat_messages: {
         Row: {
           content: string
@@ -2829,6 +2875,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_confirmed_task_assignment_notifications: {
+        Args: never
+        Returns: undefined
+      }
       delete_user_sessions: {
         Args: { target_user_id: string }
         Returns: undefined
