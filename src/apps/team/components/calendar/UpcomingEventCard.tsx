@@ -12,12 +12,12 @@ export const UpcomingEventCard: React.FC<UpcomingEventCardProps> = ({ item, show
 
   return (
     <div
-      className={`flex items-stretch gap-2 px-3 md:px-4 py-3 md:py-2.5 hover:bg-neutral-50 active:bg-neutral-100 transition-colors touch-manipulation cursor-pointer ${
+      className={`flex items-stretch gap-1.5 px-3 md:px-4 py-3 md:py-2.5 hover:bg-neutral-50 active:bg-neutral-100 transition-colors touch-manipulation cursor-pointer ${
         showBorder ? 'border-t border-neutral-100' : ''
       }`}
     >
       {/* Date */}
-      <div className='flex flex-col items-end w-12 shrink-0'>
+      <div className='flex flex-col items-end w-8 shrink-0'>
         <span className='text-2xl leading-none font-semibold text-[#202020] tabular-nums'>
           {item.day}
         </span>
@@ -27,11 +27,20 @@ export const UpcomingEventCard: React.FC<UpcomingEventCardProps> = ({ item, show
       </div>
 
       {/* Color bar */}
-      <div className={`w-1 rounded-full ${barClass} shrink-0`} />
+      <div className={`w-1 rounded-full ${barClass} shrink-0 mx-1`} />
 
       {/* Event content */}
       <div className='flex-1'>
-        <div className='text-sm text-[#202020] font-medium leading-snug'>{item.title}</div>
+        <div className='text-sm text-[#202020] font-normal leading-snug'>
+          {item.title.includes(':') ? (
+            <>
+              <span className='font-medium'>{item.title.split(':')[0]}:</span>
+              <span> {item.title.split(':').slice(1).join(':')}</span>
+            </>
+          ) : (
+            item.title
+          )}
+        </div>
         <div className='text-xs text-[#505050] mt-1.5 font-medium tabular-nums'>{item.time}</div>
       </div>
     </div>

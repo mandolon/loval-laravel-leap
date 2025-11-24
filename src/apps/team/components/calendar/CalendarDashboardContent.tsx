@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useUser } from '@/contexts/UserContext';
 import { CalendarDay } from '../../types';
 import {
@@ -29,9 +29,12 @@ export const CalendarDashboardContent: React.FC = () => {
   const [selectedIndex, setSelectedIndex] = useState(INITIAL_CALENDAR.selectedIndex);
   const [visibleIndex, setVisibleIndex] = useState(INITIAL_CALENDAR.selectedIndex);
   const [userHasSelected, setUserHasSelected] = useState(false);
+  const [stickyMonth, setStickyMonth] = useState<string>('');
 
   const calendarScrollRef = useRef<HTMLDivElement>(null);
   const isProgrammaticScroll = useRef(false);
+  const upcomingEventsScrollRef = useRef<HTMLDivElement>(null);
+  const monthRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   useEffect(() => {
     const checkSize = () => setMdUp(window.innerWidth >= 768);
@@ -207,6 +210,86 @@ export const CalendarDashboardContent: React.FC = () => {
     return 'Good night';
   };
 
+  // Group upcoming events by month
+  const eventsByMonth = useMemo(() => {
+    const grouped = new Map<string, typeof UPCOMING_EVENTS>();
+    UPCOMING_EVENTS.forEach((event) => {
+      if (!grouped.has(event.month)) {
+        grouped.set(event.month, []);
+      }
+      grouped.get(event.month)!.push(event);
+    });
+    return Array.from(grouped.entries()).sort((a, b) => {
+      const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                     'July', 'August', 'September', 'October', 'November', 'December'];
+      return months.indexOf(a[0]) - months.indexOf(b[0]);
+    });
+  }, []);
+
+  // Set initial sticky month
+  useEffect(() => {
+    if (eventsByMonth.length > 0 && !stickyMonth) {
+      setStickyMonth(eventsByMonth[0][0]);
+    }
+  }, [eventsByMonth, stickyMonth]);
+
+  // Intersection observer for sticky month header
+  useEffect(() => {
+    const scrollContainer = upcomingEventsScrollRef.current;
+    if (!scrollContainer || monthRefs.current.size === 0) return;
+
+    const handleScroll = () => {
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const stickyHeaderHeight = 40; // Approximate height of sticky header
+      
+      // Find which month header is currently at or just below the sticky header position
+      let currentMonth = stickyMonth;
+      let minDistance = Infinity;
+      
+      monthRefs.current.forEach((ref, month) => {
+        if (ref) {
+          const rect = ref.getBoundingClientRect();
+          const distanceFromTop = rect.top - (containerRect.top + stickyHeaderHeight);
+          
+          // If the month header is at or above the sticky header position
+          if (distanceFromTop <= 0 && Math.abs(distanceFromTop) < minDistance) {
+            minDistance = Math.abs(distanceFromTop);
+            currentMonth = month;
+          }
+        }
+      });
+      
+      if (currentMonth && currentMonth !== stickyMonth) {
+        setStickyMonth(currentMonth);
+      }
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        handleScroll();
+      },
+      {
+        root: scrollContainer,
+        rootMargin: `-${60}px 0px 0px 0px`,
+        threshold: [0, 0.1, 0.5, 1],
+      }
+    );
+
+    monthRefs.current.forEach((ref) => {
+      if (ref) observer.observe(ref);
+    });
+
+    scrollContainer.addEventListener('scroll', handleScroll);
+    handleScroll(); // Initial check
+
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+      monthRefs.current.forEach((ref) => {
+        if (ref) observer.unobserve(ref);
+      });
+    };
+  }, [eventsByMonth, stickyMonth]);
+
   const selectedDay = calendarDays[selectedIndex] || calendarDays[0];
   const eventsForDay = EVENTS[selectedIndex] || [];
   const userName = user?.name?.split(' ')[0] || 'there';
@@ -336,28 +419,6 @@ export const CalendarDashboardContent: React.FC = () => {
 
           {/* Activity + Recent files row */}
           <div className='flex-1 flex flex-col md:flex-row gap-3 md:gap-4 min-h-0'>
-            {/* Activity Feed */}
-            <div className='md:w-80 rounded-xl border border-neutral-200 bg-white/60 py-3 flex flex-col min-w-0 max-h-[400px] md:max-h-none'>
-              <div className='flex items-center justify-between mb-3 px-3 md:px-4'>
-                <h3 className='text-xs md:text-[13px] font-semibold text-[#202020]'>
-                  Activity Feed
-                </h3>
-              </div>
-
-              <div className='flex-1 overflow-y-auto scrollbar-hide'>
-                {ACTIVITY_ITEMS.map((item) => (
-                  <ActivityItem
-                    key={item.id}
-                    icon={item.icon}
-                    iconBg={item.iconBg}
-                    title={item.title}
-                    subtitle={item.subtitle}
-                    time={item.time}
-                  />
-                ))}
-              </div>
-            </div>
-
             {/* Recent files */}
             <div className='flex-1 rounded-xl border border-neutral-200 bg-white/60 py-3 flex flex-col min-w-0 max-h-[400px] md:max-h-none'>
               <div className='flex items-center justify-between mb-3 px-3 md:px-4'>
@@ -394,6 +455,28 @@ export const CalendarDashboardContent: React.FC = () => {
               <div className='flex-1 overflow-y-auto scrollbar-hide'>
                 {RECENT_FILES.map((file) => (
                   <FileItem key={file.id} file={file} />
+                ))}
+              </div>
+            </div>
+
+            {/* Activity Feed */}
+            <div className='md:w-80 rounded-xl border border-neutral-200 bg-white/60 py-3 flex flex-col min-w-0 max-h-[400px] md:max-h-none'>
+              <div className='flex items-center justify-between mb-3 px-3 md:px-4'>
+                <h3 className='text-xs md:text-[13px] font-semibold text-[#202020]'>
+                  Activity Feed
+                </h3>
+              </div>
+
+              <div className='flex-1 overflow-y-auto scrollbar-hide'>
+                {ACTIVITY_ITEMS.map((item) => (
+                  <ActivityItem
+                    key={item.id}
+                    icon={item.icon}
+                    iconBg={item.iconBg}
+                    title={item.title}
+                    subtitle={item.subtitle}
+                    time={item.time}
+                  />
                 ))}
               </div>
             </div>
@@ -443,23 +526,50 @@ export const CalendarDashboardContent: React.FC = () => {
               </button>
             </div>
 
-            <div className='flex-1 overflow-y-auto scrollbar-hide'>
-              {UPCOMING_EVENTS.length > 0 && (
-                <>
-                  <div className='text-[10px] uppercase tracking-wider text-[#606060] font-semibold mb-3 px-3 md:px-4'>
-                    {UPCOMING_EVENTS[0].month}
+            <div className='flex-1 overflow-y-auto scrollbar-hide relative' ref={upcomingEventsScrollRef}>
+              {/* Sticky header */}
+              {stickyMonth && (
+                <div className='sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-neutral-200 mb-3 px-3 md:px-4 py-2'>
+                  <div className='text-[10px] uppercase tracking-wider text-[#606060] font-semibold'>
+                    {stickyMonth}
                   </div>
-                  <div className='pb-3 md:pb-4'>
-                    {UPCOMING_EVENTS.map((item, index) => (
-                      <UpcomingEventCard
-                        key={item.id}
-                        item={item}
-                        showBorder={index > 0}
-                      />
-                    ))}
-                  </div>
-                </>
+                </div>
               )}
+
+              {eventsByMonth.map(([month, events], monthIndex) => {
+                const isStickyMonth = month === stickyMonth;
+                return (
+                  <div key={month}>
+                    {/* Month header - hidden when it's the sticky month */}
+                    <div
+                      ref={(el) => {
+                        if (el) monthRefs.current.set(month, el);
+                      }}
+                      data-month={month}
+                      className={`px-3 md:px-4 ${isStickyMonth ? 'h-1 -mb-3' : 'pt-2 mb-3'}`}
+                    >
+                      {!isStickyMonth && (
+                        <div className='text-[10px] uppercase tracking-wider text-[#606060] font-semibold'>
+                          {month}
+                        </div>
+                      )}
+                    </div>
+                    {/* Events for this month */}
+                    <div className='pb-3 md:pb-4'>
+                      {events.map((item, eventIndex) => {
+                        const showBorder = eventIndex > 0 || (monthIndex > 0 && eventIndex === 0);
+                        return (
+                          <UpcomingEventCard
+                            key={item.id}
+                            item={item}
+                            showBorder={showBorder}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
