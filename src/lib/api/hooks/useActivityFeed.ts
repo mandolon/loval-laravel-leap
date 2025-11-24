@@ -43,7 +43,7 @@ export function useWorkspaceActivityFeed(workspaceId: string, days: number = 14)
       dateThreshold.setDate(dateThreshold.getDate() - days);
       const dateThresholdISO = dateThreshold.toISOString();
 
-      const from = pageParam * PAGE_SIZE;
+      const from = (pageParam as number) * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
       const { data, error, count } = await supabase
@@ -65,8 +65,9 @@ export function useWorkspaceActivityFeed(workspaceId: string, days: number = 14)
 
       return { data: activities, hasMore };
     },
-    getNextPageParam: (lastPage, allPages) => {
-      return lastPage.hasMore ? allPages.length : undefined;
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => {
+      return lastPage.hasMore ? (lastPage as any).nextPage : undefined;
     },
     enabled: !!workspaceId && workspaceId.trim() !== '',
     staleTime: 1000 * 60, // 1 minute
