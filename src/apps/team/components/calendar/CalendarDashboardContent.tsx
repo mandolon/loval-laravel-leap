@@ -526,21 +526,21 @@ export const CalendarDashboardContent: React.FC = () => {
                 </button>
               </div>
               <div className='flex items-center gap-2 shrink-0'>
-                <div className='text-[10px] sm:text-[11px] tracking-[0.15em] uppercase text-[#606060]'>
+                <div className='text-[10px] sm:text-[11px] tracking-[0.15em] uppercase text-[#606060] font-medium'>
                   {getVisibleMonth()}
                 </div>
                 <div className='flex gap-1'>
                   <button
                     onClick={() => goToMonth('prev')}
-                    className='w-9 h-9 md:w-7 md:h-7 flex items-center justify-center hover:bg-neutral-50 active:bg-neutral-100 rounded-md transition-colors touch-manipulation'
+                    className='w-9 h-9 md:w-7 md:h-7 flex items-center justify-center hover:bg-neutral-50 active:bg-neutral-100 rounded-md transition-colors touch-manipulation pb-1 pt-0'
                   >
-                    <span className='text-[#505050] text-lg md:text-base'>‹</span>
+                    <span className='text-[#505050] text-[22px] md:text-[20px] leading-none'>‹</span>
                   </button>
                   <button
                     onClick={() => goToMonth('next')}
-                    className='w-9 h-9 md:w-7 md:h-7 flex items-center justify-center hover:bg-neutral-50 active:bg-neutral-100 rounded-md transition-colors touch-manipulation'
+                    className='w-9 h-9 md:w-7 md:h-7 flex items-center justify-center hover:bg-neutral-50 active:bg-neutral-100 rounded-md transition-colors touch-manipulation pb-1 pt-0'
                   >
-                    <span className='text-[#505050] text-lg md:text-base'>›</span>
+                    <span className='text-[#505050] text-[22px] md:text-[20px] leading-none'>›</span>
                   </button>
                 </div>
               </div>
