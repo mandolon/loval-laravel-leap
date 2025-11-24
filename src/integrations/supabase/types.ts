@@ -2875,10 +2875,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      create_confirmed_task_assignment_notifications: {
-        Args: never
-        Returns: undefined
-      }
+      cleanup_old_pending_assignments: { Args: never; Returns: undefined }
       delete_user_sessions: {
         Args: { target_user_id: string }
         Returns: undefined
@@ -2915,6 +2912,8 @@ export type Database = {
         Args: { _user_id: string; _workspace_id: string }
         Returns: boolean
       }
+      process_pending_task_notifications: { Args: never; Returns: undefined }
+      refresh_task_notifications: { Args: never; Returns: undefined }
       search_knowledge_base:
         | {
             Args: {
