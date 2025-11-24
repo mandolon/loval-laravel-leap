@@ -213,7 +213,7 @@ export const CalendarDashboardContent: React.FC = () => {
       <div className='flex-1 flex flex-col min-h-0 px-3 md:px-6 pt-4 md:pt-6 pb-4 gap-3 md:gap-4 overflow-y-auto'>
         {/* Welcome section */}
         <div className='flex items-start justify-between gap-4'>
-          <div className='space-y-1'>
+          <div className='space-y-1 px-3 md:px-4'>
             <div className='text-xl md:text-[26px] leading-tight font-semibold text-[#202020]'>
               {getGreeting()}, {userName}
             </div>
@@ -227,18 +227,16 @@ export const CalendarDashboardContent: React.FC = () => {
           {/* Calendar scroll area */}
           <div className='rounded-xl bg-white/60 px-3 md:px-4 py-3 md:py-4 shrink-0'>
             <div className='flex items-center justify-between gap-2 mb-4'>
-              <button
-                onClick={resetToToday}
-                className='text-[10px] sm:text-[11px] tracking-[0.15em] uppercase text-[#606060] hover:text-[#4c75d1] transition-colors cursor-pointer text-left touch-manipulation flex-1 min-w-0'
-              >
-                <span className='block truncate'>
-                  Today is{' '}
-                  <span className='text-[#4c75d1] font-medium'>
-                    <span className='inline md:hidden'>{getCurrentDateShort()}</span>
-                    <span className='hidden md:inline'>{getCurrentDate()}</span>
-                  </span>
-                </span>
-              </button>
+              <div className='text-[10px] sm:text-[11px] tracking-[0.15em] uppercase text-[#606060] text-left flex-1 min-w-0 flex items-baseline gap-1'>
+                <span>Today is</span>
+                <button
+                  onClick={resetToToday}
+                  className='text-[#4c75d1] font-medium hover:text-[#202020] transition-colors cursor-pointer touch-manipulation truncate'
+                >
+                  <span className='inline md:hidden'>{getCurrentDateShort()}</span>
+                  <span className='hidden md:inline'>{getCurrentDate()}</span>
+                </button>
+              </div>
               <div className='flex items-center gap-2 shrink-0'>
                 <div className='text-[10px] sm:text-[11px] tracking-[0.15em] uppercase text-[#606060]'>
                   {getVisibleMonth()}
