@@ -171,7 +171,7 @@ export const ACTIVITY_ITEMS = [
   {
     id: 1,
     icon: ListChecks,
-    iconBg: 'bg-white border border-neutral-200',
+    iconBg: 'bg-neutral-100',
     title: 'Task completed',
     subtitle: 'Site survey measurements uploaded',
     time: '15 minutes ago',
@@ -179,7 +179,7 @@ export const ACTIVITY_ITEMS = [
   {
     id: 2,
     icon: Bot,
-    iconBg: 'bg-white border border-neutral-200',
+    iconBg: 'bg-neutral-100',
     title: 'AI analysis complete',
     subtitle: 'Point cloud processing finished',
     time: '3 hours ago',
@@ -187,7 +187,7 @@ export const ACTIVITY_ITEMS = [
   {
     id: 3,
     icon: FolderClosed,
-    iconBg: 'bg-white border border-neutral-200',
+    iconBg: 'bg-neutral-100',
     title: 'File uploaded',
     subtitle: '3D scan data added to project',
     time: '5 hours ago',

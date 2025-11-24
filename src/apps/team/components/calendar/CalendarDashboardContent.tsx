@@ -58,7 +58,7 @@ const getFileColorClass = (mimetype: string | null, filename: string): string =>
 };
 
 // Helper function to map activity action to icon and color
-const neutralIconBg = 'bg-white border border-neutral-200';
+const neutralIconBg = 'bg-neutral-100';
 
 const formatNotificationTitle = (notification: any): React.ReactNode => {
   const baseTitle = notification?.title || '';

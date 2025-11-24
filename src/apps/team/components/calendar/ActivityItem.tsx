@@ -29,7 +29,7 @@ export const ActivityItem: React.FC<ActivityItemProps> = ({
 
   return (
     <div className={`flex gap-3 items-start py-3 md:py-2.5 px-3 md:px-4 hover:bg-neutral-50 active:bg-neutral-100 transition-colors touch-manipulation cursor-pointer ${borderClasses}`}>
-      <div className={`w-9 h-9 md:w-8 md:h-8 rounded-lg ${iconBg} flex items-center justify-center shrink-0 mt-0.5`}>
+      <div className={`w-9 h-9 md:w-8 md:h-8 rounded-lg ${iconBg} flex items-center justify-center shrink-0 mt-0.5 border-0 shadow-none ring-0`}>
         <Icon className='w-5 h-5 md:w-4 md:h-4 text-[#202020]' />
       </div>
       <div className='flex-1 min-w-0'>
