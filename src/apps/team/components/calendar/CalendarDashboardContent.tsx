@@ -212,7 +212,7 @@ export const CalendarDashboardContent: React.FC = () => {
     <div className='h-full flex flex-col overflow-hidden'>
       <div className='flex-1 flex flex-col min-h-0 px-3 md:px-6 pt-4 md:pt-6 pb-4 gap-1 overflow-y-auto'>
         {/* Welcome section */}
-        <div className='flex items-start justify-between gap-4 mb-1'>
+        <div className='flex items-start justify-between gap-4'>
           <div className='px-3 md:px-4'>
             <div className='text-xl md:text-[26px] leading-tight font-semibold text-[#202020]'>
               {getGreeting()}, {userName}
