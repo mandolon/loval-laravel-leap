@@ -12,8 +12,8 @@ export const UpcomingEventCard: React.FC<UpcomingEventCardProps> = ({ item, show
 
   return (
     <div
-      className={`flex items-start gap-3 px-3 md:px-4 pb-4 hover:bg-neutral-50 active:bg-neutral-100 transition-colors touch-manipulation cursor-pointer ${
-        showBorder ? 'pt-4 border-t border-neutral-100' : ''
+      className={`flex items-start gap-3 px-3 md:px-4 py-3 md:py-2.5 hover:bg-neutral-50 active:bg-neutral-100 transition-colors touch-manipulation cursor-pointer ${
+        showBorder ? 'border-t border-neutral-100' : ''
       }`}
     >
       {/* Date block */}
