@@ -26,11 +26,11 @@ export const UpcomingEventCard: React.FC<UpcomingEventCardProps> = ({ item, show
             {item.weekday}
           </span>
         </div>
-        <div className={`w-1 h-14 rounded-full ${barClass} -mt-0.5`} />
+        <div className={`w-1 self-stretch rounded-full ${barClass}`} />
       </div>
 
       {/* Event content */}
-      <div className='flex-1 pt-1'>
+      <div className='flex-1'>
         <div className='text-sm text-[#202020] font-medium leading-snug'>{item.title}</div>
         <div className='text-xs text-[#505050] mt-1.5 font-medium tabular-nums'>{item.time}</div>
       </div>
