@@ -45,7 +45,8 @@ export interface ActivityItemType {
   id: number;
   icon: React.ComponentType<{ className?: string }>;
   iconBg: string;
-  title: string;
+  title: React.ReactNode;
   subtitle: string;
   time: string;
 }
+import type React from 'react';

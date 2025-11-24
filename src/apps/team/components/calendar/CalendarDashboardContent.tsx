@@ -58,34 +58,78 @@ const getFileColorClass = (mimetype: string | null, filename: string): string =>
 };
 
 // Helper function to map activity action to icon and color
+const neutralIconBg = 'bg-white border border-neutral-200';
+
+const formatNotificationTitle = (notification: any): React.ReactNode => {
+  const baseTitle = notification?.title || '';
+  const actorName = notification?.metadata && typeof notification.metadata === 'object'
+    ? (notification.metadata as any).actorName
+    : undefined;
+
+  // Normalize request phrasing
+  const normalizedTitle = baseTitle.replace(/assigned you a request/gi, 'sent you a request');
+
+  if (!actorName || typeof actorName !== 'string') {
+    return normalizedTitle;
+  }
+
+  // Remove first occurrence of actor name (case-insensitive) to avoid duplication
+  const lowerTitle = normalizedTitle.toLowerCase();
+  const lowerActor = actorName.toLowerCase();
+  const idx = lowerTitle.indexOf(lowerActor);
+
+  // If we find the actor name in the title, highlight it in place
+  if (idx !== -1) {
+    const before = normalizedTitle.slice(0, idx);
+    const highlighted = normalizedTitle.slice(idx, idx + actorName.length);
+    const after = normalizedTitle.slice(idx + actorName.length);
+
+    return (
+      <span className='text-[#202020]'>
+        {before}
+        <span className='font-semibold'>{highlighted}</span>
+        {after}
+      </span>
+    );
+  }
+
+  // Fallback: prepend the actor name in bold if it wasn't present
+  return (
+    <span className='text-[#202020]'>
+      <span className='font-semibold'>{actorName}</span>
+      {normalizedTitle ? ` ${normalizedTitle}` : ''}
+    </span>
+  );
+};
+
 const getActivityIcon = (action: string, resourceType: string): { icon: React.ComponentType<{ className?: string }>, iconBg: string } => {
   const actionLower = action.toLowerCase();
 
   if (actionLower.includes('create') || actionLower.includes('add')) {
-    if (resourceType === 'file') return { icon: Upload, iconBg: 'bg-emerald-100' };
-    if (resourceType === 'task') return { icon: ListChecks, iconBg: 'bg-blue-100' };
-    return { icon: Plus, iconBg: 'bg-emerald-100' };
+    if (resourceType === 'file') return { icon: Upload, iconBg: neutralIconBg };
+    if (resourceType === 'task') return { icon: ListChecks, iconBg: neutralIconBg };
+    return { icon: Plus, iconBg: neutralIconBg };
   }
 
   if (actionLower.includes('update') || actionLower.includes('edit') || actionLower.includes('modify')) {
-    return { icon: Edit, iconBg: 'bg-amber-100' };
+    return { icon: Edit, iconBg: neutralIconBg };
   }
 
   if (actionLower.includes('delete') || actionLower.includes('remove')) {
-    return { icon: Trash2, iconBg: 'bg-rose-100' };
+    return { icon: Trash2, iconBg: neutralIconBg };
   }
 
   if (actionLower.includes('complete')) {
-    return { icon: ListChecks, iconBg: 'bg-emerald-100' };
+    return { icon: ListChecks, iconBg: neutralIconBg };
   }
 
   // Default icons based on resource type
-  if (resourceType === 'file') return { icon: FileText, iconBg: 'bg-violet-100' };
-  if (resourceType === 'task') return { icon: ListChecks, iconBg: 'bg-blue-100' };
-  if (resourceType === 'project') return { icon: FolderClosed, iconBg: 'bg-sky-100' };
-  if (resourceType === 'user' || resourceType === 'member') return { icon: Users, iconBg: 'bg-indigo-100' };
+  if (resourceType === 'file') return { icon: FileText, iconBg: neutralIconBg };
+  if (resourceType === 'task') return { icon: ListChecks, iconBg: neutralIconBg };
+  if (resourceType === 'project') return { icon: FolderClosed, iconBg: neutralIconBg };
+  if (resourceType === 'user' || resourceType === 'member') return { icon: Users, iconBg: neutralIconBg };
 
-  return { icon: Settings, iconBg: 'bg-neutral-100' };
+  return { icon: Settings, iconBg: neutralIconBg };
 };
 
 // Helper function to format activity title and subtitle with null safety
@@ -152,33 +196,35 @@ export const CalendarDashboardContent: React.FC = () => {
   }, [allNotifications]);
 
   // Helper function to get notification icon based on type
-  const getNotificationIcon = (type: string): { icon: React.ComponentType<{ className?: string }>, iconBg: string } => {
-    const typeLower = type.toLowerCase();
-    
-    if (typeLower.includes('message') || typeLower.includes('chat')) {
-      return { icon: MessageSquare, iconBg: 'bg-blue-100' };
-    }
-    if (typeLower.includes('file') || typeLower.includes('upload')) {
-      return { icon: Upload, iconBg: 'bg-emerald-100' };
-    }
-    if (typeLower.includes('model')) {
-      return { icon: FolderClosed, iconBg: 'bg-purple-100' };
-    }
-    if (typeLower.includes('request')) {
-      return { icon: ListChecks, iconBg: 'bg-amber-100' };
-    }
-    if (typeLower.includes('task')) {
-      return { icon: ListChecks, iconBg: 'bg-blue-100' };
-    }
-    
-    // Default notification icon
-    return { icon: Bell, iconBg: 'bg-neutral-100' };
-  };
+const getNotificationIcon = (type: string): { icon: React.ComponentType<{ className?: string }>, iconBg: string } => {
+  const typeLower = type.toLowerCase();
+  
+  if (typeLower.includes('message') || typeLower.includes('chat')) {
+    return { icon: MessageSquare, iconBg: neutralIconBg };
+  }
+  if (typeLower.includes('file') || typeLower.includes('upload')) {
+    return { icon: Upload, iconBg: neutralIconBg };
+  }
+  if (typeLower.includes('model')) {
+    return { icon: FolderClosed, iconBg: neutralIconBg };
+  }
+  if (typeLower.includes('request')) {
+    return { icon: ListChecks, iconBg: neutralIconBg };
+  }
+  if (typeLower.includes('task')) {
+    return { icon: ListChecks, iconBg: neutralIconBg };
+  }
+  
+  // Default notification icon
+    return { icon: Bell, iconBg: neutralIconBg };
+};
 
   // Transform notifications to match ActivityItem component props
   const activityItems = useMemo<ActivityItemType[]>(() => {
     return recentNotifications.map((notification) => {
       const { icon, iconBg } = getNotificationIcon(notification.type);
+
+      const title = formatNotificationTitle(notification);
 
       // Safe date parsing with fallback
       let time = 'recently';
@@ -195,7 +241,7 @@ export const CalendarDashboardContent: React.FC = () => {
         id: parseInt(notification.id.replace(/-/g, '').substring(0, 15), 16),
         icon,
         iconBg,
-        title: notification.title,
+        title,
         subtitle: notification.content || '',
         time,
       };
@@ -678,7 +724,7 @@ export const CalendarDashboardContent: React.FC = () => {
             </div>
 
             {/* Activity Feed */}
-            <div className='md:w-80 rounded-xl border border-neutral-200 bg-white/60 flex flex-col min-w-0 max-h-[400px] md:max-h-none'>
+            <div className='md:w-96 rounded-xl border border-neutral-200 bg-white/60 flex flex-col min-w-0 max-h-[400px] md:max-h-none'>
               <div className='flex items-center justify-between px-3 md:px-4 pt-3 md:pt-4 pb-3 border-b border-neutral-100'>
                 <h3 className='text-xs md:text-[13px] font-semibold text-[#202020]'>
                   Activity Feed
@@ -784,8 +830,8 @@ export const CalendarDashboardContent: React.FC = () => {
               <div className='flex-1 overflow-y-auto scrollbar-hide relative' ref={upcomingEventsScrollRef}>
               {/* Sticky header */}
               {stickyMonth && (
-                <div className='sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-neutral-200 mb-3 px-3 md:px-4 py-2'>
-                  <div className='text-[10px] uppercase tracking-wider text-[#606060] font-semibold'>
+                <div className='sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-neutral-200 shadow-[0_8px_18px_-16px_rgba(0,0,0,0.55)] mb-1 px-3 md:px-4 py-2'>
+                  <div className='text-[10px] uppercase tracking-wider text-[#2f3135] font-semibold'>
                     {stickyMonth}
                   </div>
                 </div>
@@ -795,19 +841,19 @@ export const CalendarDashboardContent: React.FC = () => {
                 const isStickyMonth = month === stickyMonth;
                 return (
                   <div key={month}>
-                    {/* Month header - hidden when it's the sticky month */}
+                    {/* Month header - keep minimal footprint when sticky to avoid jump without visible gap */}
                     <div
                       ref={(el) => {
                         if (el) monthRefs.current.set(month, el);
                       }}
                       data-month={month}
-                      className={`px-3 md:px-4 ${isStickyMonth ? 'h-1 -mb-3' : 'pt-2 mb-3'}`}
+                      className={`px-3 md:px-4 ${isStickyMonth ? 'h-px mb-0 overflow-hidden' : 'pt-2 mb-3'}`}
                     >
-                      {!isStickyMonth && (
-                        <div className='text-[10px] uppercase tracking-wider text-[#606060] font-semibold'>
-                          {month}
-                        </div>
-                      )}
+                      <div
+                        className={`text-[10px] uppercase tracking-wider text-[#606060] font-semibold ${isStickyMonth ? 'opacity-0 pointer-events-none h-px' : ''}`}
+                      >
+                        {month}
+                      </div>
                     </div>
                     {/* Events for this month */}
                     <div className='pb-3 md:pb-4'>
