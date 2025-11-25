@@ -574,7 +574,7 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
         </div>
 
         {/* Calendar section - Responsive grid layout */}
-        <div className='flex-1 grid grid-cols-1 lg:grid-cols-[1fr_22rem] lg:grid-rows-[auto_1fr] min-h-0 gap-4'>
+        <div className='flex-1 grid grid-cols-1 lg:grid-cols-[1fr_22rem] lg:grid-rows-[auto_minmax(400px,1fr)] min-h-0 gap-4'>
         {/* Calendar block - lg:col-start-1 lg:row-start-1 */}
         <div className='flex flex-col min-w-0 lg:col-start-1 lg:row-start-1'>
           {/* Calendar scroll area */}
@@ -686,7 +686,7 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
         </div>
 
         {/* Active/Upcoming card - mobile below calendar, lg in right column spanning 2 rows */}
-        <div className='w-full flex flex-col min-h-0 lg:col-start-2 lg:row-start-1 lg:row-span-2'>
+        <div className='w-full flex flex-col min-h-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:max-h-[calc(100vh-12rem)]'>
           <div className='flex-1 rounded-xl border border-neutral-200 bg-white/60 flex flex-col overflow-hidden max-h-[800px] lg:max-h-none'>
             {/* Active date events section - fixed height to keep Upcoming stable; responsive via clamp */}
             <div className='flex flex-col flex-shrink-0' style={{ height: ACTIVE_EVENTS_HEIGHT }}>
@@ -801,7 +801,7 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
         </div>
 
           {/* Activity + Recent files row - lg:col-start-1 lg:row-start-2 */}
-          <div className='flex flex-col md:flex-row gap-3 lg:gap-4 min-h-0 lg:col-start-1 lg:row-start-2 lg:min-h-[400px]'>
+          <div className='flex flex-col md:flex-row gap-3 lg:gap-4 min-h-0 lg:col-start-1 lg:row-start-2 lg:h-full'>
             {/* Recent files */}
             <div className='flex-1 rounded-xl border border-neutral-200 bg-white/60 flex flex-col min-w-0 max-h-[400px] lg:max-h-none'>
               <div className='flex items-center justify-between px-3 md:px-4 pt-3 md:pt-4 pb-3 border-b border-neutral-100'>
