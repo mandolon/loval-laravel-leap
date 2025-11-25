@@ -156,23 +156,7 @@ export const CalendarDashboardContent: React.FC = () => {
   const { user } = useUser();
   const { currentWorkspace } = useWorkspaces();
 
-  // Show loading state if workspace is not loaded yet
-  if (!currentWorkspace?.id) {
-    return (
-      <div className='h-full flex items-center justify-center'>
-        <div className='text-center'>
-          <div className='inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#4c75d1] border-r-transparent'></div>
-          <p className='mt-4 text-sm text-[#606060]'>Loading workspace...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Fetch calendar data from all sources (tasks, requests, calendar events)
-  const { allEvents, eventsForDay: getEventsForDay, upcomingEvents, isLoading: calendarDataLoading } = useCalendarData({
-    workspaceId: currentWorkspace.id,
-  });
-
+  // Call all hooks before any conditional returns (Rules of Hooks)
   const [mdUp, setMdUp] = useState(true);
   const [currentYear, setCurrentYear] = useState(INITIAL_CALENDAR.year);
   const [currentMonth, setCurrentMonth] = useState(INITIAL_CALENDAR.month);
@@ -187,12 +171,18 @@ export const CalendarDashboardContent: React.FC = () => {
   const upcomingEventsScrollRef = useRef<HTMLDivElement>(null);
   const monthRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
+  // Fetch calendar data from all sources (tasks, requests, calendar events)
+  // Pass empty string if workspace not loaded yet to avoid errors
+  const { allEvents, eventsForDay: getEventsForDay, upcomingEvents, isLoading: calendarDataLoading } = useCalendarData({
+    workspaceId: currentWorkspace?.id || '',
+  });
+
   // Fetch notifications (last 14 days) and recent files
   const { data: allNotifications = [], isLoading: isLoadingActivity, isError: isActivityError } = useNotifications(user?.id || '');
 
   const { data: recentFilesData = [], isLoading: isLoadingFiles } = useUserRecentFiles(
     user?.id || '',
-    currentWorkspace.id,
+    currentWorkspace?.id || '',
     10
   );
 
@@ -357,6 +347,98 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
     };
   }, [visibleIndex, calendarDays.length, mdUp]);
 
+  // Group upcoming events by month
+  const eventsByMonth = useMemo(() => {
+    const grouped = new Map<string, typeof upcomingEvents>();
+    upcomingEvents.forEach((event) => {
+      if (!grouped.has(event.month)) {
+        grouped.set(event.month, []);
+      }
+      grouped.get(event.month)!.push(event);
+    });
+    return Array.from(grouped.entries()).sort((a, b) => {
+      const months = ['January', 'February', 'March', 'April', 'May', 'June',
+                     'July', 'August', 'September', 'October', 'November', 'December'];
+      return months.indexOf(a[0]) - months.indexOf(b[0]);
+    });
+  }, [upcomingEvents]);
+
+  // Set initial sticky month
+  useEffect(() => {
+    if (eventsByMonth.length > 0 && !stickyMonth) {
+      setStickyMonth(eventsByMonth[0][0]);
+    }
+  }, [eventsByMonth, stickyMonth]);
+
+  // Intersection observer for sticky month header
+  useEffect(() => {
+    const scrollContainer = upcomingEventsScrollRef.current;
+    if (!scrollContainer || monthRefs.current.size === 0) return;
+
+    const handleScroll = () => {
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const stickyHeaderHeight = 40; // Approximate height of sticky header
+      
+      // Find which month header is currently at or just below the sticky header position
+      let currentMonth = stickyMonth;
+      let minDistance = Infinity;
+      
+      monthRefs.current.forEach((ref, month) => {
+        if (ref) {
+          const rect = ref.getBoundingClientRect();
+          const distanceFromTop = rect.top - (containerRect.top + stickyHeaderHeight);
+          
+          // If the month header is at or above the sticky header position
+          if (distanceFromTop <= 0 && Math.abs(distanceFromTop) < minDistance) {
+            minDistance = Math.abs(distanceFromTop);
+            currentMonth = month;
+          }
+        }
+      });
+      
+      if (currentMonth && currentMonth !== stickyMonth) {
+        setStickyMonth(currentMonth);
+      }
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        handleScroll();
+      },
+      {
+        root: scrollContainer,
+        rootMargin: `-${60}px 0px 0px 0px`,
+        threshold: [0, 0.1, 0.5, 1],
+      }
+    );
+
+    monthRefs.current.forEach((ref) => {
+      if (ref) observer.observe(ref);
+    });
+
+    scrollContainer.addEventListener('scroll', handleScroll);
+    handleScroll(); // Initial check
+
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+      monthRefs.current.forEach((ref) => {
+        if (ref) observer.unobserve(ref);
+      });
+    };
+  }, [eventsByMonth, stickyMonth]);
+
+  // Show loading state if workspace is not loaded yet (after all hooks are called)
+  if (!currentWorkspace?.id) {
+    return (
+      <div className='h-full flex items-center justify-center'>
+        <div className='text-center'>
+          <div className='inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#4c75d1] border-r-transparent'></div>
+          <p className='mt-4 text-sm text-[#606060]'>Loading workspace...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Handle wheel scroll for horizontal scrolling
   const handleCalendarWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     if (calendarScrollRef.current) {
@@ -475,86 +557,6 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
     return 'Good night';
   };
 
-  // Group upcoming events by month
-  const eventsByMonth = useMemo(() => {
-    const grouped = new Map<string, typeof upcomingEvents>();
-    upcomingEvents.forEach((event) => {
-      if (!grouped.has(event.month)) {
-        grouped.set(event.month, []);
-      }
-      grouped.get(event.month)!.push(event);
-    });
-    return Array.from(grouped.entries()).sort((a, b) => {
-      const months = ['January', 'February', 'March', 'April', 'May', 'June',
-                     'July', 'August', 'September', 'October', 'November', 'December'];
-      return months.indexOf(a[0]) - months.indexOf(b[0]);
-    });
-  }, [upcomingEvents]);
-
-  // Set initial sticky month
-  useEffect(() => {
-    if (eventsByMonth.length > 0 && !stickyMonth) {
-      setStickyMonth(eventsByMonth[0][0]);
-    }
-  }, [eventsByMonth, stickyMonth]);
-
-  // Intersection observer for sticky month header
-  useEffect(() => {
-    const scrollContainer = upcomingEventsScrollRef.current;
-    if (!scrollContainer || monthRefs.current.size === 0) return;
-
-    const handleScroll = () => {
-      const containerRect = scrollContainer.getBoundingClientRect();
-      const stickyHeaderHeight = 40; // Approximate height of sticky header
-      
-      // Find which month header is currently at or just below the sticky header position
-      let currentMonth = stickyMonth;
-      let minDistance = Infinity;
-      
-      monthRefs.current.forEach((ref, month) => {
-        if (ref) {
-          const rect = ref.getBoundingClientRect();
-          const distanceFromTop = rect.top - (containerRect.top + stickyHeaderHeight);
-          
-          // If the month header is at or above the sticky header position
-          if (distanceFromTop <= 0 && Math.abs(distanceFromTop) < minDistance) {
-            minDistance = Math.abs(distanceFromTop);
-            currentMonth = month;
-          }
-        }
-      });
-      
-      if (currentMonth && currentMonth !== stickyMonth) {
-        setStickyMonth(currentMonth);
-      }
-    };
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        handleScroll();
-      },
-      {
-        root: scrollContainer,
-        rootMargin: `-${60}px 0px 0px 0px`,
-        threshold: [0, 0.1, 0.5, 1],
-      }
-    );
-
-    monthRefs.current.forEach((ref) => {
-      if (ref) observer.observe(ref);
-    });
-
-    scrollContainer.addEventListener('scroll', handleScroll);
-    handleScroll(); // Initial check
-
-    return () => {
-      scrollContainer.removeEventListener('scroll', handleScroll);
-      monthRefs.current.forEach((ref) => {
-        if (ref) observer.unobserve(ref);
-      });
-    };
-  }, [eventsByMonth, stickyMonth]);
-
   const selectedDay = calendarDays[selectedIndex] || calendarDays[0];
   const eventsForDayData = getEventsForDay(selectedIndex, calendarDays);
   const userName = user?.name?.split(' ')[0] || 'there';
@@ -619,7 +621,7 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
                 <div className='flex gap-2 pb-4 min-w-max'>
                   {calendarDays.map((day) => {
                     const isSelected = userHasSelected && day.index === selectedIndex;
-                    const hasEvents = !!EVENTS[day.index];
+                    const hasEvents = getEventsForDay(day.index, calendarDays).length > 0;
                     const isToday = day.isToday;
 
                     const weekdayColor = isSelected
