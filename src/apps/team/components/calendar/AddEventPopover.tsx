@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useCreateCalendarEvent } from "@/lib/api/hooks/useCalendarEvents";
+import { useProjects } from "@/lib/api/hooks/useProjects";
 
 interface AddEventFormValues {
   title: string;
@@ -11,21 +13,13 @@ interface AddEventFormValues {
 }
 
 interface AddEventPopoverProps {
+  workspaceId: string;
   onAddEvent?: (event: AddEventFormValues) => void;
-  projectOptions?: string[];
   buttonClassName?: string;
   defaultDate?: string; // Pre-fill date (e.g., from selected calendar day)
 }
 
-const DEFAULT_PROJECTS: string[] = [
-  "Echo Summit Cabin",
-  "500-502 U Street",
-  "2709 T Street",
-  "3218 4th Ave",
-  "Sonoma Duplex",
-];
-
-const EVENT_TYPES: string[] = [
+const EVENT_TYPES = [
   "Reminder",
   "Meeting",
   "Deadline",
@@ -33,11 +27,11 @@ const EVENT_TYPES: string[] = [
   "Call",
   "Milestone",
   "Review",
-];
+] as const;
 
 export default function AddEventPopover({
+  workspaceId,
   onAddEvent,
-  projectOptions = DEFAULT_PROJECTS,
   buttonClassName,
   defaultDate,
 }: AddEventPopoverProps) {
@@ -45,12 +39,16 @@ export default function AddEventPopover({
   const [title, setTitle] = useState("");
   const [date, setDate] = useState(defaultDate || "");
   const [time, setTime] = useState("09:00"); // 24-hour format for native input
-  const [project, setProject] = useState<string | null>(null);
+  const [projectId, setProjectId] = useState<string | null>(null);
   const [projectOpen, setProjectOpen] = useState(false);
-  const [eventType, setEventType] = useState("Meeting");
+  const [eventType, setEventType] = useState<typeof EVENT_TYPES[number]>("Meeting");
   const [eventTypeOpen, setEventTypeOpen] = useState(false);
   const [anyTime, setAnyTime] = useState(true); // Default to "Any" time
   const [popoverPosition, setPopoverPosition] = useState<{ top: number; left: number } | null>(null);
+
+  // API hooks
+  const createCalendarEvent = useCreateCalendarEvent();
+  const { data: projects = [], isLoading: projectsLoading } = useProjects(workspaceId);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
@@ -133,7 +131,7 @@ export default function AddEventPopover({
     setTitle("");
     setDate(defaultDate || "");
     setTime("09:00");
-    setProject(null);
+    setProjectId(null);
     setEventType("Meeting");
     setAnyTime(true);
     setProjectOpen(false);
@@ -153,36 +151,50 @@ export default function AddEventPopover({
     setIsOpen((open) => !open);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !date.trim()) return;
 
-    // Convert 24h to 12h format for display
-    let formattedTime = "";
-    if (!anyTime && time) {
-      const [hours, minutes] = time.split(":");
-      const h = parseInt(hours, 10);
-      const ampm = h >= 12 ? "PM" : "AM";
-      const h12 = h % 12 || 12;
-      formattedTime = `${h12}:${minutes} ${ampm}`;
+    try {
+      // Create event in database
+      await createCalendarEvent.mutateAsync({
+        title: title.trim(),
+        eventType: eventType,
+        projectId: projectId || undefined,
+        workspaceId: workspaceId,
+        eventDate: date.trim(),
+        eventTime: anyTime ? undefined : time,
+      });
+
+      // Call optional callback for backwards compatibility
+      if (onAddEvent) {
+        // Convert 24h to 12h format for display
+        let formattedTime = "";
+        if (!anyTime && time) {
+          const [hours, minutes] = time.split(":");
+          const h = parseInt(hours, 10);
+          const ampm = h >= 12 ? "PM" : "AM";
+          const h12 = h % 12 || 12;
+          formattedTime = `${h12}:${minutes} ${ampm}`;
+        }
+
+        const project = projects.find(p => p.id === projectId);
+        const payload: AddEventFormValues = {
+          title: title.trim(),
+          date: date.trim(),
+          time: formattedTime,
+          project: project?.name || null,
+          anyTime,
+          eventType,
+        };
+        onAddEvent(payload);
+      }
+
+      resetForm();
+    } catch (error) {
+      console.error("Failed to create calendar event:", error);
+      // Error toast is handled by the mutation hook
     }
-
-    const payload: AddEventFormValues = {
-      title: title.trim(),
-      date: date.trim(),
-      time: formattedTime,
-      project,
-      anyTime,
-      eventType,
-    };
-
-    if (onAddEvent) {
-      onAddEvent(payload);
-    } else {
-      console.log("New calendar event:", payload);
-    }
-
-    resetForm();
   };
 
   const handleCancel = () => {
@@ -332,8 +344,8 @@ export default function AddEventPopover({
                   onClick={() => setProjectOpen((open) => !open)}
                   className="w-full h-6 rounded border border-neutral-200 bg-white px-2 text-[12px] outline-none flex items-center justify-between text-left hover:border-[#4c75d1] hover:bg-[#4c75d1]/5 transition-all touch-manipulation"
                 >
-                  <span className={`truncate ${project ? "text-[#202020]" : "text-[#909090]"}`}>
-                    {project || "Select project"}
+                  <span className={`truncate ${projectId ? "text-[#202020]" : "text-[#909090]"}`}>
+                    {projectId ? projects.find(p => p.id === projectId)?.name : "Select project"}
                   </span>
                   <svg
                     viewBox="0 0 24 24"
@@ -354,7 +366,7 @@ export default function AddEventPopover({
                       <button
                         type="button"
                         onClick={() => {
-                          setProject(null);
+                          setProjectId(null);
                           setProjectOpen(false);
                         }}
                         className="w-full px-2 py-1 text-[12px] text-left text-[#606060] hover:bg-neutral-50 transition-colors flex items-center gap-1.5"
@@ -378,37 +390,43 @@ export default function AddEventPopover({
                         <span className="truncate">Select project</span>
                       </button>
 
-                      <div className="h-px bg-neutral-100 my-0.5" />
+                      {projects.length > 0 && <div className="h-px bg-neutral-100 my-0.5" />}
 
-                      {projectOptions.map((option) => (
-                        <button
-                          key={option}
-                          type="button"
-                          onClick={() => {
-                            setProject(option);
-                            setProjectOpen(false);
-                          }}
-                          className="w-full px-2 py-1 text-[12px] text-left hover:bg-neutral-50 active:bg-neutral-100 text-[#202020] transition-colors truncate flex items-center gap-1.5"
-                        >
-                          <svg
-                            viewBox="0 0 24 24"
-                            width="11"
-                            height="11"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                            className="text-[#9ca3af] flex-shrink-0"
+                      {projectsLoading ? (
+                        <div className="px-2 py-1 text-[12px] text-[#909090]">Loading projects...</div>
+                      ) : projects.length === 0 ? (
+                        <div className="px-2 py-1 text-[12px] text-[#909090]">No projects available</div>
+                      ) : (
+                        projects.map((project) => (
+                          <button
+                            key={project.id}
+                            type="button"
+                            onClick={() => {
+                              setProjectId(project.id);
+                              setProjectOpen(false);
+                            }}
+                            className="w-full px-2 py-1 text-[12px] text-left hover:bg-neutral-50 active:bg-neutral-100 text-[#202020] transition-colors truncate flex items-center gap-1.5"
                           >
-                            <circle cx="4" cy="6" r="1.3" />
-                            <circle cx="4" cy="12" r="1.3" />
-                            <circle cx="4" cy="18" r="1.3" />
-                            <path d="M8 6h12" />
-                            <path d="M8 12h12" />
-                            <path d="M8 18h12" />
-                          </svg>
-                          <span className="truncate">{option}</span>
-                        </button>
-                      ))}
+                            <svg
+                              viewBox="0 0 24 24"
+                              width="11"
+                              height="11"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              className="text-[#9ca3af] flex-shrink-0"
+                            >
+                              <circle cx="4" cy="6" r="1.3" />
+                              <circle cx="4" cy="12" r="1.3" />
+                              <circle cx="4" cy="18" r="1.3" />
+                              <path d="M8 6h12" />
+                              <path d="M8 12h12" />
+                              <path d="M8 18h12" />
+                            </svg>
+                            <span className="truncate">{project.name}</span>
+                          </button>
+                        ))
+                      )}
                     </div>
                   </div>
                 )}

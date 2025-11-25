@@ -335,6 +335,45 @@ export interface UpdateRequestInput {
   isUnread?: boolean;
 }
 
+// Calendar Event entity
+export interface CalendarEvent {
+  id: string;
+  shortId: string;
+  title: string;
+  description?: string;
+  eventType: 'Reminder' | 'Meeting' | 'Deadline' | 'Site Visit' | 'Call' | 'Milestone' | 'Review';
+  createdByUserId: string;
+  projectId?: string;
+  workspaceId: string;
+  eventDate: string; // YYYY-MM-DD format
+  eventTime?: string; // HH:MM format (24h), null means "any time"
+  createdAt: string;
+  updatedAt: string;
+  updatedBy?: string;
+  deletedAt?: string;
+  deletedBy?: string;
+}
+
+// Calendar Event input types
+export interface CreateCalendarEventInput {
+  title: string;
+  description?: string;
+  eventType: 'Reminder' | 'Meeting' | 'Deadline' | 'Site Visit' | 'Call' | 'Milestone' | 'Review';
+  projectId?: string;
+  workspaceId: string;
+  eventDate: string; // YYYY-MM-DD format
+  eventTime?: string; // HH:MM format (24h), null means "any time"
+}
+
+export interface UpdateCalendarEventInput {
+  title?: string;
+  description?: string;
+  eventType?: 'Reminder' | 'Meeting' | 'Deadline' | 'Site Visit' | 'Call' | 'Milestone' | 'Review';
+  projectId?: string;
+  eventDate?: string; // YYYY-MM-DD format
+  eventTime?: string; // HH:MM format (24h), null means "any time"
+}
+
 // Invoice entity with payment tracking
 export interface Invoice {
   id: string;

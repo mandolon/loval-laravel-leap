@@ -8,10 +8,7 @@ import {
   getCurrentDateShort,
   getInitialCalendar
 } from '../../utils';
-import {
-  EVENTS,
-  UPCOMING_EVENTS,
-} from '../../constants';
+import { useCalendarData } from '../../hooks/useCalendarData';
 import { EventCard } from './EventCard';
 import { UpcomingEventCard } from './UpcomingEventCard';
 import { ActivityItem } from './ActivityItem';
@@ -158,6 +155,12 @@ const formatActivityText = (item: any): { title: string, subtitle: string } => {
 export const CalendarDashboardContent: React.FC = () => {
   const { user } = useUser();
   const { currentWorkspace } = useWorkspaces();
+
+  // Fetch calendar data from all sources (tasks, requests, calendar events)
+  const { allEvents, eventsForDay: getEventsForDay, upcomingEvents, isLoading: calendarDataLoading } = useCalendarData({
+    workspaceId: currentWorkspace?.id || '',
+  });
+
   const [mdUp, setMdUp] = useState(true);
   const [currentYear, setCurrentYear] = useState(INITIAL_CALENDAR.year);
   const [currentMonth, setCurrentMonth] = useState(INITIAL_CALENDAR.month);
@@ -462,19 +465,19 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
 
   // Group upcoming events by month
   const eventsByMonth = useMemo(() => {
-    const grouped = new Map<string, typeof UPCOMING_EVENTS>();
-    UPCOMING_EVENTS.forEach((event) => {
+    const grouped = new Map<string, typeof upcomingEvents>();
+    upcomingEvents.forEach((event) => {
       if (!grouped.has(event.month)) {
         grouped.set(event.month, []);
       }
       grouped.get(event.month)!.push(event);
     });
     return Array.from(grouped.entries()).sort((a, b) => {
-      const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+      const months = ['January', 'February', 'March', 'April', 'May', 'June',
                      'July', 'August', 'September', 'October', 'November', 'December'];
       return months.indexOf(a[0]) - months.indexOf(b[0]);
     });
-  }, []);
+  }, [upcomingEvents]);
 
   // Set initial sticky month
   useEffect(() => {
@@ -541,7 +544,7 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
   }, [eventsByMonth, stickyMonth]);
 
   const selectedDay = calendarDays[selectedIndex] || calendarDays[0];
-  const eventsForDay = EVENTS[selectedIndex] || [];
+  const eventsForDayData = getEventsForDay(selectedIndex, calendarDays);
   const userName = user?.name?.split(' ')[0] || 'there';
 
   return (
@@ -680,17 +683,17 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
                   </span>
                 </div>
                 <div className='text-right text-sm text-[#202020] tabular-nums'>
-                  {eventsForDay.length}
+                  {eventsForDayData.length}
                   <span className='ml-1 text-xs text-[#505050]'>
-                    {eventsForDay.length === 1 ? 'event' : 'events'}
+                    {eventsForDayData.length === 1 ? 'event' : 'events'}
                   </span>
                 </div>
               </div>
 
-              {eventsForDay.length > 0 ? (
+              {eventsForDayData.length > 0 ? (
                 <div className='flex-1 min-h-0 overflow-y-auto scrollbar-hide'>
-                  {eventsForDay.map((event, index) => (
-                    <EventCard key={event.id} event={event} showBorder={index > 0} />
+                  {eventsForDayData.map((event, index) => (
+                    <EventCard key={event.id} event={event} showBorder={index > 0} workspaceId={currentWorkspace?.id || ''} />
                   ))}
                 </div>
               ) : (
@@ -710,11 +713,8 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
                   Upcoming
                 </h3>
                 <AddEventPopover
+                  workspaceId={currentWorkspace?.id || ''}
                   buttonClassName='inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-[#303030] hover:border-[#4c75d1]/70 hover:bg-[#4c75d1]/5 active:bg-[#4c75d1]/10 transition-colors touch-manipulation shadow-sm'
-                  onAddEvent={(event) => {
-                    console.log("New event added:", event);
-                    // TODO: Add event to database/state
-                  }}
                 />
               </div>
 
@@ -755,6 +755,7 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
                             key={item.id}
                             item={item}
                             showBorder={showBorder}
+                            workspaceId={currentWorkspace?.id || ''}
                           />
                         );
                       })}
