@@ -33,11 +33,13 @@ export const EventCard: React.FC<EventCardProps> = ({ event, showBorder = false,
         showBorder ? 'border-t border-neutral-100' : ''
       }`}
     >
-      <span className='text-xs text-[#505050] w-14 shrink-0 tabular-nums font-medium text-right'>
+      <div className='flex items-center gap-2 min-w-0 flex-1'>
+        <div className={`w-1 h-5 md:h-4 rounded-full shrink-0 ${colorClass}`} />
+        <span className='text-sm text-[#202020] leading-tight truncate'>{event.title}</span>
+      </div>
+      <span className='text-xs text-[#505050] tabular-nums font-medium text-right w-16 shrink-0 ml-2'>
         {event.time}
       </span>
-      <div className={`w-1 h-5 md:h-4 rounded-full shrink-0 ${colorClass}`} />
-      <span className='text-sm text-[#202020] flex-1 leading-tight'>{event.title}</span>
     </div>
   );
 

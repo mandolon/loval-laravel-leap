@@ -58,6 +58,35 @@ const getFileColorClass = (mimetype: string | null, filename: string): string =>
 const neutralIconBg = 'bg-neutral-100';
 const ACTIVE_EVENTS_HEIGHT = 'clamp(170px, 32vh, 220px)';
 
+const FULL_MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+const getFullMonthName = (month: string): string => {
+  const trimmed = (month || '').trim();
+  if (!trimmed) return month;
+  const lower = trimmed.toLowerCase();
+  const shortToFull: Record<string, string> = {
+    jan: 'January',
+    feb: 'February',
+    mar: 'March',
+    apr: 'April',
+    may: 'May',
+    jun: 'June',
+    jul: 'July',
+    aug: 'August',
+    sep: 'September',
+    sept: 'September',
+    oct: 'October',
+    nov: 'November',
+    dec: 'December',
+  };
+  if (shortToFull[lower]) return shortToFull[lower];
+  const fullMatch = FULL_MONTHS.find((m) => m.toLowerCase() === lower);
+  return fullMatch || month;
+};
+
 const formatNotificationTitle = (notification: any): React.ReactNode => {
   const baseTitle = notification?.title || '';
   const actorName = notification?.metadata && typeof notification.metadata === 'object'
@@ -347,17 +376,18 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
     };
   }, [visibleIndex, calendarDays.length, mdUp]);
 
-  // Group upcoming events by month
+  // Group upcoming events by month (normalize to full month names)
   const eventsByMonth = useMemo(() => {
     const grouped = new Map<string, typeof upcomingEvents>();
     upcomingEvents.forEach((event) => {
-      if (!grouped.has(event.month)) {
-        grouped.set(event.month, []);
+      const monthKey = getFullMonthName(event.month || '');
+      if (!grouped.has(monthKey)) {
+        grouped.set(monthKey, []);
       }
-      grouped.get(event.month)!.push(event);
+      grouped.get(monthKey)!.push(event);
     });
     return Array.from(grouped.entries()).sort((a, b) => {
-      const months = ['January', 'February', 'March', 'April', 'May', 'June',
+      const months = ['January', 'February', 'March', 'April', 'May', 'June', 
                      'July', 'August', 'September', 'October', 'November', 'December'];
       return months.indexOf(a[0]) - months.indexOf(b[0]);
     });

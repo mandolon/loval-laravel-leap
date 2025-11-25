@@ -29,6 +29,9 @@ const EVENT_TYPES = [
   "Review",
 ] as const;
 
+const POPOVER_WIDTH = 256; // w-64
+const POPOVER_GAP = 12; // small gap between button and popover
+
 export default function AddEventPopover({
   workspaceId,
   onAddEvent,
@@ -54,6 +57,7 @@ export default function AddEventPopover({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const popoverRef = useRef<HTMLDivElement | null>(null);
+  const headerRef = useRef<HTMLDivElement | null>(null);
   const projectPopoverRef = useRef<HTMLDivElement | null>(null);
   const eventTypePopoverRef = useRef<HTMLDivElement | null>(null);
 
@@ -68,14 +72,47 @@ export default function AddEventPopover({
   useEffect(() => {
     if (isOpen && buttonRef.current && !popoverPosition) {
       const rect = buttonRef.current.getBoundingClientRect();
+      const leftPos = (rect.left + window.scrollX) - POPOVER_WIDTH - POPOVER_GAP;
+      const topPos = (rect.top + window.scrollY) + rect.height / 2;
       setPopoverPosition({
-        top: rect.top + rect.height / 2,
-        left: rect.left,
+        top: topPos,
+        left: leftPos,
       });
     } else if (!isOpen) {
       setPopoverPosition(null);
     }
   }, [isOpen, popoverPosition]);
+
+  // Debug: log computed header font sizes when popover opens
+  useEffect(() => {
+    if (!isOpen) return;
+    const logHeader = (label: string) => {
+      if (!headerRef.current) {
+        console.log(`AddEventPopover header debug (${label}): headerRef not set`);
+        return;
+      }
+      const el = headerRef.current;
+      const styles = window.getComputedStyle(el);
+      console.log(`AddEventPopover header debug (${label}):`, {
+        fontSize: styles.fontSize,
+        lineHeight: styles.lineHeight,
+        fontWeight: styles.fontWeight,
+        tag: el.tagName,
+        classList: Array.from(el.classList),
+        text: el.textContent,
+      });
+    };
+
+    // Log immediately, next frame, and after a short delay to catch style overrides
+    logHeader('immediate');
+    const rafId = requestAnimationFrame(() => logHeader('raf'));
+    const timeoutId = window.setTimeout(() => logHeader('timeout-150ms'), 150);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(timeoutId);
+    };
+  }, [isOpen]);
 
   // Close main popover on outside click
   useEffect(() => {
@@ -143,12 +180,11 @@ export default function AddEventPopover({
 
   const handleButtonClick = () => {
     if (!isOpen && buttonRef.current) {
-      // Calculate position before opening
+      // Calculate position before opening so first render is in place
       const rect = buttonRef.current.getBoundingClientRect();
-      setPopoverPosition({
-        top: rect.top + rect.height / 2,
-        left: rect.left,
-      });
+      const leftPos = (rect.left + window.scrollX) - POPOVER_WIDTH - POPOVER_GAP;
+      const topPos = (rect.top + window.scrollY) + rect.height / 2;
+      setPopoverPosition({ top: topPos, left: leftPos });
     }
     setIsOpen((open) => !open);
   };
@@ -210,11 +246,11 @@ export default function AddEventPopover({
         @keyframes popoverSlideIn {
           0% {
             opacity: 0;
-            transform: translate(-100%, -50%) scale(0.96);
+            transform: translateY(-50%) scale(0.96);
           }
           100% {
             opacity: 1;
-            transform: translate(-100%, -50%) scale(1);
+            transform: translateY(-50%) scale(1);
           }
         }
         .popover-enter {
@@ -223,8 +259,7 @@ export default function AddEventPopover({
         /* Prevent layout shift on mount */
         .popover-container {
           position: fixed;
-          transform: translate(-100%, -50%);
-          margin-left: -0.5rem;
+          transform: translateY(-50%);
           z-index: 9999;
         }
       `}</style>
@@ -248,7 +283,7 @@ export default function AddEventPopover({
         {isOpen && popoverPosition && createPortal(
           <div 
             ref={popoverRef}
-            className="popover-container popover-enter w-48 rounded-lg border border-neutral-200 bg-white shadow-lg"
+            className="popover-container popover-enter w-64 rounded-lg border border-neutral-200 bg-white shadow-lg"
             style={{
               top: `${popoverPosition.top}px`,
               left: `${popoverPosition.left}px`,
@@ -258,14 +293,35 @@ export default function AddEventPopover({
             <div className="absolute -right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 bg-white border border-neutral-200 border-l-transparent border-b-transparent rotate-45" />
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="p-2 space-y-1.5 relative">
+            <form onSubmit={handleSubmit} className="p-3 space-y-2 relative">
+              {/* Header */}
+              <div ref={headerRef} className="flex items-center justify-between mb-2 text-[13px] leading-tight">
+                <div className="flex items-center gap-1.5">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="12"
+                    height="12"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="text-[#9ca3af]"
+                  >
+                    <rect x="3" y="4" width="18" height="17" rx="2" />
+                    <path d="M8 2v4" />
+                    <path d="M16 2v4" />
+                    <path d="M3 10h18" />
+                  </svg>
+                  <span className="text-[13px] font-semibold text-[#202020]">Add Event</span>
+                </div>
+                <span className="text-[12px] text-[#606060] leading-none">{date || "No date"}</span>
+              </div>
               {/* Title */}
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Event title"
                 autoFocus
-                className="w-full h-6 rounded border border-neutral-200 bg-white px-2 text-[12px] outline-none placeholder:text-[#909090] focus:border-[#4c75d1] focus:ring-1 focus:ring-[#4c75d1]/20 transition-all"
+                className="w-full h-7 rounded border border-neutral-200 bg-white px-2 text-[12px] outline-none placeholder:text-[#909090] focus:border-[#4c75d1] focus:ring-1 focus:ring-[#4c75d1]/20 transition-all"
               />
 
               {/* Event Type selector with subtle calendar icon */}
@@ -273,7 +329,7 @@ export default function AddEventPopover({
                 <button
                   type="button"
                   onClick={() => setEventTypeOpen((open) => !open)}
-                  className="w-full h-6 rounded border border-neutral-200 bg-white px-2 text-[12px] outline-none flex items-center justify-between text-left hover:border-[#4c75d1] hover:bg-[#4c75d1]/5 transition-all touch-manipulation"
+                  className="w-full h-7 rounded border border-neutral-200 bg-white px-2 text-[12px] outline-none flex items-center justify-between text-left hover:border-[#4c75d1] hover:bg-[#4c75d1]/5 transition-all touch-manipulation"
                 >
                   <span className="flex items-center gap-1.5 min-w-0">
                     <svg
@@ -345,7 +401,7 @@ export default function AddEventPopover({
                 <button
                   type="button"
                   onClick={() => setProjectOpen((open) => !open)}
-                  className="w-full h-6 rounded border border-neutral-200 bg-white px-2 text-[12px] outline-none flex items-center justify-between text-left hover:border-[#4c75d1] hover:bg-[#4c75d1]/5 transition-all touch-manipulation"
+                  className="w-full h-7 rounded border border-neutral-200 bg-white px-2 text-[12px] outline-none flex items-center justify-between text-left hover:border-[#4c75d1] hover:bg-[#4c75d1]/5 transition-all touch-manipulation"
                 >
                   <span className={`truncate ${projectId ? "text-[#202020]" : "text-[#909090]"}`}>
                     {projectId ? projects.find(p => p.id === projectId)?.name : "Select project"}
@@ -440,7 +496,7 @@ export default function AddEventPopover({
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full h-6 rounded border border-neutral-200 bg-white px-2 text-[12px] outline-none text-[#202020] focus:border-[#4c75d1] focus:ring-1 focus:ring-[#4c75d1]/20 transition-all"
+                className="w-full h-7 rounded border border-neutral-200 bg-white px-2 text-[12px] outline-none text-[#202020] focus:border-[#4c75d1] focus:ring-1 focus:ring-[#4c75d1]/20 transition-all"
               />
 
               {/* Time picker with Any button inline */}
@@ -450,7 +506,7 @@ export default function AddEventPopover({
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
                   disabled={anyTime}
-                  className={`flex-1 h-6 rounded border px-2 text-[12px] outline-none transition-all ${
+                  className={`flex-1 h-7 rounded border px-2 text-[12px] outline-none transition-all ${
                     anyTime
                       ? "border-neutral-200 bg-neutral-50 text-[#808080] cursor-not-allowed"
                       : "border-neutral-200 bg-white text-[#202020] focus:border-[#4c75d1] focus:ring-1 focus:ring-[#4c75d1]/20"
@@ -459,7 +515,7 @@ export default function AddEventPopover({
                 <button
                   type="button"
                   onClick={() => setAnyTime((prev) => !prev)}
-                  className={`h-6 rounded px-2 text-[12px] font-medium transition-all touch-manipulation flex items-center gap-1 whitespace-nowrap ${
+                  className={`h-7 rounded px-2 text-[12px] font-medium transition-all touch-manipulation flex items-center gap-1 whitespace-nowrap ${
                     anyTime
                       ? "bg-[#4c75d1] text-white border border-[#4c75d1]"
                       : "bg-white text-[#505050] border border-neutral-200 hover:border-[#4c75d1] hover:bg-[#4c75d1]/5"
@@ -478,15 +534,15 @@ export default function AddEventPopover({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Add a description (optional)"
-                rows={2}
+                rows={3}
                 className="w-full rounded border border-neutral-200 px-2 py-1 text-[12px] outline-none transition-all resize-none bg-white placeholder:text-[#909090] focus:border-[#4c75d1] focus:ring-1 focus:ring-[#4c75d1]/20"
               />
 
               {/* Bottom action button with separator */}
-              <div className="pt-1.5 mt-1.5 border-t border-neutral-100 flex items-center justify-end">
+              <div className="pt-2 mt-2 border-t border-neutral-100 flex items-center justify-end">
                 <button
                   type="submit"
-                  className="flex-1 h-6 rounded text-[12px] font-medium text-white bg-[#4c75d1] hover:bg-[#3b61b6] active:bg-[#2f4d94] disabled:bg-neutral-300 disabled:text-[#808080] disabled:cursor-not-allowed transition-all touch-manipulation"
+                  className="flex-1 h-7 rounded text-[12px] font-medium text-white bg-[#4c75d1] hover:bg-[#3b61b6] active:bg-[#2f4d94] disabled:bg-neutral-300 disabled:text-[#808080] disabled:cursor-not-allowed transition-all touch-manipulation"
                   disabled={!title.trim() || !date.trim()}
                 >
                   Add to calendar

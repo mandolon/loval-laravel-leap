@@ -345,6 +345,21 @@ export const ManualEventDetailsPopover: React.FC<ManualEventDetailsPopoverProps>
 
   return (
     <div ref={containerRef} className="relative">
+      <style>{`
+        @keyframes popoverSlideIn {
+          0% {
+            opacity: 0;
+            transform: translateY(-50%) scale(0.96);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(-50%) scale(1);
+          }
+        }
+        .popover-enter {
+          animation: popoverSlideIn 180ms cubic-bezier(0.16, 1, 0.3, 1);
+        }
+      `}</style>
       {/* Trigger */}
       <div
         ref={triggerRef}
@@ -362,19 +377,19 @@ export const ManualEventDetailsPopover: React.FC<ManualEventDetailsPopoverProps>
       {isOpen && createPortal(
         <div 
           ref={popoverRef} 
-          className="fixed w-64 rounded-lg bg-white border border-neutral-200 shadow-xl z-[9999] animate-in fade-in duration-200"
+          className="popover-enter fixed w-64 rounded-lg bg-white border border-neutral-200 shadow-xl z-[9999]"
           style={{
             top: `${(triggerRef.current?.getBoundingClientRect().top || 0) + window.scrollY}px`,
-            left: `${(triggerRef.current?.getBoundingClientRect().left || 0) - 280}px`,
+            left: `${(triggerRef.current?.getBoundingClientRect().left || 0) - 270}px`,
             transform: 'translateY(-50%)'
           }}
         >
           <form onSubmit={handleSave} className="p-3 space-y-2">
             {/* Header with kind tag */}
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-2 text-[13px] leading-tight">
               <div className="flex items-center gap-1.5">
                 <Icon name="tag" className="text-[#9ca3af]" />
-                <span className="text-[11px] font-medium text-[#606060]">
+                <span className="text-[13px] font-semibold text-[#202020]">
                   Event
                 </span>
               </div>
