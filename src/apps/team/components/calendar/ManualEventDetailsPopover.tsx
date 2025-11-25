@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
+import { useUpdateCalendarEvent, useDeleteCalendarEvent } from "@/lib/api/hooks/useCalendarEvents";
+import { useProjects } from "@/lib/api/hooks/useProjects";
 
 // ===== Types =====
 export interface ManualEventDetails {
@@ -7,18 +9,20 @@ export interface ManualEventDetails {
   title: string;
   date: string; // YYYY-MM-DD
   time?: string; // e.g. "3:00 PM" or "15:00"
-  project?: string | null;
+  projectId?: string | null;
+  project?: string | null; // For backwards compatibility
   anyTime?: boolean;
   eventType?: string;
   description?: string;
+  workspaceId?: string;
 }
 
 interface ManualEventDetailsPopoverProps {
   event: ManualEventDetails;
+  workspaceId: string;
   onSave?: (updated: ManualEventDetails) => void;
+  onDelete?: (id: string | number) => void;
   anchorLabel?: string;
-  eventTypes?: string[];
-  projectOptions?: string[];
   children: React.ReactNode;
 }
 
@@ -31,14 +35,6 @@ const DEFAULT_EVENT_TYPES = [
   "Call",
   "Milestone",
   "Review",
-] as const;
-
-const DEFAULT_PROJECT_OPTIONS = [
-  "Echo Summit Cabin",
-  "500-502 U Street",
-  "2709 T Street",
-  "3218 4th Ave",
-  "Sonoma Duplex",
 ] as const;
 
 // ===== Utility Functions =====
@@ -101,7 +97,7 @@ function useEventFormState(event: ManualEventDetails) {
     title: event.title || "",
     date: event.date || "",
     time: timeUtils.toInput(event.time),
-    project: event.project ?? null,
+    projectId: event.projectId ?? null,
     eventType: event.eventType || "Meeting",
     anyTime: event.anyTime ?? !event.time,
     description: event.description || "",
@@ -113,7 +109,7 @@ function useEventFormState(event: ManualEventDetails) {
       title: event.title || "",
       date: event.date || "",
       time: timeUtils.toInput(event.time),
-      project: event.project ?? null,
+      projectId: event.projectId ?? null,
       eventType: event.eventType || "Meeting",
       anyTime: event.anyTime ?? !event.time,
       description: event.description || "",
@@ -200,19 +196,27 @@ const Icon: React.FC<IconProps> = ({ name, className = "", rotate = false }) => 
 // ===== Main Component =====
 export const ManualEventDetailsPopover: React.FC<ManualEventDetailsPopoverProps> = ({
   event,
+  workspaceId,
   onSave,
-  eventTypes = DEFAULT_EVENT_TYPES,
-  projectOptions = DEFAULT_PROJECT_OPTIONS,
+  onDelete,
   children,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [formState, setFormState] = useEventFormState(event);
   const [eventTypeOpen, setEventTypeOpen] = useState(false);
   const [projectOpen, setProjectOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+
+  // API hooks
+  const updateCalendarEvent = useUpdateCalendarEvent();
+  const deleteCalendarEvent = useDeleteCalendarEvent();
+  const { data: projects = [], isLoading: projectsLoading } = useProjects(workspaceId);
+
+  const eventTypes = DEFAULT_EVENT_TYPES;
 
   // Debug effect
   useEffect(() => {
@@ -262,25 +266,68 @@ export const ManualEventDetailsPopover: React.FC<ManualEventDetailsPopoverProps>
   }, [isOpen, closePopover]);
 
   const handleSave = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!formState.title.trim() || !formState.date.trim()) return;
+      if (!formState.title.trim() || !formState.date.trim() || !event.id) return;
 
-      const updated: ManualEventDetails = {
-        ...event,
-        title: formState.title.trim(),
-        date: formState.date.trim(),
-        project: formState.project,
-        eventType: formState.eventType,
-        anyTime: formState.anyTime,
-        description: formState.description.trim(),
-        time: formState.anyTime ? undefined : timeUtils.toDisplay(formState.time),
-      };
+      try {
+        await updateCalendarEvent.mutateAsync({
+          id: event.id as string,
+          data: {
+            title: formState.title.trim(),
+            eventType: formState.eventType as any,
+            projectId: formState.projectId || undefined,
+            eventDate: formState.date.trim(),
+            eventTime: formState.anyTime ? undefined : formState.time,
+            description: formState.description.trim() || undefined,
+          },
+        });
 
-      onSave?.(updated);
-      setIsOpen(false);
+        // Call optional callback for backwards compatibility
+        if (onSave) {
+          const project = projects.find(p => p.id === formState.projectId);
+          const updated: ManualEventDetails = {
+            ...event,
+            title: formState.title.trim(),
+            date: formState.date.trim(),
+            projectId: formState.projectId,
+            project: project?.name || null,
+            eventType: formState.eventType,
+            anyTime: formState.anyTime,
+            description: formState.description.trim(),
+            time: formState.anyTime ? undefined : timeUtils.toDisplay(formState.time),
+          };
+          onSave(updated);
+        }
+
+        setIsOpen(false);
+      } catch (error) {
+        console.error("Failed to update calendar event:", error);
+        // Error toast is handled by the mutation hook
+      }
     },
-    [formState, event, onSave]
+    [formState, event, onSave, updateCalendarEvent, projects]
+  );
+
+  const handleDelete = useCallback(
+    async () => {
+      if (!event.id) return;
+
+      try {
+        await deleteCalendarEvent.mutateAsync(event.id as string);
+
+        // Call optional callback for backwards compatibility
+        if (onDelete) {
+          onDelete(event.id);
+        }
+
+        setIsOpen(false);
+      } catch (error) {
+        console.error("Failed to delete calendar event:", error);
+        // Error toast is handled by the mutation hook
+      }
+    },
+    [event.id, onDelete, deleteCalendarEvent]
   );
 
   const updateField = useCallback(
@@ -394,7 +441,7 @@ export const ManualEventDetailsPopover: React.FC<ManualEventDetailsPopoverProps>
                   <span className="flex items-center gap-1.5 min-w-0">
                     <Icon name="list" className="text-[#9ca3af]" />
                     <span className="truncate text-[#202020]">
-                      {formState.project || "Select project"}
+                      {formState.projectId ? projects.find(p => p.id === formState.projectId)?.name : "Select project"}
                     </span>
                   </span>
                   <Icon
@@ -405,20 +452,38 @@ export const ManualEventDetailsPopover: React.FC<ManualEventDetailsPopoverProps>
                 </button>
               }
             >
-              {projectOptions.map((name) => (
-                <button
-                  key={name}
-                  type="button"
-                  onClick={() => {
-                    updateField("project", name);
-                    setProjectOpen(false);
-                  }}
-                  className="w-full px-2 py-1 text-[12px] text-left hover:bg-neutral-50 active:bg-neutral-100 text-[#202020] transition-colors flex items-center gap-1.5"
-                >
-                  <Icon name="list" className="text-[#9ca3af]" />
-                  <span className="truncate">{name}</span>
-                </button>
-              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  updateField("projectId", null);
+                  setProjectOpen(false);
+                }}
+                className="w-full px-2 py-1 text-[12px] text-left hover:bg-neutral-50 text-[#606060] transition-colors flex items-center gap-1.5"
+              >
+                <Icon name="list" className="text-[#9ca3af]" />
+                <span className="truncate">Select project</span>
+              </button>
+              {projects.length > 0 && <div className="h-px bg-neutral-100 my-0.5" />}
+              {projectsLoading ? (
+                <div className="px-2 py-1 text-[12px] text-[#909090]">Loading projects...</div>
+              ) : projects.length === 0 ? (
+                <div className="px-2 py-1 text-[12px] text-[#909090]">No projects available</div>
+              ) : (
+                projects.map((project) => (
+                  <button
+                    key={project.id}
+                    type="button"
+                    onClick={() => {
+                      updateField("projectId", project.id);
+                      setProjectOpen(false);
+                    }}
+                    className="w-full px-2 py-1 text-[12px] text-left hover:bg-neutral-50 active:bg-neutral-100 text-[#202020] transition-colors flex items-center gap-1.5"
+                  >
+                    <Icon name="list" className="text-[#9ca3af]" />
+                    <span className="truncate">{project.name}</span>
+                  </button>
+                ))
+              )}
             </Dropdown>
 
             {/* Date */}
@@ -466,7 +531,7 @@ export const ManualEventDetailsPopover: React.FC<ManualEventDetailsPopoverProps>
             />
 
             {/* Actions */}
-            <div className="pt-1.5 mt-1.5 border-t border-neutral-100">
+            <div className="pt-1.5 mt-1.5 border-t border-neutral-100 space-y-1.5">
               <button
                 type="submit"
                 disabled={!formState.title.trim() || !formState.date.trim()}
@@ -474,6 +539,32 @@ export const ManualEventDetailsPopover: React.FC<ManualEventDetailsPopoverProps>
               >
                 Save changes
               </button>
+              {showDeleteConfirm ? (
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    className="flex-1 h-7 rounded text-[12px] font-medium text-white bg-red-600 hover:bg-red-700 active:bg-red-800 transition-all touch-manipulation"
+                  >
+                    Confirm Delete
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="flex-1 h-7 rounded text-[12px] font-medium text-[#505050] bg-white border border-neutral-200 hover:bg-neutral-50 transition-all touch-manipulation"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="w-full h-7 rounded text-[12px] font-medium text-red-600 bg-white border border-red-200 hover:bg-red-50 hover:border-red-300 transition-all touch-manipulation"
+                >
+                  Delete Event
+                </button>
+              )}
             </div>
           </form>
         </div>,

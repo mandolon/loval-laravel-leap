@@ -15,6 +15,7 @@ export interface TaskEventDetails {
 
 interface TaskEventDetailsPopoverProps {
   event: TaskEventDetails;
+  workspaceId: string;
   children: React.ReactNode;
 }
 

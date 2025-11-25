@@ -15,6 +15,7 @@ export interface RequestEventDetails {
 
 interface RequestEventDetailsPopoverProps {
   event: RequestEventDetails;
+  workspaceId: string;
   children: React.ReactNode;
 }
 

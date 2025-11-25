@@ -8,21 +8,23 @@ import { RequestEventDetailsPopover } from './RequestEventDetailsPopover';
 interface UpcomingEventCardProps {
   item: UpcomingEventItem;
   showBorder: boolean;
+  workspaceId: string;
 }
 
-export const UpcomingEventCard: React.FC<UpcomingEventCardProps> = ({ item, showBorder }) => {
+export const UpcomingEventCard: React.FC<UpcomingEventCardProps> = ({ item, showBorder, workspaceId }) => {
   const barClass = EVENT_KIND_TO_COLOR[item.kind];
 
   // Convert UpcomingEventItem to the format expected by the popovers
   const eventDetails = {
-    id: item.id,
+    id: (item as any)._internalId || item.id, // Use the actual DB ID
     title: item.title,
     date: item.date || `2024-11-${String(item.day).padStart(2, '0')}`, // Fallback to construct from day
     time: item.time,
-    project: item.project || null,
+    projectId: item.project || null,
     anyTime: !item.time || item.time === 'Any time',
     eventType: item.eventType || (item.kind === 'event' ? 'Meeting' : item.kind === 'task' ? 'Task' : 'Request'),
     description: item.description || '',
+    workspaceId: (item as any)._workspaceId || workspaceId,
   };
 
   const cardContent = (
@@ -64,22 +66,22 @@ export const UpcomingEventCard: React.FC<UpcomingEventCardProps> = ({ item, show
   // Wrap with appropriate popover based on event kind
   if (item.kind === 'event') {
     return (
-      <ManualEventDetailsPopover 
+      <ManualEventDetailsPopover
         event={eventDetails}
-        onSave={(updated) => console.log('Event updated:', updated)}
+        workspaceId={workspaceId}
       >
         {cardContent}
       </ManualEventDetailsPopover>
     );
   } else if (item.kind === 'task') {
     return (
-      <TaskEventDetailsPopover event={eventDetails}>
+      <TaskEventDetailsPopover event={eventDetails} workspaceId={workspaceId}>
         {cardContent}
       </TaskEventDetailsPopover>
     );
   } else if (item.kind === 'request') {
     return (
-      <RequestEventDetailsPopover event={eventDetails}>
+      <RequestEventDetailsPopover event={eventDetails} workspaceId={workspaceId}>
         {cardContent}
       </RequestEventDetailsPopover>
     );
