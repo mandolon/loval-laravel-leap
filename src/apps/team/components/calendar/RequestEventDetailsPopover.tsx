@@ -137,6 +137,16 @@ export const RequestEventDetailsPopover: React.FC<RequestEventDetailsPopoverProp
 
   const inputBase =
     "w-full h-7 rounded border border-transparent bg-neutral-50 px-2 text-[12px] outline-none text-[#202020] cursor-default";
+  const formatDisplayDate = (value?: string) => {
+    if (!value) return "No date";
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return parsed.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
 
   return (
     <div ref={containerRef} className="relative">
@@ -181,10 +191,10 @@ export const RequestEventDetailsPopover: React.FC<RequestEventDetailsPopoverProp
         >
           <div className="p-3 space-y-2">
             {/* Header with kind tag */}
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-2 text-[13px] leading-tight">
               <div className="flex items-center gap-1.5">
                 <Icon name="tag" className="text-[#9ca3af]" />
-                <span className="text-[11px] font-medium text-[#606060]">
+                <span className="text-[13px] font-semibold text-[#202020]">
                   Request
                 </span>
               </div>
@@ -226,12 +236,9 @@ export const RequestEventDetailsPopover: React.FC<RequestEventDetailsPopoverProp
             </button>
 
             {/* Date */}
-            <input
-              type="date"
-              value={event.date}
-              readOnly
-              className={inputBase}
-            />
+            <div className={`${inputBase} flex items-center justify-between`}>
+              <span className="text-[#202020]">{formatDisplayDate(event.date)}</span>
+            </div>
 
             {/* Time */}
             <div className="flex gap-1">

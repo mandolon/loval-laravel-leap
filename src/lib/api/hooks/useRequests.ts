@@ -26,7 +26,7 @@ const transformRequest = (row: any): Request => {
     projectId: row.project_id,
     workspaceId: row.workspace_id,
     status: row.status,
-    respondBy: row.respond_by,
+    respondBy: row.respond_by ? String(row.respond_by).split('T')[0] : null,
     isUnread: row.is_unread ?? false,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

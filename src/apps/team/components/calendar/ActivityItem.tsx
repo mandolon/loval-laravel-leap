@@ -29,8 +29,8 @@ export const ActivityItem: React.FC<ActivityItemProps> = ({
 
   return (
     <div className={`flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors touch-manipulation cursor-pointer ${borderClasses}`}>
-      <div className='h-7 w-7 rounded-full border border-slate-200 bg-white flex items-center justify-center shrink-0 text-[#0f172a]'>
-        <Icon className='w-4 h-4 text-[#0f172a]' />
+      <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 ${iconBg}`}>
+        <Icon className='w-4 h-4 text-current' />
       </div>
       <div className='flex-1 min-w-0'>
         <div className='text-sm text-[#0f172a] font-normal truncate'>{title}</div>

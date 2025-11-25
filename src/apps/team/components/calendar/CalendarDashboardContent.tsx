@@ -16,7 +16,7 @@ import { FileItem } from './FileItem';
 import AddEventPopover from './AddEventPopover';
 import { useNotifications } from '@/lib/api/hooks/useNotifications';
 import { useUserRecentFiles } from '@/lib/api/hooks/useRecentFiles';
-import { ListChecks, FileText, FolderClosed, Users, Settings, Upload, Trash2, Edit, Plus, MessageSquare, Bell } from 'lucide-react';
+import { ListChecks, FileText, FolderClosed, Users, Settings, Upload, Trash2, Edit, Plus, MessageSquare, Bell, CheckSquare, MessageCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 const INITIAL_CALENDAR = getInitialCalendar();
@@ -56,6 +56,13 @@ const getFileColorClass = (mimetype: string | null, filename: string): string =>
 
 // Helper function to map activity action to icon and color
 const neutralIconBg = 'bg-neutral-100';
+const iconBgMap: Record<string, string> = {
+  task: 'bg-emerald-600 text-white',
+  request: 'bg-amber-600 text-white',
+  file: 'bg-sky-600 text-white',
+  chat: 'bg-indigo-600 text-white',
+  default: 'bg-slate-700 text-white',
+};
 const ACTIVE_EVENTS_HEIGHT = 'clamp(170px, 32vh, 220px)';
 
 const FULL_MONTHS = [
@@ -146,32 +153,37 @@ const formatNotificationTitle = (notification: any): React.ReactNode => {
 
 const getActivityIcon = (action: string, resourceType: string): { icon: React.ComponentType<{ className?: string }>, iconBg: string } => {
   const actionLower = action.toLowerCase();
+  const lowerResource = resourceType.toLowerCase();
 
   if (actionLower.includes('create') || actionLower.includes('add')) {
-    if (resourceType === 'file') return { icon: Upload, iconBg: neutralIconBg };
-    if (resourceType === 'task') return { icon: ListChecks, iconBg: neutralIconBg };
-    return { icon: Plus, iconBg: neutralIconBg };
+    if (lowerResource === 'file') return { icon: FolderClosed, iconBg: iconBgMap.file };
+    if (lowerResource === 'task') return { icon: CheckSquare, iconBg: iconBgMap.task };
+    if (lowerResource === 'request') return { icon: MessageCircle, iconBg: iconBgMap.request };
+    if (lowerResource === 'chat' || lowerResource === 'message') return { icon: MessageSquare, iconBg: iconBgMap.chat };
+    return { icon: Plus, iconBg: iconBgMap.default };
   }
 
   if (actionLower.includes('update') || actionLower.includes('edit') || actionLower.includes('modify')) {
-    return { icon: Edit, iconBg: neutralIconBg };
+    return { icon: Edit, iconBg: iconBgMap.default };
   }
 
   if (actionLower.includes('delete') || actionLower.includes('remove')) {
-    return { icon: Trash2, iconBg: neutralIconBg };
+    return { icon: Trash2, iconBg: iconBgMap.default };
   }
 
   if (actionLower.includes('complete')) {
-    return { icon: ListChecks, iconBg: neutralIconBg };
+    return { icon: CheckSquare, iconBg: iconBgMap.task };
   }
 
   // Default icons based on resource type
-  if (resourceType === 'file') return { icon: FileText, iconBg: neutralIconBg };
-  if (resourceType === 'task') return { icon: ListChecks, iconBg: neutralIconBg };
-  if (resourceType === 'project') return { icon: FolderClosed, iconBg: neutralIconBg };
-  if (resourceType === 'user' || resourceType === 'member') return { icon: Users, iconBg: neutralIconBg };
+  if (lowerResource === 'file') return { icon: FolderClosed, iconBg: iconBgMap.file };
+  if (lowerResource === 'task') return { icon: CheckSquare, iconBg: iconBgMap.task };
+  if (lowerResource === 'request') return { icon: MessageCircle, iconBg: iconBgMap.request };
+  if (lowerResource === 'project') return { icon: FolderClosed, iconBg: iconBgMap.file };
+  if (lowerResource === 'chat' || lowerResource === 'message') return { icon: MessageSquare, iconBg: iconBgMap.chat };
+  if (lowerResource === 'user' || lowerResource === 'member') return { icon: Users, iconBg: iconBgMap.default };
 
-  return { icon: Settings, iconBg: neutralIconBg };
+  return { icon: Settings, iconBg: iconBgMap.default };
 };
 
 // Helper function to format activity title and subtitle with null safety
@@ -250,23 +262,23 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
   const typeLower = type.toLowerCase();
   
   if (typeLower.includes('message') || typeLower.includes('chat')) {
-    return { icon: MessageSquare, iconBg: neutralIconBg };
+    return { icon: MessageSquare, iconBg: iconBgMap.chat };
   }
   if (typeLower.includes('file') || typeLower.includes('upload')) {
-    return { icon: Upload, iconBg: neutralIconBg };
+    return { icon: FolderClosed, iconBg: iconBgMap.file };
   }
   if (typeLower.includes('model')) {
-    return { icon: FolderClosed, iconBg: neutralIconBg };
+    return { icon: FolderClosed, iconBg: iconBgMap.file };
   }
   if (typeLower.includes('request')) {
-    return { icon: ListChecks, iconBg: neutralIconBg };
+    return { icon: MessageCircle, iconBg: iconBgMap.request };
   }
   if (typeLower.includes('task')) {
-    return { icon: ListChecks, iconBg: neutralIconBg };
+    return { icon: CheckSquare, iconBg: iconBgMap.task };
   }
   
   // Default notification icon
-    return { icon: Bell, iconBg: neutralIconBg };
+    return { icon: Bell, iconBg: iconBgMap.default };
 };
 
   // Transform notifications to match ActivityItem component props

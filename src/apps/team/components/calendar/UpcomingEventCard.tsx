@@ -19,7 +19,7 @@ export const UpcomingEventCard: React.FC<UpcomingEventCardProps> = ({ item, show
     id: (item as any)._internalId || item.id, // Use the actual DB ID
     title: item.title,
     date: item.date || `2024-11-${String(item.day).padStart(2, '0')}`, // Fallback to construct from day
-    time: item.time,
+    time: item.time === 'Any time' ? 'Anytime' : item.time,
     projectId: item.project || null,
     anyTime: !item.time || item.time === 'Any time',
     eventType: item.eventType || (item.kind === 'event' ? 'Meeting' : item.kind === 'task' ? 'Task' : 'Request'),
@@ -48,17 +48,17 @@ export const UpcomingEventCard: React.FC<UpcomingEventCardProps> = ({ item, show
 
       {/* Event content */}
       <div className='flex-1 min-w-0'>
-        <div className='text-sm text-[#202020] font-normal leading-snug text-left'>
+        <div className='text-sm text-[#202020] font-semibold leading-snug text-left'>
           {item.title.includes(':') ? (
             <>
-              <span className='font-medium'>{item.title.split(':')[0]}:</span>
-              <span> {item.title.split(':').slice(1).join(':')}</span>
+              <span>{item.title.split(':')[0]}:</span>
+              <span className='font-normal'> {item.title.split(':').slice(1).join(':')}</span>
             </>
           ) : (
             item.title
           )}
         </div>
-        <div className='text-xs text-[#505050] mt-1.5 font-medium tabular-nums'>{item.time}</div>
+        <div className='text-xs text-[#505050] mt-1.5 font-normal tabular-nums'>{eventDetails.time}</div>
       </div>
     </div>
   );
