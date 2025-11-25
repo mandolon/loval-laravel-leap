@@ -21,7 +21,8 @@ const DEFAULT_PROJECTS: string[] = [
   "Echo Summit Cabin",
   "500-502 U Street",
   "2709 T Street",
-  "Lehman Garage",
+  "3218 4th Ave",
+  "Sonoma Duplex",
 ];
 
 const EVENT_TYPES: string[] = [

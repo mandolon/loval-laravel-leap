@@ -557,9 +557,9 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
         </div>
 
         {/* Calendar section */}
-        <div className='flex-1 flex flex-col lg:flex-row min-h-0 gap-3 lg:gap-4'>
-        {/* Left section - Calendar grid + Activity/Files */}
-        <div className='flex-1 flex flex-col min-w-0 gap-3'>
+        <div className='flex-1 grid grid-cols-1 lg:grid-cols-[1fr_20rem] min-h-0 gap-3 lg:gap-4'>
+        {/* Calendar block */}
+        <div className='flex flex-col min-w-0 gap-3'>
           {/* Calendar scroll area */}
           <div className='rounded-xl bg-white/60 px-3 md:px-4 py-2 shrink-0'>
             <div className='flex items-center justify-between gap-2 mb-4'>
@@ -666,7 +666,108 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
               <div className='absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-white/60 to-transparent pointer-events-none' />
             </div>
           </div>
+        </div>
 
+        {/* Active/Upcoming card - mobile below calendar, lg in right column */}
+        <div className='w-full flex flex-col lg:min-h-0'>
+          <div className='flex-1 rounded-xl border border-neutral-200 bg-white/60 flex flex-col overflow-hidden'>
+            {/* Active date events section - fixed height to keep Upcoming stable; responsive via clamp */}
+            <div className='flex flex-col flex-shrink-0' style={{ height: ACTIVE_EVENTS_HEIGHT }}>
+              <div className='flex items-start justify-between gap-2 px-3 md:px-4 pt-3 md:pt-4 pb-3 border-b border-neutral-100'>
+                <div className='flex flex-col'>
+                  <span className='text-xs md:text-[13px] font-semibold text-[#202020]'>
+                    {selectedDay?.monthShort} {selectedDay?.day}, {selectedDay?.year}
+                  </span>
+                </div>
+                <div className='text-right text-sm text-[#202020] tabular-nums'>
+                  {eventsForDay.length}
+                  <span className='ml-1 text-xs text-[#505050]'>
+                    {eventsForDay.length === 1 ? 'event' : 'events'}
+                  </span>
+                </div>
+              </div>
+
+              {eventsForDay.length > 0 ? (
+                <div className='flex-1 min-h-0 overflow-y-auto scrollbar-hide'>
+                  {eventsForDay.map((event, index) => (
+                    <EventCard key={event.id} event={event} showBorder={index > 0} />
+                  ))}
+                </div>
+              ) : (
+                <div className='flex items-center justify-center flex-1'>
+                  <p className='text-sm text-[#808080]'>No events scheduled</p>
+                </div>
+              )}
+            </div>
+
+            {/* Divider between sections */}
+            <div className='border-t border-neutral-200' />
+
+            {/* Upcoming events section - takes remaining space */}
+            <div className='flex-1 flex flex-col overflow-hidden min-h-0'>
+              <div className='flex items-center justify-between px-3 md:px-4 pt-3 pb-3 border-b border-neutral-100'>
+                <h3 className='text-xs md:text-[13px] font-semibold text-[#202020]'>
+                  Upcoming
+                </h3>
+                <AddEventPopover
+                  buttonClassName='inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-[#303030] hover:border-[#4c75d1]/70 hover:bg-[#4c75d1]/5 active:bg-[#4c75d1]/10 transition-colors touch-manipulation shadow-sm'
+                  onAddEvent={(event) => {
+                    console.log("New event added:", event);
+                    // TODO: Add event to database/state
+                  }}
+                />
+              </div>
+
+              <div className='flex-1 overflow-y-auto scrollbar-hide relative' ref={upcomingEventsScrollRef}>
+              {/* Sticky header */}
+              {stickyMonth && (
+                <div className='sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-neutral-200 shadow-[0_8px_18px_-16px_rgba(0,0,0,0.55)] mb-1 px-3 md:px-4 py-2'>
+                  <div className='text-[10px] uppercase tracking-wider text-[#2f3135] font-semibold'>
+                    {stickyMonth}
+                  </div>
+                </div>
+              )}
+
+              {eventsByMonth.map(([month, events], monthIndex) => {
+                const isStickyMonth = month === stickyMonth;
+                return (
+                  <div key={month}>
+                    {/* Month header - keep minimal footprint when sticky to avoid jump without visible gap */}
+                    <div
+                      ref={(el) => {
+                        if (el) monthRefs.current.set(month, el);
+                      }}
+                      data-month={month}
+                      className={`px-3 md:px-4 ${isStickyMonth ? 'h-px mb-0 overflow-hidden' : 'pt-2 mb-3'}`}
+                    >
+                      <div
+                        className={`text-[10px] uppercase tracking-wider text-[#606060] font-semibold ${isStickyMonth ? 'opacity-0 pointer-events-none h-px' : ''}`}
+                      >
+                        {month}
+                      </div>
+                    </div>
+                    {/* Events for this month */}
+                    <div className='pb-3 md:pb-4'>
+                      {events.map((item, eventIndex) => {
+                        const showBorder = eventIndex > 0 || (monthIndex > 0 && eventIndex === 0);
+                        return (
+                          <UpcomingEventCard
+                            key={item.id}
+                            item={item}
+                            showBorder={showBorder}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+              </div>
+            </div>
+          </div>
+        </div>
+
+          {/* Activity + Recent files row */}
           {/* Activity + Recent files row */}
           <div className='flex-1 flex flex-col md:flex-row gap-3 md:gap-4 min-h-0'>
             {/* Recent files */}
@@ -777,105 +878,6 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
           </div>
         </div>
 
-        {/* Right section - Combined events card */}
-        <div className='w-full lg:w-80 lg:shrink-0 flex flex-col lg:min-h-0'>
-          {/* Combined card with Active date events + Upcoming events */}
-          <div className='flex-1 rounded-xl border border-neutral-200 bg-white/60 flex flex-col overflow-hidden'>
-            {/* Active date events section - fixed height to keep Upcoming stable; responsive via clamp */}
-            <div className='flex flex-col flex-shrink-0' style={{ height: ACTIVE_EVENTS_HEIGHT }}>
-              <div className='flex items-start justify-between gap-2 px-3 md:px-4 pt-3 md:pt-4 pb-3 border-b border-neutral-100'>
-                <div className='flex flex-col'>
-                  <span className='text-xs md:text-[13px] font-semibold text-[#202020]'>
-                    {selectedDay?.monthShort} {selectedDay?.day}, {selectedDay?.year}
-                  </span>
-                </div>
-                <div className='text-right text-sm text-[#202020] tabular-nums'>
-                  {eventsForDay.length}
-                  <span className='ml-1 text-xs text-[#505050]'>
-                    {eventsForDay.length === 1 ? 'event' : 'events'}
-                  </span>
-                </div>
-              </div>
-
-              {eventsForDay.length > 0 ? (
-                <div className='flex-1 min-h-0 overflow-y-auto scrollbar-hide'>
-                  {eventsForDay.map((event, index) => (
-                    <EventCard key={event.id} event={event} showBorder={index > 0} />
-                  ))}
-                </div>
-              ) : (
-                <div className='flex items-center justify-center py-8'>
-                  <p className='text-sm text-[#808080]'>No events scheduled</p>
-                </div>
-              )}
-            </div>
-
-            {/* Divider between sections */}
-            <div className='border-t border-neutral-200' />
-
-            {/* Upcoming events section - takes remaining space */}
-            <div className='flex-1 flex flex-col overflow-hidden min-h-0'>
-              <div className='flex items-center justify-between px-3 md:px-4 pt-3 pb-3 border-b border-neutral-100'>
-                <h3 className='text-xs md:text-[13px] font-semibold text-[#202020]'>
-                  Upcoming
-                </h3>
-                <AddEventPopover
-                  buttonClassName='inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-[#303030] hover:border-[#4c75d1]/70 hover:bg-[#4c75d1]/5 active:bg-[#4c75d1]/10 transition-colors touch-manipulation shadow-sm'
-                  onAddEvent={(event) => {
-                    console.log("New event added:", event);
-                    // TODO: Add event to database/state
-                  }}
-                />
-              </div>
-
-              <div className='flex-1 overflow-y-auto scrollbar-hide relative' ref={upcomingEventsScrollRef}>
-              {/* Sticky header */}
-              {stickyMonth && (
-                <div className='sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-neutral-200 shadow-[0_8px_18px_-16px_rgba(0,0,0,0.55)] mb-1 px-3 md:px-4 py-2'>
-                  <div className='text-[10px] uppercase tracking-wider text-[#2f3135] font-semibold'>
-                    {stickyMonth}
-                  </div>
-                </div>
-              )}
-
-              {eventsByMonth.map(([month, events], monthIndex) => {
-                const isStickyMonth = month === stickyMonth;
-                return (
-                  <div key={month}>
-                    {/* Month header - keep minimal footprint when sticky to avoid jump without visible gap */}
-                    <div
-                      ref={(el) => {
-                        if (el) monthRefs.current.set(month, el);
-                      }}
-                      data-month={month}
-                      className={`px-3 md:px-4 ${isStickyMonth ? 'h-px mb-0 overflow-hidden' : 'pt-2 mb-3'}`}
-                    >
-                      <div
-                        className={`text-[10px] uppercase tracking-wider text-[#606060] font-semibold ${isStickyMonth ? 'opacity-0 pointer-events-none h-px' : ''}`}
-                      >
-                        {month}
-                      </div>
-                    </div>
-                    {/* Events for this month */}
-                    <div className='pb-3 md:pb-4'>
-                      {events.map((item, eventIndex) => {
-                        const showBorder = eventIndex > 0 || (monthIndex > 0 && eventIndex === 0);
-                        return (
-                          <UpcomingEventCard
-                            key={item.id}
-                            item={item}
-                            showBorder={showBorder}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
       </div>
     </div>

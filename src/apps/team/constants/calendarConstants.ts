@@ -3,8 +3,8 @@ import { ListChecks, Bot, FolderClosed } from 'lucide-react';
 
 export const EVENT_KIND_TO_COLOR: Record<EventKind, string> = {
   event: 'bg-emerald-500',
-  request: 'bg-rose-500',
-  task: 'bg-amber-500',
+  request: 'bg-amber-500',
+  task: 'bg-rose-500',
 };
 
 // Mock events data - keyed by calendar day index
@@ -35,6 +35,10 @@ export const UPCOMING_EVENTS: UpcomingEventItem[] = [
     time: '1:00 PM',
     title: 'Task: U Street exterior stairs',
     kind: 'task',
+    date: '2024-11-18',
+    project: '500-502 U Street',
+    eventType: 'Task',
+    description: 'Complete design drawings for exterior staircase',
   },
   {
     id: 102,
@@ -44,6 +48,10 @@ export const UPCOMING_EVENTS: UpcomingEventItem[] = [
     time: '10:30 AM',
     title: 'Site visit: Echo Summit Cabin',
     kind: 'event',
+    date: '2024-11-20',
+    project: 'Echo Summit Cabin',
+    eventType: 'Site Visit',
+    description: 'Walk through site to review foundation progress',
   },
   {
     id: 103,
@@ -53,6 +61,10 @@ export const UPCOMING_EVENTS: UpcomingEventItem[] = [
     time: '2:00 PM',
     title: 'Task: Review structural drawings',
     kind: 'task',
+    date: '2024-11-22',
+    project: '2709 T Street',
+    eventType: 'Task',
+    description: 'Review and approve structural engineering drawings',
   },
   {
     id: 104,
@@ -62,6 +74,10 @@ export const UPCOMING_EVENTS: UpcomingEventItem[] = [
     time: '4:15 PM',
     title: 'Request: Sonoma Duplex',
     kind: 'request',
+    date: '2024-11-25',
+    project: 'Sonoma Duplex',
+    eventType: 'Request',
+    description: 'Client requested updated floor plan options',
   },
   {
     id: 105,
@@ -71,6 +87,10 @@ export const UPCOMING_EVENTS: UpcomingEventItem[] = [
     time: '9:00 AM',
     title: 'Event: Client presentation',
     kind: 'event',
+    date: '2024-11-28',
+    project: 'Echo Summit Cabin',
+    eventType: 'Meeting',
+    description: 'Present design options to client',
   },
   {
     id: 106,
@@ -80,6 +100,10 @@ export const UPCOMING_EVENTS: UpcomingEventItem[] = [
     time: '11:00 AM',
     title: 'Task: Submit permit application',
     kind: 'task',
+    date: '2024-12-02',
+    project: '500-502 U Street',
+    eventType: 'Deadline',
+    description: 'Submit final permit package to city planning department',
   },
   {
     id: 107,
@@ -89,6 +113,10 @@ export const UPCOMING_EVENTS: UpcomingEventItem[] = [
     time: '3:30 PM',
     title: 'Request: Material quotes',
     kind: 'request',
+    date: '2024-12-05',
+    project: '3218 4th Ave',
+    eventType: 'Request',
+    description: 'Client requested quotes for alternative material options',
   },
   {
     id: 108,
@@ -98,6 +126,10 @@ export const UPCOMING_EVENTS: UpcomingEventItem[] = [
     time: '10:00 AM',
     title: 'Event: Site inspection',
     kind: 'event',
+    date: '2024-12-08',
+    project: '2709 T Street',
+    eventType: 'Site Visit',
+    description: 'Building inspector walkthrough for framing approval',
   },
   {
     id: 109,
@@ -107,6 +139,10 @@ export const UPCOMING_EVENTS: UpcomingEventItem[] = [
     time: '1:00 PM',
     title: 'Task: Finalize design documents',
     kind: 'task',
+    date: '2024-12-12',
+    project: 'Echo Summit Cabin',
+    eventType: 'Milestone',
+    description: 'Complete all construction documents for contractor bid',
   },
   {
     id: 110,
@@ -116,6 +152,10 @@ export const UPCOMING_EVENTS: UpcomingEventItem[] = [
     time: '2:30 PM',
     title: 'Request: Budget approval',
     kind: 'request',
+    date: '2024-12-15',
+    project: '3218 4th Ave',
+    eventType: 'Request',
+    description: 'Client requested detailed budget breakdown for Phase 2',
   },
 ];
 

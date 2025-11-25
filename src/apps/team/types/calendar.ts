@@ -27,6 +27,10 @@ export interface UpcomingEventItem {
   time: string;
   title: string;
   kind: EventKind;
+  date?: string; // YYYY-MM-DD format
+  project?: string | null;
+  eventType?: string;
+  description?: string;
 }
 
 export interface RecentFileItem {
