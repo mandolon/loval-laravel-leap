@@ -26,7 +26,7 @@ export function TeamAvatarMenu() {
       <PopoverTrigger asChild>
         <button
           aria-label="Account menu"
-          className="group cursor-pointer inline-flex items-center gap-1 rounded-md px-1.5 py-[2px] transition ring-1 ring-transparent hover:bg-slate-100 hover:ring-slate-200"
+          className={`group cursor-pointer inline-flex items-center gap-1 h-8 rounded-full px-1.5 transition-all duration-200 ease-out bg-white/0 hover:bg-neutral-200/80 focus:bg-neutral-200/80 ${open ? 'bg-neutral-200/80' : ''}`}
         >
           <div
             className="h-6 w-6 rounded-full text-white grid place-items-center text-[11px] font-semibold shadow-sm"
@@ -35,17 +35,19 @@ export function TeamAvatarMenu() {
           >
             {user ? getAvatarInitials(user.name) : 'A'}
           </div>
-          <svg
-            viewBox="0 0 24 24"
-            width="12"
-            height="12"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="text-slate-600 transition group-hover:text-slate-700"
-          >
-            <path d="m6 9 6 6 6-6" />
-          </svg>
+          <span className={`p-1 rounded-full transition-all duration-200 ease-out hover:bg-neutral-300/80 ${open ? 'bg-neutral-300/80' : ''}`}>
+            <svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="text-neutral-700 transition hover:text-neutral-800"
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </span>
         </button>
       </PopoverTrigger>
       <PopoverContent 

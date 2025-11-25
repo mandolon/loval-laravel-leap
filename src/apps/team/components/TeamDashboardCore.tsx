@@ -1894,7 +1894,7 @@ const TopHeader = memo(function TopHeader({
           <div className="h-9 flex items-center justify-end pr-1 gap-2">
             <NotificationsPopover>
               <button
-                className="h-7 w-7 rounded-md bg-neutral-100 grid place-items-center shadow-sm hover:bg-neutral-100/80 transition-colors border-0"
+                className="h-8 w-8 rounded-full bg-neutral-100 grid place-items-center shadow-sm hover:bg-neutral-100/80 transition-colors border-0"
                 aria-label="Notifications"
               >
                 <Bell className="w-[14px] h-[14px] text-slate-700" strokeWidth={2} />
