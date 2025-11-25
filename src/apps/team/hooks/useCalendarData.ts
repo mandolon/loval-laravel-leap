@@ -4,6 +4,16 @@ import { useWorkspaceRequests } from '@/lib/api/hooks/useRequests';
 import { useWorkspaceCalendarEvents } from '@/lib/api/hooks/useCalendarEvents';
 import type { EventItem, UpcomingEventItem } from '../types/calendar';
 
+/**
+ * Parse a date string (YYYY-MM-DD) to a local Date object without timezone issues.
+ * This avoids the problem where new Date("2025-01-15") creates a UTC timestamp
+ * that shows as Jan 14 in PST timezone.
+ */
+function parseDateLocal(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 interface UseCalendarDataOptions {
   workspaceId: string;
 }
@@ -35,7 +45,7 @@ export function useCalendarData({ workspaceId }: UseCalendarDataOptions): UseCal
 
     // Add manual calendar events
     calendarEvents.forEach((event) => {
-      const eventDate = new Date(event.eventDate);
+      const eventDate = parseDateLocal(event.eventDate);
       const timeDisplay = event.eventTime
         ? (() => {
             const [hours, minutes] = event.eventTime.split(':');
@@ -67,7 +77,7 @@ export function useCalendarData({ workspaceId }: UseCalendarDataOptions): UseCal
     tasks.forEach((task) => {
       if (!task.dueDate) return;
 
-      const dueDate = new Date(task.dueDate);
+      const dueDate = parseDateLocal(task.dueDate);
       combined.push({
         id: idCounter++,
         month: dueDate.toLocaleDateString('en-US', { month: 'short' }),
@@ -89,7 +99,7 @@ export function useCalendarData({ workspaceId }: UseCalendarDataOptions): UseCal
     requests.forEach((request) => {
       if (!request.respondBy) return;
 
-      const respondByDate = new Date(request.respondBy);
+      const respondByDate = parseDateLocal(request.respondBy);
       combined.push({
         id: idCounter++,
         month: respondByDate.toLocaleDateString('en-US', { month: 'short' }),
@@ -109,8 +119,8 @@ export function useCalendarData({ workspaceId }: UseCalendarDataOptions): UseCal
 
     // Sort by date (earliest first)
     return combined.sort((a, b) => {
-      const dateA = new Date(a.date!);
-      const dateB = new Date(b.date!);
+      const dateA = parseDateLocal(a.date!);
+      const dateB = parseDateLocal(b.date!);
       return dateA.getTime() - dateB.getTime();
     });
   }, [calendarEvents, tasks, requests, workspaceId]);
@@ -121,9 +131,12 @@ export function useCalendarData({ workspaceId }: UseCalendarDataOptions): UseCal
       const day = calendarDays[dayIndex];
       if (!day) return [];
 
-      // Format the day's date as YYYY-MM-DD
-      const dayDate = new Date(day.year, day.month, day.day);
-      const dayDateStr = dayDate.toISOString().split('T')[0];
+      // Use fullDate to get correct date string (avoid timezone issues)
+      // CalendarDay.fullDate is already a Date object in local time
+      const year = day.fullDate.getFullYear();
+      const month = String(day.fullDate.getMonth() + 1).padStart(2, '0');
+      const dayNum = String(day.fullDate.getDate()).padStart(2, '0');
+      const dayDateStr = `${year}-${month}-${dayNum}`;
 
       return allEvents
         .filter((event) => event.date === dayDateStr)
@@ -150,7 +163,7 @@ export function useCalendarData({ workspaceId }: UseCalendarDataOptions): UseCal
 
     return allEvents.filter((event) => {
       if (!event.date) return false;
-      const eventDate = new Date(event.date);
+      const eventDate = parseDateLocal(event.date);
       eventDate.setHours(0, 0, 0, 0);
       return eventDate >= today;
     });

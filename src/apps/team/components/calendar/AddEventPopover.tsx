@@ -44,6 +44,7 @@ export default function AddEventPopover({
   const [eventType, setEventType] = useState<typeof EVENT_TYPES[number]>("Meeting");
   const [eventTypeOpen, setEventTypeOpen] = useState(false);
   const [anyTime, setAnyTime] = useState(true); // Default to "Any" time
+  const [description, setDescription] = useState("");
   const [popoverPosition, setPopoverPosition] = useState<{ top: number; left: number } | null>(null);
 
   // API hooks
@@ -134,6 +135,7 @@ export default function AddEventPopover({
     setProjectId(null);
     setEventType("Meeting");
     setAnyTime(true);
+    setDescription("");
     setProjectOpen(false);
     setEventTypeOpen(false);
     setIsOpen(false);
@@ -159,6 +161,7 @@ export default function AddEventPopover({
       // Create event in database
       await createCalendarEvent.mutateAsync({
         title: title.trim(),
+        description: description.trim() || undefined,
         eventType: eventType,
         projectId: projectId || undefined,
         workspaceId: workspaceId,
@@ -469,6 +472,15 @@ export default function AddEventPopover({
                   <span>Any</span>
                 </button>
               </div>
+
+              {/* Description textarea */}
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Add a description (optional)"
+                rows={2}
+                className="w-full rounded border border-neutral-200 px-2 py-1 text-[12px] outline-none transition-all resize-none bg-white placeholder:text-[#909090] focus:border-[#4c75d1] focus:ring-1 focus:ring-[#4c75d1]/20"
+              />
 
               {/* Bottom action button with separator */}
               <div className="pt-1.5 mt-1.5 border-t border-neutral-100 flex items-center justify-end">

@@ -156,9 +156,21 @@ export const CalendarDashboardContent: React.FC = () => {
   const { user } = useUser();
   const { currentWorkspace } = useWorkspaces();
 
+  // Show loading state if workspace is not loaded yet
+  if (!currentWorkspace?.id) {
+    return (
+      <div className='h-full flex items-center justify-center'>
+        <div className='text-center'>
+          <div className='inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#4c75d1] border-r-transparent'></div>
+          <p className='mt-4 text-sm text-[#606060]'>Loading workspace...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Fetch calendar data from all sources (tasks, requests, calendar events)
   const { allEvents, eventsForDay: getEventsForDay, upcomingEvents, isLoading: calendarDataLoading } = useCalendarData({
-    workspaceId: currentWorkspace?.id || '',
+    workspaceId: currentWorkspace.id,
   });
 
   const [mdUp, setMdUp] = useState(true);
@@ -180,7 +192,7 @@ export const CalendarDashboardContent: React.FC = () => {
 
   const { data: recentFilesData = [], isLoading: isLoadingFiles } = useUserRecentFiles(
     user?.id || '',
-    currentWorkspace?.id || '',
+    currentWorkspace.id,
     10
   );
 
@@ -690,10 +702,17 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
                 </div>
               </div>
 
-              {eventsForDayData.length > 0 ? (
+              {calendarDataLoading ? (
+                <div className='flex items-center justify-center flex-1'>
+                  <div className='text-center'>
+                    <div className='inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-[#4c75d1] border-r-transparent'></div>
+                    <p className='mt-2 text-xs text-[#808080]'>Loading events...</p>
+                  </div>
+                </div>
+              ) : eventsForDayData.length > 0 ? (
                 <div className='flex-1 min-h-0 overflow-y-auto scrollbar-hide'>
                   {eventsForDayData.map((event, index) => (
-                    <EventCard key={event.id} event={event} showBorder={index > 0} workspaceId={currentWorkspace?.id || ''} />
+                    <EventCard key={`${event.kind}-${(event as any)._internalId}`} event={event} showBorder={index > 0} workspaceId={currentWorkspace.id} />
                   ))}
                 </div>
               ) : (
@@ -713,22 +732,31 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
                   Upcoming
                 </h3>
                 <AddEventPopover
-                  workspaceId={currentWorkspace?.id || ''}
+                  workspaceId={currentWorkspace.id}
                   buttonClassName='inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-[#303030] hover:border-[#4c75d1]/70 hover:bg-[#4c75d1]/5 active:bg-[#4c75d1]/10 transition-colors touch-manipulation shadow-sm'
                 />
               </div>
 
               <div className='flex-1 overflow-y-auto scrollbar-hide relative' ref={upcomingEventsScrollRef}>
-              {/* Sticky header */}
-              {stickyMonth && (
-                <div className='sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-neutral-200 shadow-[0_8px_18px_-16px_rgba(0,0,0,0.55)] mb-1 px-3 md:px-4 py-2'>
-                  <div className='text-[10px] uppercase tracking-wider text-[#2f3135] font-semibold'>
-                    {stickyMonth}
+              {calendarDataLoading ? (
+                <div className='flex items-center justify-center h-full'>
+                  <div className='text-center'>
+                    <div className='inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-[#4c75d1] border-r-transparent'></div>
+                    <p className='mt-2 text-xs text-[#808080]'>Loading events...</p>
                   </div>
                 </div>
-              )}
+              ) : (
+                <>
+                  {/* Sticky header */}
+                  {stickyMonth && (
+                    <div className='sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-neutral-200 shadow-[0_8px_18px_-16px_rgba(0,0,0,0.55)] mb-1 px-3 md:px-4 py-2'>
+                      <div className='text-[10px] uppercase tracking-wider text-[#2f3135] font-semibold'>
+                        {stickyMonth}
+                      </div>
+                    </div>
+                  )}
 
-              {eventsByMonth.map(([month, events], monthIndex) => {
+                  {eventsByMonth.map(([month, events], monthIndex) => {
                 const isStickyMonth = month === stickyMonth;
                 return (
                   <div key={month}>
@@ -752,10 +780,10 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
                         const showBorder = eventIndex > 0 || (monthIndex > 0 && eventIndex === 0);
                         return (
                           <UpcomingEventCard
-                            key={item.id}
+                            key={`${item.kind}-${(item as any)._internalId}`}
                             item={item}
                             showBorder={showBorder}
-                            workspaceId={currentWorkspace?.id || ''}
+                            workspaceId={currentWorkspace.id}
                           />
                         );
                       })}
@@ -763,6 +791,8 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
                   </div>
                 );
               })}
+                </>
+              )}
               </div>
             </div>
           </div>
