@@ -93,13 +93,7 @@ export const TaskEventDetailsPopover: React.FC<TaskEventDetailsPopoverProps> = (
   const triggerRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
-  // Debug effect
-  useEffect(() => {
-    console.log('TaskEventDetailsPopover isOpen state changed:', isOpen);
-  }, [isOpen]);
-
   const closePopover = useCallback(() => {
-    console.log('TaskEventDetailsPopover closePopover called');
     setIsOpen(false);
   }, []);
 
@@ -108,24 +102,16 @@ export const TaskEventDetailsPopover: React.FC<TaskEventDetailsPopoverProps> = (
 
     const handleClick = (e: MouseEvent) => {
       const target = e.target as Node;
-      console.log('TaskEventDetailsPopover handleClick', {
-        hasPopoverRef: !!popoverRef.current,
-        hasTriggerRef: !!triggerRef.current,
-        target: target
-      });
       if (
         (popoverRef.current && popoverRef.current.contains(target)) ||
         (triggerRef.current && triggerRef.current.contains(target))
       ) {
-        console.log('Click inside popover or trigger, not closing');
         return;
       }
-      console.log('Click outside detected, closing popover');
       closePopover();
     };
 
     const timeoutId = setTimeout(() => {
-      console.log('TaskEventDetailsPopover adding click listener');
       document.addEventListener('click', handleClick, true);
     }, 100);
 
@@ -169,13 +155,12 @@ export const TaskEventDetailsPopover: React.FC<TaskEventDetailsPopoverProps> = (
       {/* Trigger */}
       <div
         ref={triggerRef}
-        onClick={(e) => {
-          console.log('TaskEventDetailsPopover clicked', { isOpen, willBeOpen: !isOpen });
-          e.stopPropagation();
-          setIsOpen(!isOpen);
-        }}
-        className="cursor-pointer"
-      >
+      onClick={(e) => {
+        e.stopPropagation();
+        setIsOpen(!isOpen);
+      }}
+      className="cursor-pointer"
+    >
         {children}
       </div>
 

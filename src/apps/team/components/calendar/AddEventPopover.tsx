@@ -83,37 +83,6 @@ export default function AddEventPopover({
     }
   }, [isOpen, popoverPosition]);
 
-  // Debug: log computed header font sizes when popover opens
-  useEffect(() => {
-    if (!isOpen) return;
-    const logHeader = (label: string) => {
-      if (!headerRef.current) {
-        console.log(`AddEventPopover header debug (${label}): headerRef not set`);
-        return;
-      }
-      const el = headerRef.current;
-      const styles = window.getComputedStyle(el);
-      console.log(`AddEventPopover header debug (${label}):`, {
-        fontSize: styles.fontSize,
-        lineHeight: styles.lineHeight,
-        fontWeight: styles.fontWeight,
-        tag: el.tagName,
-        classList: Array.from(el.classList),
-        text: el.textContent,
-      });
-    };
-
-    // Log immediately, next frame, and after a short delay to catch style overrides
-    logHeader('immediate');
-    const rafId = requestAnimationFrame(() => logHeader('raf'));
-    const timeoutId = window.setTimeout(() => logHeader('timeout-150ms'), 150);
-
-    return () => {
-      cancelAnimationFrame(rafId);
-      clearTimeout(timeoutId);
-    };
-  }, [isOpen]);
-
   // Close main popover on outside click
   useEffect(() => {
     if (!isOpen) return;

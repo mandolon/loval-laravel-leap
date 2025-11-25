@@ -6,12 +6,12 @@ import { getCurrentDate, getCurrentDateShort } from '../../utils';
 import { useCalendarData } from '../../hooks/useCalendarData';
 import { EventCard } from './EventCard';
 import { UpcomingEventCard } from './UpcomingEventCard';
-import { ActivityItem } from './ActivityItem';
-import { FileItem } from './FileItem';
+import { RecentFilesCard } from './RecentFilesCard';
+import { ActivityFeedCard } from './ActivityFeedCard';
 import AddEventPopover from './AddEventPopover';
 import { useNotifications } from '@/lib/api/hooks/useNotifications';
 import { useUserRecentFiles } from '@/lib/api/hooks/useRecentFiles';
-import { FolderClosed, Settings, Bell, CheckSquare, MessageCircle, MessageSquare } from 'lucide-react';
+import { FolderClosed, Bell, CheckSquare, MessageCircle, MessageSquare } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 const DAYS_TO_SHOW = 31; // 15 before, today, 15 after
@@ -96,7 +96,7 @@ const iconBgMap: Record<string, string> = {
   default: 'bg-slate-700 text-white',
 };
 
-const ACTIVE_EVENTS_HEIGHT = 'clamp(170px, 32vh, 220px)';
+const ACTIVE_EVENTS_HEIGHT = 'clamp(120px, 24vh, 160px)';
 
 const FULL_MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -215,13 +215,18 @@ export const CalendarDashboardContent: React.FC = () => {
   const [centerDate, setCenterDate] = useState(today);
   const [calendarDays, setCalendarDays] = useState<CalendarDay[]>(() => generateCalendarDaysAroundDate(today));
   const [selectedIndex, setSelectedIndex] = useState(DAYS_BEFORE_CENTER); // Today is at index 15
+  const [clickedDateKey, setClickedDateKey] = useState<string | null>(null); // Track which date was actually clicked
   const [centeredIndex, setCenteredIndex] = useState(DAYS_BEFORE_CENTER); // Track which day is centered in viewport
   const [stickyMonth, setStickyMonth] = useState<string>('');
+  const bottomRowRef = useRef<HTMLDivElement>(null);
+  const recentCardRef = useRef<HTMLDivElement>(null);
+  const activityCardRef = useRef<HTMLDivElement>(null);
 
   const calendarScrollRef = useRef<HTMLDivElement>(null);
   const isProgrammaticScroll = useRef(false);
   const upcomingEventsScrollRef = useRef<HTMLDivElement>(null);
   const monthRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const monthSeparatorRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   const { allEvents, eventsForDay: getEventsForDay, upcomingEvents, isLoading: calendarDataLoading } = useCalendarData({
     workspaceId: currentWorkspace?.id || '',
@@ -319,6 +324,8 @@ export const CalendarDashboardContent: React.FC = () => {
     return () => window.removeEventListener('resize', checkSize);
   }, []);
 
+  // Debug layout logging removed (was used for resizing verification)
+
   // Scroll to center today on initial mount
   useEffect(() => {
     if (calendarScrollRef.current) {
@@ -339,6 +346,72 @@ export const CalendarDashboardContent: React.FC = () => {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Attach non-passive wheel event listener for horizontal scrolling
+  useEffect(() => {
+    let mounted = true;
+    let listenerAttached = false;
+
+    const handleWheel = (e: WheelEvent) => {
+      const scrollContainer = calendarScrollRef.current;
+      if (!scrollContainer) return;
+      
+      // Only handle if scrolling with wheel and there's horizontal overflow
+      const hasHorizontalScroll = scrollContainer.scrollWidth > scrollContainer.clientWidth;
+      
+      // Handle vertical wheel movement (convert to horizontal scroll)
+      if (hasHorizontalScroll && Math.abs(e.deltaY) > 0) {
+        e.preventDefault();
+        // Don't stop propagation - let scroll events fire
+        // Use deltaY for vertical wheel scrolling
+        scrollContainer.scrollLeft += e.deltaY;
+        return;
+      }
+      
+      // Also allow natural horizontal scrolling (trackpad, shift+wheel)
+      if (hasHorizontalScroll && Math.abs(e.deltaX) > 0) {
+        // Let the browser handle horizontal scroll naturally
+        return;
+      }
+    };
+
+    // Try to attach the listener, with retries
+    const attachListener = () => {
+      const scrollContainer = calendarScrollRef.current;
+      if (!mounted || !scrollContainer) return false;
+      
+      const hasScroll = scrollContainer.scrollWidth > scrollContainer.clientWidth;
+      
+      if (hasScroll && !listenerAttached) {
+        scrollContainer.addEventListener('wheel', handleWheel, { passive: false, capture: true });
+        listenerAttached = true;
+        return true;
+      }
+      return false;
+    };
+
+    // Try multiple times with increasing delays
+    const timers: NodeJS.Timeout[] = [];
+    
+    // Try immediately
+    if (!attachListener()) {
+      // Try after short delay
+      timers.push(setTimeout(() => attachListener(), 50));
+      // Try after medium delay
+      timers.push(setTimeout(() => attachListener(), 200));
+      // Try after longer delay
+      timers.push(setTimeout(() => attachListener(), 500));
+    }
+
+    return () => {
+      mounted = false;
+      timers.forEach(timer => clearTimeout(timer));
+      const scrollContainer = calendarScrollRef.current;
+      if (scrollContainer && listenerAttached) {
+        scrollContainer.removeEventListener('wheel', handleWheel, { capture: true });
+      }
+    };
+  }, [calendarDays]);
+
   // Track scroll to update centered day
   useEffect(() => {
     const scrollContainer = calendarScrollRef.current;
@@ -350,11 +423,38 @@ export const CalendarDashboardContent: React.FC = () => {
 
       clearTimeout(scrollTimeout);
       scrollTimeout = setTimeout(() => {
-        const scrollLeft = scrollContainer.scrollLeft;
-        const cardWidth = mdUp ? 88 : 104;
-        const centerPosition = scrollLeft + scrollContainer.clientWidth / 2;
-        const estimatedIndex = Math.round(centerPosition / cardWidth);
-        const newIndex = Math.max(0, Math.min(estimatedIndex, calendarDays.length - 1));
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const checkPoint = containerRect.left + 200; // Check point 200px from left edge
+        
+        // Find which month separator has passed the check point
+        let newIndex = centeredIndex;
+        let foundSeparator = false;
+        
+        // Check separators from right to left to find the most recent one that passed
+        const sortedSeparators = Array.from(monthSeparatorRefs.current.entries())
+          .sort((a, b) => b[0] - a[0]); // Sort by index descending
+        
+        for (const [dayIndex, separator] of sortedSeparators) {
+          if (!separator) continue;
+          const rect = separator.getBoundingClientRect();
+          
+          // If separator is to the left of checkpoint, this month has been entered
+          if (rect.right < checkPoint) {
+            newIndex = dayIndex;
+            foundSeparator = true;
+            break;
+          }
+        }
+        
+        // Fallback to center-based calculation if no separator found
+        if (!foundSeparator) {
+          const scrollLeft = scrollContainer.scrollLeft;
+          const cardWidth = mdUp ? 88 : 104;
+          const gap = 8;
+          const centerPosition = scrollLeft + scrollContainer.clientWidth / 2;
+          const estimatedIndex = Math.round(centerPosition / (cardWidth + gap));
+          newIndex = Math.max(0, Math.min(estimatedIndex, calendarDays.length - 1));
+        }
 
         if (newIndex !== centeredIndex) {
           setCenteredIndex(newIndex);
@@ -459,14 +559,6 @@ export const CalendarDashboardContent: React.FC = () => {
     );
   }
 
-  // Handle wheel scroll for horizontal scrolling
-  const handleCalendarWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    if (calendarScrollRef.current) {
-      e.preventDefault();
-      calendarScrollRef.current.scrollLeft += e.deltaY;
-    }
-  };
-
   // Jump 30 days forward or backward
   const jumpDays = (direction: 'prev' | 'next') => {
     const daysToJump = direction === 'next' ? JUMP_DAYS : -JUMP_DAYS;
@@ -555,6 +647,10 @@ export const CalendarDashboardContent: React.FC = () => {
 
   // Handle calendar day click
   const handleDayClick = (index: number) => {
+    const clickedDay = calendarDays[index];
+    if (clickedDay) {
+      setClickedDateKey(clickedDay.fullDate.toISOString());
+    }
     setSelectedIndex(index);
     centerCardByIndex(index);
   };
@@ -581,10 +677,10 @@ export const CalendarDashboardContent: React.FC = () => {
   const userName = user?.name?.split(' ')[0] || 'there';
 
   return (
-    <div className='h-full flex flex-col overflow-hidden'>
-      <div className='flex-1 flex flex-col min-h-0 px-3 md:px-6 pt-4 md:pt-6 pb-4 gap-0 overflow-y-auto'>
+    <div className='h-full overflow-hidden flex flex-col'>
+      <div className='flex-1 flex flex-col min-h-0 px-3 md:px-6 pt-4 md:pt-6 pb-4 gap-3 overflow-y-auto'>
         {/* Welcome section */}
-        <div className='flex items-start justify-between gap-4'>
+        <div className='flex items-start justify-between gap-4 shrink-0'>
           <div className='px-3 md:px-4'>
             <div className='text-2xl md:text-[26px] leading-tight font-semibold text-[#202020]'>
               {getGreeting()}, {userName}
@@ -593,7 +689,7 @@ export const CalendarDashboardContent: React.FC = () => {
         </div>
 
         {/* Calendar section - Responsive grid layout */}
-        <div className='flex-1 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_min(22rem,30%)] lg:grid-rows-[auto_minmax(400px,1fr)] min-h-0 gap-4'>
+        <div className='flex-1 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_min(22rem,30%)] lg:grid-rows-[auto_1fr] min-h-0 gap-4'>
         {/* Calendar block */}
         <div className='flex flex-col min-w-0 overflow-hidden lg:col-start-1 lg:row-start-1'>
           {/* Calendar scroll area */}
@@ -603,6 +699,7 @@ export const CalendarDashboardContent: React.FC = () => {
                 <span>Today is</span>
                 <button
                   onClick={resetToToday}
+                  title='Jump to today'
                   className='text-[#4c75d1] font-medium hover:text-[#202020] transition-colors cursor-pointer touch-manipulation truncate uppercase'
                 >
                   <span className='inline md:hidden'>{getCurrentDateShort()}</span>
@@ -616,12 +713,14 @@ export const CalendarDashboardContent: React.FC = () => {
                 <div className='flex gap-1'>
                   <button
                     onClick={() => jumpDays('prev')}
+                    title='Previous 30 days'
                     className='w-9 h-9 md:w-7 md:h-7 flex items-center justify-center hover:bg-neutral-50 active:bg-neutral-100 rounded-md transition-colors touch-manipulation pb-1 pt-0'
                   >
                     <span className='text-[#505050] text-[22px] md:text-[20px] leading-none'>‹</span>
                   </button>
                   <button
                     onClick={() => jumpDays('next')}
+                    title='Next 30 days'
                     className='w-9 h-9 md:w-7 md:h-7 flex items-center justify-center hover:bg-neutral-50 active:bg-neutral-100 rounded-md transition-colors touch-manipulation pb-1 pt-0'
                   >
                     <span className='text-[#505050] text-[22px] md:text-[20px] leading-none'>›</span>
@@ -633,15 +732,15 @@ export const CalendarDashboardContent: React.FC = () => {
             <div className='relative'>
               <div
                 ref={calendarScrollRef}
-                onWheel={handleCalendarWheel}
                 className='overflow-x-auto scrollbar-hide pb-2'
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 <div className='flex gap-2 pb-4 min-w-max'>
-                  {calendarDays.map((day) => {
-                    const isSelected = day.index === selectedIndex;
+                  {calendarDays.map((day, idx) => {
+                    const isSelected = day.index === selectedIndex && clickedDateKey === day.fullDate.toISOString();
                     const hasEvents = getEventsForDay(day.index, calendarDays).length > 0;
                     const isToday = day.isToday;
+                    const isFirstOfMonth = day.day === 1;
 
                     const weekdayColor = isSelected
                       ? 'text-white/80'
@@ -662,14 +761,24 @@ export const CalendarDashboardContent: React.FC = () => {
                       : 'bg-white text-[#202020] border border-neutral-200 hover:border-[#4c75d1] hover:bg-[#4c75d1]/5 scale-95';
 
                     return (
-                      <button
-                        key={day.fullDate.toISOString()}
-                        onClick={() => handleDayClick(day.index)}
-                        className={
-                          'w-24 h-24 md:w-20 md:h-20 rounded-xl flex flex-col items-start justify-between p-3 md:p-2.5 transition-all duration-200 ease-out select-none touch-manipulation ' +
-                          stateClasses
-                        }
-                      >
+                      <div key={day.fullDate.toISOString()} className='flex items-center gap-2'>
+                        {/* Month separator - show before first of month (except very first day) */}
+                        {isFirstOfMonth && idx > 0 && (
+                          <div 
+                            ref={(el) => {
+                              if (el) monthSeparatorRefs.current.set(day.index, el);
+                              else monthSeparatorRefs.current.delete(day.index);
+                            }}
+                            className='w-0.5 h-16 md:h-14 bg-gradient-to-b from-[#4c75d1]/60 via-[#4c75d1]/40 to-[#4c75d1]/20 rounded-full mx-2' 
+                          />
+                        )}
+                        <button
+                          onClick={() => handleDayClick(day.index)}
+                          className={
+                            'w-24 h-24 md:w-20 md:h-20 rounded-xl flex flex-col items-start justify-between p-3 md:p-2.5 transition-all duration-200 ease-out select-none touch-manipulation ' +
+                            stateClasses
+                          }
+                        >
                         <span
                           className={`text-[11px] md:text-[10px] uppercase tracking-wider font-medium ${weekdayColor}`}
                         >
@@ -692,6 +801,7 @@ export const CalendarDashboardContent: React.FC = () => {
                           )}
                         </div>
                       </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -812,121 +922,34 @@ export const CalendarDashboardContent: React.FC = () => {
               })}
                 </>
               )}
-              </div>
             </div>
           </div>
+        </div>
         </div>
 
           {/* Activity + Recent files row */}
-          <div className='flex flex-col md:flex-row gap-3 lg:gap-4 min-h-0 lg:col-start-1 lg:row-start-2 lg:h-full'>
+          <div
+            ref={bottomRowRef}
+            className='flex flex-col md:flex-row gap-3 lg:gap-4 min-h-0 lg:col-start-1 lg:row-start-2 lg:items-stretch'
+          >
             {/* Recent files */}
-            <div className='flex-1 rounded-xl border border-neutral-200 bg-white/60 flex flex-col min-w-0 max-h-[400px] lg:max-h-none'>
-              <div className='flex items-center justify-between px-3 md:px-4 pt-3 md:pt-4 pb-3 border-b border-neutral-100'>
-                <h3 className='text-xs md:text-[13px] font-semibold text-[#202020]'>
-                  Recent files
-                </h3>
-              </div>
-
-              {/* Table Header - Hidden on mobile */}
-              <div className='hidden md:flex items-center gap-4 px-3 md:px-4 pt-2 pb-2 border-b border-neutral-200'>
-                <div className='flex-[2] min-w-0'>
-                  <div className='text-[10px] uppercase tracking-wider text-[#808080] font-semibold text-left'>
-                    File Name
-                  </div>
-                </div>
-                <div className='flex items-center gap-4 md:shrink-0'>
-                  <div className='w-32 shrink-0'>
-                    <div className='text-[10px] uppercase tracking-wider text-[#808080] font-semibold text-left'>
-                      Folder
-                    </div>
-                  </div>
-                  <div className='w-40 shrink-0'>
-                    <div className='text-[10px] uppercase tracking-wider text-[#808080] font-semibold text-left'>
-                      Project
-                    </div>
-                  </div>
-                  <div className='w-20 shrink-0'>
-                    <div className='text-[10px] uppercase tracking-wider text-[#808080] font-semibold text-left'>
-                      Modified
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Table Body */}
-              <div className='flex-1 overflow-y-auto scrollbar-hide'>
-                {isLoadingFiles ? (
-                  <div className='flex items-center justify-center py-8'>
-                    <div className='flex items-center gap-2'>
-                      <div className='w-4 h-4 border-2 border-[#4c75d1] border-t-transparent rounded-full animate-spin' />
-                      <p className='text-sm text-[#808080]'>Loading files...</p>
-                    </div>
-                  </div>
-                ) : recentFiles.length > 0 ? (
-                  recentFiles.map((file, index) => (
-                    <FileItem key={`${file.id}-${index}`} file={file} />
-                  ))
-                ) : (
-                  <div className='flex items-center justify-center py-8'>
-                    <p className='text-sm text-[#808080]'>No recent files</p>
-                  </div>
-                )}
-              </div>
-            </div>
+            <RecentFilesCard
+              recentFiles={recentFiles}
+              isLoading={isLoadingFiles}
+              containerRef={recentCardRef}
+            />
 
             {/* Activity Feed */}
-            <div className='md:w-96 lg:w-[400px] rounded-xl border border-neutral-200 bg-white/60 flex flex-col min-w-0 max-h-[400px] lg:max-h-none'>
-              <div className='flex items-center justify-between px-3 md:px-4 pt-3 md:pt-4 pb-3 border-b border-neutral-100'>
-                <h3 className='text-xs md:text-[13px] font-semibold text-[#202020]'>
-                  Activity Feed
-                </h3>
-                <div className='text-[10px] text-[#808080]'>Last 14 days</div>
-              </div>
-
-              <div className='flex-1 overflow-y-auto scrollbar-hide'>
-                {isLoadingActivity ? (
-                  <div className='flex items-center justify-center py-8'>
-                    <div className='flex items-center gap-2'>
-                      <div className='w-4 h-4 border-2 border-[#4c75d1] border-t-transparent rounded-full animate-spin' />
-                      <p className='text-sm text-[#808080]'>Loading activity...</p>
-                    </div>
-                  </div>
-                ) : isActivityError ? (
-                  <div className='flex flex-col items-center justify-center py-8 px-4'>
-                    <p className='text-sm text-red-600 text-center'>Failed to load activity</p>
-                    <button
-                      onClick={() => window.location.reload()}
-                      className='mt-2 text-xs text-[#4c75d1] hover:underline'
-                    >
-                      Retry
-                    </button>
-                  </div>
-                ) : activityItems.length > 0 ? (
-                  <>
-                    {activityItems.map((item, index) => (
-                      <ActivityItem
-                        key={`${item.id}-${index}`}
-                        icon={item.icon}
-                        iconBg={item.iconBg}
-                        title={item.title}
-                        subtitle={item.subtitle}
-                        time={item.time}
-                        showBorder={index > 0}
-                        isFirst={index === 0}
-                        isLast={index === activityItems.length - 1}
-                      />
-                    ))}
-                  </>
-                ) : (
-                  <div className='flex items-center justify-center py-8'>
-                    <p className='text-sm text-[#808080]'>No activity in the last 14 days</p>
-                  </div>
-                )}
-              </div>
-            </div>
+            <ActivityFeedCard
+              items={activityItems}
+              isLoading={isLoadingActivity}
+              isError={isActivityError}
+              containerRef={activityCardRef}
+            />
           </div>
         </div>
       </div>
+
     </div>
   );
 };

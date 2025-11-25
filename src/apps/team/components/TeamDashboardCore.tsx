@@ -288,7 +288,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
       setActive('ai');
     } else if (path.includes('/detail-library')) {
       setActive('details');
-    } else if (path.endsWith(`/workspace/${currentWorkspaceId}`)) {
+    } else if (path.endsWith(`/workspace/${currentWorkspaceId}`) || path === '/' || path === '') {
       setActive('home');
     }
   }, [location.pathname, currentWorkspaceId]);
@@ -974,7 +974,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
             ) : active === "chat" ? (
               <ChatView resetTrigger={chatResetTrigger} />
             ) : active === "home" ? (
-              <HomeView />
+              children || <HomeView />
             ) : active === "ai" ? (
               children
             ) : active === "settings" ? (

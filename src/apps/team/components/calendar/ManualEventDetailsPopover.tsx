@@ -218,14 +218,8 @@ export const ManualEventDetailsPopover: React.FC<ManualEventDetailsPopoverProps>
 
   const eventTypes = DEFAULT_EVENT_TYPES;
 
-  // Debug effect
-  useEffect(() => {
-    console.log('ManualEventDetailsPopover isOpen state changed:', isOpen);
-  }, [isOpen]);
-
   // Close main popover on outside click
   const closePopover = useCallback(() => {
-    console.log('ManualEventDetailsPopover closePopover called');
     setIsOpen(false);
     setEventTypeOpen(false);
     setProjectOpen(false);
@@ -236,26 +230,18 @@ export const ManualEventDetailsPopover: React.FC<ManualEventDetailsPopoverProps>
 
     const handleClick = (e: MouseEvent) => {
       const target = e.target as Node;
-      console.log('ManualEventDetailsPopover handleClick', {
-        hasPopoverRef: !!popoverRef.current,
-        hasTriggerRef: !!triggerRef.current,
-        target: target
-      });
       // Don't close if clicking inside the popover or the trigger
       if (
         (popoverRef.current && popoverRef.current.contains(target)) ||
         (triggerRef.current && triggerRef.current.contains(target))
       ) {
-        console.log('Click inside popover or trigger, not closing');
         return;
       }
-      console.log('Click outside detected, closing popover');
       closePopover();
     };
 
     // Use setTimeout to delay adding the listener to avoid immediate closure
     const timeoutId = setTimeout(() => {
-      console.log('ManualEventDetailsPopover adding click listener');
       document.addEventListener('click', handleClick, true);
     }, 100);
 
@@ -364,12 +350,11 @@ export const ManualEventDetailsPopover: React.FC<ManualEventDetailsPopoverProps>
       <div
         ref={triggerRef}
         onClick={(e) => {
-          console.log('ManualEventDetailsPopover clicked', { isOpen, willBeOpen: !isOpen });
-          e.stopPropagation();
-          setIsOpen(!isOpen);
-        }}
-        className="cursor-pointer"
-      >
+        e.stopPropagation();
+        setIsOpen(!isOpen);
+      }}
+      className="cursor-pointer"
+    >
         {children}
       </div>
 

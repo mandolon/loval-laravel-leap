@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
+import { useProjects } from "@/lib/api/hooks/useProjects";
 
 // ===== Types =====
 export interface RequestEventDetails {
@@ -8,6 +9,7 @@ export interface RequestEventDetails {
   date: string;
   time?: string;
   project?: string | null;
+  projectId?: string | null;
   anyTime?: boolean;
   eventType?: string;
   description?: string;
@@ -86,20 +88,16 @@ const Icon: React.FC<IconProps> = ({ name, className = "" }) => {
 // ===== Main Component =====
 export const RequestEventDetailsPopover: React.FC<RequestEventDetailsPopoverProps> = ({
   event,
+  workspaceId,
   children,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
-
-  // Debug effect
-  useEffect(() => {
-    console.log('RequestEventDetailsPopover isOpen state changed:', isOpen);
-  }, [isOpen]);
+  const { data: projects = [] } = useProjects(workspaceId || "");
 
   const closePopover = useCallback(() => {
-    console.log('RequestEventDetailsPopover closePopover called');
     setIsOpen(false);
   }, []);
 
@@ -108,24 +106,16 @@ export const RequestEventDetailsPopover: React.FC<RequestEventDetailsPopoverProp
 
     const handleClick = (e: MouseEvent) => {
       const target = e.target as Node;
-      console.log('RequestEventDetailsPopover handleClick', {
-        hasPopoverRef: !!popoverRef.current,
-        hasTriggerRef: !!triggerRef.current,
-        target: target
-      });
       if (
         (popoverRef.current && popoverRef.current.contains(target)) ||
         (triggerRef.current && triggerRef.current.contains(target))
       ) {
-        console.log('Click inside popover or trigger, not closing');
         return;
       }
-      console.log('Click outside detected, closing popover');
       closePopover();
     };
 
     const timeoutId = setTimeout(() => {
-      console.log('RequestEventDetailsPopover adding click listener');
       document.addEventListener('click', handleClick, true);
     }, 100);
 
@@ -148,6 +138,26 @@ export const RequestEventDetailsPopover: React.FC<RequestEventDetailsPopoverProp
     });
   };
 
+  const projectLabel = useMemo(() => {
+    const projectId = (event as any).projectId || event.project;
+    if (projectId) {
+      const match = projects.find((p) => p.id === projectId);
+      if (match) {
+        const address = match.address as any;
+        const addressLine =
+          address?.streetNumber && address?.streetName
+            ? `${address.streetNumber} ${address.streetName}`
+            : match.name;
+        return addressLine || match.name || "Project";
+      }
+    }
+    // If the project prop is already a readable string, fall back to it
+    if (typeof event.project === "string" && event.project.trim().length > 0) {
+      return event.project;
+    }
+    return "No project";
+  }, [event.project, projects, event]);
+
   return (
     <div ref={containerRef} className="relative">
       <style>{`
@@ -168,13 +178,12 @@ export const RequestEventDetailsPopover: React.FC<RequestEventDetailsPopoverProp
       {/* Trigger */}
       <div
         ref={triggerRef}
-        onClick={(e) => {
-          console.log('RequestEventDetailsPopover clicked', { isOpen, willBeOpen: !isOpen });
-          e.stopPropagation();
-          setIsOpen(!isOpen);
-        }}
-        className="cursor-pointer"
-      >
+      onClick={(e) => {
+        e.stopPropagation();
+        setIsOpen(!isOpen);
+      }}
+      className="cursor-pointer"
+    >
         {children}
       </div>
 
@@ -209,18 +218,6 @@ export const RequestEventDetailsPopover: React.FC<RequestEventDetailsPopoverProp
               className={`${inputBase} font-medium`}
             />
 
-            {/* Event Type */}
-            <button
-              type="button"
-              disabled
-              className={`${inputBase} flex items-center justify-between`}
-            >
-              <span className="flex items-center gap-1.5">
-                <Icon name="tag" className="text-[#9ca3af]" />
-                <span className="text-[#202020]">{event.eventType || "Request"}</span>
-              </span>
-            </button>
-
             {/* Project */}
             <button
               type="button"
@@ -229,9 +226,7 @@ export const RequestEventDetailsPopover: React.FC<RequestEventDetailsPopoverProp
             >
               <span className="flex items-center gap-1.5 min-w-0">
                 <Icon name="list" className="text-[#9ca3af]" />
-                <span className="truncate text-[#202020]">
-                  {event.project || "No project"}
-                </span>
+                <span className="truncate text-[#202020]">{projectLabel}</span>
               </span>
             </button>
 

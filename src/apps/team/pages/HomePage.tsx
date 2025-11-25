@@ -1,5 +1,5 @@
-import { HomeView } from '../components/TeamDashboardCore';
+import { CalendarDashboardContent } from '../components/calendar';
 
 export default function HomePage() {
-  return <HomeView />;
+  return <CalendarDashboardContent />;
 }
