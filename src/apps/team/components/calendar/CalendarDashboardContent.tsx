@@ -908,8 +908,6 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
             </div>
           </div>
         </div>
-
-      </div>
       </div>
     </div>
   );
