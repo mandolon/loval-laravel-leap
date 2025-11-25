@@ -57,23 +57,16 @@ export const FileItem: React.FC<FileItemProps> = ({ file }) => {
     </div>
 
     {/* Mobile: stacked info, Desktop: columns */}
-    <div className='flex md:flex md:items-center gap-2 md:gap-4 text-xs pl-11 md:pl-0 md:shrink-0'>
-      {/* Folder */}
-      <div className='flex-1 md:flex-none md:w-32 md:shrink-0'>
-        <div className='text-xs text-[#202020] truncate'>
-          <span className='md:hidden font-medium'>Folder: </span>{file.folder}
-        </div>
-      </div>
-
+    <div className='flex md:flex md:items-center gap-2 md:gap-3 text-xs pl-11 md:pl-0 md:shrink-0'>
       {/* Project */}
-      <div className='flex-1 md:flex-none md:w-40 md:shrink-0'>
+      <div className='flex-1 md:flex-none md:w-32 md:shrink-0'>
         <div className='text-xs text-[#202020] truncate'>
           <span className='md:hidden font-medium'>Project: </span>{file.project}
         </div>
       </div>
 
       {/* Date */}
-      <div className='flex-1 md:flex-none md:w-20 md:shrink-0'>
+      <div className='flex-1 md:flex-none md:w-24 md:shrink-0'>
         <div className='text-xs text-[#202020] truncate'>
           {file.date}
         </div>

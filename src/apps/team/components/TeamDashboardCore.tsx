@@ -88,6 +88,7 @@ import TaskDrawer from '@/components/TaskDrawer';
 import { TeamDetailLibraryView } from './TeamDetailLibraryView';
 import { useWorkspaceChatUnreadCount } from '@/lib/api/hooks/useChatReadReceipts';
 import { Calendar } from '@/components/ui/calendar';
+import { PillButton } from './PillButton';
 
 // ----------------------------------
 // Theme & constants
@@ -1880,13 +1881,12 @@ const TopHeader = memo(function TopHeader({
                 />
               </label>
 
-              <button
-                onClick={onOpenNewRequest}
-                className="h-7 px-3 rounded-full border border-violet-200 bg-white text-violet-700 text-[12px] font-medium shadow-sm inline-flex items-center justify-center gap-1.5 hover:bg-violet-50 hover:border-violet-300 transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={2.5} />
-                <span className="flex items-center leading-none"><span className="italic">re</span>quest</span>
-              </button>
+              <PillButton onClick={onOpenNewRequest} icon={Plus}>
+                <span className="flex items-center gap-0.5">
+                  <span className="italic">re</span>
+                  <span className="quest-slide transition-transform duration-200 ease-out group-hover:translate-x-1">quest</span>
+                </span>
+              </PillButton>
             </div>
           </div>
 

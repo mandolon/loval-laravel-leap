@@ -44,23 +44,18 @@ export const RecentFilesCard: React.FC<RecentFilesCardProps> = ({ recentFiles, i
       {/* Table Header - Hidden on mobile */}
       <div className='hidden md:flex items-center gap-4 px-3 md:px-4 pt-2 pb-2 border-b border-neutral-200'>
         <div className='flex-[2] min-w-0'>
-          <div className='text-[10px] uppercase tracking-wider text-[#808080] font-semibold text-left'>
-            File Name
+          <div className='text-[10px] tracking-wider text-[#808080] font-semibold text-left'>
+            File name
           </div>
         </div>
         <div className='flex items-center gap-4 md:shrink-0'>
           <div className='w-32 shrink-0'>
-            <div className='text-[10px] uppercase tracking-wider text-[#808080] font-semibold text-left'>
-              Folder
-            </div>
-          </div>
-          <div className='w-40 shrink-0'>
-            <div className='text-[10px] uppercase tracking-wider text-[#808080] font-semibold text-left'>
+            <div className='text-[10px] tracking-wider text-[#808080] font-semibold text-left'>
               Project
             </div>
           </div>
-          <div className='w-20 shrink-0'>
-            <div className='text-[10px] uppercase tracking-wider text-[#808080] font-semibold text-left'>
+          <div className='w-24 shrink-0'>
+            <div className='text-[10px] tracking-wider text-[#808080] font-semibold text-left'>
               Modified
             </div>
           </div>
