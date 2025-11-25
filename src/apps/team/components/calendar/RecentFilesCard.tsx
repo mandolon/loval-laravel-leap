@@ -32,7 +32,7 @@ export const RecentFilesCard: React.FC<RecentFilesCardProps> = ({ recentFiles, i
     >
       <div className='flex items-center justify-between px-3 md:px-4 pt-3 md:pt-4 pb-3 border-b border-neutral-100'>
         <h3 className='text-xs md:text-[13px] font-semibold text-[#202020]'>
-          Recent files
+          Recent Files
         </h3>
         <RecentFilesProjectFilter
           value={projectFilter}
@@ -42,20 +42,20 @@ export const RecentFilesCard: React.FC<RecentFilesCardProps> = ({ recentFiles, i
       </div>
 
       {/* Table Header - Hidden on mobile */}
-      <div className='hidden md:flex items-center gap-4 px-3 md:px-4 pt-2 pb-2 border-b border-neutral-200'>
+      <div className='hidden md:flex items-center gap-4 px-3 md:px-4 pt-2 pb-2 border-b border-neutral-200 shadow-[0_8px_18px_-16px_rgba(0,0,0,0.55)]'>
         <div className='flex-[2] min-w-0'>
-          <div className='text-[10px] tracking-wider text-[#808080] font-semibold text-left'>
+          <div className='text-xs text-[#202020] font-normal text-left'>
             File name
           </div>
         </div>
         <div className='flex items-center gap-4 md:shrink-0'>
           <div className='w-32 shrink-0'>
-            <div className='text-[10px] tracking-wider text-[#808080] font-semibold text-left'>
+            <div className='text-xs text-[#202020] font-normal text-left'>
               Project
             </div>
           </div>
           <div className='w-24 shrink-0'>
-            <div className='text-[10px] tracking-wider text-[#808080] font-semibold text-left'>
+            <div className='text-xs text-[#202020] font-normal text-left'>
               Modified
             </div>
           </div>

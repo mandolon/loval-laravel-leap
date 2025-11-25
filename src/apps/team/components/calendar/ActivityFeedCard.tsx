@@ -20,7 +20,7 @@ export const ActivityFeedCard: React.FC<ActivityFeedCardProps> = ({
       ref={containerRef}
       className='md:w-96 lg:w-[400px] rounded-xl border border-neutral-200 bg-white/60 flex flex-col min-w-0 min-h-0 max-h-[400px] lg:max-h-[calc(100vh-14rem)] lg:h-full overflow-hidden'
     >
-      <div className='flex items-center justify-between px-3 md:px-4 pt-3 md:pt-4 pb-3 border-b border-neutral-100'>
+      <div className='flex items-center justify-between px-3 md:px-4 pt-3 md:pt-4 pb-3 border-b border-neutral-100 shadow-[0_6px_12px_-14px_rgba(0,0,0,0.4)]'>
         <h3 className='text-xs md:text-[13px] font-semibold text-[#202020]'>
           Activity Feed
         </h3>

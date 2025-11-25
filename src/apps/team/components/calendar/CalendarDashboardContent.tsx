@@ -819,7 +819,7 @@ export const CalendarDashboardContent: React.FC = () => {
           <div className='flex-1 rounded-xl border border-neutral-200 bg-white/60 flex flex-col overflow-hidden max-h-[800px] lg:max-h-none'>
             {/* Active date events section */}
             <div className='flex flex-col flex-shrink-0' style={{ height: ACTIVE_EVENTS_HEIGHT }}>
-              <div className='flex items-start justify-between gap-2 px-3 md:px-4 pt-3 md:pt-4 pb-3 border-b border-neutral-100'>
+              <div className='flex items-start justify-between gap-2 px-3 md:px-4 pt-3 md:pt-4 pb-3 border-b border-neutral-200 shadow-[0_6px_12px_-14px_rgba(0,0,0,0.4)]'>
                 <div className='flex flex-col'>
                   <span className='text-xs md:text-[13px] font-semibold text-[#202020]'>
                     {selectedDay?.monthShort} {selectedDay?.day}, {selectedDay?.year}
