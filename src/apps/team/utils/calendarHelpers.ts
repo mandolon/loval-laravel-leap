@@ -9,22 +9,26 @@ export const isSameDay = (date1: Date, date2: Date): boolean => {
   );
 };
 
-// Generate calendar days for a given month/year (60-day window)
+// Generate calendar days centered around a specific date (31 days: 15 before, date, 15 after)
 export function generateCalendarDays(
   year: number,
   month: number,
-  numDays: number = 60
+  day: number
 ): CalendarDay[] {
   const days: CalendarDay[] = [];
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const startDate = new Date(year, month, 1);
+  // Start date is 15 days before the target date
+  const centerDate = new Date(year, month, day);
+  const startDate = new Date(centerDate);
+  startDate.setDate(centerDate.getDate() - 15);
 
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  for (let i = 0; i < numDays; i++) {
+  // Generate 31 days total
+  for (let i = 0; i < 31; i++) {
     const currentDate = new Date(startDate);
     currentDate.setDate(startDate.getDate() + i);
 
@@ -70,18 +74,21 @@ export const getCurrentDateShort = () => {
   return `${weekdays[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
 };
 
-// Initial calendar state (based on today)
+// Initial calendar state (based on today, 15 days before and 15 days after)
 export const getInitialCalendar = () => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const year = today.getFullYear();
   const month = today.getMonth();
-  const days = generateCalendarDays(year, month, 60);
+  const day = today.getDate();
+  const days = generateCalendarDays(year, month, day);
+  // Today will always be at index 15 (middle of 31 days)
   const idx = days.findIndex((d) => d.isToday);
   return {
     year,
     month,
+    day,
     days,
-    selectedIndex: idx === -1 ? 0 : idx,
+    selectedIndex: idx === -1 ? 15 : idx,
   };
 };

@@ -216,6 +216,7 @@ export const CalendarDashboardContent: React.FC = () => {
   const [mdUp, setMdUp] = useState(true);
   const [currentYear, setCurrentYear] = useState(INITIAL_CALENDAR.year);
   const [currentMonth, setCurrentMonth] = useState(INITIAL_CALENDAR.month);
+  const [currentDay, setCurrentDay] = useState(INITIAL_CALENDAR.day);
   const [calendarDays, setCalendarDays] = useState<CalendarDay[]>(INITIAL_CALENDAR.days);
   const [selectedIndex, setSelectedIndex] = useState(INITIAL_CALENDAR.selectedIndex);
   const [visibleIndex, setVisibleIndex] = useState(INITIAL_CALENDAR.selectedIndex);
@@ -226,6 +227,8 @@ export const CalendarDashboardContent: React.FC = () => {
   const isProgrammaticScroll = useRef(false);
   const upcomingEventsScrollRef = useRef<HTMLDivElement>(null);
   const monthRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const monthSeparatorRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const dayButtonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
 
   // Fetch calendar data from all sources (tasks, requests, calendar events)
   // Pass empty string if workspace not loaded yet to avoid errors
@@ -356,27 +359,104 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
 
   // Scroll to today on mount - center the card
   useEffect(() => {
-    if (calendarScrollRef.current && selectedIndex > 0) {
-      isProgrammaticScroll.current = true;
-      const scrollContainer = calendarScrollRef.current;
-      const cardWidth = mdUp ? 88 : 104;
-      const viewportWidth = scrollContainer.clientWidth;
-
-      const scrollPosition = (selectedIndex * cardWidth) - (viewportWidth / 2) + (cardWidth / 2);
-
-      setTimeout(() => {
-        scrollContainer.scrollTo({ left: Math.max(0, scrollPosition), behavior: 'smooth' });
+    // Wait for day button refs to be populated
+    const attemptScroll = () => {
+      const dayButton = dayButtonRefs.current.get(selectedIndex);
+      if (dayButton && calendarDays.length > 0) {
+        isProgrammaticScroll.current = true;
+        // Use a small delay to ensure DOM is fully rendered
         setTimeout(() => {
-          isProgrammaticScroll.current = false;
-        }, 600);
-      }, 100);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+          dayButton.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
+          setTimeout(() => {
+            isProgrammaticScroll.current = false;
+          }, 100);
+        }, 50);
+        return true;
+      }
+      return false;
+    };
 
-  // Track scroll to update visible month
+    // Try with delays to ensure refs are ready
+    const timer1 = setTimeout(() => attemptScroll(), 100);
+    const timer2 = setTimeout(() => attemptScroll(), 300);
+    
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
+  }, [calendarDays.length, selectedIndex]); // Run when calendar is populated
+
+  // Attach non-passive wheel event listener for horizontal scrolling
+  useEffect(() => {
+    let mounted = true;
+    let listenerAttached = false;
+
+    const handleWheel = (e: WheelEvent) => {
+      const scrollContainer = calendarScrollRef.current;
+      if (!scrollContainer) return;
+      
+      // Only handle if scrolling with wheel and there's horizontal overflow
+      const hasHorizontalScroll = scrollContainer.scrollWidth > scrollContainer.clientWidth;
+      
+      // Handle vertical wheel movement (convert to horizontal scroll)
+      if (hasHorizontalScroll && Math.abs(e.deltaY) > 0) {
+        e.preventDefault();
+        // Don't stop propagation - let scroll events fire
+        // Use deltaY for vertical wheel scrolling
+        scrollContainer.scrollLeft += e.deltaY;
+        return;
+      }
+      
+      // Also allow natural horizontal scrolling (trackpad, shift+wheel)
+      if (hasHorizontalScroll && Math.abs(e.deltaX) > 0) {
+        // Let the browser handle horizontal scroll naturally
+        return;
+      }
+    };
+
+    // Try to attach the listener, with retries
+    const attachListener = () => {
+      const scrollContainer = calendarScrollRef.current;
+      if (!mounted || !scrollContainer) return false;
+      
+      const hasScroll = scrollContainer.scrollWidth > scrollContainer.clientWidth;
+      
+      if (hasScroll && !listenerAttached) {
+        scrollContainer.addEventListener('wheel', handleWheel, { passive: false, capture: true });
+        listenerAttached = true;
+        console.log('[Calendar Wheel] Listener attached successfully');
+        return true;
+      }
+      return false;
+    };
+
+    // Try multiple times with increasing delays
+    const timers: NodeJS.Timeout[] = [];
+    
+    // Try immediately
+    if (!attachListener()) {
+      // Try after short delay
+      timers.push(setTimeout(() => attachListener(), 50));
+      // Try after medium delay
+      timers.push(setTimeout(() => attachListener(), 200));
+      // Try after longer delay
+      timers.push(setTimeout(() => attachListener(), 500));
+    }
+
+    return () => {
+      mounted = false;
+      timers.forEach(timer => clearTimeout(timer));
+      const scrollContainer = calendarScrollRef.current;
+      if (scrollContainer && listenerAttached) {
+        scrollContainer.removeEventListener('wheel', handleWheel, { capture: true });
+        console.log('[Calendar Wheel] Listener removed');
+      }
+    };
+  }, [calendarDays]);
+
   useEffect(() => {
     const scrollContainer = calendarScrollRef.current;
-    if (!scrollContainer) return;
+    if (!scrollContainer || calendarDays.length === 0) return;
 
     let scrollTimeout: NodeJS.Timeout;
     const handleScroll = () => {
@@ -386,14 +466,35 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
       scrollTimeout = setTimeout(() => {
         const scrollLeft = scrollContainer.scrollLeft;
         const cardWidth = mdUp ? 88 : 104;
-        const centerPosition = scrollLeft + scrollContainer.clientWidth / 2;
-        const estimatedIndex = Math.round(centerPosition / cardWidth);
-        const newIndex = Math.max(0, Math.min(estimatedIndex, calendarDays.length - 1));
+        const containerRect = scrollContainer.getBoundingClientRect();
+        
+        // Find the month separator that's closest to passing the header area
+        let newIndex = visibleIndex;
+        let closestDistance = Infinity;
+        
+        monthSeparatorRefs.current.forEach((separator, dayIndex) => {
+          if (!separator) return;
+          const rect = separator.getBoundingClientRect();
+          // Distance from separator to the left edge of the scroll container
+          const distance = Math.abs(rect.left - containerRect.left - 100); // 100px offset for header area
+          
+          if (distance < closestDistance && rect.left < containerRect.left + 200) {
+            closestDistance = distance;
+            newIndex = dayIndex;
+          }
+        });
+        
+        // Fallback to center-based calculation if no separator found
+        if (closestDistance === Infinity) {
+          const centerPosition = scrollLeft + scrollContainer.clientWidth / 2;
+          const estimatedIndex = Math.round(centerPosition / cardWidth);
+          newIndex = Math.max(0, Math.min(estimatedIndex, calendarDays.length - 1));
+        }
 
         if (newIndex !== visibleIndex) {
           setVisibleIndex(newIndex);
         }
-      }, 150);
+      }, 100);
     };
 
     scrollContainer.addEventListener('scroll', handleScroll);
@@ -496,37 +597,41 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
     );
   }
 
-  // Handle wheel scroll for horizontal scrolling
-  const handleCalendarWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    if (calendarScrollRef.current) {
-      e.preventDefault();
-      calendarScrollRef.current.scrollLeft += e.deltaY;
-    }
-  };
+
 
   // Month navigation
   const goToMonth = (direction: 'prev' | 'next') => {
-    let newMonth = currentMonth + (direction === 'next' ? 1 : -1);
-    let newYear = currentYear;
+    // Move 30 days in the specified direction
+    const currentCenter = new Date(currentYear, currentMonth, currentDay);
+    currentCenter.setDate(currentCenter.getDate() + (direction === 'next' ? 30 : -30));
 
-    if (newMonth < 0) {
-      newMonth = 11;
-      newYear -= 1;
-    } else if (newMonth > 11) {
-      newMonth = 0;
-      newYear += 1;
-    }
+    const newYear = currentCenter.getFullYear();
+    const newMonth = currentCenter.getMonth();
+    const newDay = currentCenter.getDate();
 
-    const newDays = generateCalendarDays(newYear, newMonth, 60);
+    const newDays = generateCalendarDays(newYear, newMonth, newDay);
+    
     setCurrentYear(newYear);
     setCurrentMonth(newMonth);
+    setCurrentDay(newDay);
     setCalendarDays(newDays);
-    setSelectedIndex(0);
-    setVisibleIndex(0);
 
-    if (calendarScrollRef.current) {
-      calendarScrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
-    }
+    // Select the last day (index 30) when going forward, first day (index 0) when going backward
+    const newIndex = direction === 'next' ? 30 : 0;
+    setSelectedIndex(newIndex);
+    setVisibleIndex(newIndex);
+    setUserHasSelected(true);
+
+    setTimeout(() => {
+      const dayButton = dayButtonRefs.current.get(newIndex);
+      if (dayButton) {
+        isProgrammaticScroll.current = true;
+        dayButton.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        setTimeout(() => {
+          isProgrammaticScroll.current = false;
+        }, 600);
+      }
+    }, 100);
   };
 
   // Reset calendar to today
@@ -534,12 +639,14 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
     const today = new Date();
     const year = today.getFullYear();
     const month = today.getMonth();
+    const day = today.getDate();
 
-    const newDays = generateCalendarDays(year, month, 60);
-    const todayIdx = newDays.findIndex(day => day.isToday);
+    const newDays = generateCalendarDays(year, month, day);
+    const todayIdx = newDays.findIndex(d => d.isToday);
 
     setCurrentYear(year);
     setCurrentMonth(month);
+    setCurrentDay(day);
     setCalendarDays(newDays);
 
     if (todayIdx >= 0) {
@@ -548,19 +655,10 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
       setUserHasSelected(false);
 
       setTimeout(() => {
-        if (calendarScrollRef.current) {
+        const dayButton = dayButtonRefs.current.get(todayIdx);
+        if (dayButton) {
           isProgrammaticScroll.current = true;
-          const scrollContainer = calendarScrollRef.current;
-          const cardWidth = mdUp ? 88 : 104;
-          const viewportWidth = scrollContainer.clientWidth;
-
-          const scrollPosition = (todayIdx * cardWidth) - (viewportWidth / 2) + (cardWidth / 2);
-
-          scrollContainer.scrollTo({
-            left: Math.max(0, scrollPosition),
-            behavior: 'smooth'
-          });
-
+          dayButton.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
           setTimeout(() => {
             isProgrammaticScroll.current = false;
           }, 600);
@@ -571,19 +669,10 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
 
   // Center a card by index
   const centerCardByIndex = (index: number) => {
-    if (calendarScrollRef.current) {
+    const dayButton = dayButtonRefs.current.get(index);
+    if (dayButton) {
       isProgrammaticScroll.current = true;
-      const scrollContainer = calendarScrollRef.current;
-      const cardWidth = mdUp ? 88 : 104;
-      const viewportWidth = scrollContainer.clientWidth;
-
-      const scrollPosition = (index * cardWidth) - (viewportWidth / 2) + (cardWidth / 2);
-
-      scrollContainer.scrollTo({
-        left: Math.max(0, scrollPosition),
-        behavior: 'smooth'
-      });
-
+      dayButton.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
       setTimeout(() => {
         isProgrammaticScroll.current = false;
       }, 600);
@@ -671,15 +760,15 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
             <div className='relative'>
               <div
                 ref={calendarScrollRef}
-                onWheel={handleCalendarWheel}
                 className='overflow-x-auto scrollbar-hide pb-2'
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 <div className='flex gap-2 pb-4 min-w-max'>
-                  {calendarDays.map((day) => {
+                  {calendarDays.map((day, idx) => {
                     const isSelected = userHasSelected && day.index === selectedIndex;
                     const hasEvents = getEventsForDay(day.index, calendarDays).length > 0;
                     const isToday = day.isToday;
+                    const isFirstOfMonth = day.day === 1;
 
                     const weekdayColor = isSelected
                       ? 'text-white/80'
@@ -700,14 +789,28 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
                       : 'bg-white text-[#202020] border border-neutral-200 hover:border-[#4c75d1] hover:bg-[#4c75d1]/5 scale-95';
 
                     return (
-                      <button
-                        key={day.fullDate.toISOString()}
-                        onClick={() => handleDayClick(day.index)}
-                        className={
-                          'w-24 h-24 md:w-20 md:h-20 rounded-xl flex flex-col items-start justify-between p-3 md:p-2.5 transition-all duration-200 ease-out select-none touch-manipulation ' +
-                          stateClasses
-                        }
-                      >
+                      <div key={day.fullDate.toISOString()} className='flex items-center gap-2'>
+                        {/* Month separator - show before first of month (except very first day) */}
+                        {isFirstOfMonth && idx > 0 && (
+                          <div 
+                            ref={(el) => {
+                              if (el) monthSeparatorRefs.current.set(day.index, el);
+                              else monthSeparatorRefs.current.delete(day.index);
+                            }}
+                            className='w-0.5 h-16 md:h-14 bg-gradient-to-b from-[#4c75d1]/60 via-[#4c75d1]/40 to-[#4c75d1]/20 rounded-full mx-2' 
+                          />
+                        )}
+                        <button
+                          ref={(el) => {
+                            if (el) dayButtonRefs.current.set(day.index, el);
+                            else dayButtonRefs.current.delete(day.index);
+                          }}
+                          onClick={() => handleDayClick(day.index)}
+                          className={
+                            'w-24 h-24 md:w-20 md:h-20 rounded-xl flex flex-col items-start justify-between p-3 md:p-2.5 transition-all duration-200 ease-out select-none touch-manipulation ' +
+                            stateClasses
+                          }
+                        >
                         <span
                           className={`text-[11px] md:text-[10px] uppercase tracking-wider font-medium ${weekdayColor}`}
                         >
@@ -730,6 +833,7 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
                           )}
                         </div>
                       </button>
+                      </div>
                     );
                   })}
                 </div>
