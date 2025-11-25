@@ -2,31 +2,66 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useUser } from '@/contexts/UserContext';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { CalendarDay, RecentFileItem, ActivityItemType } from '../../types';
-import {
-  generateCalendarDays,
-  getCurrentDate,
-  getCurrentDateShort,
-  getInitialCalendar
-} from '../../utils';
+import { getCurrentDate, getCurrentDateShort } from '../../utils';
 import { useCalendarData } from '../../hooks/useCalendarData';
 import { EventCard } from './EventCard';
 import { UpcomingEventCard } from './UpcomingEventCard';
-import { ActivityItem } from './ActivityItem';
-import { FileItem } from './FileItem';
+import { RecentFilesCard } from './RecentFilesCard';
+import { ActivityFeedCard } from './ActivityFeedCard';
 import AddEventPopover from './AddEventPopover';
 import { useNotifications } from '@/lib/api/hooks/useNotifications';
 import { useUserRecentFiles } from '@/lib/api/hooks/useRecentFiles';
-import { ListChecks, FileText, FolderClosed, Users, Settings, Upload, Trash2, Edit, Plus, MessageSquare, Bell, CheckSquare, MessageCircle } from 'lucide-react';
+import { FolderClosed, Bell, CheckSquare, MessageCircle, MessageSquare } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
-const INITIAL_CALENDAR = getInitialCalendar();
+const DAYS_TO_SHOW = 31; // 15 before, today, 15 after
+const DAYS_BEFORE_CENTER = 15;
+const DAYS_AFTER_CENTER = 15;
+const JUMP_DAYS = 30; // When clicking arrows, jump 30 days
+
+// Helper function to check if two dates are the same day
+const isSameDay = (date1: Date, date2: Date): boolean => {
+  return (
+    date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate()
+  );
+};
+
+// Generate 31 calendar days centered around a specific date
+const generateCalendarDaysAroundDate = (centerDate: Date): CalendarDay[] => {
+  const days: CalendarDay[] = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  // Generate days: 15 before center, center, 15 after center
+  for (let i = -DAYS_BEFORE_CENTER; i <= DAYS_AFTER_CENTER; i++) {
+    const currentDate = new Date(centerDate);
+    currentDate.setDate(centerDate.getDate() + i);
+    currentDate.setHours(0, 0, 0, 0);
+
+    days.push({
+      index: i + DAYS_BEFORE_CENTER, // Index 0-30, with center at index 15
+      day: currentDate.getDate(),
+      monthShort: monthNames[currentDate.getMonth()],
+      year: currentDate.getFullYear(),
+      weekday: dayNames[currentDate.getDay()],
+      fullDate: new Date(currentDate),
+      isToday: isSameDay(currentDate, today),
+    });
+  }
+
+  return days;
+};
 
 // Helper function to get file extension from filename
 const getFileExtension = (filename: string): string => {
   const parts = filename.split('.');
   if (parts.length > 1) {
     const ext = parts[parts.length - 1].toUpperCase();
-    // Limit to 3 characters for display
     return ext.substring(0, 3);
   }
   return 'FILE';
@@ -43,7 +78,6 @@ const getFileColorClass = (mimetype: string | null, filename: string): string =>
     if (mimetype.includes('presentation') || mimetype.includes('powerpoint')) return 'bg-orange-400 text-white';
   }
 
-  // Fallback based on extension
   const ext = filename.split('.').pop()?.toLowerCase();
   if (ext === 'pdf') return 'bg-rose-400 text-white';
   if (ext === 'ifc' || ext === 'obj' || ext === 'fbx') return 'bg-sky-400 text-white';
@@ -54,8 +88,6 @@ const getFileColorClass = (mimetype: string | null, filename: string): string =>
   return 'bg-neutral-400 text-white';
 };
 
-// Helper function to map activity action to icon and color
-const neutralIconBg = 'bg-neutral-100';
 const iconBgMap: Record<string, string> = {
   task: 'bg-emerald-600 text-white',
   request: 'bg-amber-600 text-white',
@@ -63,7 +95,8 @@ const iconBgMap: Record<string, string> = {
   chat: 'bg-indigo-600 text-white',
   default: 'bg-slate-700 text-white',
 };
-const ACTIVE_EVENTS_HEIGHT = 'clamp(170px, 32vh, 220px)';
+
+const ACTIVE_EVENTS_HEIGHT = 'clamp(120px, 24vh, 160px)';
 
 const FULL_MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -115,19 +148,16 @@ const formatNotificationTitle = (notification: any): React.ReactNode => {
     ? (notification.metadata as any).actorName
     : undefined;
 
-  // Normalize request phrasing
   const normalizedTitle = baseTitle.replace(/assigned you a request/gi, 'sent you a request');
 
   if (!actorName || typeof actorName !== 'string') {
     return normalizedTitle;
   }
 
-  // Remove first occurrence of actor name (case-insensitive) to avoid duplication
   const lowerTitle = normalizedTitle.toLowerCase();
   const lowerActor = actorName.toLowerCase();
   const idx = lowerTitle.indexOf(lowerActor);
 
-  // If we find the actor name in the title, highlight it in place
   if (idx !== -1) {
     const before = normalizedTitle.slice(0, idx);
     const highlighted = normalizedTitle.slice(idx, idx + actorName.length);
@@ -142,7 +172,6 @@ const formatNotificationTitle = (notification: any): React.ReactNode => {
     );
   }
 
-  // Fallback: prepend the actor name in bold if it wasn't present
   return (
     <span className='text-[#202020]'>
       <span className='font-semibold'>{actorName}</span>
@@ -151,92 +180,58 @@ const formatNotificationTitle = (notification: any): React.ReactNode => {
   );
 };
 
-const getActivityIcon = (action: string, resourceType: string): { icon: React.ComponentType<{ className?: string }>, iconBg: string } => {
-  const actionLower = action.toLowerCase();
-  const lowerResource = resourceType.toLowerCase();
+const getNotificationIcon = (type: string): { icon: React.ComponentType<{ className?: string }>, iconBg: string } => {
+  const typeLower = type.toLowerCase();
 
-  if (actionLower.includes('create') || actionLower.includes('add')) {
-    if (lowerResource === 'file') return { icon: FolderClosed, iconBg: iconBgMap.file };
-    if (lowerResource === 'task') return { icon: CheckSquare, iconBg: iconBgMap.task };
-    if (lowerResource === 'request') return { icon: MessageCircle, iconBg: iconBgMap.request };
-    if (lowerResource === 'chat' || lowerResource === 'message') return { icon: MessageSquare, iconBg: iconBgMap.chat };
-    return { icon: Plus, iconBg: iconBgMap.default };
+  if (typeLower.includes('message') || typeLower.includes('chat')) {
+    return { icon: MessageSquare, iconBg: iconBgMap.chat };
   }
-
-  if (actionLower.includes('update') || actionLower.includes('edit') || actionLower.includes('modify')) {
-    return { icon: Edit, iconBg: iconBgMap.default };
+  if (typeLower.includes('file') || typeLower.includes('upload') || typeLower.includes('model')) {
+    return { icon: FolderClosed, iconBg: iconBgMap.file };
   }
-
-  if (actionLower.includes('delete') || actionLower.includes('remove')) {
-    return { icon: Trash2, iconBg: iconBgMap.default };
+  if (typeLower.includes('request')) {
+    return { icon: MessageCircle, iconBg: iconBgMap.request };
   }
-
-  if (actionLower.includes('complete')) {
+  if (typeLower.includes('task')) {
     return { icon: CheckSquare, iconBg: iconBgMap.task };
   }
 
-  // Default icons based on resource type
-  if (lowerResource === 'file') return { icon: FolderClosed, iconBg: iconBgMap.file };
-  if (lowerResource === 'task') return { icon: CheckSquare, iconBg: iconBgMap.task };
-  if (lowerResource === 'request') return { icon: MessageCircle, iconBg: iconBgMap.request };
-  if (lowerResource === 'project') return { icon: FolderClosed, iconBg: iconBgMap.file };
-  if (lowerResource === 'chat' || lowerResource === 'message') return { icon: MessageSquare, iconBg: iconBgMap.chat };
-  if (lowerResource === 'user' || lowerResource === 'member') return { icon: Users, iconBg: iconBgMap.default };
-
-  return { icon: Settings, iconBg: iconBgMap.default };
-};
-
-// Helper function to format activity title and subtitle with null safety
-const formatActivityText = (item: any): { title: string, subtitle: string } => {
-  const action = item.action || 'Activity';
-  const resourceType = item.resource_type || 'item';
-  const userName = item.user?.name || 'Someone';
-  const projectName = item.project?.name;
-
-  let title = action;
-  let subtitle = '';
-
-  // Safely access nested properties
-  if (item.change_summary && typeof item.change_summary === 'string') {
-    subtitle = item.change_summary;
-  } else if (projectName && typeof projectName === 'string') {
-    subtitle = projectName;
-  } else {
-    subtitle = resourceType;
-  }
-
-  return { title, subtitle };
+  return { icon: Bell, iconBg: iconBgMap.default };
 };
 
 export const CalendarDashboardContent: React.FC = () => {
   const { user } = useUser();
   const { currentWorkspace } = useWorkspaces();
 
-  // Call all hooks before any conditional returns (Rules of Hooks)
   const [mdUp, setMdUp] = useState(true);
-  const [currentYear, setCurrentYear] = useState(INITIAL_CALENDAR.year);
-  const [currentMonth, setCurrentMonth] = useState(INITIAL_CALENDAR.month);
-  const [currentDay, setCurrentDay] = useState(INITIAL_CALENDAR.day);
-  const [calendarDays, setCalendarDays] = useState<CalendarDay[]>(INITIAL_CALENDAR.days);
-  const [selectedIndex, setSelectedIndex] = useState(INITIAL_CALENDAR.selectedIndex);
-  const [visibleIndex, setVisibleIndex] = useState(INITIAL_CALENDAR.selectedIndex);
-  const [userHasSelected, setUserHasSelected] = useState(false);
+
+  // Center date state - the date around which we generate 31 days
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
+  const [centerDate, setCenterDate] = useState(today);
+  const [calendarDays, setCalendarDays] = useState<CalendarDay[]>(() => generateCalendarDaysAroundDate(today));
+  const [selectedIndex, setSelectedIndex] = useState(DAYS_BEFORE_CENTER); // Today is at index 15
+  const [clickedDateKey, setClickedDateKey] = useState<string | null>(null); // Track which date was actually clicked
+  const [centeredIndex, setCenteredIndex] = useState(DAYS_BEFORE_CENTER); // Track which day is centered in viewport
   const [stickyMonth, setStickyMonth] = useState<string>('');
+  const bottomRowRef = useRef<HTMLDivElement>(null);
+  const recentCardRef = useRef<HTMLDivElement>(null);
+  const activityCardRef = useRef<HTMLDivElement>(null);
 
   const calendarScrollRef = useRef<HTMLDivElement>(null);
   const isProgrammaticScroll = useRef(false);
   const upcomingEventsScrollRef = useRef<HTMLDivElement>(null);
   const monthRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const monthSeparatorRefs = useRef<Map<number, HTMLDivElement>>(new Map());
-  const dayButtonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
 
-  // Fetch calendar data from all sources (tasks, requests, calendar events)
-  // Pass empty string if workspace not loaded yet to avoid errors
   const { allEvents, eventsForDay: getEventsForDay, upcomingEvents, isLoading: calendarDataLoading } = useCalendarData({
     workspaceId: currentWorkspace?.id || '',
   });
 
-  // Fetch notifications (last 14 days) and recent files
   const { data: allNotifications = [], isLoading: isLoadingActivity, isError: isActivityError } = useNotifications(user?.id || '');
 
   const { data: recentFilesData = [], isLoading: isLoadingFiles } = useUserRecentFiles(
@@ -249,7 +244,7 @@ export const CalendarDashboardContent: React.FC = () => {
   const recentNotifications = useMemo(() => {
     const fourteenDaysAgo = new Date();
     fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
-    
+
     return allNotifications.filter(notification => {
       try {
         const notificationDate = new Date(notification.createdAt);
@@ -260,38 +255,12 @@ export const CalendarDashboardContent: React.FC = () => {
     });
   }, [allNotifications]);
 
-  // Helper function to get notification icon based on type
-const getNotificationIcon = (type: string): { icon: React.ComponentType<{ className?: string }>, iconBg: string } => {
-  const typeLower = type.toLowerCase();
-  
-  if (typeLower.includes('message') || typeLower.includes('chat')) {
-    return { icon: MessageSquare, iconBg: iconBgMap.chat };
-  }
-  if (typeLower.includes('file') || typeLower.includes('upload')) {
-    return { icon: FolderClosed, iconBg: iconBgMap.file };
-  }
-  if (typeLower.includes('model')) {
-    return { icon: FolderClosed, iconBg: iconBgMap.file };
-  }
-  if (typeLower.includes('request')) {
-    return { icon: MessageCircle, iconBg: iconBgMap.request };
-  }
-  if (typeLower.includes('task')) {
-    return { icon: CheckSquare, iconBg: iconBgMap.task };
-  }
-  
-  // Default notification icon
-    return { icon: Bell, iconBg: iconBgMap.default };
-};
-
-  // Transform notifications to match ActivityItem component props
+  // Transform notifications to activity items
   const activityItems = useMemo<ActivityItemType[]>(() => {
     return recentNotifications.map((notification) => {
       const { icon, iconBg } = getNotificationIcon(notification.type);
-
       const title = formatNotificationTitle(notification);
 
-      // Safe date parsing with fallback
       let time = 'recently';
       try {
         const createdDate = new Date(notification.createdAt);
@@ -313,13 +282,12 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
     });
   }, [recentNotifications]);
 
-  // Transform recent files data with safe null checks
+  // Transform recent files data
   const recentFiles = useMemo<RecentFileItem[]>(() => {
     return recentFilesData.map((file) => {
       const ext = getFileExtension(file.filename || 'file');
       const colorClass = getFileColorClass(file.mimetype, file.filename || 'file');
 
-      // Safe date parsing with fallback
       let date = 'recently';
       try {
         const fileDate = new Date(file.updated_at || file.created_at);
@@ -330,14 +298,13 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
         console.error('Error parsing file date:', e);
       }
 
-      // Format project address as "street number + street name"
       const projectAddress = file.project?.address;
       const streetAddress = projectAddress?.streetNumber && projectAddress?.streetName
         ? `${projectAddress.streetNumber} ${projectAddress.streetName}`
         : file.project?.name || 'Unknown Project';
 
       return {
-        id: parseInt(file.id.replace(/-/g, '').substring(0, 15), 16), // Use more chars to reduce collision risk
+        id: parseInt(file.id.replace(/-/g, '').substring(0, 15), 16),
         fileId: file.id,
         name: file.filename || 'Unnamed file',
         project: streetAddress,
@@ -357,34 +324,27 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
     return () => window.removeEventListener('resize', checkSize);
   }, []);
 
-  // Scroll to today on mount - center the card
-  useEffect(() => {
-    // Wait for day button refs to be populated
-    const attemptScroll = () => {
-      const dayButton = dayButtonRefs.current.get(selectedIndex);
-      if (dayButton && calendarDays.length > 0) {
-        isProgrammaticScroll.current = true;
-        // Use a small delay to ensure DOM is fully rendered
-        setTimeout(() => {
-          dayButton.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
-          setTimeout(() => {
-            isProgrammaticScroll.current = false;
-          }, 100);
-        }, 50);
-        return true;
-      }
-      return false;
-    };
+  // Debug layout logging removed (was used for resizing verification)
 
-    // Try with delays to ensure refs are ready
-    const timer1 = setTimeout(() => attemptScroll(), 100);
-    const timer2 = setTimeout(() => attemptScroll(), 300);
-    
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-    };
-  }, [calendarDays.length, selectedIndex]); // Run when calendar is populated
+  // Scroll to center today on initial mount
+  useEffect(() => {
+    if (calendarScrollRef.current) {
+      isProgrammaticScroll.current = true;
+      const scrollContainer = calendarScrollRef.current;
+      const cardWidth = mdUp ? 88 : 104;
+      const viewportWidth = scrollContainer.clientWidth;
+
+      // Center index 15 (today)
+      const scrollPosition = (DAYS_BEFORE_CENTER * cardWidth) - (viewportWidth / 2) + (cardWidth / 2);
+
+      setTimeout(() => {
+        scrollContainer.scrollTo({ left: Math.max(0, scrollPosition), behavior: 'smooth' });
+        setTimeout(() => {
+          isProgrammaticScroll.current = false;
+        }, 600);
+      }, 100);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Attach non-passive wheel event listener for horizontal scrolling
   useEffect(() => {
@@ -424,7 +384,6 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
       if (hasScroll && !listenerAttached) {
         scrollContainer.addEventListener('wheel', handleWheel, { passive: false, capture: true });
         listenerAttached = true;
-        console.log('[Calendar Wheel] Listener attached successfully');
         return true;
       }
       return false;
@@ -449,14 +408,14 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
       const scrollContainer = calendarScrollRef.current;
       if (scrollContainer && listenerAttached) {
         scrollContainer.removeEventListener('wheel', handleWheel, { capture: true });
-        console.log('[Calendar Wheel] Listener removed');
       }
     };
   }, [calendarDays]);
 
+  // Track scroll to update centered day
   useEffect(() => {
     const scrollContainer = calendarScrollRef.current;
-    if (!scrollContainer || calendarDays.length === 0) return;
+    if (!scrollContainer) return;
 
     let scrollTimeout: NodeJS.Timeout;
     const handleScroll = () => {
@@ -464,37 +423,43 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
 
       clearTimeout(scrollTimeout);
       scrollTimeout = setTimeout(() => {
-        const scrollLeft = scrollContainer.scrollLeft;
-        const cardWidth = mdUp ? 88 : 104;
         const containerRect = scrollContainer.getBoundingClientRect();
+        const checkPoint = containerRect.left + 200; // Check point 200px from left edge
         
-        // Find the month separator that's closest to passing the header area
-        let newIndex = visibleIndex;
-        let closestDistance = Infinity;
+        // Find which month separator has passed the check point
+        let newIndex = centeredIndex;
+        let foundSeparator = false;
         
-        monthSeparatorRefs.current.forEach((separator, dayIndex) => {
-          if (!separator) return;
+        // Check separators from right to left to find the most recent one that passed
+        const sortedSeparators = Array.from(monthSeparatorRefs.current.entries())
+          .sort((a, b) => b[0] - a[0]); // Sort by index descending
+        
+        for (const [dayIndex, separator] of sortedSeparators) {
+          if (!separator) continue;
           const rect = separator.getBoundingClientRect();
-          // Distance from separator to the left edge of the scroll container
-          const distance = Math.abs(rect.left - containerRect.left - 100); // 100px offset for header area
           
-          if (distance < closestDistance && rect.left < containerRect.left + 200) {
-            closestDistance = distance;
+          // If separator is to the left of checkpoint, this month has been entered
+          if (rect.right < checkPoint) {
             newIndex = dayIndex;
+            foundSeparator = true;
+            break;
           }
-        });
+        }
         
         // Fallback to center-based calculation if no separator found
-        if (closestDistance === Infinity) {
+        if (!foundSeparator) {
+          const scrollLeft = scrollContainer.scrollLeft;
+          const cardWidth = mdUp ? 88 : 104;
+          const gap = 8;
           const centerPosition = scrollLeft + scrollContainer.clientWidth / 2;
-          const estimatedIndex = Math.round(centerPosition / cardWidth);
+          const estimatedIndex = Math.round(centerPosition / (cardWidth + gap));
           newIndex = Math.max(0, Math.min(estimatedIndex, calendarDays.length - 1));
         }
 
-        if (newIndex !== visibleIndex) {
-          setVisibleIndex(newIndex);
+        if (newIndex !== centeredIndex) {
+          setCenteredIndex(newIndex);
         }
-      }, 100);
+      }, 150);
     };
 
     scrollContainer.addEventListener('scroll', handleScroll);
@@ -502,9 +467,9 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
       scrollContainer.removeEventListener('scroll', handleScroll);
       clearTimeout(scrollTimeout);
     };
-  }, [visibleIndex, calendarDays.length, mdUp]);
+  }, [centeredIndex, calendarDays.length, mdUp]);
 
-  // Group upcoming events by month (normalize to full month names)
+  // Group upcoming events by month
   const eventsByMonth = useMemo(() => {
     const grouped = new Map<string, typeof upcomingEvents>();
     upcomingEvents.forEach((event) => {
@@ -515,7 +480,7 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
       grouped.get(monthKey)!.push(event);
     });
     return Array.from(grouped.entries()).sort((a, b) => {
-      const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+      const months = ['January', 'February', 'March', 'April', 'May', 'June',
                      'July', 'August', 'September', 'October', 'November', 'December'];
       return months.indexOf(a[0]) - months.indexOf(b[0]);
     });
@@ -535,32 +500,30 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
 
     const handleScroll = () => {
       const containerRect = scrollContainer.getBoundingClientRect();
-      const stickyHeaderHeight = 40; // Approximate height of sticky header
-      
-      // Find which month header is currently at or just below the sticky header position
+      const stickyHeaderHeight = 40;
+
       let currentMonth = stickyMonth;
       let minDistance = Infinity;
-      
+
       monthRefs.current.forEach((ref, month) => {
         if (ref) {
           const rect = ref.getBoundingClientRect();
           const distanceFromTop = rect.top - (containerRect.top + stickyHeaderHeight);
-          
-          // If the month header is at or above the sticky header position
+
           if (distanceFromTop <= 0 && Math.abs(distanceFromTop) < minDistance) {
             minDistance = Math.abs(distanceFromTop);
             currentMonth = month;
           }
         }
       });
-      
+
       if (currentMonth && currentMonth !== stickyMonth) {
         setStickyMonth(currentMonth);
       }
     };
 
     const observer = new IntersectionObserver(
-      (entries) => {
+      () => {
         handleScroll();
       },
       {
@@ -575,7 +538,7 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
     });
 
     scrollContainer.addEventListener('scroll', handleScroll);
-    handleScroll(); // Initial check
+    handleScroll();
 
     return () => {
       scrollContainer.removeEventListener('scroll', handleScroll);
@@ -585,7 +548,6 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
     };
   }, [eventsByMonth, stickyMonth]);
 
-  // Show loading state if workspace is not loaded yet (after all hooks are called)
   if (!currentWorkspace?.id) {
     return (
       <div className='h-full flex items-center justify-center'>
@@ -597,36 +559,64 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
     );
   }
 
+  // Jump 30 days forward or backward
+  const jumpDays = (direction: 'prev' | 'next') => {
+    const daysToJump = direction === 'next' ? JUMP_DAYS : -JUMP_DAYS;
+    const newCenterDate = new Date(centerDate);
+    newCenterDate.setDate(centerDate.getDate() + daysToJump);
 
-
-  // Month navigation
-  const goToMonth = (direction: 'prev' | 'next') => {
-    // Move 30 days in the specified direction
-    const currentCenter = new Date(currentYear, currentMonth, currentDay);
-    currentCenter.setDate(currentCenter.getDate() + (direction === 'next' ? 30 : -30));
-
-    const newYear = currentCenter.getFullYear();
-    const newMonth = currentCenter.getMonth();
-    const newDay = currentCenter.getDate();
-
-    const newDays = generateCalendarDays(newYear, newMonth, newDay);
-    
-    setCurrentYear(newYear);
-    setCurrentMonth(newMonth);
-    setCurrentDay(newDay);
+    const newDays = generateCalendarDaysAroundDate(newCenterDate);
+    setCenterDate(newCenterDate);
     setCalendarDays(newDays);
 
-    // Select the last day (index 30) when going forward, first day (index 0) when going backward
-    const newIndex = direction === 'next' ? 30 : 0;
-    setSelectedIndex(newIndex);
-    setVisibleIndex(newIndex);
-    setUserHasSelected(true);
+    // Set selected index to center (the 30th day from previous position is now at center)
+    setSelectedIndex(DAYS_BEFORE_CENTER);
+    setCenteredIndex(DAYS_BEFORE_CENTER);
+
+    // Scroll to center the new center date
+    setTimeout(() => {
+      if (calendarScrollRef.current) {
+        isProgrammaticScroll.current = true;
+        const scrollContainer = calendarScrollRef.current;
+        const cardWidth = mdUp ? 88 : 104;
+        const viewportWidth = scrollContainer.clientWidth;
+
+        const scrollPosition = (DAYS_BEFORE_CENTER * cardWidth) - (viewportWidth / 2) + (cardWidth / 2);
+
+        scrollContainer.scrollTo({
+          left: Math.max(0, scrollPosition),
+          behavior: 'smooth'
+        });
+
+        setTimeout(() => {
+          isProgrammaticScroll.current = false;
+        }, 600);
+      }
+    }, 50);
+  };
+
+  // Reset calendar to today
+  const resetToToday = () => {
+    const newDays = generateCalendarDaysAroundDate(today);
+    setCenterDate(today);
+    setCalendarDays(newDays);
+    setSelectedIndex(DAYS_BEFORE_CENTER);
+    setCenteredIndex(DAYS_BEFORE_CENTER);
 
     setTimeout(() => {
-      const dayButton = dayButtonRefs.current.get(newIndex);
-      if (dayButton) {
+      if (calendarScrollRef.current) {
         isProgrammaticScroll.current = true;
-        dayButton.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        const scrollContainer = calendarScrollRef.current;
+        const cardWidth = mdUp ? 88 : 104;
+        const viewportWidth = scrollContainer.clientWidth;
+
+        const scrollPosition = (DAYS_BEFORE_CENTER * cardWidth) - (viewportWidth / 2) + (cardWidth / 2);
+
+        scrollContainer.scrollTo({
+          left: Math.max(0, scrollPosition),
+          behavior: 'smooth'
+        });
+
         setTimeout(() => {
           isProgrammaticScroll.current = false;
         }, 600);
@@ -634,45 +624,21 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
     }, 100);
   };
 
-  // Reset calendar to today
-  const resetToToday = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
-    const day = today.getDate();
-
-    const newDays = generateCalendarDays(year, month, day);
-    const todayIdx = newDays.findIndex(d => d.isToday);
-
-    setCurrentYear(year);
-    setCurrentMonth(month);
-    setCurrentDay(day);
-    setCalendarDays(newDays);
-
-    if (todayIdx >= 0) {
-      setSelectedIndex(todayIdx);
-      setVisibleIndex(todayIdx);
-      setUserHasSelected(false);
-
-      setTimeout(() => {
-        const dayButton = dayButtonRefs.current.get(todayIdx);
-        if (dayButton) {
-          isProgrammaticScroll.current = true;
-          dayButton.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-          setTimeout(() => {
-            isProgrammaticScroll.current = false;
-          }, 600);
-        }
-      }, 100);
-    }
-  };
-
   // Center a card by index
   const centerCardByIndex = (index: number) => {
-    const dayButton = dayButtonRefs.current.get(index);
-    if (dayButton) {
+    if (calendarScrollRef.current) {
       isProgrammaticScroll.current = true;
-      dayButton.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      const scrollContainer = calendarScrollRef.current;
+      const cardWidth = mdUp ? 88 : 104;
+      const viewportWidth = scrollContainer.clientWidth;
+
+      const scrollPosition = (index * cardWidth) - (viewportWidth / 2) + (cardWidth / 2);
+
+      scrollContainer.scrollTo({
+        left: Math.max(0, scrollPosition),
+        behavior: 'smooth'
+      });
+
       setTimeout(() => {
         isProgrammaticScroll.current = false;
       }, 600);
@@ -681,14 +647,17 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
 
   // Handle calendar day click
   const handleDayClick = (index: number) => {
+    const clickedDay = calendarDays[index];
+    if (clickedDay) {
+      setClickedDateKey(clickedDay.fullDate.toISOString());
+    }
     setSelectedIndex(index);
-    setUserHasSelected(true);
     centerCardByIndex(index);
   };
 
-  // Visible month label
+  // Get visible month label based on centered day
   const getVisibleMonth = () => {
-    const day = calendarDays[visibleIndex] || calendarDays[0];
+    const day = calendarDays[centeredIndex] || calendarDays[DAYS_BEFORE_CENTER];
     if (!day) return '';
     const yearShort = String(day.year).slice(-2);
     return `${day.monthShort.toUpperCase()} ${yearShort}`;
@@ -703,15 +672,15 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
     return 'Good night';
   };
 
-  const selectedDay = calendarDays[selectedIndex] || calendarDays[0];
+  const selectedDay = calendarDays[selectedIndex] || calendarDays[DAYS_BEFORE_CENTER];
   const eventsForDayData = getEventsForDay(selectedIndex, calendarDays);
   const userName = user?.name?.split(' ')[0] || 'there';
 
   return (
-    <div className='h-full flex flex-col overflow-hidden'>
-      <div className='flex-1 flex flex-col min-h-0 px-3 md:px-6 pt-4 md:pt-6 pb-4 gap-0 overflow-y-auto'>
+    <div className='h-full overflow-hidden flex flex-col'>
+      <div className='flex-1 flex flex-col min-h-0 px-3 md:px-6 pt-4 md:pt-6 pb-4 gap-3 overflow-y-auto'>
         {/* Welcome section */}
-        <div className='flex items-start justify-between gap-4'>
+        <div className='flex items-start justify-between gap-4 shrink-0'>
           <div className='px-3 md:px-4'>
             <div className='text-2xl md:text-[26px] leading-tight font-semibold text-[#202020]'>
               {getGreeting()}, {userName}
@@ -720,8 +689,8 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
         </div>
 
         {/* Calendar section - Responsive grid layout */}
-        <div className='flex-1 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_min(22rem,30%)] lg:grid-rows-[auto_minmax(400px,1fr)] min-h-0 gap-4'>
-        {/* Calendar block - lg:col-start-1 lg:row-start-1 */}
+        <div className='flex-1 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_min(22rem,30%)] lg:grid-rows-[auto_1fr] min-h-0 gap-4'>
+        {/* Calendar block */}
         <div className='flex flex-col min-w-0 overflow-hidden lg:col-start-1 lg:row-start-1'>
           {/* Calendar scroll area */}
           <div className='rounded-xl bg-white/60 px-3 md:px-4 py-2 shrink-0'>
@@ -730,6 +699,7 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
                 <span>Today is</span>
                 <button
                   onClick={resetToToday}
+                  title='Jump to today'
                   className='text-[#4c75d1] font-medium hover:text-[#202020] transition-colors cursor-pointer touch-manipulation truncate uppercase'
                 >
                   <span className='inline md:hidden'>{getCurrentDateShort()}</span>
@@ -742,13 +712,15 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
                 </div>
                 <div className='flex gap-1'>
                   <button
-                    onClick={() => goToMonth('prev')}
+                    onClick={() => jumpDays('prev')}
+                    title='Previous 30 days'
                     className='w-9 h-9 md:w-7 md:h-7 flex items-center justify-center hover:bg-neutral-50 active:bg-neutral-100 rounded-md transition-colors touch-manipulation pb-1 pt-0'
                   >
                     <span className='text-[#505050] text-[22px] md:text-[20px] leading-none'>‹</span>
                   </button>
                   <button
-                    onClick={() => goToMonth('next')}
+                    onClick={() => jumpDays('next')}
+                    title='Next 30 days'
                     className='w-9 h-9 md:w-7 md:h-7 flex items-center justify-center hover:bg-neutral-50 active:bg-neutral-100 rounded-md transition-colors touch-manipulation pb-1 pt-0'
                   >
                     <span className='text-[#505050] text-[22px] md:text-[20px] leading-none'>›</span>
@@ -765,7 +737,7 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
               >
                 <div className='flex gap-2 pb-4 min-w-max'>
                   {calendarDays.map((day, idx) => {
-                    const isSelected = userHasSelected && day.index === selectedIndex;
+                    const isSelected = day.index === selectedIndex && clickedDateKey === day.fullDate.toISOString();
                     const hasEvents = getEventsForDay(day.index, calendarDays).length > 0;
                     const isToday = day.isToday;
                     const isFirstOfMonth = day.day === 1;
@@ -801,10 +773,6 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
                           />
                         )}
                         <button
-                          ref={(el) => {
-                            if (el) dayButtonRefs.current.set(day.index, el);
-                            else dayButtonRefs.current.delete(day.index);
-                          }}
                           onClick={() => handleDayClick(day.index)}
                           className={
                             'w-24 h-24 md:w-20 md:h-20 rounded-xl flex flex-col items-start justify-between p-3 md:p-2.5 transition-all duration-200 ease-out select-none touch-manipulation ' +
@@ -846,10 +814,10 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
           </div>
         </div>
 
-        {/* Active/Upcoming card - mobile below calendar, lg in right column spanning 2 rows */}
+        {/* Active/Upcoming card */}
         <div className='w-full flex flex-col min-h-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:max-h-[calc(100vh-11rem)]'>
           <div className='flex-1 rounded-xl border border-neutral-200 bg-white/60 flex flex-col overflow-hidden max-h-[800px] lg:max-h-none'>
-            {/* Active date events section - fixed height to keep Upcoming stable; responsive via clamp */}
+            {/* Active date events section */}
             <div className='flex flex-col flex-shrink-0' style={{ height: ACTIVE_EVENTS_HEIGHT }}>
               <div className='flex items-start justify-between gap-2 px-3 md:px-4 pt-3 md:pt-4 pb-3 border-b border-neutral-100'>
                 <div className='flex flex-col'>
@@ -888,7 +856,7 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
             {/* Divider between sections */}
             <div className='border-t border-neutral-200' />
 
-            {/* Upcoming events section - takes remaining space */}
+            {/* Upcoming events section */}
             <div className='flex-1 flex flex-col overflow-hidden min-h-0'>
               <div className='flex items-center justify-between px-3 md:px-4 pt-3 pb-3 border-b border-neutral-100'>
                 <h3 className='text-xs md:text-[13px] font-semibold text-[#202020]'>
@@ -923,7 +891,6 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
                 const isStickyMonth = month === stickyMonth;
                 return (
                   <div key={month}>
-                    {/* Month header - keep minimal footprint when sticky to avoid jump without visible gap */}
                     <div
                       ref={(el) => {
                         if (el) monthRefs.current.set(month, el);
@@ -937,7 +904,6 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
                         {month}
                       </div>
                     </div>
-                    {/* Events for this month */}
                     <div className='pb-3 md:pb-4'>
                       {events.map((item, eventIndex) => {
                         const showBorder = eventIndex > 0 || (monthIndex > 0 && eventIndex === 0);
@@ -956,121 +922,34 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
               })}
                 </>
               )}
-              </div>
             </div>
           </div>
         </div>
+        </div>
 
-          {/* Activity + Recent files row - lg:col-start-1 lg:row-start-2 */}
-          <div className='flex flex-col md:flex-row gap-3 lg:gap-4 min-h-0 lg:col-start-1 lg:row-start-2 lg:h-full'>
+          {/* Activity + Recent files row */}
+          <div
+            ref={bottomRowRef}
+            className='flex flex-col md:flex-row gap-3 lg:gap-4 min-h-0 lg:col-start-1 lg:row-start-2 lg:items-stretch'
+          >
             {/* Recent files */}
-            <div className='flex-1 rounded-xl border border-neutral-200 bg-white/60 flex flex-col min-w-0 max-h-[400px] lg:max-h-none'>
-              <div className='flex items-center justify-between px-3 md:px-4 pt-3 md:pt-4 pb-3 border-b border-neutral-100'>
-                <h3 className='text-xs md:text-[13px] font-semibold text-[#202020]'>
-                  Recent files
-                </h3>
-              </div>
-
-              {/* Table Header - Hidden on mobile */}
-              <div className='hidden md:flex items-center gap-4 px-3 md:px-4 pt-2 pb-2 border-b border-neutral-200'>
-                <div className='flex-[2] min-w-0'>
-                  <div className='text-[10px] uppercase tracking-wider text-[#808080] font-semibold text-left'>
-                    File Name
-                  </div>
-                </div>
-                <div className='flex items-center gap-4 md:shrink-0'>
-                  <div className='w-32 shrink-0'>
-                    <div className='text-[10px] uppercase tracking-wider text-[#808080] font-semibold text-left'>
-                      Folder
-                    </div>
-                  </div>
-                  <div className='w-40 shrink-0'>
-                    <div className='text-[10px] uppercase tracking-wider text-[#808080] font-semibold text-left'>
-                      Project
-                    </div>
-                  </div>
-                  <div className='w-20 shrink-0'>
-                    <div className='text-[10px] uppercase tracking-wider text-[#808080] font-semibold text-left'>
-                      Modified
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Table Body */}
-              <div className='flex-1 overflow-y-auto scrollbar-hide'>
-                {isLoadingFiles ? (
-                  <div className='flex items-center justify-center py-8'>
-                    <div className='flex items-center gap-2'>
-                      <div className='w-4 h-4 border-2 border-[#4c75d1] border-t-transparent rounded-full animate-spin' />
-                      <p className='text-sm text-[#808080]'>Loading files...</p>
-                    </div>
-                  </div>
-                ) : recentFiles.length > 0 ? (
-                  recentFiles.map((file, index) => (
-                    <FileItem key={`${file.id}-${index}`} file={file} />
-                  ))
-                ) : (
-                  <div className='flex items-center justify-center py-8'>
-                    <p className='text-sm text-[#808080]'>No recent files</p>
-                  </div>
-                )}
-              </div>
-            </div>
+            <RecentFilesCard
+              recentFiles={recentFiles}
+              isLoading={isLoadingFiles}
+              containerRef={recentCardRef}
+            />
 
             {/* Activity Feed */}
-            <div className='md:w-96 lg:w-[400px] rounded-xl border border-neutral-200 bg-white/60 flex flex-col min-w-0 max-h-[400px] lg:max-h-none'>
-              <div className='flex items-center justify-between px-3 md:px-4 pt-3 md:pt-4 pb-3 border-b border-neutral-100'>
-                <h3 className='text-xs md:text-[13px] font-semibold text-[#202020]'>
-                  Activity Feed
-                </h3>
-                <div className='text-[10px] text-[#808080]'>Last 14 days</div>
-              </div>
-
-              <div className='flex-1 overflow-y-auto scrollbar-hide'>
-                {isLoadingActivity ? (
-                  <div className='flex items-center justify-center py-8'>
-                    <div className='flex items-center gap-2'>
-                      <div className='w-4 h-4 border-2 border-[#4c75d1] border-t-transparent rounded-full animate-spin' />
-                      <p className='text-sm text-[#808080]'>Loading activity...</p>
-                    </div>
-                  </div>
-                ) : isActivityError ? (
-                  <div className='flex flex-col items-center justify-center py-8 px-4'>
-                    <p className='text-sm text-red-600 text-center'>Failed to load activity</p>
-                    <button
-                      onClick={() => window.location.reload()}
-                      className='mt-2 text-xs text-[#4c75d1] hover:underline'
-                    >
-                      Retry
-                    </button>
-                  </div>
-                ) : activityItems.length > 0 ? (
-                  <>
-                    {activityItems.map((item, index) => (
-                      <ActivityItem
-                        key={`${item.id}-${index}`}
-                        icon={item.icon}
-                        iconBg={item.iconBg}
-                        title={item.title}
-                        subtitle={item.subtitle}
-                        time={item.time}
-                        showBorder={index > 0}
-                        isFirst={index === 0}
-                        isLast={index === activityItems.length - 1}
-                      />
-                    ))}
-                  </>
-                ) : (
-                  <div className='flex items-center justify-center py-8'>
-                    <p className='text-sm text-[#808080]'>No activity in the last 14 days</p>
-                  </div>
-                )}
-              </div>
-            </div>
+            <ActivityFeedCard
+              items={activityItems}
+              isLoading={isLoadingActivity}
+              isError={isActivityError}
+              containerRef={activityCardRef}
+            />
           </div>
         </div>
       </div>
+
     </div>
   );
 };

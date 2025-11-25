@@ -33,7 +33,9 @@ export const ActivityItem: React.FC<ActivityItemProps> = ({
         <Icon className='w-4 h-4 text-current' />
       </div>
       <div className='flex-1 min-w-0'>
-        <div className='text-sm text-[#0f172a] font-normal truncate'>{title}</div>
+        <div className='activity-title-token truncate'>
+          {title}
+        </div>
         <div className='text-xs text-[#6b7280] mt-0.5 truncate'>{subtitle}</div>
         <div className='text-[11px] text-[#94a3b8] mt-1'>{time}</div>
       </div>

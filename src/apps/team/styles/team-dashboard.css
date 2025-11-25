@@ -65,3 +65,24 @@
   -webkit-tap-highlight-color: rgba(76, 117, 209, 0.1);
 }
 
+.team-app .activity-title-token {
+  --activity-title-size: 13px;
+  --activity-title-line: 17px;
+  --activity-title-weight: 400;
+  --activity-title-color: #0f172a;
+
+  font-size: var(--activity-title-size) !important;
+  line-height: var(--activity-title-line) !important;
+  font-weight: var(--activity-title-weight);
+  color: var(--activity-title-color);
+  display: block;
+}
+
+.team-app .activity-title-token .font-semibold,
+.team-app .activity-title-token .font-bold,
+.team-app .activity-title-token strong {
+  font-weight: 600;
+  font-size: var(--activity-title-size) !important;
+  line-height: var(--activity-title-line) !important;
+}
+
