@@ -563,7 +563,7 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
 
   return (
     <div className='h-full flex flex-col overflow-hidden'>
-      <div className='flex-1 flex flex-col min-h-0 px-3 md:px-6 pt-4 md:pt-6 pb-4 gap-4 overflow-y-auto'>
+      <div className='flex-1 flex flex-col min-h-0 px-3 md:px-6 pt-4 md:pt-6 pb-4 gap-0 overflow-y-auto'>
         {/* Welcome section */}
         <div className='flex items-start justify-between gap-4'>
           <div className='px-3 md:px-4'>
@@ -574,9 +574,9 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
         </div>
 
         {/* Calendar section - Responsive grid layout */}
-        <div className='flex-1 grid grid-cols-1 lg:grid-cols-[1fr_22rem] lg:grid-rows-[auto_minmax(400px,1fr)] min-h-0 gap-4'>
+        <div className='flex-1 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_min(22rem,30%)] lg:grid-rows-[auto_minmax(400px,1fr)] min-h-0 gap-4'>
         {/* Calendar block - lg:col-start-1 lg:row-start-1 */}
-        <div className='flex flex-col min-w-0 lg:col-start-1 lg:row-start-1'>
+        <div className='flex flex-col min-w-0 overflow-hidden lg:col-start-1 lg:row-start-1'>
           {/* Calendar scroll area */}
           <div className='rounded-xl bg-white/60 px-3 md:px-4 py-2 shrink-0'>
             <div className='flex items-center justify-between gap-2 mb-4'>
@@ -686,7 +686,7 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
         </div>
 
         {/* Active/Upcoming card - mobile below calendar, lg in right column spanning 2 rows */}
-        <div className='w-full flex flex-col min-h-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:max-h-[calc(100vh-12rem)]'>
+        <div className='w-full flex flex-col min-h-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:max-h-[calc(100vh-11rem)]'>
           <div className='flex-1 rounded-xl border border-neutral-200 bg-white/60 flex flex-col overflow-hidden max-h-[800px] lg:max-h-none'>
             {/* Active date events section - fixed height to keep Upcoming stable; responsive via clamp */}
             <div className='flex flex-col flex-shrink-0' style={{ height: ACTIVE_EVENTS_HEIGHT }}>
