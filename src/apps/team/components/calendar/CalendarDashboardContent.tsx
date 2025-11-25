@@ -63,6 +63,21 @@ const FULL_MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
+const emphasizeRequest = (text: string): React.ReactNode => {
+  if (!text) return text;
+  const match = text.match(/request/i);
+  if (!match || match.index === undefined) return text;
+  const start = match.index;
+  const end = start + match[0].length;
+  return (
+    <>
+      {text.slice(0, start)}
+      <span className='font-semibold text-amber-600'>Request</span>
+      {text.slice(end)}
+    </>
+  );
+};
+
 const getFullMonthName = (month: string): string => {
   const trimmed = (month || '').trim();
   if (!trimmed) return month;
@@ -115,7 +130,7 @@ const formatNotificationTitle = (notification: any): React.ReactNode => {
       <span className='text-[#202020]'>
         {before}
         <span className='font-semibold'>{highlighted}</span>
-        {after}
+        {emphasizeRequest(after)}
       </span>
     );
   }
@@ -124,7 +139,7 @@ const formatNotificationTitle = (notification: any): React.ReactNode => {
   return (
     <span className='text-[#202020]'>
       <span className='font-semibold'>{actorName}</span>
-      {normalizedTitle ? ` ${normalizedTitle}` : ''}
+      {normalizedTitle ? <> {emphasizeRequest(normalizedTitle)}</> : ''}
     </span>
   );
 };
@@ -597,7 +612,7 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
         {/* Welcome section */}
         <div className='flex items-start justify-between gap-4'>
           <div className='px-3 md:px-4'>
-            <div className='text-xl md:text-[26px] leading-tight font-semibold text-[#202020]'>
+            <div className='text-2xl md:text-[26px] leading-tight font-semibold text-[#202020]'>
               {getGreeting()}, {userName}
             </div>
           </div>
@@ -621,7 +636,7 @@ const getNotificationIcon = (type: string): { icon: React.ComponentType<{ classN
                 </button>
               </div>
               <div className='flex items-center gap-2 shrink-0'>
-                <div className='text-[10px] sm:text-[11px] tracking-[0.15em] uppercase text-[#606060] font-medium'>
+                <div className='text-[10px] sm:text-[11px] tracking-[0.15em] uppercase text-[#202020] font-medium'>
                   {getVisibleMonth()}
                 </div>
                 <div className='flex gap-1'>

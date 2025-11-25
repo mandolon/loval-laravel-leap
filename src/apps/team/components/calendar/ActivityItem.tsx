@@ -28,14 +28,14 @@ export const ActivityItem: React.FC<ActivityItemProps> = ({
   ].filter(Boolean).join(' ');
 
   return (
-    <div className={`flex gap-3 items-start py-3 md:py-2.5 px-3 md:px-4 hover:bg-neutral-50 active:bg-neutral-100 transition-colors touch-manipulation cursor-pointer ${borderClasses}`}>
-      <div className={`w-9 h-9 md:w-8 md:h-8 rounded-lg ${iconBg} flex items-center justify-center shrink-0 mt-0.5 border-0 shadow-none ring-0`}>
-        <Icon className='w-5 h-5 md:w-4 md:h-4 text-[#202020]' />
+    <div className={`flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors touch-manipulation cursor-pointer ${borderClasses}`}>
+      <div className='h-7 w-7 rounded-full border border-slate-200 bg-white flex items-center justify-center shrink-0 text-[#0f172a]'>
+        <Icon className='w-4 h-4 text-[#0f172a]' />
       </div>
       <div className='flex-1 min-w-0'>
-        <div className='text-xs md:text-[13px] text-[#202020] font-normal'>{title}</div>
-        <div className='text-xs text-[#606060] mt-0.5'>{subtitle}</div>
-        <div className='text-[11px] text-[#808080] mt-1'>{time}</div>
+        <div className='text-sm text-[#0f172a] font-normal truncate'>{title}</div>
+        <div className='text-xs text-[#6b7280] mt-0.5 truncate'>{subtitle}</div>
+        <div className='text-[11px] text-[#94a3b8] mt-1'>{time}</div>
       </div>
     </div>
   );
