@@ -389,6 +389,7 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
                         project={project}
                         allowDrag={allowDrag}
                         index={index}
+                        isPriorityView={sortBy === 'priority'}
                         onOpenFocusList={handleOpenFocusList}
                         onUpdateStatus={handleUpdateStatus}
                       />

@@ -7,6 +7,7 @@ interface SortableProjectRowProps {
   project: Project;
   allowDrag: boolean;
   index: number;
+  isPriorityView: boolean;
   onOpenFocusList: (project: Project, anchorRef: React.RefObject<HTMLElement>) => void;
   onUpdateStatus: (projectId: string, newStatus: Project['stage']) => void;
 }
@@ -15,6 +16,7 @@ export const SortableProjectRow: React.FC<SortableProjectRowProps> = ({
   project,
   allowDrag,
   index,
+  isPriorityView,
   onOpenFocusList,
   onUpdateStatus,
 }) => {
@@ -42,6 +44,7 @@ export const SortableProjectRow: React.FC<SortableProjectRowProps> = ({
         attributes={allowDrag ? attributes : {}}
         isDragging={isDragging}
         index={index}
+        isPriorityView={isPriorityView}
         onOpenFocusList={onOpenFocusList}
         onUpdateStatus={onUpdateStatus}
       />
@@ -56,6 +59,7 @@ export interface ProjectRowContentProps {
   attributes: any;
   isDragging: boolean;
   index: number;
+  isPriorityView: boolean;
   onOpenFocusList: (project: Project, anchorRef: React.RefObject<HTMLElement>) => void;
   onUpdateStatus: (projectId: string, newStatus: Project['stage']) => void;
 }
@@ -67,6 +71,7 @@ export const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
   attributes,
   isDragging,
   index,
+  isPriorityView,
   onOpenFocusList,
   onUpdateStatus,
 }) => {
@@ -74,37 +79,32 @@ export const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
   const statusButtonRef = useRef<HTMLButtonElement>(null);
   const nextMilestoneRef = useRef<HTMLDivElement>(null);
 
+  const handlePointerDown = (e: React.PointerEvent) => {
+    // Don't start drag if clicking on a button
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'BUTTON' || target.closest('button')) {
+      e.stopPropagation();
+      return;
+    }
+    // Allow drag to proceed by calling the original listener
+    if (listeners?.onPointerDown) {
+      listeners.onPointerDown(e as any);
+    }
+  };
+
   return (
     <div
       className={`
         flex items-center gap-2 px-3 py-2.5
         bg-white border border-neutral-100 rounded-lg
-        shadow-sm hover:shadow-md
+        shadow-sm ${isPriorityView ? 'hover:shadow-md' : ''}
         hover:bg-neutral-50/50
         transition-shadow
         min-w-0 w-full
+        ${allowDrag ? 'cursor-grab active:cursor-grabbing' : ''}
       `}
+      {...(allowDrag ? { ...attributes, ...listeners, onPointerDown: handlePointerDown } : {})}
     >
-      {/* Drag handle */}
-      {allowDrag ? (
-        <div
-          className="flex-shrink-0 w-5 flex items-center justify-center cursor-grab active:cursor-grabbing touch-none"
-          {...listeners}
-          {...attributes}
-        >
-          <svg width="8" height="12" viewBox="0 0 8 12" fill="currentColor" className="text-neutral-300 pointer-events-none">
-            <circle cx="2" cy="2" r="1" />
-            <circle cx="6" cy="2" r="1" />
-            <circle cx="2" cy="6" r="1" />
-            <circle cx="6" cy="6" r="1" />
-            <circle cx="2" cy="10" r="1" />
-            <circle cx="6" cy="10" r="1" />
-          </svg>
-        </div>
-      ) : (
-        <div className="flex-shrink-0 w-5"></div>
-      )}
-
       {/* Order number */}
       <div className="flex-shrink-0 w-5 flex items-center justify-center">
         <span className="text-xs text-neutral-400 font-medium">
@@ -121,6 +121,7 @@ export const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
             e.stopPropagation();
             setStatusPopoverOpen(!statusPopoverOpen);
           }}
+          onPointerDown={(e) => e.stopPropagation()}
           className="text-xs text-neutral-500 hover:text-neutral-700 transition-colors hover:bg-neutral-100/50 rounded px-1 -mx-1 mb-0.5 text-left leading-tight cursor-pointer w-fit"
         >
           {project.stage}
@@ -131,6 +132,7 @@ export const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
             e.stopPropagation();
             console.log('Project clicked:', project.name);
           }}
+          onPointerDown={(e) => e.stopPropagation()}
           className="text-sm font-medium text-neutral-900 truncate leading-tight text-left hover:text-neutral-700 transition-colors cursor-pointer w-fit"
         >
           {project.name}
@@ -144,29 +146,42 @@ export const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
               onClick={() => setStatusPopoverOpen(false)}
             />
             <div className="absolute left-0 bottom-full mb-1 z-[40]">
-              <div className="w-max rounded-md border border-neutral-200 bg-white shadow-lg overflow-hidden py-1">
-                {(['Pre-Design', 'Design', 'Permit', 'Build'] as const).map((status) => (
-                  <button
-                    key={status}
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onUpdateStatus(project.id, status);
-                      setStatusPopoverOpen(false);
-                    }}
-                    className={`
-                      w-full text-left px-3 py-1.5 text-[10px] sm:text-xs whitespace-nowrap
-                      transition-colors
-                      ${
-                        project.stage === status
-                          ? 'bg-neutral-100 text-neutral-900 font-medium'
-                          : 'text-neutral-700 hover:bg-neutral-50'
-                      }
-                    `}
-                  >
-                    {status}
-                  </button>
-                ))}
+              <div className="rounded-md border border-neutral-200 bg-white shadow-lg overflow-hidden py-1 flex flex-col">
+                {(() => {
+                  // Use the same order as database sorting: Pre-Design, Design, Permit, Build
+                  const statusOrder: Record<'Pre-Design' | 'Design' | 'Permit' | 'Build', number> = {
+                    'Pre-Design': 1,
+                    'Design': 2,
+                    'Permit': 3,
+                    'Build': 4,
+                  };
+                  const statuses = (['Pre-Design', 'Design', 'Permit', 'Build'] as const).sort(
+                    (a, b) => statusOrder[a] - statusOrder[b]
+                  );
+                  return statuses.map((status) => (
+                    <button
+                      key={status}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onUpdateStatus(project.id, status);
+                        setStatusPopoverOpen(false);
+                      }}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      className={`
+                        w-full text-left px-2.5 py-1.5 text-[10px] sm:text-xs whitespace-nowrap
+                        transition-colors
+                        ${
+                          project.stage === status
+                            ? 'bg-neutral-100 text-neutral-900 font-medium'
+                            : 'text-neutral-700 hover:bg-neutral-50'
+                        }
+                      `}
+                    >
+                      {status}
+                    </button>
+                  ));
+                })()}
               </div>
             </div>
           </>
@@ -184,6 +199,7 @@ export const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
             e.stopPropagation();
             onOpenFocusList(project, nextMilestoneRef);
           }}
+          onPointerDown={(e) => e.stopPropagation()}
           className="w-full text-right hover:bg-neutral-100/50 rounded-md px-2 py-1 -mx-2 -my-1 transition-colors cursor-pointer"
         >
           {project.nextLabel ? (
