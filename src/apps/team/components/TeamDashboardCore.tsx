@@ -600,13 +600,15 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
   // Restore project selection from URL on load
   useEffect(() => {
     if (!urlProjectId || !userProjects.length || active !== 'projects') return;
+    // Skip when using children routes - they handle their own state
+    if (shouldUseChildrenRoute) return;
     
     const project = userProjects.find((p: any) => p.id === urlProjectId);
     if (project && selected?.item !== project.name) {
       // Sync the selected state with URL when projectId changes
       setSelected({ tab: 'projects', item: project.name });
     }
-  }, [urlProjectId, userProjects, active]);
+  }, [urlProjectId, userProjects, active, shouldUseChildrenRoute]);
 
   // Clear all content selections when project changes
   useEffect(() => {
@@ -629,6 +631,8 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
   // Update URL when project selection changes (skip if we're on info tab to avoid conflicts)
   useEffect(() => {
     if (active !== 'projects' || !selected?.item) return;
+    // Skip URL updates when using children routes (projectId already in path)
+    if (shouldUseChildrenRoute) return;
     // Skip URL updates when on info tab - ProjectInfoNavigation handles those
     if (projectPanelTab === 'info') return;
     
@@ -640,7 +644,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
         return newParams;
       }, { replace: true });
     }
-  }, [selected?.item, userProjects, active, urlProjectId, setSearchParams, projectPanelTab, selectedWhiteboard]);
+  }, [selected?.item, userProjects, active, urlProjectId, setSearchParams, projectPanelTab, selectedWhiteboard, shouldUseChildrenRoute]);
 
   // Update URL when file selection changes
   useEffect(() => {
