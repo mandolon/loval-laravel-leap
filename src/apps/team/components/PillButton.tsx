@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 
 interface PillButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  icon?: React.ComponentType<{ className?: string }>;
+  icon?: React.ComponentType<{ className?: string; strokeWidth?: string | number }>;
   iconSize?: string;
   children: React.ReactNode;
 }

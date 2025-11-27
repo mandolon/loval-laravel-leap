@@ -498,6 +498,7 @@ export interface UpdateProjectInput {
   estimatedAmount?: number;
   dueDate?: string;
   progress?: number;
+  metadata?: Record<string, unknown>;
   // Note: totalTasks, completedTasks, teamMemberCount are read-only (auto-managed by triggers)
 }
 

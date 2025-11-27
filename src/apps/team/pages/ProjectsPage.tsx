@@ -51,6 +51,8 @@ export default function ProjectsPage() {
           pageId={selectedWhiteboard.pageId}
           projectId={selectedProjectId}
           onApiReady={(api) => {/* Optional: store api reference */}}
+          inchesPerSceneUnit={null}
+          onArrowStatsChange={() => {/* Optional: handle stats */}}
         />
       ) : selectedFile ? (
         <TeamFileViewer file={selectedFile} />

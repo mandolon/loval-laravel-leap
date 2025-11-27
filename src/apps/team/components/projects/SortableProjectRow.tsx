@@ -200,7 +200,7 @@ export const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
                     'Permit': 3,
                     'Build': 4,
                   };
-                  const statuses = (['Pre-Design', 'Design', 'Permit', 'Build'] as const).sort(
+                  const statuses = [...(['Pre-Design', 'Design', 'Permit', 'Build'] as const)].sort(
                     (a, b) => statusOrder[a] - statusOrder[b]
                   );
                   return statuses.map((status) => (
