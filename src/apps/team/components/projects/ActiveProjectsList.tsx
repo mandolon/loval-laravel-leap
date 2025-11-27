@@ -70,7 +70,10 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
             : p.name;
 
         const projectMetadata = (p.metadata || {}) as ProjectMetadata;
-        const firstIncompleteTodo = projectMetadata.focusTodos?.todos?.find((t: ProjectTodoData) => !t.completed);
+        // Filter out unsaved "New to-do" items from the Next label
+        const firstIncompleteTodo = projectMetadata.focusTodos?.todos?.find(
+          (t: ProjectTodoData) => !t.completed && t.text !== 'New to-do'
+        );
 
         return {
           id: p.id,
@@ -136,12 +139,21 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
 
   // Persist todos to database in project metadata
   const updateTodosInDB = async (projectId: string, todos: ProjectTodo[]) => {
-    if (!workspaceId) return;
+    console.log('🔵 [updateTodosInDB] Starting save:', { projectId, todosCount: todos.length, todos });
+    
+    if (!workspaceId) {
+      console.error('❌ [updateTodosInDB] No workspaceId');
+      return;
+    }
 
     const project = dbProjects.find((p) => p.id === projectId);
-    if (!project) return;
+    if (!project) {
+      console.error('❌ [updateTodosInDB] Project not found:', projectId);
+      return;
+    }
 
     const currentMetadata = (project.metadata || {}) as ProjectMetadata;
+    console.log('🔵 [updateTodosInDB] Current metadata:', currentMetadata);
     
     const updatedMetadata: ProjectMetadata = {
       ...currentMetadata,
@@ -156,6 +168,9 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
       },
     };
 
+    console.log('🟢 [updateTodosInDB] Updated metadata:', updatedMetadata);
+    console.log('🟢 [updateTodosInDB] Calling mutation with:', { id: projectId, input: { metadata: updatedMetadata } });
+
     updateProjectMutation.mutate({
       id: projectId,
       input: { metadata: updatedMetadata as Record<string, unknown> },
@@ -163,21 +178,26 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
   };
 
   const handleOpenFocusList = (project: Project, anchorRef: React.RefObject<HTMLElement>) => {
+    console.log('📂 [handleOpenFocusList] Opening focus list for project:', project.id, project.name);
     setFocusListProject(project);
     setFocusListAnchorRef(anchorRef);
 
     // Load todos from project metadata
     const dbProject = dbProjects.find((p) => p.id === project.id);
+    console.log('📂 [handleOpenFocusList] DB project:', dbProject);
     const projectMetadata = (dbProject?.metadata || {}) as ProjectMetadata;
+    console.log('📂 [handleOpenFocusList] Project metadata:', projectMetadata);
     
     const loadedTodos: ProjectTodo[] = projectMetadata.focusTodos?.todos?.map((t: ProjectTodoData) => ({
       id: t.id,
       text: t.text,
       completed: t.completed,
     })) || [];
+    console.log('📂 [handleOpenFocusList] Loaded todos:', loadedTodos);
 
     // If no todos exist, create one from nextLabel if available
     if (loadedTodos.length === 0 && project.nextLabel) {
+      console.log('📂 [handleOpenFocusList] No todos, creating from nextLabel:', project.nextLabel);
       loadedTodos.push({
         id: 't-next',
         text: project.nextLabel,
@@ -189,6 +209,7 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
   };
 
   const handleAddTodo = () => {
+    console.log('➕ [handleAddTodo] Adding new todo (local only - not saved yet)');
     const newTodo: ProjectTodo = {
       id: `t${Date.now()}`,
       text: 'New to-do',
@@ -196,49 +217,74 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
       isEditing: true,
     };
     const updatedTodos = [...focusTodos, newTodo];
+    console.log('➕ [handleAddTodo] Updated todos (local):', updatedTodos);
     setFocusTodos(updatedTodos);
-    
-    if (focusListProject) {
-      updateTodosInDB(focusListProject.id, updatedTodos);
-    }
+    // Don't save to DB yet - wait for user to finish editing
   };
 
   const handleToggleTodo = (todoId: string) => {
+    console.log('✅ [handleToggleTodo] Toggling todo:', todoId);
     const updatedTodos = focusTodos.map((todo) =>
       todo.id === todoId ? { ...todo, completed: !todo.completed } : todo
     );
+    console.log('✅ [handleToggleTodo] Updated todos:', updatedTodos);
     setFocusTodos(updatedTodos);
     
     if (focusListProject) {
+      console.log('✅ [handleToggleTodo] Saving to project:', focusListProject.id);
       updateTodosInDB(focusListProject.id, updatedTodos);
+    } else {
+      console.warn('⚠️ [handleToggleTodo] No focusListProject');
     }
   };
 
   const handleDeleteTodo = (todoId: string) => {
+    console.log('🗑️ [handleDeleteTodo] Deleting todo:', todoId);
     const updatedTodos = focusTodos.filter((todo) => todo.id !== todoId);
+    console.log('🗑️ [handleDeleteTodo] Updated todos:', updatedTodos);
     setFocusTodos(updatedTodos);
     
     if (focusListProject) {
+      console.log('🗑️ [handleDeleteTodo] Saving to project:', focusListProject.id);
       updateTodosInDB(focusListProject.id, updatedTodos);
+    } else {
+      console.warn('⚠️ [handleDeleteTodo] No focusListProject');
     }
   };
 
   const handleUpdateTodo = (todoId: string, newText: string) => {
+    console.log('✏️ [handleUpdateTodo] Updating todo:', { todoId, newText });
+    
+    // If text is empty or just whitespace, delete the todo instead
+    if (!newText.trim()) {
+      console.log('✏️ [handleUpdateTodo] Empty text - deleting todo');
+      handleDeleteTodo(todoId);
+      return;
+    }
+    
     const updatedTodos = focusTodos.map((todo) =>
       todo.id === todoId ? { ...todo, text: newText, isEditing: false } : todo
     );
+    console.log('✏️ [handleUpdateTodo] Updated todos:', updatedTodos);
     setFocusTodos(updatedTodos);
     
     if (focusListProject) {
+      console.log('✏️ [handleUpdateTodo] Saving to project:', focusListProject.id);
       updateTodosInDB(focusListProject.id, updatedTodos);
+    } else {
+      console.warn('⚠️ [handleUpdateTodo] No focusListProject');
     }
   };
 
   const handleReorderTodos = (reorderedTodos: ProjectTodo[]) => {
+    console.log('🔄 [handleReorderTodos] Reordering todos:', reorderedTodos);
     setFocusTodos(reorderedTodos);
     
     if (focusListProject) {
+      console.log('🔄 [handleReorderTodos] Saving to project:', focusListProject.id);
       updateTodosInDB(focusListProject.id, reorderedTodos);
+    } else {
+      console.warn('⚠️ [handleReorderTodos] No focusListProject');
     }
   };
 

@@ -199,6 +199,7 @@ export interface Project {
   completedTasks: number;
   teamMemberCount: number;
   unreadChatCount?: number; // Count of unread AI chat messages
+  metadata?: Record<string, unknown>; // Project-specific metadata (e.g., focus todos)
   createdBy: string;
   createdAt: string;
   updatedAt: string;

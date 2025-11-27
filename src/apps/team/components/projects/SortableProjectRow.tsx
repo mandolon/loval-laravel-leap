@@ -89,15 +89,29 @@ export const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
   const nextMilestoneRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (statusPopoverOpen && statusButtonRef.current) {
-      const rect = statusButtonRef.current.getBoundingClientRect();
-      // Position above the button with margin
-      setPopoverPosition({
-        top: rect.top,
-        left: rect.left,
-      });
-    } else {
-      setPopoverPosition(null);
+    const updatePosition = () => {
+      if (statusPopoverOpen && statusButtonRef.current) {
+        const rect = statusButtonRef.current.getBoundingClientRect();
+        // Position above the button with margin
+        setPopoverPosition({
+          top: rect.top,
+          left: rect.left,
+        });
+      } else {
+        setPopoverPosition(null);
+      }
+    };
+
+    updatePosition();
+
+    if (statusPopoverOpen) {
+      // Update position on scroll to keep popover aligned
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
+      return () => {
+        window.removeEventListener('scroll', updatePosition, true);
+        window.removeEventListener('resize', updatePosition);
+      };
     }
   }, [statusPopoverOpen]);
 

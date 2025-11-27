@@ -53,8 +53,13 @@ export const SortableTodoItem: React.FC<SortableTodoItemProps> = ({
     if (e.key === 'Enter') {
       handleSave();
     } else if (e.key === 'Escape') {
-      setEditText(todo.text);
-      setIsEditing(false);
+      // If this is a new unsaved todo, delete it instead of reverting
+      if (todo.text === 'New to-do' && editText === 'New to-do') {
+        onDelete(todo.id);
+      } else {
+        setEditText(todo.text);
+        setIsEditing(false);
+      }
     }
   };
 
@@ -117,7 +122,10 @@ export const SortableTodoItem: React.FC<SortableTodoItemProps> = ({
       )}
       <button
         type="button"
-        onClick={() => onDelete(todo.id)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete(todo.id);
+        }}
         className="flex-shrink-0 w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-neutral-600 transition-all cursor-pointer"
         title="Delete task"
       >

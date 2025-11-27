@@ -48,6 +48,7 @@ const transformProject = (row: any): Project => ({
   totalTasks: row.total_tasks,
   completedTasks: row.completed_tasks,
   teamMemberCount: row.team_member_count,
+  metadata: row.metadata || {},
   createdBy: row.created_by,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
@@ -262,6 +263,8 @@ export const useUpdateProject = (workspaceId: string) => {
 
   return useMutation({
     mutationFn: async ({ id, input }: { id: string; input: UpdateProjectInput }) => {
+      console.log('🔵 [useUpdateProject] Mutation called:', { id, input });
+      
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error('Not authenticated');
 
@@ -295,6 +298,9 @@ export const useUpdateProject = (workspaceId: string) => {
       if (input.estimatedAmount !== undefined) updateData.estimated_amount = input.estimatedAmount;
       if (input.dueDate !== undefined) updateData.due_date = input.dueDate;
       if (input.progress !== undefined) updateData.progress = input.progress;
+      if (input.metadata !== undefined) updateData.metadata = input.metadata;
+      
+      console.log('🔵 [useUpdateProject] Update data prepared:', updateData);
       
       const { data, error } = await supabase
         .from('projects')
@@ -303,18 +309,19 @@ export const useUpdateProject = (workspaceId: string) => {
         .select()
         .single();
       
+      console.log('🔵 [useUpdateProject] Supabase response:', { data, error });
+      
       if (error) throw error;
       return transformProject(data);
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (data, variables) => {
+      console.log('✅ [useUpdateProject] Mutation successful:', { data, variables });
       queryClient.invalidateQueries({ queryKey: projectKeys.list(workspaceId) })
       queryClient.invalidateQueries({ queryKey: projectKeys.detail(variables.id) })
-      toast({
-        title: 'Project updated',
-        description: 'Changes have been saved',
-      })
+      // Toast removed - silent updates for background operations
     },
     onError: (error) => {
+      console.error('❌ [useUpdateProject] Mutation failed:', error);
       toast({
         title: 'Failed to update project',
         description: handleApiError(error),
