@@ -8,6 +8,7 @@ import { EventCard } from './EventCard';
 import { UpcomingEventCard } from './UpcomingEventCard';
 import { RecentFilesCard } from './RecentFilesCard';
 import { ActivityFeedCard } from './ActivityFeedCard';
+import { ActiveProjectsList } from '../projects';
 import AddEventPopover from './AddEventPopover';
 import { useNotifications } from '@/lib/api/hooks/useNotifications';
 import { useUserRecentFiles } from '@/lib/api/hooks/useRecentFiles';
@@ -939,13 +940,8 @@ export const CalendarDashboardContent: React.FC = () => {
               containerRef={recentCardRef}
             />
 
-            {/* Activity Feed */}
-            <ActivityFeedCard
-              items={activityItems}
-              isLoading={isLoadingActivity}
-              isError={isActivityError}
-              containerRef={activityCardRef}
-            />
+            {/* Active Projects */}
+            <ActiveProjectsList containerRef={activityCardRef} />
           </div>
         </div>
       </div>
