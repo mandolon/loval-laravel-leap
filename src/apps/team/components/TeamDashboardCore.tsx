@@ -1879,7 +1879,7 @@ const TopHeader = memo(function TopHeader({
           {/* Center: search + new */}
           <div className="h-9 flex items-center justify-center">
             <div className="flex items-center gap-2">
-              <label className="relative block">
+              <label className="relative block flex-shrink-0 w-[380px] max-w-[48vw]">
                 <span className="absolute inset-y-0 left-2 grid place-items-center">
                   <svg
                     viewBox="0 0 24 24"
@@ -1897,7 +1897,7 @@ const TopHeader = memo(function TopHeader({
                 <input
                   type="text"
                   placeholder="Search"
-                  className="w-[380px] max-w-[48vw] h-7 rounded-lg border border-slate-200 bg-white/90 pl-8 pr-2 text-sm outline-none placeholder:text-slate-400 focus:border-slate-300 focus:ring-2 focus:ring-slate-200/60"
+                  className="w-full h-7 rounded-lg border border-slate-200 bg-white/90 pl-8 pr-2 text-sm outline-none placeholder:text-slate-400 focus:border-slate-300 focus:ring-2 focus:ring-slate-200/60"
                 />
               </label>
 

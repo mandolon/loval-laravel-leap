@@ -366,10 +366,30 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
             <h3 className="text-xs md:text-[13px] font-semibold text-[#202020]">Active Projects</h3>
             <SortDropdown sortBy={sortBy} onSortChange={setSortBy} />
           </div>
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-[#4c75d1] border-r-transparent"></div>
-              <p className="mt-2 text-xs text-neutral-500">Loading projects...</p>
+          <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide min-w-0">
+            <div className="p-3">
+              <div className="space-y-2">
+                {[0, 1, 2, 3].map((idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 sm:py-3 bg-white border border-neutral-100 rounded-lg shadow-[0_1px_2px_rgba(0,0,0,0.04)] animate-pulse"
+                  >
+                    <div className="flex-shrink-0 w-4 sm:w-5 flex items-center justify-center">
+                      <div className="h-6 w-2 rounded bg-neutral-200" />
+                    </div>
+                    <div className="flex-shrink-0 w-4 sm:w-5 flex items-center justify-center">
+                      <div className="h-3 w-3 rounded bg-neutral-200" />
+                    </div>
+                    <div className="flex-1 min-w-0 relative flex flex-col justify-center max-w-[50%] gap-1.5">
+                      <div className="h-3 w-16 rounded bg-neutral-200" />
+                      <div className="h-4 w-32 sm:w-40 rounded bg-neutral-200" />
+                    </div>
+                    <div className="w-32 sm:w-40 md:w-48 flex-shrink-0 flex items-center justify-end">
+                      <div className="h-4 w-24 sm:w-28 md:w-32 rounded bg-neutral-200" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

@@ -44,7 +44,7 @@ export const PillButton: React.FC<PillButtonProps> = ({
       {...props}
     >
       <span
-        className="h-full w-full rounded-full inline-flex items-center justify-center gap-1.5 px-3 bg-black/0"
+        className="h-full w-full rounded-full inline-flex items-center justify-center gap-1.5 pl-3 pr-4 bg-black/0"
         style={{ background: railGradient }}
       >
         {Icon && <Icon className={`${iconSize} flex-shrink-0`} strokeWidth={2.5} />}

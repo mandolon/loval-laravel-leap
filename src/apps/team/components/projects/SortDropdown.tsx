@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { SortOption } from './types';
 
 interface SortDropdownProps {
@@ -8,13 +8,22 @@ interface SortDropdownProps {
 
 export const SortDropdown: React.FC<SortDropdownProps> = ({ sortBy, onSortChange }) => {
   const [sortOpen, setSortOpen] = useState(false);
+  const [menuWidth, setMenuWidth] = useState<number | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   const sortLabel =
     sortBy === 'priority' ? 'Priority' : sortBy === 'status' ? 'Status' : 'Start Date';
 
+  useEffect(() => {
+    if (sortOpen && buttonRef.current) {
+      setMenuWidth(buttonRef.current.offsetWidth);
+    }
+  }, [sortOpen]);
+
   return (
     <div className="relative inline-block">
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setSortOpen(!sortOpen)}
         className="
@@ -52,7 +61,10 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({ sortBy, onSortChange
       {sortOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setSortOpen(false)} />
-          <div className="absolute right-0 top-full mt-1 z-20 w-32 sm:w-40 rounded-lg border border-neutral-200 bg-white shadow-lg overflow-hidden">
+          <div
+            className="absolute right-0 top-full mt-1 z-20 rounded-lg border border-neutral-200 bg-white shadow-lg overflow-hidden"
+            style={{ width: menuWidth ?? undefined }}
+          >
             <button
               type="button"
               onClick={() => {
