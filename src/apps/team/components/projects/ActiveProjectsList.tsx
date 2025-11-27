@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, DragOverlay, DragStartEvent } from '@dnd-kit/core';
+import { DndContext, DragOverlay, DragStartEvent, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { restrictToVerticalAxis, restrictToFirstScrollableAncestor } from '@dnd-kit/modifiers';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { Project, ProjectTodo, SortOption } from './types';
-import { SortableProjectRow } from './SortableProjectRow';
+import { SortableProjectRow, ProjectRowContent } from './SortableProjectRow';
 import { SortDropdown } from './SortDropdown';
 import { FocusListPanel } from './FocusListPanel';
 import { useProjects, useUpdateProject } from '@/lib/api/hooks/useProjects';
@@ -53,18 +53,11 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
 
   const [sortBy, setSortBy] = useState<SortOption>('priority');
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [overlayStyle, setOverlayStyle] = useState<React.CSSProperties | undefined>(undefined);
   const [focusListProject, setFocusListProject] = useState<Project | null>(null);
   const [focusTodos, setFocusTodos] = useState<ProjectTodo[]>([]);
   const [focusListAnchorRef, setFocusListAnchorRef] = useState<React.RefObject<HTMLElement> | null>(null);
   const [localProjectOrder, setLocalProjectOrder] = useState<string[]>([]);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { 
-        distance: 6,
-      },
-    })
-  );
 
   // Transform database projects to UI projects
   const activeProjects = useMemo(() => {
@@ -254,17 +247,45 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
+    
+    // Capture the original item's position and calculate offset from cursor
+    const activeElement = document.querySelector(`[data-id="${event.active.id}"]`);
+    if (activeElement) {
+      const rect = activeElement.getBoundingClientRect();
+      // Try to get cursor position from the activator event
+      const activatorEvent = (event as any).activatorEvent;
+      
+      if (activatorEvent) {
+        // Calculate offset from cursor to item's top-left corner
+        const offsetX = rect.left - activatorEvent.clientX;
+        const offsetY = rect.top - activatorEvent.clientY;
+        
+        // Apply offset as transform to position overlay at item's location
+        setOverlayStyle({
+          transform: `translate(${offsetX}px, ${offsetY}px)`,
+        });
+      } else {
+        // Fallback: position absolutely at item location
+        setOverlayStyle({
+          position: 'fixed',
+          left: `${rect.left}px`,
+          top: `${rect.top}px`,
+          width: `${rect.width}px`,
+        });
+      }
+    }
   };
 
-  const handleDragEnd = (event: any) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     setActiveId(null);
+    setOverlayStyle(undefined);
     if (!allowDrag) return;
 
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = localProjectOrder.indexOf(active.id);
-    const newIndex = localProjectOrder.indexOf(over.id);
+    const oldIndex = localProjectOrder.indexOf(active.id as string);
+    const newIndex = localProjectOrder.indexOf(over.id as string);
     if (oldIndex === -1 || newIndex === -1) return;
 
     const newOrder = arrayMove(localProjectOrder, oldIndex, newIndex);
@@ -280,6 +301,7 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
 
   const handleDragCancel = () => {
     setActiveId(null);
+    setOverlayStyle(undefined);
   };
 
   const handleUpdateStatus = (projectId: string, newStatus: Project['stage']) => {
@@ -342,16 +364,14 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
         </div>
 
         {/* Project list */}
-        <div className="flex-1 overflow-y-auto scrollbar-hide">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide min-w-0">
           <DndContext
-            sensors={sensors}
             collisionDetection={closestCenter}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onDragCancel={handleDragCancel}
             modifiers={[restrictToVerticalAxis, restrictToFirstScrollableAncestor]}
           >
-            <style>{activeId ? 'body { cursor: grabbing !important; } * { cursor: grabbing !important; }' : ''}</style>
             <SortableContext
               items={orderedProjects.map((p) => p.id)}
               strategy={verticalListSortingStrategy}
@@ -362,35 +382,22 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
                     <p className="text-sm text-neutral-500">No active projects</p>
                   </div>
                 ) : (
-                  orderedProjects.map((project, index) => (
-                    <SortableProjectRow
-                      key={project.id}
-                      project={project}
-                      allowDrag={allowDrag}
-                      index={index}
-                      onOpenFocusList={handleOpenFocusList}
-                      onUpdateStatus={handleUpdateStatus}
-                    />
-                  ))
+                  <div className="space-y-2">
+                    {orderedProjects.map((project, index) => (
+                      <SortableProjectRow
+                        key={project.id}
+                        project={project}
+                        allowDrag={allowDrag}
+                        index={index}
+                        onOpenFocusList={handleOpenFocusList}
+                        onUpdateStatus={handleUpdateStatus}
+                      />
+                    ))}
+                  </div>
                 )}
               </div>
             </SortableContext>
 
-            <DragOverlay>
-              {activeProject && (
-                <div 
-                  className="bg-white border border-neutral-200 shadow-[0_4px_12px_rgba(0,0,0,0.15)] rounded-lg overflow-hidden cursor-grabbing"
-                >
-                  <SortableProjectRow
-                    project={activeProject}
-                    allowDrag={true}
-                    index={orderedProjects.findIndex((p) => p.id === activeProject.id)}
-                    onOpenFocusList={() => {}}
-                    onUpdateStatus={() => {}}
-                  />
-                </div>
-              )}
-            </DragOverlay>
           </DndContext>
         </div>
       </div>

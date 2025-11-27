@@ -29,12 +29,12 @@ export const SortableProjectRow: React.FC<SortableProjectRowProps> = ({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: isDragging ? 'none' : transition,
-    opacity: isDragging ? 0 : 1,
+    transition,
+    opacity: isDragging ? 0.5 : 1,
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="group relative mb-2 last:mb-0">
+    <div ref={setNodeRef} style={style} className="min-w-0" data-id={project.id}>
       <ProjectRowContent
         project={project}
         allowDrag={allowDrag}
@@ -49,7 +49,7 @@ export const SortableProjectRow: React.FC<SortableProjectRowProps> = ({
   );
 };
 
-interface ProjectRowContentProps {
+export interface ProjectRowContentProps {
   project: Project;
   allowDrag: boolean;
   listeners: any;
@@ -60,7 +60,7 @@ interface ProjectRowContentProps {
   onUpdateStatus: (projectId: string, newStatus: Project['stage']) => void;
 }
 
-const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
+export const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
   project,
   allowDrag,
   listeners,
@@ -77,18 +77,18 @@ const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
   return (
     <div
       className={`
-        flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 sm:py-3
+        flex items-center gap-2 px-3 py-2.5
         bg-white border border-neutral-100 rounded-lg
-        shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_1px_3px_rgba(0,0,0,0.08)]
+        shadow-sm hover:shadow-md
         hover:bg-neutral-50/50
-        transition-all
-        ${isDragging ? 'bg-neutral-100 shadow-[0_2px_8px_rgba(0,0,0,0.12)]' : ''}
+        transition-shadow
+        min-w-0 w-full
       `}
     >
-      {/* Drag handle - only attach listeners here */}
+      {/* Drag handle */}
       {allowDrag ? (
         <div
-          className="flex-shrink-0 w-4 sm:w-5 flex items-center justify-center cursor-grab active:cursor-grabbing touch-none"
+          className="flex-shrink-0 w-5 flex items-center justify-center cursor-grab active:cursor-grabbing touch-none"
           {...listeners}
           {...attributes}
         >
@@ -102,18 +102,18 @@ const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
           </svg>
         </div>
       ) : (
-        <div className="flex-shrink-0 w-4 sm:w-5"></div>
+        <div className="flex-shrink-0 w-5"></div>
       )}
 
       {/* Order number */}
-      <div className="flex-shrink-0 w-4 sm:w-5 flex items-center justify-center">
-        <span className="text-[10px] sm:text-xs text-neutral-400 font-medium">
+      <div className="flex-shrink-0 w-5 flex items-center justify-center">
+        <span className="text-xs text-neutral-400 font-medium">
           {index + 1}
         </span>
       </div>
 
-      {/* Project name and status - flex to take available space */}
-      <div className="flex-1 min-w-0 relative flex flex-col justify-center max-w-[50%]">
+      {/* Project name and status */}
+      <div className="flex-1 min-w-0 relative flex flex-col justify-center">
         <button
           ref={statusButtonRef}
           type="button"
@@ -121,7 +121,7 @@ const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
             e.stopPropagation();
             setStatusPopoverOpen(!statusPopoverOpen);
           }}
-          className="text-[10px] sm:text-xs text-neutral-500 hover:text-neutral-700 transition-colors hover:bg-neutral-100/50 rounded px-1 -mx-1 mb-0.5 text-left leading-tight cursor-pointer w-fit"
+          className="text-xs text-neutral-500 hover:text-neutral-700 transition-colors hover:bg-neutral-100/50 rounded px-1 -mx-1 mb-0.5 text-left leading-tight cursor-pointer w-fit"
         >
           {project.stage}
         </button>
@@ -131,7 +131,7 @@ const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
             e.stopPropagation();
             console.log('Project clicked:', project.name);
           }}
-          className="text-xs sm:text-sm font-medium text-neutral-900 truncate leading-tight text-left hover:text-neutral-700 transition-colors cursor-pointer w-fit max-w-full"
+          className="text-sm font-medium text-neutral-900 truncate leading-tight text-left hover:text-neutral-700 transition-colors cursor-pointer w-fit"
         >
           {project.name}
         </button>
@@ -173,10 +173,10 @@ const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
         )}
       </div>
 
-      {/* Next milestone - responsive width */}
+      {/* Next milestone */}
       <div 
         ref={nextMilestoneRef}
-        className="w-32 sm:w-40 md:w-48 flex-shrink-0 flex items-center"
+        className="w-40 flex-shrink-0 flex items-center min-w-0"
       >
         <button
           type="button"
@@ -184,19 +184,19 @@ const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
             e.stopPropagation();
             onOpenFocusList(project, nextMilestoneRef);
           }}
-          className="w-full text-right hover:bg-neutral-100/50 rounded-md px-1.5 sm:px-2 py-1 -mx-1.5 sm:-mx-2 -my-1 transition-colors cursor-pointer"
+          className="w-full text-right hover:bg-neutral-100/50 rounded-md px-2 py-1 -mx-2 -my-1 transition-colors cursor-pointer"
         >
           {project.nextLabel ? (
             <>
-              <p className="text-[9px] sm:text-[11px] text-neutral-500 uppercase tracking-wide mb-0.5 leading-tight text-right">
+              <p className="text-[11px] text-neutral-500 uppercase tracking-wide mb-0.5 leading-tight text-right">
                 Next:
               </p>
-              <p className="text-[10px] sm:text-xs text-neutral-900 font-medium truncate leading-tight text-right">
+              <p className="text-xs text-neutral-900 font-medium truncate leading-tight text-right">
                 {project.nextLabel}
               </p>
             </>
           ) : (
-            <p className="text-[10px] sm:text-xs text-neutral-400 italic leading-tight text-right">
+            <p className="text-xs text-neutral-400 italic leading-tight text-right">
               Nothing to do
             </p>
           )}
