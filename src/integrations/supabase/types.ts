@@ -2028,6 +2028,7 @@ export type Database = {
           due_date: string | null
           estimated_amount: number | null
           id: string
+          metadata: Json | null
           name: string
           phase: string
           primary_client_address: Json | null
@@ -2063,6 +2064,7 @@ export type Database = {
           due_date?: string | null
           estimated_amount?: number | null
           id?: string
+          metadata?: Json | null
           name: string
           phase?: string
           primary_client_address?: Json | null
@@ -2098,6 +2100,7 @@ export type Database = {
           due_date?: string | null
           estimated_amount?: number | null
           id?: string
+          metadata?: Json | null
           name?: string
           phase?: string
           primary_client_address?: Json | null
