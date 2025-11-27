@@ -38,6 +38,8 @@ interface ProjectMetadata {
   };
 }
 
+const FOCUS_TODO_MAX_LENGTH = 25;
+
 export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containerRef }) => {
   const { currentWorkspace } = useWorkspaces();
   const workspaceId = currentWorkspace?.id || '';
@@ -255,15 +257,17 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
   const handleUpdateTodo = (todoId: string, newText: string) => {
     console.log('✏️ [handleUpdateTodo] Updating todo:', { todoId, newText });
     
+    const trimmedText = newText.trim().slice(0, FOCUS_TODO_MAX_LENGTH);
+
     // If text is empty or just whitespace, delete the todo instead
-    if (!newText.trim()) {
+    if (!trimmedText) {
       console.log('✏️ [handleUpdateTodo] Empty text - deleting todo');
       handleDeleteTodo(todoId);
       return;
     }
     
     const updatedTodos = focusTodos.map((todo) =>
-      todo.id === todoId ? { ...todo, text: newText, isEditing: false } : todo
+      todo.id === todoId ? { ...todo, text: trimmedText, isEditing: false } : todo
     );
     console.log('✏️ [handleUpdateTodo] Updated todos:', updatedTodos);
     setFocusTodos(updatedTodos);

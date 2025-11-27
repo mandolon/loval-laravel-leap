@@ -10,6 +10,8 @@ interface SortableTodoItemProps {
   onUpdate: (todoId: string, newText: string) => void;
 }
 
+const MAX_TODO_LENGTH = 25;
+
 export const SortableTodoItem: React.FC<SortableTodoItemProps> = ({
   todo,
   onToggle,
@@ -18,7 +20,9 @@ export const SortableTodoItem: React.FC<SortableTodoItemProps> = ({
 }) => {
   const [isEditing, setIsEditing] = React.useState(todo.isEditing || false);
   const [editText, setEditText] = React.useState(todo.text);
+  const [showMaxLengthTooltip, setShowMaxLengthTooltip] = React.useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const tooltipTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -26,6 +30,14 @@ export const SortableTodoItem: React.FC<SortableTodoItemProps> = ({
       inputRef.current.select();
     }
   }, [isEditing]);
+
+  useEffect(() => {
+    return () => {
+      if (tooltipTimeoutRef.current) {
+        window.clearTimeout(tooltipTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const {
     attributes,
@@ -42,9 +54,29 @@ export const SortableTodoItem: React.FC<SortableTodoItemProps> = ({
     opacity: isDragging ? 0.4 : 1,
   };
 
+  const showMaxTooltip = () => {
+    if (tooltipTimeoutRef.current) {
+      window.clearTimeout(tooltipTimeoutRef.current);
+    }
+    setShowMaxLengthTooltip(true);
+    tooltipTimeoutRef.current = window.setTimeout(() => setShowMaxLengthTooltip(false), 1600);
+  };
+
+  const handleEditChange = (value: string) => {
+    if (value.length >= MAX_TODO_LENGTH) {
+      setEditText(value.slice(0, MAX_TODO_LENGTH));
+      showMaxTooltip();
+      return;
+    }
+    setShowMaxLengthTooltip(false);
+    setEditText(value);
+  };
+
   const handleSave = () => {
-    if (editText.trim()) {
-      onUpdate(todo.id, editText.trim());
+    const trimmed = editText.trim().slice(0, MAX_TODO_LENGTH);
+    setShowMaxLengthTooltip(false);
+    if (trimmed) {
+      onUpdate(todo.id, trimmed);
       setIsEditing(false);
     }
   };
@@ -101,15 +133,26 @@ export const SortableTodoItem: React.FC<SortableTodoItemProps> = ({
         )}
       </button>
       {isEditing ? (
-        <input
-          ref={inputRef}
-          type="text"
-          value={editText}
-          onChange={(e) => setEditText(e.target.value)}
-          onBlur={handleSave}
-          onKeyDown={handleKeyDown}
-          className="text-xs flex-1 bg-transparent border-none outline-none focus:outline-none text-neutral-900"
-        />
+        <div className="relative flex-1">
+          <input
+            ref={inputRef}
+            type="text"
+            value={editText}
+            maxLength={MAX_TODO_LENGTH}
+            onChange={(e) => handleEditChange(e.target.value)}
+            onBlur={handleSave}
+            onKeyDown={handleKeyDown}
+            className="text-xs w-full bg-transparent border-none outline-none focus:outline-none text-neutral-900"
+          />
+          {showMaxLengthTooltip && (
+            <div className="absolute right-0 -top-2 -translate-y-full flex flex-col items-end">
+              <div className="px-2 py-1 rounded bg-neutral-800 text-white text-[10px] leading-tight shadow-md whitespace-nowrap">
+                Max 25 characters reached
+              </div>
+              <div className="h-0 w-0 border-x-4 border-x-transparent border-t-4 border-t-neutral-800" />
+            </div>
+          )}
+        </div>
       ) : (
         <p
           className={`text-xs flex-1 ${
