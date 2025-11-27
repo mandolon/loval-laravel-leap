@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { NewAppLayout } from "./NewAppLayout";
-import { TeamDashboardLayout } from "@/apps/team/components/TeamDashboardCore";
+import TeamDashboardLayout from "@/apps/team/layouts/TeamDashboardLayout";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { LayoutDashboard } from "lucide-react";
