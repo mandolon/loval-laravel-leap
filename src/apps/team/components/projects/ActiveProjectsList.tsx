@@ -414,6 +414,7 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
                         allowDrag={allowDrag}
                         index={index}
                         isPriorityView={sortBy === 'priority'}
+                        workspaceId={workspaceId}
                         onOpenFocusList={handleOpenFocusList}
                         onUpdateStatus={handleUpdateStatus}
                       />

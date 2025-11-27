@@ -3,12 +3,14 @@ import { createPortal } from 'react-dom';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Project } from './types';
+import { useRoleAwareNavigation } from '@/hooks/useRoleAwareNavigation';
 
 interface SortableProjectRowProps {
   project: Project;
   allowDrag: boolean;
   index: number;
   isPriorityView: boolean;
+  workspaceId: string;
   onOpenFocusList: (project: Project, anchorRef: React.RefObject<HTMLElement>) => void;
   onUpdateStatus: (projectId: string, newStatus: Project['stage']) => void;
 }
@@ -18,6 +20,7 @@ export const SortableProjectRow: React.FC<SortableProjectRowProps> = ({
   allowDrag,
   index,
   isPriorityView,
+  workspaceId,
   onOpenFocusList,
   onUpdateStatus,
 }) => {
@@ -46,6 +49,7 @@ export const SortableProjectRow: React.FC<SortableProjectRowProps> = ({
         isDragging={isDragging}
         index={index}
         isPriorityView={isPriorityView}
+        workspaceId={workspaceId}
         onOpenFocusList={onOpenFocusList}
         onUpdateStatus={onUpdateStatus}
       />
@@ -61,6 +65,7 @@ export interface ProjectRowContentProps {
   isDragging: boolean;
   index: number;
   isPriorityView: boolean;
+  workspaceId: string;
   onOpenFocusList: (project: Project, anchorRef: React.RefObject<HTMLElement>) => void;
   onUpdateStatus: (projectId: string, newStatus: Project['stage']) => void;
 }
@@ -73,9 +78,11 @@ export const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
   isDragging,
   index,
   isPriorityView,
+  workspaceId,
   onOpenFocusList,
   onUpdateStatus,
 }) => {
+  const { navigateToWorkspace } = useRoleAwareNavigation(workspaceId);
   const [statusPopoverOpen, setStatusPopoverOpen] = useState(false);
   const [popoverPosition, setPopoverPosition] = useState<{ top: number; left: number } | null>(null);
   const statusButtonRef = useRef<HTMLButtonElement>(null);
@@ -160,7 +167,7 @@ export const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            console.log('Project clicked:', project.name);
+            navigateToWorkspace(`/project/${project.id}`);
           }}
           onPointerDown={(e) => e.stopPropagation()}
           className="text-sm font-medium text-neutral-900 truncate leading-tight text-left hover:text-neutral-700 transition-colors cursor-pointer w-fit"

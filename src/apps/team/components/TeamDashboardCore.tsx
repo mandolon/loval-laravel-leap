@@ -271,6 +271,9 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
   );
   const hasUnreadWorkspaceMessages = workspaceUnreadCount > 0;
 
+  // Check if we're on a route that should use children (e.g., /project/:projectId)
+  const shouldUseChildrenRoute = location.pathname.includes('/project/') && !location.pathname.endsWith('/projects');
+
   // Sync active state with URL
   useEffect(() => {
     const path = location.pathname;
@@ -281,6 +284,8 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
       setActive('chat');
     } else if (path.includes('/home')) {
       setActive('home');
+    } else if (path.includes('/project/')) {
+      setActive('projects'); // Set active for sidebar highlighting
     } else if (path.includes('/projects')) {
       setActive('projects');
     } else if (path.includes('/tasks')) {
@@ -306,7 +311,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
 
   // Read URL parameters early for use in effects
   const [searchParams, setSearchParams] = useSearchParams();
-  const urlProjectId = searchParams.get('projectId');
+  const urlProjectId = searchParams.get('projectId') || location.pathname.match(/\/project\/([^\/]+)/)?.[1];
   const urlFileId = searchParams.get('fileId');
   const urlWhiteboardPageId = searchParams.get('whiteboardPageId');
 
@@ -825,7 +830,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
         style={{
           top: "calc(0.375rem + 2.25rem + 0.25rem)",
           bottom: "0.75rem",
-          right: active === "projects" && selected?.tab === "projects" && !projectPanelCollapsed
+          right: (shouldUseChildrenRoute || (active === "projects" && selected?.tab === "projects")) && !projectPanelCollapsed
             ? "calc(240px + 0.375rem + 0.5rem)" // panel width + margin + gap
             : "0.375rem",
           left: railCollapsed
@@ -836,7 +841,16 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
         }}
       >
         <div className="h-full overflow-hidden flex flex-col">
-          {active !== "settings" && (
+          {shouldUseChildrenRoute ? (
+            <PageHeader 
+              tabKey="projects" 
+              title={userProjects.find((p: any) => p.id === urlProjectId)?.name || 'Projects'}
+              selected={selected}
+              projectPanelCollapsed={projectPanelCollapsed}
+              onToggleProjectPanel={() => setProjectPanelCollapsed(!projectPanelCollapsed)}
+              projectName={userProjects.find((p: any) => p.id === urlProjectId)?.name}
+            />
+          ) : active !== "settings" && (
             <PageHeader 
               tabKey={active} 
               title={TITLES[active as keyof typeof TITLES] || active}
@@ -849,12 +863,14 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
 
           <div
             className={
-              active === "tasks"
+              shouldUseChildrenRoute || active === "tasks"
                 ? "flex-1 min-h-0 overflow-hidden"
                 : "flex-1 min-h-0 overflow-auto"
             }
           >
-            {active === "projects" ? (
+            {shouldUseChildrenRoute ? (
+              children
+            ) : active === "projects" ? (
               <div className="h-full flex flex-col">
                 {/* File/Whiteboard Viewer Area */}
                 <div className="flex-1 min-h-0 h-full">
@@ -986,7 +1002,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
       </div>
 
       {/* ProjectPanel - separate fixed element outside the content frame */}
-      {active === "projects" && selected?.tab === "projects" && (
+      {(shouldUseChildrenRoute || (active === "projects" && selected?.tab === "projects")) && (
         <div
           className="fixed z-30 rounded-xl border border-slate-200 bg-white shadow-sm transition-all duration-300 ease-out"
           style={{
@@ -999,8 +1015,8 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
           }}
         >
             <ProjectPanel
-              projectId={userProjects.find((p: any) => p.name === selected.item)?.id || ''}
-              projectName={selected.item}
+              projectId={shouldUseChildrenRoute && urlProjectId ? urlProjectId : (userProjects.find((p: any) => p.name === selected?.item)?.id || '')}
+              projectName={shouldUseChildrenRoute ? userProjects.find((p: any) => p.id === urlProjectId)?.name : selected?.item}
               onBreadcrumb={(crumb) => {}}
               onFileSelect={(file) => {
                 setSelectedFile(file);
@@ -1015,7 +1031,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
               onModelSelect={(model) => {
                 setSelectedModel(model);
                 setSelectedFile(null);
-                setSelectedWhiteboard(null);
+                setSelectedModel(null);
               }}
               showArrowStats={showArrowStats}
               onToggleArrowStats={() => setShowArrowStats(!showArrowStats)}
