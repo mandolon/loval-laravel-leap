@@ -91,10 +91,7 @@ export const useUpdateWorkspaceSettings = () => {
     },
     onSuccess: (_, { workspaceId }) => {
       queryClient.invalidateQueries({ queryKey: workspaceSettingsKeys.detail(workspaceId) })
-      toast({
-        title: 'Success',
-        description: 'Workspace settings updated successfully',
-      })
+      // Don't show toast for silent updates (like drag-and-drop reordering)
     },
     onError: (error) => {
       toast({

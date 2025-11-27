@@ -27,16 +27,15 @@ interface ProjectOrderData {
   lastUpdated: string;
 }
 
-interface ProjectTodosData {
-  [projectId: string]: {
+interface WorkspaceMetadata {
+  projectOrder?: ProjectOrderData;
+}
+
+interface ProjectMetadata {
+  focusTodos?: {
     todos: ProjectTodoData[];
     lastUpdated: string;
   };
-}
-
-interface WorkspaceMetadata {
-  projectOrder?: ProjectOrderData;
-  projectTodos?: ProjectTodosData;
 }
 
 export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containerRef }) => {
@@ -70,9 +69,8 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
             ? `${address.streetNumber} ${address.streetName}`
             : p.name;
 
-        const metadata = (workspaceSettings?.metadata || {}) as WorkspaceMetadata;
-        const projectTodoData = metadata.projectTodos?.[p.id];
-        const firstIncompleteTodo = projectTodoData?.todos?.find((t: ProjectTodoData) => !t.completed);
+        const projectMetadata = (p.metadata || {}) as ProjectMetadata;
+        const firstIncompleteTodo = projectMetadata.focusTodos?.todos?.find((t: ProjectTodoData) => !t.completed);
 
         return {
           id: p.id,
@@ -82,7 +80,7 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
           startedAt: p.createdAt,
         };
       });
-  }, [dbProjects, workspaceSettings]);
+  }, [dbProjects]);
 
   // Get project order from metadata or default to DB order
   const projectOrder = useMemo(() => {
@@ -136,31 +134,30 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
     });
   };
 
-  // Persist todos to database
+  // Persist todos to database in project metadata
   const updateTodosInDB = async (projectId: string, todos: ProjectTodo[]) => {
     if (!workspaceId) return;
 
-    const metadata = (workspaceSettings?.metadata || {}) as WorkspaceMetadata;
-    const currentTodos = metadata.projectTodos || {};
+    const project = dbProjects.find((p) => p.id === projectId);
+    if (!project) return;
+
+    const currentMetadata = (project.metadata || {}) as ProjectMetadata;
     
-    const updatedMetadata: WorkspaceMetadata = {
-      ...metadata,
-      projectTodos: {
-        ...currentTodos,
-        [projectId]: {
-          todos: todos.map((t) => ({
-            id: t.id,
-            text: t.text,
-            completed: t.completed,
-            createdAt: new Date().toISOString(),
-          })),
-          lastUpdated: new Date().toISOString(),
-        },
+    const updatedMetadata: ProjectMetadata = {
+      ...currentMetadata,
+      focusTodos: {
+        todos: todos.map((t) => ({
+          id: t.id,
+          text: t.text,
+          completed: t.completed,
+          createdAt: new Date().toISOString(),
+        })),
+        lastUpdated: new Date().toISOString(),
       },
     };
 
-    updateSettingsMutation.mutate({
-      workspaceId,
+    updateProjectMutation.mutate({
+      id: projectId,
       input: { metadata: updatedMetadata as Record<string, unknown> },
     });
   };
@@ -169,11 +166,11 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
     setFocusListProject(project);
     setFocusListAnchorRef(anchorRef);
 
-    // Load todos from metadata
-    const metadata = (workspaceSettings?.metadata || {}) as WorkspaceMetadata;
-    const projectTodoData = metadata.projectTodos?.[project.id];
+    // Load todos from project metadata
+    const dbProject = dbProjects.find((p) => p.id === project.id);
+    const projectMetadata = (dbProject?.metadata || {}) as ProjectMetadata;
     
-    const loadedTodos: ProjectTodo[] = projectTodoData?.todos?.map((t: ProjectTodoData) => ({
+    const loadedTodos: ProjectTodo[] = projectMetadata.focusTodos?.todos?.map((t: ProjectTodoData) => ({
       id: t.id,
       text: t.text,
       completed: t.completed,

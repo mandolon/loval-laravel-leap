@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useRoleAwareNavigation } from "@/hooks/useRoleAwareNavigation";
+import { ProjectViewProvider, useProjectView } from '@/contexts/ProjectViewContext';
 import { ProjectInfoContent } from './ProjectInfoContent';
 import { ProjectAIContextView } from './ProjectAIContextView';
 import { RequestsPageBody } from './requests/RequestsPageBody';
@@ -213,9 +214,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
   const [railCollapsed, setRailCollapsed] = useState(false);
   const [projectPanelCollapsed, setProjectPanelCollapsed] = useState(false);
   const [autoCollapsedProjectPanel, setAutoCollapsedProjectPanel] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<any>(null);
-  const [selectedWhiteboard, setSelectedWhiteboard] = useState<{ pageId: string; pageName: string; versionTitle: string } | null>(null);
-  const [selectedModel, setSelectedModel] = useState<{ versionId: string; versionNumber: string; modelFile: any; settings: any } | null>(null);
+  const { selectedFile, setSelectedFile, selectedWhiteboard, setSelectedWhiteboard, selectedModel, setSelectedModel } = useProjectView();
   const [showArrowStats, setShowArrowStats] = useState(true); // Toggle visibility of stats display
   const [currentScale, setCurrentScale] = useState<ScalePreset>("1/4\" = 1'");
   const [arrowStats, setArrowStats] = useState<ArrowCounterStats>({ count: 0, values: [] });
@@ -1035,7 +1034,7 @@ export default function RehomeDoubleSidebar({ children }: { children?: React.Rea
               onModelSelect={(model) => {
                 setSelectedModel(model);
                 setSelectedFile(null);
-                setSelectedModel(null);
+                setSelectedWhiteboard(null);
               }}
               showArrowStats={showArrowStats}
               onToggleArrowStats={() => setShowArrowStats(!showArrowStats)}

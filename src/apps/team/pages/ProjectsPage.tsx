@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useProjects } from '@/lib/api/hooks/useProjects';
+import { useProjectView } from '@/contexts/ProjectViewContext';
+import TeamFileViewer from '../components/viewers/TeamFileViewer';
+import Team3DModelViewer from '../components/viewers/Team3DModelViewer';
+import ExcalidrawCanvas from '@/components/drawings/ExcalidrawCanvas';
 
 export default function ProjectsPage() {
   const { workspaceId, projectId } = useParams<{ workspaceId: string; projectId?: string }>();
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const { selectedFile, selectedWhiteboard, selectedModel } = useProjectView();
   
   const { data: projects, isLoading } = useProjects(workspaceId || '');
 
@@ -33,6 +38,22 @@ export default function ProjectsPage() {
             In the sidebar, hover over Projects and select. Use the Project Panel to manage files, preview PDFs and images, mark up in Whiteboards, and edit project info.
           </p>
         </div>
+      ) : selectedModel ? (
+        <Team3DModelViewer
+          modelFile={selectedModel.modelFile}
+          settings={selectedModel.settings}
+          versionNumber={selectedModel.versionNumber}
+          versionId={selectedModel.versionId}
+        />
+      ) : selectedWhiteboard ? (
+        <ExcalidrawCanvas
+          key={selectedWhiteboard.pageId}
+          pageId={selectedWhiteboard.pageId}
+          projectId={selectedProjectId}
+          onApiReady={(api) => {/* Optional: store api reference */}}
+        />
+      ) : selectedFile ? (
+        <TeamFileViewer file={selectedFile} />
       ) : (
         // Empty state: Project selected but no item chosen
         <div className="flex flex-col items-center justify-center text-center max-w-md px-6">

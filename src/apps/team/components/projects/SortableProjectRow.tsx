@@ -167,7 +167,8 @@ export const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            navigateToWorkspace(`/project/${project.id}`);
+            // Disabled temporarily - routing needs reorganization
+            console.log('Project navigation disabled:', project.name);
           }}
           onPointerDown={(e) => e.stopPropagation()}
           className="text-sm font-medium text-neutral-900 truncate leading-tight text-left hover:text-neutral-700 transition-colors cursor-pointer w-fit"
