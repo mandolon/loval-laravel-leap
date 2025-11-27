@@ -13,25 +13,41 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({ sortBy, onSortChange
     sortBy === 'priority' ? 'Priority' : sortBy === 'status' ? 'Status' : 'Start Date';
 
   return (
-    <div className="relative">
+    <div className="relative inline-block">
       <button
         type="button"
         onClick={() => setSortOpen(!sortOpen)}
         className="
-          inline-flex items-center gap-1 sm:gap-1.5 h-7
-          px-2 sm:px-2.5 rounded-md
-          text-[11px] text-[#202020]
-          border border-neutral-200 bg-white shadow-sm
+          h-7 rounded-md border border-neutral-200 bg-white pl-2 pr-8 text-[11px] text-[#202020] shadow-sm
           hover:bg-neutral-50
           focus:outline-none focus:ring-2 focus:ring-[#4c75d1]/30
-          transition-colors
+          transition-colors cursor-pointer
+          inline-flex items-center
         "
+        style={{
+          paddingRight: '2rem',
+        }}
       >
         <span>{sortLabel}</span>
-        <svg width="8" height="5" viewBox="0 0 8 5" fill="currentColor" className="opacity-50">
-          <path d="M0 0L4 5L8 0H0Z" />
-        </svg>
       </button>
+      <div className='absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none'>
+        <svg
+          width='12'
+          height='12'
+          viewBox='0 0 12 12'
+          fill='none'
+          xmlns='http://www.w3.org/2000/svg'
+          className='text-neutral-400'
+        >
+          <path
+            d='M3 4.5L6 7.5L9 4.5'
+            stroke='currentColor'
+            strokeWidth='1.5'
+            strokeLinecap='round'
+            strokeLinejoin='round'
+          />
+        </svg>
+      </div>
 
       {sortOpen && (
         <>

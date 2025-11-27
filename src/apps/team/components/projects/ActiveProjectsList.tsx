@@ -246,6 +246,11 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
   };
 
   const handleDragStart = (event: DragStartEvent) => {
+    console.log('🟢 Drag Start:', {
+      activeId: event.active.id,
+      allowDrag,
+      sortBy,
+    });
     setActiveId(event.active.id as string);
     
     // Capture the original item's position and calculate offset from cursor
@@ -273,22 +278,41 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
           width: `${rect.width}px`,
         });
       }
+    } else {
+      console.warn('⚠️ Active element not found:', event.active.id);
     }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
+    console.log('🔴 Drag End:', {
+      activeId: event.active.id,
+      overId: event.over?.id,
+      allowDrag,
+      sortBy,
+    });
     setActiveId(null);
     setOverlayStyle(undefined);
-    if (!allowDrag) return;
+    if (!allowDrag) {
+      console.log('❌ Drag disabled - allowDrag is false');
+      return;
+    }
 
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
+    if (!over || active.id === over.id) {
+      console.log('❌ No valid drop target or same position');
+      return;
+    }
 
     const oldIndex = localProjectOrder.indexOf(active.id as string);
     const newIndex = localProjectOrder.indexOf(over.id as string);
-    if (oldIndex === -1 || newIndex === -1) return;
+    console.log('📍 Indices:', { oldIndex, newIndex, localProjectOrder });
+    if (oldIndex === -1 || newIndex === -1) {
+      console.warn('⚠️ Invalid indices');
+      return;
+    }
 
     const newOrder = arrayMove(localProjectOrder, oldIndex, newIndex);
+    console.log('✅ New order:', newOrder);
     
     // Update local state immediately for instant UI feedback
     setLocalProjectOrder(newOrder);

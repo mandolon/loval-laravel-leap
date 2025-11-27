@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Project } from './types';
@@ -76,19 +77,48 @@ export const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
   onUpdateStatus,
 }) => {
   const [statusPopoverOpen, setStatusPopoverOpen] = useState(false);
+  const [popoverPosition, setPopoverPosition] = useState<{ top: number; left: number } | null>(null);
   const statusButtonRef = useRef<HTMLButtonElement>(null);
   const nextMilestoneRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (statusPopoverOpen && statusButtonRef.current) {
+      const rect = statusButtonRef.current.getBoundingClientRect();
+      // Position above the button with margin
+      setPopoverPosition({
+        top: rect.top,
+        left: rect.left,
+      });
+    } else {
+      setPopoverPosition(null);
+    }
+  }, [statusPopoverOpen]);
+
   const handlePointerDown = (e: React.PointerEvent) => {
-    // Don't start drag if clicking on a button
     const target = e.target as HTMLElement;
-    if (target.tagName === 'BUTTON' || target.closest('button')) {
+    const isButton = target.tagName === 'BUTTON' || target.closest('button');
+    
+    console.log('🖱️ Pointer Down:', {
+      allowDrag,
+      target: target.tagName,
+      isButton,
+      hasListeners: !!listeners?.onPointerDown,
+      projectId: project.id,
+    });
+    
+    // Don't start drag if clicking on a button
+    if (isButton) {
+      console.log('🚫 Blocked drag - clicked on button');
       e.stopPropagation();
       return;
     }
+    
     // Allow drag to proceed by calling the original listener
     if (listeners?.onPointerDown) {
+      console.log('✅ Allowing drag to proceed');
       listeners.onPointerDown(e as any);
+    } else {
+      console.warn('⚠️ No drag listeners available');
     }
   };
 
@@ -139,13 +169,20 @@ export const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
         </button>
 
         {/* Status Popover */}
-        {statusPopoverOpen && (
+        {statusPopoverOpen && popoverPosition && createPortal(
           <>
             <div
               className="fixed inset-0 z-[30]"
               onClick={() => setStatusPopoverOpen(false)}
             />
-            <div className="absolute left-0 bottom-full mb-1 z-[40]">
+            <div
+              className="fixed z-[40]"
+              style={{
+                top: `${popoverPosition.top}px`,
+                left: `${popoverPosition.left}px`,
+                transform: 'translateY(calc(-100% - 4px))',
+              }}
+            >
               <div className="rounded-md border border-neutral-200 bg-white shadow-lg overflow-hidden py-1 flex flex-col">
                 {(() => {
                   // Use the same order as database sorting: Pre-Design, Design, Permit, Build
@@ -184,7 +221,8 @@ export const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
                 })()}
               </div>
             </div>
-          </>
+          </>,
+          document.body
         )}
       </div>
 
