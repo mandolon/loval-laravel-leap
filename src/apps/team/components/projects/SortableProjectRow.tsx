@@ -11,8 +11,10 @@ interface SortableProjectRowProps {
   index: number;
   isPriorityView: boolean;
   workspaceId: string;
+  cardColor?: 'default' | 'red' | 'yellow';
   onOpenFocusList: (project: Project, anchorRef: React.RefObject<HTMLElement>) => void;
   onUpdateStatus: (projectId: string, newStatus: Project['stage']) => void;
+  onChangeColor?: (projectId: string, color: 'default' | 'red' | 'yellow') => void;
 }
 
 export const SortableProjectRow: React.FC<SortableProjectRowProps> = ({
@@ -21,8 +23,10 @@ export const SortableProjectRow: React.FC<SortableProjectRowProps> = ({
   index,
   isPriorityView,
   workspaceId,
+  cardColor = 'default',
   onOpenFocusList,
   onUpdateStatus,
+  onChangeColor,
 }) => {
   const {
     attributes,
@@ -50,8 +54,10 @@ export const SortableProjectRow: React.FC<SortableProjectRowProps> = ({
         index={index}
         isPriorityView={isPriorityView}
         workspaceId={workspaceId}
+        cardColor={cardColor}
         onOpenFocusList={onOpenFocusList}
         onUpdateStatus={onUpdateStatus}
+        onChangeColor={onChangeColor}
       />
     </div>
   );
@@ -66,8 +72,10 @@ export interface ProjectRowContentProps {
   index: number;
   isPriorityView: boolean;
   workspaceId: string;
+  cardColor?: 'default' | 'red' | 'yellow';
   onOpenFocusList: (project: Project, anchorRef: React.RefObject<HTMLElement>) => void;
   onUpdateStatus: (projectId: string, newStatus: Project['stage']) => void;
+  onChangeColor?: (projectId: string, color: 'default' | 'red' | 'yellow') => void;
 }
 
 export const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
@@ -79,13 +87,18 @@ export const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
   index,
   isPriorityView,
   workspaceId,
+  cardColor = 'default',
   onOpenFocusList,
   onUpdateStatus,
+  onChangeColor,
 }) => {
   const { navigateToWorkspace } = useRoleAwareNavigation(workspaceId);
   const [statusPopoverOpen, setStatusPopoverOpen] = useState(false);
+  const [colorPopoverOpen, setColorPopoverOpen] = useState(false);
   const [popoverPosition, setPopoverPosition] = useState<{ top: number; left: number } | null>(null);
+  const [colorPopoverPosition, setColorPopoverPosition] = useState<{ top: number; left: number } | null>(null);
   const statusButtonRef = useRef<HTMLButtonElement>(null);
+  const colorButtonRef = useRef<HTMLButtonElement>(null);
   const nextMilestoneRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -115,6 +128,31 @@ export const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
     }
   }, [statusPopoverOpen]);
 
+  useEffect(() => {
+    const updateColorPosition = () => {
+      if (colorPopoverOpen && colorButtonRef.current) {
+        const rect = colorButtonRef.current.getBoundingClientRect();
+        setColorPopoverPosition({
+          top: rect.bottom,
+          left: rect.left,
+        });
+      } else {
+        setColorPopoverPosition(null);
+      }
+    };
+
+    updateColorPosition();
+
+    if (colorPopoverOpen) {
+      window.addEventListener('scroll', updateColorPosition, true);
+      window.addEventListener('resize', updateColorPosition);
+      return () => {
+        window.removeEventListener('scroll', updateColorPosition, true);
+        window.removeEventListener('resize', updateColorPosition);
+      };
+    }
+  }, [colorPopoverOpen]);
+
   const handlePointerDown = (e: React.PointerEvent) => {
     const target = e.target as HTMLElement;
     const isButton = target.tagName === 'BUTTON' || target.closest('button');
@@ -143,24 +181,104 @@ export const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
     }
   };
 
+  const colorClasses =
+    cardColor === 'red'
+      ? 'bg-rose-50 border-rose-200 hover:bg-rose-100/50'
+      : cardColor === 'yellow'
+      ? 'bg-amber-50 border-amber-200 hover:bg-amber-100/50'
+      : 'bg-white border-neutral-100 hover:bg-neutral-50/50';
+
   return (
     <div
       className={`
         flex items-center gap-2 px-3 py-2.5
-        bg-white border border-neutral-100 rounded-lg
+        rounded-lg
         shadow-sm ${isPriorityView ? 'hover:shadow-md' : ''}
-        hover:bg-neutral-50/50
-        transition-shadow
+        transition-all
         min-w-0 w-full
+        ${colorClasses}
         ${allowDrag ? 'cursor-grab active:cursor-grabbing' : ''}
       `}
       {...(allowDrag ? { ...attributes, ...listeners, onPointerDown: handlePointerDown } : {})}
     >
-      {/* Order number */}
-      <div className="flex-shrink-0 w-5 flex items-center justify-center">
-        <span className="text-xs text-neutral-400 font-medium">
+      {/* Order number with color popover trigger */}
+      <div className="flex-shrink-0 w-5 flex items-center justify-center relative">
+        <button
+          ref={colorButtonRef}
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setColorPopoverOpen(!colorPopoverOpen);
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="inline-flex items-center justify-center w-6 h-6 text-xs text-neutral-500 font-medium rounded-full hover:bg-neutral-100 transition-colors cursor-pointer"
+        >
           {index + 1}
-        </span>
+        </button>
+
+        {/* Color Popover */}
+        {colorPopoverOpen && colorPopoverPosition && createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-[30]"
+              onClick={() => setColorPopoverOpen(false)}
+            />
+            <div
+              className="fixed z-[40]"
+              style={{
+                top: `${colorPopoverPosition.top}px`,
+                left: `${colorPopoverPosition.left}px`,
+                transform: 'translateY(4px)',
+              }}
+            >
+              <div className="w-44 rounded-md border border-neutral-200 bg-white shadow-lg overflow-hidden py-1">
+                {[
+                  { key: 'default', label: 'Default' },
+                  { key: 'red', label: 'Red' },
+                  { key: 'yellow', label: 'Yellow' },
+                ].map((option) => (
+                  <button
+                    key={option.key}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onChangeColor && onChangeColor(project.id, option.key as 'default' | 'red' | 'yellow');
+                      setColorPopoverOpen(false);
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    className={`
+                      w-full text-left px-3 py-1.5 text-xs flex items-center gap-2
+                      hover:bg-neutral-50 transition-colors
+                      ${
+                        cardColor === option.key
+                          ? 'bg-neutral-100 text-neutral-900 font-medium'
+                          : 'text-neutral-700'
+                      }
+                    `}
+                  >
+                    <span
+                      className={`
+                        w-3 h-3 rounded-full border border-neutral-200 flex-shrink-0
+                        ${
+                          option.key === 'red'
+                            ? 'bg-rose-400 border-rose-500'
+                            : ''
+                        }
+                        ${
+                          option.key === 'yellow'
+                            ? 'bg-amber-300 border-amber-400'
+                            : ''
+                        }
+                      `}
+                    />
+                    <span>{option.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>,
+          document.body
+        )}
       </div>
 
       {/* Project name and status */}
@@ -182,7 +300,6 @@ export const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
           onClick={(e) => {
             e.stopPropagation();
             // Disabled temporarily - routing needs reorganization
-            console.log('Project navigation disabled:', project.name);
           }}
           onPointerDown={(e) => e.stopPropagation()}
           className="text-sm font-medium text-neutral-900 truncate leading-tight text-left hover:text-neutral-700 transition-colors cursor-pointer w-fit"

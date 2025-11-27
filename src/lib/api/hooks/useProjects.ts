@@ -263,8 +263,6 @@ export const useUpdateProject = (workspaceId: string) => {
 
   return useMutation({
     mutationFn: async ({ id, input }: { id: string; input: UpdateProjectInput }) => {
-      console.log('🔵 [useUpdateProject] Mutation called:', { id, input });
-      
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error('Not authenticated');
 
@@ -300,8 +298,6 @@ export const useUpdateProject = (workspaceId: string) => {
       if (input.progress !== undefined) updateData.progress = input.progress;
       if (input.metadata !== undefined) updateData.metadata = input.metadata;
       
-      console.log('🔵 [useUpdateProject] Update data prepared:', updateData);
-      
       const { data, error } = await supabase
         .from('projects')
         .update(updateData)
@@ -309,13 +305,10 @@ export const useUpdateProject = (workspaceId: string) => {
         .select()
         .single();
       
-      console.log('🔵 [useUpdateProject] Supabase response:', { data, error });
-      
       if (error) throw error;
       return transformProject(data);
     },
     onSuccess: (data, variables) => {
-      console.log('✅ [useUpdateProject] Mutation successful:', { data, variables });
       queryClient.invalidateQueries({ queryKey: projectKeys.list(workspaceId) })
       queryClient.invalidateQueries({ queryKey: projectKeys.detail(variables.id) })
       // Toast removed - silent updates for background operations

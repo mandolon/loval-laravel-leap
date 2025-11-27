@@ -29,6 +29,7 @@ interface ProjectOrderData {
 
 interface WorkspaceMetadata {
   projectOrder?: ProjectOrderData;
+  projectColors?: Record<string, 'default' | 'red' | 'yellow'>;
 }
 
 interface ProjectMetadata {
@@ -59,6 +60,7 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
   const [focusTodos, setFocusTodos] = useState<ProjectTodo[]>([]);
   const [focusListAnchorRef, setFocusListAnchorRef] = useState<React.RefObject<HTMLElement> | null>(null);
   const [localProjectOrder, setLocalProjectOrder] = useState<string[]>([]);
+  const [projectColors, setProjectColors] = useState<Record<string, 'default' | 'red' | 'yellow'>>({});
 
   // Transform database projects to UI projects
   const activeProjects = useMemo(() => {
@@ -95,10 +97,19 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
     // If we have saved order, use it; otherwise use order from DB
     if (savedOrder.length > 0) {
       // Filter to only include projects that still exist
-      return savedOrder.filter((id) => activeProjects.some((p) => p.id === id));
+      const existingOrder = savedOrder.filter((id) => activeProjects.some((p) => p.id === id));
+      
+      // Add any new projects that aren't in the saved order
+      const newProjects = activeProjects
+        .filter((p) => !savedOrder.includes(p.id))
+        .map((p) => p.id);
+      
+      const finalOrder = [...existingOrder, ...newProjects];
+      return finalOrder;
     }
     
-    return activeProjects.map((p) => p.id);
+    const defaultOrder = activeProjects.map((p) => p.id);
+    return defaultOrder;
   }, [activeProjects, workspaceSettings]);
 
   // Sync local order with server order
@@ -106,17 +117,26 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
     setLocalProjectOrder(projectOrder);
   }, [projectOrder]);
 
+  // Load project colors from metadata
+  useEffect(() => {
+    const metadata = (workspaceSettings?.metadata || {}) as WorkspaceMetadata;
+    if (metadata.projectColors) {
+      setProjectColors(metadata.projectColors);
+    }
+  }, [workspaceSettings]);
+
   // Update project order when active projects change
   useEffect(() => {
     const metadata = (workspaceSettings?.metadata || {}) as WorkspaceMetadata;
     const savedOrder = metadata.projectOrder?.projectIds || [];
     
     // If there are active projects but no saved order, initialize it
-    if (activeProjects.length > 0 && savedOrder.length === 0) {
+    // BUT: Only initialize if we actually have projects AND workspace settings have loaded
+    if (activeProjects.length > 0 && savedOrder.length === 0 && workspaceSettings) {
       const initialOrder = activeProjects.map((p) => p.id);
       updateProjectOrderInDB(initialOrder);
     }
-  }, [activeProjects]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeProjects, workspaceSettings]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const allowDrag = sortBy === 'priority';
 
@@ -141,21 +161,12 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
 
   // Persist todos to database in project metadata
   const updateTodosInDB = async (projectId: string, todos: ProjectTodo[]) => {
-    console.log('🔵 [updateTodosInDB] Starting save:', { projectId, todosCount: todos.length, todos });
-    
-    if (!workspaceId) {
-      console.error('❌ [updateTodosInDB] No workspaceId');
-      return;
-    }
+    if (!workspaceId) return;
 
     const project = dbProjects.find((p) => p.id === projectId);
-    if (!project) {
-      console.error('❌ [updateTodosInDB] Project not found:', projectId);
-      return;
-    }
+    if (!project) return;
 
     const currentMetadata = (project.metadata || {}) as ProjectMetadata;
-    console.log('🔵 [updateTodosInDB] Current metadata:', currentMetadata);
     
     const updatedMetadata: ProjectMetadata = {
       ...currentMetadata,
@@ -170,9 +181,6 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
       },
     };
 
-    console.log('🟢 [updateTodosInDB] Updated metadata:', updatedMetadata);
-    console.log('🟢 [updateTodosInDB] Calling mutation with:', { id: projectId, input: { metadata: updatedMetadata } });
-
     updateProjectMutation.mutate({
       id: projectId,
       input: { metadata: updatedMetadata as Record<string, unknown> },
@@ -180,26 +188,21 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
   };
 
   const handleOpenFocusList = (project: Project, anchorRef: React.RefObject<HTMLElement>) => {
-    console.log('📂 [handleOpenFocusList] Opening focus list for project:', project.id, project.name);
     setFocusListProject(project);
     setFocusListAnchorRef(anchorRef);
 
     // Load todos from project metadata
     const dbProject = dbProjects.find((p) => p.id === project.id);
-    console.log('📂 [handleOpenFocusList] DB project:', dbProject);
     const projectMetadata = (dbProject?.metadata || {}) as ProjectMetadata;
-    console.log('📂 [handleOpenFocusList] Project metadata:', projectMetadata);
     
     const loadedTodos: ProjectTodo[] = projectMetadata.focusTodos?.todos?.map((t: ProjectTodoData) => ({
       id: t.id,
       text: t.text,
       completed: t.completed,
     })) || [];
-    console.log('📂 [handleOpenFocusList] Loaded todos:', loadedTodos);
 
     // If no todos exist, create one from nextLabel if available
     if (loadedTodos.length === 0 && project.nextLabel) {
-      console.log('📂 [handleOpenFocusList] No todos, creating from nextLabel:', project.nextLabel);
       loadedTodos.push({
         id: 't-next',
         text: project.nextLabel,
@@ -211,7 +214,6 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
   };
 
   const handleAddTodo = () => {
-    console.log('➕ [handleAddTodo] Adding new todo (local only - not saved yet)');
     const newTodo: ProjectTodo = {
       id: `t${Date.now()}`,
       text: 'New to-do',
@@ -219,49 +221,35 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
       isEditing: true,
     };
     const updatedTodos = [...focusTodos, newTodo];
-    console.log('➕ [handleAddTodo] Updated todos (local):', updatedTodos);
     setFocusTodos(updatedTodos);
     // Don't save to DB yet - wait for user to finish editing
   };
 
   const handleToggleTodo = (todoId: string) => {
-    console.log('✅ [handleToggleTodo] Toggling todo:', todoId);
     const updatedTodos = focusTodos.map((todo) =>
       todo.id === todoId ? { ...todo, completed: !todo.completed } : todo
     );
-    console.log('✅ [handleToggleTodo] Updated todos:', updatedTodos);
     setFocusTodos(updatedTodos);
     
     if (focusListProject) {
-      console.log('✅ [handleToggleTodo] Saving to project:', focusListProject.id);
       updateTodosInDB(focusListProject.id, updatedTodos);
-    } else {
-      console.warn('⚠️ [handleToggleTodo] No focusListProject');
     }
   };
 
   const handleDeleteTodo = (todoId: string) => {
-    console.log('🗑️ [handleDeleteTodo] Deleting todo:', todoId);
     const updatedTodos = focusTodos.filter((todo) => todo.id !== todoId);
-    console.log('🗑️ [handleDeleteTodo] Updated todos:', updatedTodos);
     setFocusTodos(updatedTodos);
     
     if (focusListProject) {
-      console.log('🗑️ [handleDeleteTodo] Saving to project:', focusListProject.id);
       updateTodosInDB(focusListProject.id, updatedTodos);
-    } else {
-      console.warn('⚠️ [handleDeleteTodo] No focusListProject');
     }
   };
 
   const handleUpdateTodo = (todoId: string, newText: string) => {
-    console.log('✏️ [handleUpdateTodo] Updating todo:', { todoId, newText });
-    
     const trimmedText = newText.trim().slice(0, FOCUS_TODO_MAX_LENGTH);
 
     // If text is empty or just whitespace, delete the todo instead
     if (!trimmedText) {
-      console.log('✏️ [handleUpdateTodo] Empty text - deleting todo');
       handleDeleteTodo(todoId);
       return;
     }
@@ -269,35 +257,22 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
     const updatedTodos = focusTodos.map((todo) =>
       todo.id === todoId ? { ...todo, text: trimmedText, isEditing: false } : todo
     );
-    console.log('✏️ [handleUpdateTodo] Updated todos:', updatedTodos);
     setFocusTodos(updatedTodos);
     
     if (focusListProject) {
-      console.log('✏️ [handleUpdateTodo] Saving to project:', focusListProject.id);
       updateTodosInDB(focusListProject.id, updatedTodos);
-    } else {
-      console.warn('⚠️ [handleUpdateTodo] No focusListProject');
     }
   };
 
   const handleReorderTodos = (reorderedTodos: ProjectTodo[]) => {
-    console.log('🔄 [handleReorderTodos] Reordering todos:', reorderedTodos);
     setFocusTodos(reorderedTodos);
     
     if (focusListProject) {
-      console.log('🔄 [handleReorderTodos] Saving to project:', focusListProject.id);
       updateTodosInDB(focusListProject.id, reorderedTodos);
-    } else {
-      console.warn('⚠️ [handleReorderTodos] No focusListProject');
     }
   };
 
   const handleDragStart = (event: DragStartEvent) => {
-    console.log('🟢 Drag Start:', {
-      activeId: event.active.id,
-      allowDrag,
-      sortBy,
-    });
     setActiveId(event.active.id as string);
     
     // Capture the original item's position and calculate offset from cursor
@@ -325,41 +300,22 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
           width: `${rect.width}px`,
         });
       }
-    } else {
-      console.warn('⚠️ Active element not found:', event.active.id);
     }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    console.log('🔴 Drag End:', {
-      activeId: event.active.id,
-      overId: event.over?.id,
-      allowDrag,
-      sortBy,
-    });
     setActiveId(null);
     setOverlayStyle(undefined);
-    if (!allowDrag) {
-      console.log('❌ Drag disabled - allowDrag is false');
-      return;
-    }
+    if (!allowDrag) return;
 
     const { active, over } = event;
-    if (!over || active.id === over.id) {
-      console.log('❌ No valid drop target or same position');
-      return;
-    }
+    if (!over || active.id === over.id) return;
 
     const oldIndex = localProjectOrder.indexOf(active.id as string);
     const newIndex = localProjectOrder.indexOf(over.id as string);
-    console.log('📍 Indices:', { oldIndex, newIndex, localProjectOrder });
-    if (oldIndex === -1 || newIndex === -1) {
-      console.warn('⚠️ Invalid indices');
-      return;
-    }
+    if (oldIndex === -1 || newIndex === -1) return;
 
     const newOrder = arrayMove(localProjectOrder, oldIndex, newIndex);
-    console.log('✅ New order:', newOrder);
     
     // Update local state immediately for instant UI feedback
     setLocalProjectOrder(newOrder);
@@ -380,6 +336,26 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
     updateProjectMutation.mutate({
       id: projectId,
       input: { phase: newStatus },
+    });
+  };
+
+  const handleProjectColorChange = (projectId: string, color: 'default' | 'red' | 'yellow') => {
+    const updatedColors = {
+      ...projectColors,
+      [projectId]: color,
+    };
+    setProjectColors(updatedColors);
+
+    // Save to workspace metadata
+    const metadata = (workspaceSettings?.metadata || {}) as WorkspaceMetadata;
+    const updatedMetadata: WorkspaceMetadata = {
+      ...metadata,
+      projectColors: updatedColors,
+    };
+
+    updateSettingsMutation.mutate({
+      workspaceId,
+      input: { metadata: updatedMetadata as Record<string, unknown> },
     });
   };
 
@@ -482,8 +458,10 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
                         index={index}
                         isPriorityView={sortBy === 'priority'}
                         workspaceId={workspaceId}
+                        cardColor={projectColors[project.id] || 'default'}
                         onOpenFocusList={handleOpenFocusList}
                         onUpdateStatus={handleUpdateStatus}
+                        onChangeColor={handleProjectColorChange}
                       />
                     ))}
                   </div>
