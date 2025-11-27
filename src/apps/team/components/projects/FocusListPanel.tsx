@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core';
+import { restrictToVerticalAxis, restrictToParentElement } from '@dnd-kit/modifiers';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { SortableTodoItem } from './SortableTodoItem';
 import { Project, ProjectTodo } from './types';
@@ -142,12 +143,13 @@ export const FocusListPanel: React.FC<FocusListPanelProps> = ({
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleTodoDragEnd}
+          modifiers={[restrictToVerticalAxis, restrictToParentElement]}
         >
           <SortableContext items={todos.map((t) => t.id)} strategy={verticalListSortingStrategy}>
             <div className="divide-y divide-neutral-50 max-h-[400px] overflow-y-auto">
               {todos.length === 0 ? (
                 <div className="px-3 py-6 text-center">
-                  <p className="text-xs text-neutral-400">No tasks yet</p>
+                  <p className="text-xs text-neutral-400">No to-do's yet</p>
                 </div>
               ) : (
                 todos.map((todo) => (

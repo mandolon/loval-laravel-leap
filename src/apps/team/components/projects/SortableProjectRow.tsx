@@ -95,8 +95,8 @@ const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
         </span>
       </div>
 
-      {/* Project name and status */}
-      <div className="flex-1 min-w-0 relative flex flex-col justify-center">
+      {/* Project name and status - flex to take available space */}
+      <div className="flex-1 min-w-0 relative flex flex-col justify-center max-w-[50%]">
         <button
           ref={statusButtonRef}
           type="button"
@@ -156,7 +156,7 @@ const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
         )}
       </div>
 
-      {/* Next milestone */}
+      {/* Next milestone - responsive width */}
       <div 
         ref={nextMilestoneRef}
         className="w-32 sm:w-40 md:w-48 flex-shrink-0 flex items-center"
@@ -167,20 +167,20 @@ const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
             e.stopPropagation();
             onOpenFocusList(project, nextMilestoneRef);
           }}
-          className="w-full text-left hover:bg-neutral-100/50 rounded-md px-1.5 sm:px-2 py-1 -mx-1.5 sm:-mx-2 -my-1 transition-colors cursor-pointer"
+          className="w-full text-right hover:bg-neutral-100/50 rounded-md px-1.5 sm:px-2 py-1 -mx-1.5 sm:-mx-2 -my-1 transition-colors cursor-pointer"
         >
           {project.nextLabel ? (
             <>
-              <p className="text-[9px] sm:text-[11px] text-neutral-500 uppercase tracking-wide mb-0.5 leading-tight">
+              <p className="text-[9px] sm:text-[11px] text-neutral-500 uppercase tracking-wide mb-0.5 leading-tight text-right">
                 Next:
               </p>
-              <p className="text-[10px] sm:text-xs text-neutral-900 font-medium truncate leading-tight">
+              <p className="text-[10px] sm:text-xs text-neutral-900 font-medium truncate leading-tight text-right">
                 {project.nextLabel}
               </p>
             </>
           ) : (
-            <p className="text-[10px] sm:text-xs text-neutral-400 italic leading-tight">
-              No milestone set
+            <p className="text-[10px] sm:text-xs text-neutral-400 italic leading-tight text-right">
+              Nothing to do
             </p>
           )}
         </button>
