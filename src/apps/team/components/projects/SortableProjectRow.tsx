@@ -29,8 +29,8 @@ export const SortableProjectRow: React.FC<SortableProjectRowProps> = ({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.4 : 1,
+    transition: isDragging ? 'none' : transition,
+    opacity: isDragging ? 0 : 1,
   };
 
   return (
@@ -77,19 +77,36 @@ const ProjectRowContent: React.FC<ProjectRowContentProps> = ({
   return (
     <div
       className={`
-        flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 sm:py-3
+        flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 sm:py-3
         bg-white border border-neutral-100 rounded-lg
         shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_1px_3px_rgba(0,0,0,0.08)]
         hover:bg-neutral-50/50
         transition-all
         ${isDragging ? 'bg-neutral-100 shadow-[0_2px_8px_rgba(0,0,0,0.12)]' : ''}
-        ${allowDrag ? 'cursor-grab active:cursor-grabbing select-none' : 'cursor-default'}
       `}
-      {...listeners}
-      {...attributes}
     >
+      {/* Drag handle - only attach listeners here */}
+      {allowDrag ? (
+        <div
+          className="flex-shrink-0 w-4 sm:w-5 flex items-center justify-center cursor-grab active:cursor-grabbing touch-none"
+          {...listeners}
+          {...attributes}
+        >
+          <svg width="8" height="12" viewBox="0 0 8 12" fill="currentColor" className="text-neutral-300 pointer-events-none">
+            <circle cx="2" cy="2" r="1" />
+            <circle cx="6" cy="2" r="1" />
+            <circle cx="2" cy="6" r="1" />
+            <circle cx="6" cy="6" r="1" />
+            <circle cx="2" cy="10" r="1" />
+            <circle cx="6" cy="10" r="1" />
+          </svg>
+        </div>
+      ) : (
+        <div className="flex-shrink-0 w-4 sm:w-5"></div>
+      )}
+
       {/* Order number */}
-      <div className="flex-shrink-0 w-5 sm:w-6 flex items-center justify-center">
+      <div className="flex-shrink-0 w-4 sm:w-5 flex items-center justify-center">
         <span className="text-[10px] sm:text-xs text-neutral-400 font-medium">
           {index + 1}
         </span>

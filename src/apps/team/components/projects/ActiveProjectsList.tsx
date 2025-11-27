@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
-import { restrictToVerticalAxis, restrictToParentElement } from '@dnd-kit/modifiers';
+import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, DragOverlay, DragStartEvent } from '@dnd-kit/core';
+import { restrictToVerticalAxis, restrictToFirstScrollableAncestor } from '@dnd-kit/modifiers';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { Project, ProjectTodo, SortOption } from './types';
 import { SortableProjectRow } from './SortableProjectRow';
@@ -56,10 +56,13 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
   const [focusListProject, setFocusListProject] = useState<Project | null>(null);
   const [focusTodos, setFocusTodos] = useState<ProjectTodo[]>([]);
   const [focusListAnchorRef, setFocusListAnchorRef] = useState<React.RefObject<HTMLElement> | null>(null);
+  const [localProjectOrder, setLocalProjectOrder] = useState<string[]>([]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
+      activationConstraint: { 
+        distance: 6,
+      },
     })
   );
 
@@ -101,6 +104,11 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
     
     return activeProjects.map((p) => p.id);
   }, [activeProjects, workspaceSettings]);
+
+  // Sync local order with server order
+  useEffect(() => {
+    setLocalProjectOrder(projectOrder);
+  }, [projectOrder]);
 
   // Update project order when active projects change
   useEffect(() => {
@@ -244,8 +252,8 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
     }
   };
 
-  const handleDragStart = (event: any) => {
-    setActiveId(event.active.id);
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
   };
 
   const handleDragEnd = (event: any) => {
@@ -255,12 +263,19 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = projectOrder.indexOf(active.id);
-    const newIndex = projectOrder.indexOf(over.id);
+    const oldIndex = localProjectOrder.indexOf(active.id);
+    const newIndex = localProjectOrder.indexOf(over.id);
     if (oldIndex === -1 || newIndex === -1) return;
 
-    const newOrder = arrayMove(projectOrder, oldIndex, newIndex);
-    updateProjectOrderInDB(newOrder);
+    const newOrder = arrayMove(localProjectOrder, oldIndex, newIndex);
+    
+    // Update local state immediately for instant UI feedback
+    setLocalProjectOrder(newOrder);
+    
+    // Update database after render
+    requestAnimationFrame(() => {
+      updateProjectOrderInDB(newOrder);
+    });
   };
 
   const handleDragCancel = () => {
@@ -289,11 +304,11 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
       });
     }
 
-    // Priority sort: use saved project order
-    return projectOrder
+    // Priority sort: use local project order for immediate feedback
+    return localProjectOrder
       .map((id) => activeProjects.find((p) => p.id === id))
       .filter(Boolean) as Project[];
-  }, [activeProjects, projectOrder, sortBy]);
+  }, [activeProjects, localProjectOrder, sortBy]);
 
   const activeProject = activeId ? activeProjects.find((p) => p.id === activeId) : null;
 
@@ -301,8 +316,8 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
     return (
       <div ref={containerRef} className="flex gap-4 lg:gap-6 relative">
         <div className="flex-1 rounded-xl border border-neutral-200 bg-white/60 flex flex-col min-w-0 min-h-0 max-h-[400px] lg:max-h-[calc(100vh-14rem)] lg:h-full overflow-hidden">
-          <div className="flex items-center justify-between gap-2 sm:gap-4 px-3 sm:px-4 py-2 sm:py-3 border-b border-neutral-100">
-            <h2 className="text-xs sm:text-sm font-semibold text-neutral-900">Active Projects</h2>
+          <div className="flex items-center justify-between px-3 md:px-4 pt-3 md:pt-4 pb-3 border-b border-neutral-100">
+            <h3 className="text-xs md:text-[13px] font-semibold text-[#202020]">Active Projects</h3>
             <SortDropdown sortBy={sortBy} onSortChange={setSortBy} />
           </div>
           <div className="flex-1 flex items-center justify-center">
@@ -321,8 +336,8 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
       {/* Main project list */}
       <div className="flex-1 rounded-xl border border-neutral-200 bg-white/60 flex flex-col min-w-0 min-h-0 max-h-[400px] lg:max-h-[calc(100vh-14rem)] lg:h-full overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between gap-2 sm:gap-4 px-3 sm:px-4 py-2 sm:py-3 border-b border-neutral-100">
-          <h2 className="text-xs sm:text-sm font-semibold text-neutral-900">Active Projects</h2>
+        <div className="flex items-center justify-between px-3 md:px-4 pt-3 md:pt-4 pb-3 border-b border-neutral-100">
+          <h3 className="text-xs md:text-[13px] font-semibold text-[#202020]">Active Projects</h3>
           <SortDropdown sortBy={sortBy} onSortChange={setSortBy} />
         </div>
 
@@ -334,8 +349,9 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onDragCancel={handleDragCancel}
-            modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+            modifiers={[restrictToVerticalAxis, restrictToFirstScrollableAncestor]}
           >
+            <style>{activeId ? 'body { cursor: grabbing !important; } * { cursor: grabbing !important; }' : ''}</style>
             <SortableContext
               items={orderedProjects.map((p) => p.id)}
               strategy={verticalListSortingStrategy}
@@ -362,7 +378,9 @@ export const ActiveProjectsList: React.FC<ActiveProjectsListProps> = ({ containe
 
             <DragOverlay>
               {activeProject && (
-                <div className="bg-white border border-neutral-200 shadow-[0_4px_12px_rgba(0,0,0,0.15)] rounded-lg overflow-hidden">
+                <div 
+                  className="bg-white border border-neutral-200 shadow-[0_4px_12px_rgba(0,0,0,0.15)] rounded-lg overflow-hidden cursor-grabbing"
+                >
                   <SortableProjectRow
                     project={activeProject}
                     allowDrag={true}
