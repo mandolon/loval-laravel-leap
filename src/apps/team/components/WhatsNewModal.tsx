@@ -71,7 +71,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ onClose, onDontSho
         {/* Section title + date */}
         <div className="mb-6">
           <div className={`${tokens.releaseLabel} ${tokens.accent}`}>
-            RELEASE - 2025.44.3
+            RELEASE - v1.9
           </div>
           <div className={`${tokens.releaseDate} ${tokens.textMuted} mt-1`}>November 26, 2025</div>
         </div>
