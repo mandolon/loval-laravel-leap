@@ -12,7 +12,8 @@ import { ActiveProjectsList } from '../projects';
 import AddEventPopover from './AddEventPopover';
 import { useNotifications } from '@/lib/api/hooks/useNotifications';
 import { useUserRecentFiles } from '@/lib/api/hooks/useRecentFiles';
-import { FolderClosed, Bell, CheckSquare, MessageCircle, MessageSquare } from 'lucide-react';
+import { FolderClosed, Bell, CheckSquare, MessageCircle, MessageSquare, Sparkles } from 'lucide-react';
+import { WhatsNewModal } from '../WhatsNewModal';
 import { formatDistanceToNow } from 'date-fns';
 
 const DAYS_TO_SHOW = 31; // 15 before, today, 15 after
@@ -205,6 +206,11 @@ export const CalendarDashboardContent: React.FC = () => {
   const { currentWorkspace } = useWorkspaces();
 
   const [mdUp, setMdUp] = useState(true);
+  const [showWhatsNew, setShowWhatsNew] = useState(() => {
+    // Check localStorage to see if user dismissed with "Don't show again"
+    const dismissed = localStorage.getItem('whatsNewDismissed');
+    return dismissed !== 'true';
+  });
 
   // Center date state - the date around which we generate 31 days
   const today = useMemo(() => {
@@ -687,6 +693,15 @@ export const CalendarDashboardContent: React.FC = () => {
               {getGreeting()}, {userName}
             </div>
           </div>
+          <div className='px-3 md:px-4'>
+            <button
+              onClick={() => setShowWhatsNew(true)}
+              className='inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-full transition-colors'
+            >
+              <Sparkles className='w-3.5 h-3.5' />
+              <span>What's New</span>
+            </button>
+          </div>
         </div>
 
         {/* Calendar section - Responsive grid layout */}
@@ -946,6 +961,15 @@ export const CalendarDashboardContent: React.FC = () => {
         </div>
       </div>
 
+      {showWhatsNew && (
+        <WhatsNewModal
+          onClose={() => setShowWhatsNew(false)}
+          onDontShowAgain={() => {
+            localStorage.setItem('whatsNewDismissed', 'true');
+            setShowWhatsNew(false);
+          }}
+        />
+      )}
     </div>
   );
 };
